@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>User List</title>
+</head>
+
+<body>
+    <h1>All Users</h1>
+    <ul>
+        {{ range _,user := users }}
+        <li>ID: {{ user.ID }}, Name: {{ user.Name }}</li>
+        {{ else }}
+        <li>No users found.</li>
+        {{ end }}
+    </ul>
+</body>
+
+</html>
