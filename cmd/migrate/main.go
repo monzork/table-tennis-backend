@@ -21,7 +21,11 @@ func main() {
 	if err := migrator.Lock(ctx); err != nil {
 		log.Fatalf("cannot get migration lock: %v", err)
 	}
-	defer migrator.Unlock(ctx)
+	defer func() {
+		if err := migrator.Unlock(ctx); err != nil {
+			log.Printf("failed to unlock migrator: %v", err)
+		}
+	}()
 
 	group, err := migrator.Migrate(ctx)
 	if err != nil {
