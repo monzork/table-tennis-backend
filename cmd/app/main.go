@@ -55,8 +55,8 @@ func main() {
 		CookieSecure:    true,
 		CookieHTTPOnly:  true,
 		CookieSameSite:  "lax",
-		IdleTimeout:     10 * time.Second,
-		AbsoluteTimeout: 10 * time.Second,
+		IdleTimeout:     24 * time.Hour,
+		AbsoluteTimeout: 24 * time.Hour,
 		//KeyLookup:       "cookie:session_id",
 		ErrorHandler: func(c fiber.Ctx, err error) {
 			fmt.Printf("Session error: %v", err)
@@ -74,6 +74,8 @@ func main() {
 			csrf.FromHeader("X-Csrf-Token"),
 			csrf.FromForm("csrf_token")),
 	}))
+
+	app.Route("/login")
 
 	app.Post("/login", func(c fiber.Ctx) error {
 		sess := session.FromContext(c)
