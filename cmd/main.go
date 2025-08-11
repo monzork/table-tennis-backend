@@ -69,10 +69,6 @@ func main() {
 		return c.JSON(p) // Respond with the parsed data
 	})
 
-	app.Use("/static", static.New("./static/html/index.html"))
-	//app.Get("/users", handlers.ListUsers)
-	// test := static.New("./public")
-	// print("%+v\n", &test)
 	store := session.New(session.Config{
 		Storage:         sqliteStorage,
 		CookieSecure:    true,
