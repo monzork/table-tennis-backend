@@ -1,9 +1,21 @@
 package models
 
-import "github.com/uptrace/bun"
+import (
+	"time"
 
-type User struct {
-	bun.BaseModel `bun:"table:users"`
-	ID            int64  `bun"id,pk,autoincrement"`
-	Name          string `bun:"name,notnull"`
+	"github.com/google/uuid"
+	"github.com/uptrace/bun"
+)
+
+type Players struct {
+	bun.BaseModel `bun:"table:players"`
+	Id            uuid.UUID `bun:"id,pk,type:uuid"`
+	Name          string    `bun:"name, notnull"`
+	Sex           string    `bun:"sex, notnull"`
+	Country       string    `bun:"country, notnull"`
+	City          string    `bun:"city, notnull"`
+	Birthdate     string    `bun:"birthdate, notnull"`
+	Elo           int16     `bun:"elo, notnull, default:1000"`
+	Created_at    time.Time `bun:"created_at, notnull, default:current_timestamp"`
+	Updated_at    string    `bun:"updated_at, notnull, default:current_timestamp"`
 }
