@@ -13,5 +13,5 @@ type User struct {
 	Username      string    `bun:"username,notnull"`
 	Password      string    `bun:"password,notnull"`
 	Created_at    time.Time `bun:"created_at,notnull,default:current_timestamp"`
-	Updated_at    string    `bun:"updated_at,notnull,default:current_timestamp"`
+	Updated_at    time.Time `bun:"updated_at,notnull,default:current_timestamp"`
 }

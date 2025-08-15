@@ -17,5 +17,5 @@ type Players struct {
 	Birthdate     string    `bun:"birthdate, notnull"`
 	Elo           int16     `bun:"elo, notnull, default:1000"`
 	Created_at    time.Time `bun:"created_at, notnull, default:current_timestamp"`
-	Updated_at    string    `bun:"updated_at, notnull, default:current_timestamp"`
+	Updated_at    time.Time `bun:"updated_at, notnull, default:current_timestamp"`
 }
