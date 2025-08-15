@@ -20,7 +20,7 @@ var Migrations = migrate.NewMigrations()
 
 func Connect() *bun.DB {
 	once.Do(func() {
-		dsn := "file:data.db?cache=shared&mode=rwc"
+		dsn := "file:data.db?cache=shared&mode=rwc&_journal_mode=WAL"
 
 		sqlDB, err := sql.Open("sqlite", dsn)
 
@@ -29,6 +29,10 @@ func Connect() *bun.DB {
 		}
 
 		db = bun.NewDB(sqlDB, sqlitedialect.New())
+		db.Exec("PRAGMA journal_mode=WAL;")   // allows concurrent reads/writes
+		db.Exec("PRAGMA synchronous=NORMAL;") // faster than FULL, still safe
+		db.Exec("PRAGMA cache_size=10000;")   // increase in-memory cache
+		db.Exec("PRAGMA temp_store=MEMORY;")  // store temp tables in memory
 	})
 	return db
 }
