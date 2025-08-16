@@ -44,3 +44,27 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 
 }
+
+func (h *UserHandler) Login(c fiber.Ctx) error {
+	var body struct {
+		Username string `json:"username" form:"username"`
+		Password string `json:"password" form:"password"`
+	}
+
+	if err := c.Bind().Body(&body); err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid")
+	}
+
+	user, err := h.service.Login(c, body.Username, body.Password)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).Render("partials/login_form", fiber.Map{
+			"Error": "Invalidad username or password",
+		})
+	}
+
+	// if err := CreateSession(c, user.ID); err != nil {
+	// 	return c.Status(fiber.StatusInternalServerError).SendString("Failed to create session")
+	// }
+
+	return c.Redirect().To("/")
+}

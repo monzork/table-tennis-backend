@@ -1,0 +1,14 @@
+<div id="login-form">
+    {{ if .Error }}
+    <p style="color:red;">{{ .Error }}</p>
+    {{ end }}
+    <form hx-post="/api/users/login" hx-target="#login-form" hx-swap="outerHTML">
+        <label>Username:</label>
+        <input type="text" name="username" required>
+        <br>
+        <label>Password:</label>
+        <input type="password" name="password" required>
+        <br>
+        <button type="submit">Login</button>
+    </form>
+</div>

@@ -5,20 +5,22 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 	"github.com/monzork/table-tennis-backend/internal/db"
 	userService "github.com/monzork/table-tennis-backend/internal/domain/user"
-	security "github.com/monzork/table-tennis-backend/internal/infrastructure/security"
-	session "github.com/monzork/table-tennis-backend/internal/infrastructure/session"
+	// security "github.com/monzork/table-tennis-backend/internal/infrastructure/security"
+	// session "github.com/monzork/table-tennis-backend/internal/infrastructure/session"
 	userRepo "github.com/monzork/table-tennis-backend/internal/infrastructure/storage"
 	user "github.com/monzork/table-tennis-backend/internal/transport/http"
-	userHanlder "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
+	userHandler "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
 
 	"github.com/uptrace/bun"
 )
 
 func Run() error {
-	print("test")
+
+	engine := html.New("./internal/transport/templates", ".html")
 
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
@@ -32,10 +34,17 @@ func Run() error {
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName: "TTN",
+		Views:   engine,
 	})
 
-	app.Use(session.InitializeSession())
-	app.Use(security.InitializeCSRF())
+	// app.Get("/", func(c fiber.Ctx) error {
+	// 	return c.Render("pages/index", fiber.Map{
+	// 		"Title": "Welcome",
+	// 	}, "layouts/base")
+	// })
+
+	// app.Use(session.InitializeSession())
+	// app.Use(security.InitializeCSRF())
 
 	api := app.Group("/api")
 
@@ -54,6 +63,6 @@ func Run() error {
 func buildUserDependencies(api fiber.Router, db *bun.DB) {
 	userRepository := userRepo.NewSQLiteUserRepository(db)
 	userService := userService.NewService(userRepository)
-	userHandler := userHanlder.NewUserHandler(userService)
+	userHandler := userHandler.NewUserHandler(userService)
 	user.RegisterRoutes(api, userHandler)
 }

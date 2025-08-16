@@ -29,3 +29,16 @@ func (s *Service) RegisterUser(ctx context.Context, username, password string) (
 
 	return u, nil
 }
+
+func (s *Service) Login(ctx context.Context, username, password string) (*User, error) {
+	u := &User{
+		Username: username,
+		Password: password,
+	}
+	user, err := s.repo.Login(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
