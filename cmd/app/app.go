@@ -12,13 +12,19 @@ import (
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 	"github.com/monzork/table-tennis-backend/internal/db"
-	userDomain "github.com/monzork/table-tennis-backend/internal/domain/user"
 
 	securityHandler "github.com/monzork/table-tennis-backend/internal/infrastructure/security"
 	sessionHandler "github.com/monzork/table-tennis-backend/internal/infrastructure/session"
-	userRepo "github.com/monzork/table-tennis-backend/internal/infrastructure/storage"
-	userTransport "github.com/monzork/table-tennis-backend/internal/transport/http"
-	userHandler "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
+
+	Repos "github.com/monzork/table-tennis-backend/internal/infrastructure/storage"
+
+	userService "github.com/monzork/table-tennis-backend/internal/domain/user"
+
+	playersService "github.com/monzork/table-tennis-backend/internal/domain/players"
+
+	Handlers "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
+
+	Routes "github.com/monzork/table-tennis-backend/internal/transport/http/routes"
 
 	"github.com/uptrace/bun"
 )
@@ -81,14 +87,9 @@ func registerRoutes(app *fiber.App, dbConn *bun.DB) {
 
 	// API routes
 	api := app.Group("/api")
-	buildUserDependencies(api, dbConn)
-}
 
-func buildUserDependencies(api fiber.Router, dbConn *bun.DB) {
-	repo := userRepo.NewSQLiteUserRepository(dbConn)
-	service := userDomain.NewService(repo)
-	handler := userHandler.NewUserHandler(service)
-	userTransport.RegisterRoutes(api, handler)
+	buildUserDependencies(api, dbConn)
+	buildPlayersDependencies(api, dbConn)
 }
 
 func getPort() string {
@@ -137,4 +138,19 @@ func logout(c fiber.Ctx) error {
 
 	c.Set("HX-Redirect", "/login")
 	return c.SendStatus(fiber.StatusOK)
+}
+
+func buildUserDependencies(api fiber.Router, db *bun.DB) {
+	userRepository := Repos.NewSQLiteUserRepository(db)
+	userService := userService.NewService(userRepository)
+	userHandler := Handlers.NewUserHandler(userService)
+	Routes.RegisterPublicRoutes(api, userHandler)
+	Routes.RegisterUserRoutes(api, userHandler)
+}
+
+func buildPlayersDependencies(api fiber.Router, db *bun.DB) {
+	playersRepository := Repos.NewSQLitePlayersRepository(db)
+	playersService := playersService.NewService(playersRepository)
+	playersHandler := Handlers.NewPlayersHandler(playersService)
+	Routes.RegisterPlayersRoutes(api, playersHandler)
 }

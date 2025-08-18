@@ -1,4 +1,4 @@
-package models
+package players
 
 import (
 	"time"
@@ -9,13 +9,13 @@ import (
 
 type Players struct {
 	bun.BaseModel `bun:"table:players"`
-	Id            uuid.UUID `bun:"id,pk,type:uuid"`
+	ID            uuid.UUID `bun:"id,pk,type:uuid"`
 	Name          string    `bun:"name, notnull"`
 	Sex           string    `bun:"sex, notnull"`
 	Country       string    `bun:"country, notnull"`
 	City          string    `bun:"city, notnull"`
 	Birthdate     string    `bun:"birthdate, notnull"`
-	Elo           int16     `bun:"elo, notnull, default:1000"`
+	Elo           *int16    `bun:"elo, notnull, default:1000"`
 	Created_at    time.Time `bun:"created_at, notnull, default:current_timestamp"`
 	Updated_at    time.Time `bun:"updated_at, notnull, default:current_timestamp"`
 }

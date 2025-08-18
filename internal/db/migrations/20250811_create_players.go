@@ -23,8 +23,8 @@ func init() {
 				"elo"	INTEGER NOT NULL DEFAULT 1000,
 				"created_at"	TEXT DEFAULT CURRENT_TIMESTAMP,
 				"updated_at"	TEXT DEFAULT CURRENT_TIMESTAMP,
-				PRIMARY KEY("id")
-				);`)
+				PRIMARY KEY("id"));
+			`)
 			return err
 		},
 		func(ctx context.Context, db *bun.DB) error {
