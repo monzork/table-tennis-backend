@@ -19,12 +19,30 @@
     </script>
 </head>
 
-<body class="bg-gray-100 text-gray-900">
-    {{ template "navbar" . }}
+<body class="bg-gray-100 text-gray-900 flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gray-800 text-white flex-shrink-0">
+        <div class="p-6 font-bold text-xl">TTN</div>
+        <nav class="flex flex-col px-4">
+            <a href="/dashboard" class="py-2 px-3 rounded hover:bg-gray-700">Dashboard</a>
+            <a href="/players" class="py-2 px-3 rounded hover:bg-gray-700">Players</a>
+            <a href="#" class="py-2 px-3 rounded hover:bg-gray-700">Settings</a>
+        </nav>
+        {{ if .User.Username }}
+        <div class="absolute bottom-6 left-6">
+            <span class="block mb-2">Hello, {{ .User.Username }}</span>
+            <form hx-post="/logout" hx-target="#main-content" hx-swap="innerHTML">
+                <button type="submit" class="bg-red-500 px-2 py-1 rounded">Logout</button>
+            </form>
+        </div>
+        {{ end }}
+    </aside>
 
-    <main class="container mx-auto mt-8">
-        {{ block "content" . }}{{ end }}
+    <!-- Main content -->
+    <main id="main-content" class="flex-1 overflow-auto p-6">
+        {{ .MainContent }}
     </main>
+
 </body>
 
 </html>

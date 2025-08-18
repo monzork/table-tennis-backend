@@ -40,3 +40,8 @@ func (s *Service) RegisterPlayers(ctx context.Context, name, sex, country, city,
 
 	return p, nil
 }
+
+func (s *Service) GetAllPlayers(ctx context.Context) (*[]Players, error) {
+	players, err := s.repo.GetAll(ctx)
+	return players, err
+}

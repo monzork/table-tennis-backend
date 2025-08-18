@@ -8,4 +8,5 @@ import (
 func RegisterPlayersRoutes(app fiber.Router, h *playersHandler.PlayersHandler) {
 	playersGroup := app.Group("/players")
 	playersGroup.Post("/", h.Register)
+	playersGroup.Get("/", h.GetAllPlayers)
 }

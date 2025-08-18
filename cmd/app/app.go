@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"html/template"
 	"log"
 	"os"
 
@@ -102,19 +103,32 @@ func getPort() string {
 
 func showLogin(c fiber.Ctx) error {
 	sess := session.FromContext(c)
-	fmt.Printf("%v", c.Locals("CSRF"))
 	if sess.Get("username") != nil {
 		return c.Redirect().To("/dashboard")
 	}
-	return c.Render("pages/login", fiber.Map{
+
+	var buf bytes.Buffer
+
+	err := c.App().Config().Views.Render(&buf, "partials/login", fiber.Map{
 		"Title": "Login",
-	}, "layouts/base")
+	})
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to render login: " + err.Error())
+	}
+
+	loginHTML := template.HTML(buf.String())
+
+	return c.Render("layouts/base", fiber.Map{
+		"Title":       "Login",
+		"MainContent": loginHTML,
+	})
 }
 
 func showDashboard(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	username := sess.Get("username")
-	userID := sess.Get("user_id")
+
 	if username == nil {
 		if c.Get("HX-Request") == "true" {
 			c.Set("HX-Redirect", "/login")
@@ -123,13 +137,33 @@ func showDashboard(c fiber.Ctx) error {
 		return c.Redirect().To("/login")
 	}
 
-	return c.Render("pages/dashboard", fiber.Map{
-		"Title": "Dashboard",
+	var formBuf bytes.Buffer
+	err := c.App().Config().Views.Render(&formBuf, "partials/form-players", fiber.Map{}, "")
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			SendString("Failed to render form: " + err.Error())
+	}
+	formHTML := template.HTML(formBuf.String())
+
+	var dashBuf bytes.Buffer
+	err = c.App().Config().Views.Render(&dashBuf, "partials/dashboard", fiber.Map{
 		"User": fiber.Map{
-			"ID":       userID,
 			"Username": username,
 		},
-	}, "layouts/base")
+		"FormPlayers": formHTML,
+		"Title":       "Dashboard",
+	})
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).
+			SendString("Failed to render dashboard: " + err.Error())
+	}
+
+	return c.Render("layouts/base", fiber.Map{
+		"Title":       "Dashboard",
+		"User":        fiber.Map{"Username": username}, // navbar info
+		"MainContent": template.HTML(dashBuf.String()),
+	})
 }
 
 func logout(c fiber.Ctx) error {

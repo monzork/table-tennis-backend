@@ -1,0 +1,14 @@
+{{ range .Players }}
+<tr>
+    <td class="border px-2 py-1">{{ .Name }}</td>
+    <td class="border px-2 py-1">{{ .Sex }}</td>
+    <td class="border px-2 py-1">{{ .Country }}</td>
+    <td class="border px-2 py-1">{{ .City }}</td>
+    <td class="border px-2 py-1">{{ .Birthdate }}</td>
+    <td class="border px-2 py-1">{{ .Elo }}</td>
+</tr>
+{{ else }}
+<tr>
+    <td colspan="6" class="text-center py-2">No players found.</td>
+</tr>
+{{ end }}

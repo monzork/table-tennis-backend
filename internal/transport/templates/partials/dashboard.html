@@ -1,0 +1,25 @@
+<div id="dashboard" class="max-w-3xl w-full bg-white p-6 rounded shadow">
+    <h1 class="text-2xl font-bold mb-4">Welcome, {{ .User.Username }}!</h1>
+    <p class="mb-6">This is your dashboard.</p>
+
+    {{ .FormPlayers }}
+    <!-- Players Table -->
+    <div class="mt-6">
+        <h2 class="text-xl font-bold mb-2">Players</h2>
+        <table class="min-w-full border">
+            <thead>
+                <tr>
+                    <th class="border px-2 py-1">Name</th>
+                    <th class="border px-2 py-1">Sex</th>
+                    <th class="border px-2 py-1">Country</th>
+                    <th class="border px-2 py-1">City</th>
+                    <th class="border px-2 py-1">Birthdate</th>
+                    <th class="border px-2 py-1">Elo</th>
+                </tr>
+            </thead>
+            <tbody id="players-table" hx-get="/api/players" hx-trigger="load" hx-swap="innerHTML">
+                <!-- HTMX will load player rows here -->
+            </tbody>
+        </table>
+    </div>
+</div>

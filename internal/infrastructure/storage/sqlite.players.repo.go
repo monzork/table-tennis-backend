@@ -33,3 +33,10 @@ func (r *SQLitePlayersRepository) Create(ctx context.Context, p *players.Players
 	_, err := r.db.NewInsert().Model(p).Exec(ctx)
 	return err
 }
+
+func (r *SQLitePlayersRepository) GetAll(ctx context.Context) (*[]players.Players, error) {
+	players := &[]players.Players{}
+
+	err := r.db.NewSelect().Model(players).Scan(ctx)
+	return players, err
+}
