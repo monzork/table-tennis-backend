@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/monzork/table-tennis-backend/internal/domain/user"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -13,7 +14,9 @@ type UserHandler struct {
 }
 
 func NewUserHandler(service *user.Service) *UserHandler {
-	return &UserHandler{service: service}
+	return &UserHandler{
+		service: service,
+	}
 }
 
 func (h *UserHandler) Register(c fiber.Ctx) error {
@@ -39,10 +42,8 @@ func (h *UserHandler) Register(c fiber.Ctx) error {
 }
 
 func HashPassword(password string) (string, error) {
-
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
-
 }
 
 func (h *UserHandler) Login(c fiber.Ctx) error {
@@ -56,15 +57,22 @@ func (h *UserHandler) Login(c fiber.Ctx) error {
 	}
 
 	user, err := h.service.Login(c, body.Username, body.Password)
+
 	if err != nil || user == nil {
 		return c.Status(fiber.StatusUnauthorized).Render("partials/login_form", fiber.Map{
 			"Error": "Invalidad username or password",
 		})
 	}
 
-	// if err := CreateSession(c, user.ID); err != nil {
-	// 	return c.Status(fiber.StatusInternalServerError).SendString("Failed to create session")
-	// }
+	sess := session.FromContext(c)
 
-	return c.Redirect().To("/")
+	if err := sess.Session.Regenerate(); err != nil {
+		return err
+	}
+
+	sess.Set("user_id", user.ID.String())
+	sess.Set("username", user.Username)
+
+	c.Set("HX-Redirect", "/dashboard")
+	return c.SendStatus(fiber.StatusOK)
 }

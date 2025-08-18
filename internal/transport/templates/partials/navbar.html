@@ -1,9 +1,15 @@
-<nav class="bg-blue-600 text-white p-4">
-    <div class="container mx-auto flex justify-between">
-        <a href="/" class="font-bold">🏓 Table Tennis</a>
-        <div class="space-x-4">
-            <a href="/login" class="hover:underline">Login</a>
-            <a href="/players" class="hover:underline">Players</a>
-        </div>
+{{ define "navbar" }}
+<nav class="bg-gray-800 text-white p-4 flex justify-between">
+    <div class="font-bold">TTN</div>
+    <div>
+        {{ if .User.Username }}
+        <span class="mr-4">Hello, {{ .User.Username }}</span>
+        <form hx-post="/logout" hx-swap="none" class="inline">
+            <button type="submit" class="bg-red-600 px-2 py-1 rounded hover:bg-red-700">Logout</button>
+        </form>
+        {{ else }}
+        <a href="/login" class="hover:underline">Login</a>
+        {{ end }}
     </div>
 </nav>
+{{ end }}

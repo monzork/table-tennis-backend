@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Service struct {
@@ -36,6 +37,11 @@ func (s *Service) Login(ctx context.Context, username, password string) (*User, 
 		Password: password,
 	}
 	user, err := s.repo.Login(ctx, u)
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return nil, err
+	}
+
 	if err != nil {
 		return nil, err
 	}

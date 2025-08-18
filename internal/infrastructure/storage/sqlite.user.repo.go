@@ -6,6 +6,8 @@ import (
 	"github.com/uptrace/bun"
 )
 
+var _ user.Repository = (*SQLiteUserRepository)(nil)
+
 type SQLiteUserRepository struct {
 	db *bun.DB
 }
@@ -21,7 +23,7 @@ func (r *SQLiteUserRepository) Create(ctx context.Context, u *user.User) error {
 
 func (r *SQLiteUserRepository) Login(ctx context.Context, u *user.User) (*user.User, error) {
 	user := &user.User{}
-
 	err := r.db.NewSelect().Model(user).Where("username = ?", u.Username).Scan(ctx)
+
 	return user, err
 }

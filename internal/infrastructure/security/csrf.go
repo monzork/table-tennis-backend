@@ -7,13 +7,14 @@ import (
 
 func InitializeCSRF() fiber.Handler {
 	return csrf.New(csrf.Config{
-		CookieName:        "csrf_Protection",
+		CookieName:        "__Host-csrf__",
 		CookieSecure:      true,
 		CookieHTTPOnly:    true,
 		CookieSameSite:    "lax",
 		CookieSessionOnly: true,
 		Extractor: csrf.Chain(
 			csrf.FromHeader("X-Csrf-Token"),
-			csrf.FromForm("csrf_token")),
+			csrf.FromForm("csrf_token"),
+		),
 	})
 }
