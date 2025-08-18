@@ -35,7 +35,6 @@ func main() {
 
 	switch os.Args[1] {
 	case "migrate":
-		print("")
 		group, err := migrator.Migrate(ctx)
 		if err != nil {
 			log.Fatalf("migration failed: %v", err)

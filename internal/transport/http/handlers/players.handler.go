@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/monzork/table-tennis-backend/internal/domain/players"
 )
@@ -28,7 +30,7 @@ func (h *PlayersHandler) Register(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	_, err := h.service.RegisterPlayers(
+	player, err := h.service.RegisterPlayers(
 		context.Background(),
 		body.Name,
 		body.Sex,
@@ -41,11 +43,7 @@ func (h *PlayersHandler) Register(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	playersList, err := h.service.GetAllPlayers(c)
-
-	return c.Render("partials/players-rows", fiber.Map{
-		"Players": playersList,
-	})
+	return c.Render("players-row", player)
 }
 
 func (h *PlayersHandler) GetAllPlayers(c fiber.Ctx) error {
@@ -55,7 +53,12 @@ func (h *PlayersHandler) GetAllPlayers(c fiber.Ctx) error {
 	}
 
 	// Render the partial template with players
-	return c.Render("partials/players-rows", fiber.Map{
+	var buf bytes.Buffer
+	if err := c.App().Config().Views.Render(&buf, "partials/players-list", fiber.Map{
 		"Players": playersList,
-	})
+	}); err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	return c.Type("html").SendString(buf.String())
 }

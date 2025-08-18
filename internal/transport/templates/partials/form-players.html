@@ -1,12 +1,12 @@
-<div id="players-form-container" class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
+<div id="players-form-container" class="bg-white p-6 rounded shadow">
     <h2 class="text-2xl font-bold mb-4">Add Player</h2>
-    <form hx-post="/api/players" hx-target="#players-table" hx-swap="innerHTML" hx-trigger="submit">
+    <form hx-post="/api/players" hx-target="#players-list-container" hx-swap="beforeend">
         <div class="mb-4">
-            <label>Name</label>
+            <label class="block font-semibold">Name</label>
             <input type="text" name="name" required class="w-full px-3 py-2 border rounded-lg" />
         </div>
         <div class="mb-4">
-            <label>Sex</label>
+            <label class="block font-semibold">Sex</label>
             <select name="sex" required class="w-full px-3 py-2 border rounded-lg">
                 <option value="">Select...</option>
                 <option value="M">Male</option>
@@ -14,19 +14,19 @@
             </select>
         </div>
         <div class="mb-4">
-            <label>Country</label>
+            <label class="block font-semibold">Country</label>
             <input type="text" name="country" required class="w-full px-3 py-2 border rounded-lg" />
         </div>
         <div class="mb-4">
-            <label>City</label>
+            <label class="block font-semibold">City</label>
             <input type="text" name="city" required class="w-full px-3 py-2 border rounded-lg" />
         </div>
         <div class="mb-4">
-            <label>Birthdate</label>
+            <label class="block font-semibold">Birthdate</label>
             <input type="date" name="birthdate" required class="w-full px-3 py-2 border rounded-lg" />
         </div>
         <div class="mb-4">
-            <label>Elo</label>
+            <label class="block font-semibold">Elo</label>
             <input type="number" name="elo" value="1000" class="w-full px-3 py-2 border rounded-lg" />
         </div>
         <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">

@@ -83,6 +83,8 @@ func registerRoutes(app *fiber.App, dbConn *bun.DB) {
 	app.Get("/login", showLogin)
 	app.Get("/", func(c fiber.Ctx) error { return c.Redirect().To("/dashboard") })
 
+	app.Get("/players", showPlayersTab)
+
 	app.Get("/dashboard", showDashboard)
 	app.Post("/logout", logout)
 
@@ -125,6 +127,33 @@ func showLogin(c fiber.Ctx) error {
 	})
 }
 
+func showPlayersTab(c fiber.Ctx) error {
+	sess := session.FromContext(c)
+	username := sess.Get("username")
+	if username == nil {
+		c.Set("HX-Redirect", "/login")
+		return c.SendStatus(fiber.StatusOK)
+	}
+
+	// Render Add Player form
+	var formBuf bytes.Buffer
+	_ = c.App().Config().Views.Render(&formBuf, "partials/form-players", fiber.Map{})
+	formHTML := template.HTML(formBuf.String())
+
+	// Render Players tab
+	var tabBuf bytes.Buffer
+	_ = c.App().Config().Views.Render(&tabBuf, "partials/players", fiber.Map{
+		"User":        fiber.Map{"Username": username},
+		"FormPlayers": formHTML,
+	})
+
+	return c.Render("layouts/base", fiber.Map{
+		"Title":       "Players",
+		"User":        fiber.Map{"Username": username},
+		"MainContent": template.HTML(tabBuf.String()),
+	})
+}
+
 func showDashboard(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	username := sess.Get("username")
@@ -137,21 +166,12 @@ func showDashboard(c fiber.Ctx) error {
 		return c.Redirect().To("/login")
 	}
 
-	var formBuf bytes.Buffer
-	err := c.App().Config().Views.Render(&formBuf, "partials/form-players", fiber.Map{}, "")
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).
-			SendString("Failed to render form: " + err.Error())
-	}
-	formHTML := template.HTML(formBuf.String())
-
 	var dashBuf bytes.Buffer
-	err = c.App().Config().Views.Render(&dashBuf, "partials/dashboard", fiber.Map{
+	err := c.App().Config().Views.Render(&dashBuf, "partials/dashboard", fiber.Map{
 		"User": fiber.Map{
 			"Username": username,
 		},
-		"FormPlayers": formHTML,
-		"Title":       "Dashboard",
+		"Title": "Dashboard",
 	})
 
 	if err != nil {

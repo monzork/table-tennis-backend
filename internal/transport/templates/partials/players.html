@@ -1,0 +1,25 @@
+<div class="grid grid-cols-2 gap-6">
+    <!-- Add Player Form -->
+    {{ .FormPlayers }}
+
+    <!-- Players List -->
+    <div>
+        <h2 class="text-2xl font-bold mb-4">Players List</h2>
+
+        <table class="w-full table-auto border-collapse border border-gray-300">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="border px-4 py-2">Name</th>
+                    <th class="border px-4 py-2">Sex</th>
+                    <th class="border px-4 py-2">Country</th>
+                    <th class="border px-4 py-2">City</th>
+                    <th class="border px-4 py-2">Birthdate</th>
+                    <th class="border px-4 py-2">Elo</th>
+                </tr>
+            </thead>
+            <tbody id="players-list-container" hx-get="/api/players" hx-trigger="load" hx-swap="innerHTML">
+                <!-- rows load here -->
+            </tbody>
+        </table>
+    </div>
+</div>
