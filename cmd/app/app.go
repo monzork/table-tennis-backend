@@ -13,21 +13,15 @@ import (
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 	"github.com/monzork/table-tennis-backend/internal/db"
-
-	securityHandler "github.com/monzork/table-tennis-backend/internal/infrastructure/security"
-	sessionHandler "github.com/monzork/table-tennis-backend/internal/infrastructure/session"
-
-	Repos "github.com/monzork/table-tennis-backend/internal/infrastructure/storage"
-
-	userService "github.com/monzork/table-tennis-backend/internal/domain/user"
+	"github.com/uptrace/bun"
 
 	playersService "github.com/monzork/table-tennis-backend/internal/domain/players"
-
+	userService "github.com/monzork/table-tennis-backend/internal/domain/user"
+	securityHandler "github.com/monzork/table-tennis-backend/internal/infrastructure/security"
+	sessionHandler "github.com/monzork/table-tennis-backend/internal/infrastructure/session"
+	Repos "github.com/monzork/table-tennis-backend/internal/infrastructure/storage"
 	Handlers "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
-
 	Routes "github.com/monzork/table-tennis-backend/internal/transport/http/routes"
-
-	"github.com/uptrace/bun"
 )
 
 func Run() error {
@@ -84,6 +78,12 @@ func registerRoutes(app *fiber.App, dbConn *bun.DB) {
 	app.Get("/", func(c fiber.Ctx) error { return c.Redirect().To("/dashboard") })
 
 	app.Get("/players", showPlayersTab)
+	app.Get("/players/form", func(c fiber.Ctx) error {
+		return c.Render("partials/form-players", fiber.Map{})
+	})
+	app.Get("/players/form-toggle", func(c fiber.Ctx) error {
+		return c.Render("partials/form-toggle-button", nil)
+	})
 
 	app.Get("/dashboard", showDashboard)
 	app.Post("/logout", logout)

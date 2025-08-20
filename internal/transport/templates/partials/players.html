@@ -1,25 +1,33 @@
-<div class="grid grid-cols-2 gap-6">
-    <!-- Add Player Form -->
-    {{ .FormPlayers }}
-
+<div class="max-w-5xl mx-auto space-y-6">
     <!-- Players List -->
-    <div>
-        <h2 class="text-2xl font-bold mb-4">Players List</h2>
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">Players List</h2>
 
-        <table class="w-full table-auto border-collapse border border-gray-300">
-            <thead>
-                <tr class="bg-gray-200">
-                    <th class="border px-4 py-2">Name</th>
-                    <th class="border px-4 py-2">Sex</th>
-                    <th class="border px-4 py-2">Country</th>
-                    <th class="border px-4 py-2">City</th>
-                    <th class="border px-4 py-2">Birthdate</th>
-                    <th class="border px-4 py-2">Elo</th>
-                </tr>
-            </thead>
-            <tbody id="players-list-container" hx-get="/api/players" hx-trigger="load" hx-swap="innerHTML">
-                <!-- rows load here -->
-            </tbody>
-        </table>
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="w-full border-collapse">
+                <thead class="bg-gray-100 text-gray-700">
+                    <tr>
+                        <th class="border-b px-4 py-2 text-left text-sm font-semibold">Name</th>
+                        <th class="border-b px-4 py-2 text-left text-sm font-semibold">Sex</th>
+                        <th class="border-b px-4 py-2 text-left text-sm font-semibold">Country</th>
+                        <th class="border-b px-4 py-2 text-left text-sm font-semibold">City</th>
+                        <th class="border-b px-4 py-2 text-left text-sm font-semibold">Birthdate</th>
+                        <th class="border-b px-4 py-2 text-left text-sm font-semibold">Elo</th>
+                    </tr>
+                </thead>
+                <tbody id="players-list-container" hx-get="/api/players" hx-trigger="load" hx-swap="innerHTML"
+                    class="divide-y divide-gray-200">
+                    <!-- rows load here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Toggle Form Button -->
+    <div id="form-toggle" class="text-center">
+        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+            hx-get="/players/form" hx-target="#form-toggle" hx-swap="outerHTML">
+            Add New Player
+        </button>
     </div>
 </div>

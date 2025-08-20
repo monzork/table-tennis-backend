@@ -34,3 +34,14 @@
         </button>
     </form>
 </div>
+
+
+<!-- Hidden template for the toggle button -->
+<template id="toggle-template">
+    <div id="form-toggle" class="mt-4 text-center">
+        <button class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700" hx-get="/players/form"
+            hx-target="#form-toggle" hx-swap="outerHTML">
+            ➕ Add New Player
+        </button>
+    </div>
+</template>
