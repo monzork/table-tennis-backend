@@ -46,6 +46,14 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
+func (h *UserHandler) Logout(c fiber.Ctx) error {
+	sess := session.FromContext(c)
+	sess.Destroy()
+
+	c.Set("HX-Redirect", "/login")
+	return c.SendStatus(fiber.StatusOK)
+}
+
 func (h *UserHandler) Login(c fiber.Ctx) error {
 	var body struct {
 		Username string `json:"username" form:"username"`

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"html/template"
 	"log"
 	"os"
 
@@ -21,6 +19,7 @@ import (
 	sessionHandler "github.com/monzork/table-tennis-backend/internal/infrastructure/session"
 	Repos "github.com/monzork/table-tennis-backend/internal/infrastructure/storage"
 	Handlers "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
+	handler "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
 	Routes "github.com/monzork/table-tennis-backend/internal/transport/http/routes"
 )
 
@@ -35,7 +34,7 @@ func Run() error {
 		c.Locals("CSRF", token)
 		return c.Next()
 	})
-	registerRoutes(app, dbConn)
+	RegisterRoutes(app, dbConn)
 
 	port := getPort()
 	log.Println("Server running on port", port)
@@ -72,27 +71,11 @@ func initApp() *fiber.App {
 	return app
 }
 
-func registerRoutes(app *fiber.App, dbConn *bun.DB) {
-	// Public routes
-	app.Get("/login", showLogin)
-	app.Get("/", func(c fiber.Ctx) error { return c.Redirect().To("/dashboard") })
-
-	app.Get("/players", showPlayersTab)
-	app.Get("/players/form", func(c fiber.Ctx) error {
-		return c.Render("partials/form-players", fiber.Map{})
-	})
-	app.Get("/players/form-toggle", func(c fiber.Ctx) error {
-		return c.Render("partials/form-toggle-button", nil)
-	})
-
-	app.Get("/dashboard", showDashboard)
-	app.Post("/logout", logout)
-
-	// API routes
+func RegisterRoutes(app *fiber.App, dbConn *bun.DB) {
 	api := app.Group("/api")
-
-	buildUserDependencies(api, dbConn)
-	buildPlayersDependencies(api, dbConn)
+	buildUserDependencies(app, api, dbConn)
+	buildPlayersDependencies(app, api, dbConn)
+	buildIndexDependecies(app, api, dbConn)
 }
 
 func getPort() string {
@@ -103,58 +86,15 @@ func getPort() string {
 	return port
 }
 
-func showLogin(c fiber.Ctx) error {
-	sess := session.FromContext(c)
-	if sess.Get("username") != nil {
-		return c.Redirect().To("/dashboard")
+func GetCurrentUser(c fiber.Ctx) string {
+	username, ok := c.Locals("username").(string)
+	if !ok {
+		return ""
 	}
-
-	var buf bytes.Buffer
-
-	err := c.App().Config().Views.Render(&buf, "partials/login", fiber.Map{
-		"Title": "Login",
-	})
-
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to render login: " + err.Error())
-	}
-
-	loginHTML := template.HTML(buf.String())
-
-	return c.Render("layouts/base", fiber.Map{
-		"Title":       "Login",
-		"MainContent": loginHTML,
-	})
+	return username
 }
 
-func showPlayersTab(c fiber.Ctx) error {
-	sess := session.FromContext(c)
-	username := sess.Get("username")
-	if username == nil {
-		c.Set("HX-Redirect", "/login")
-		return c.SendStatus(fiber.StatusOK)
-	}
-
-	// Render Add Player form
-	var formBuf bytes.Buffer
-	_ = c.App().Config().Views.Render(&formBuf, "partials/form-players", fiber.Map{})
-	formHTML := template.HTML(formBuf.String())
-
-	// Render Players tab
-	var tabBuf bytes.Buffer
-	_ = c.App().Config().Views.Render(&tabBuf, "partials/players", fiber.Map{
-		"User":        fiber.Map{"Username": username},
-		"FormPlayers": formHTML,
-	})
-
-	return c.Render("layouts/base", fiber.Map{
-		"Title":       "Players",
-		"User":        fiber.Map{"Username": username},
-		"MainContent": template.HTML(tabBuf.String()),
-	})
-}
-
-func showDashboard(c fiber.Ctx) error {
+func SessionMiddleware(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	username := sess.Get("username")
 
@@ -163,48 +103,35 @@ func showDashboard(c fiber.Ctx) error {
 			c.Set("HX-Redirect", "/login")
 			return c.SendStatus(fiber.StatusOK)
 		}
+
 		return c.Redirect().To("/login")
 	}
 
-	var dashBuf bytes.Buffer
-	err := c.App().Config().Views.Render(&dashBuf, "partials/dashboard", fiber.Map{
-		"User": fiber.Map{
-			"Username": username,
-		},
-		"Title": "Dashboard",
-	})
+	c.Locals("username", username)
 
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).
-			SendString("Failed to render dashboard: " + err.Error())
-	}
-
-	return c.Render("layouts/base", fiber.Map{
-		"Title":       "Dashboard",
-		"User":        fiber.Map{"Username": username}, // navbar info
-		"MainContent": template.HTML(dashBuf.String()),
-	})
+	return c.Next()
 }
 
-func logout(c fiber.Ctx) error {
-	sess := session.FromContext(c)
-	sess.Destroy()
-
-	c.Set("HX-Redirect", "/login")
-	return c.SendStatus(fiber.StatusOK)
-}
-
-func buildUserDependencies(api fiber.Router, db *bun.DB) {
+func buildUserDependencies(app *fiber.App, api fiber.Router, db *bun.DB) {
 	userRepository := Repos.NewSQLiteUserRepository(db)
 	userService := userService.NewService(userRepository)
 	userHandler := Handlers.NewUserHandler(userService)
-	Routes.RegisterPublicRoutes(api, userHandler)
 	Routes.RegisterUserRoutes(api, userHandler)
 }
 
-func buildPlayersDependencies(api fiber.Router, db *bun.DB) {
+func buildPlayersDependencies(app *fiber.App, api fiber.Router, db *bun.DB) {
 	playersRepository := Repos.NewSQLitePlayersRepository(db)
 	playersService := playersService.NewService(playersRepository)
 	playersHandler := Handlers.NewPlayersHandler(playersService)
-	Routes.RegisterPlayersRoutes(api, playersHandler)
+	Routes.RegisterPlayersRoutes(app, api, playersHandler)
+}
+
+func buildIndexDependecies(app *fiber.App, api fiber.Router, db *bun.DB) {
+	//  build user for login
+	// TODO: find a better way to implement this
+	indexHandler := handler.NewIndexHandler()
+	userRepository := Repos.NewSQLiteUserRepository(db)
+	userService := userService.NewService(userRepository)
+	userHandler := Handlers.NewUserHandler(userService)
+	Routes.RegisterPublicRoutes(app, indexHandler, userHandler)
 }

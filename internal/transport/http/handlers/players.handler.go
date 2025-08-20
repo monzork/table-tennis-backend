@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"context"
+	"html/template"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/monzork/table-tennis-backend/internal/domain/players"
@@ -61,4 +62,32 @@ func (h *PlayersHandler) GetAllPlayers(c fiber.Ctx) error {
 	}
 
 	return c.Type("html").SendString(buf.String())
+}
+
+func (h *PlayersHandler) ShowPlayersTab(c fiber.Ctx) error {
+	var formBuf bytes.Buffer
+	_ = c.App().Config().Views.Render(&formBuf, "partials/form-players", fiber.Map{})
+	formHTML := template.HTML(formBuf.String())
+
+	// Render Players tab
+	var tabBuf bytes.Buffer
+	username := 0
+	_ = c.App().Config().Views.Render(&tabBuf, "partials/players", fiber.Map{
+		"User":        fiber.Map{"Username": username},
+		"FormPlayers": formHTML,
+	})
+
+	return c.Render("layouts/base", fiber.Map{
+		"Title":       "Players",
+		"User":        fiber.Map{"Username": username},
+		"MainContent": template.HTML(tabBuf.String()),
+	})
+}
+
+func (h *PlayersHandler) GetFormPlayers(c fiber.Ctx) error {
+	return c.Render("partials/form-players", fiber.Map{})
+}
+
+func (h *PlayersHandler) GetFormToggle(c fiber.Ctx) error {
+	return c.Render("partials/form-toggle-button", nil)
 }
