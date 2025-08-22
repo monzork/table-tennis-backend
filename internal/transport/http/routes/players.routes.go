@@ -1,8 +1,6 @@
 package routes
 
 import (
-	"fmt"
-
 	"github.com/gofiber/fiber/v3"
 	playersHandler "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
 )
@@ -15,6 +13,6 @@ func RegisterPlayersRoutes(app *fiber.App, api fiber.Router, h *playersHandler.P
 	playersGroup.Get("/", h.ShowPlayersTab)
 	playersGroup.Get("/form", h.GetFormPlayers)
 	playersGroup.Get("/form-toggle", h.GetFormToggle)
-
-	fmt.Printf("%v", api)
+	playersGroup.Get("/", h.GetAllPlayers)
+	playersGroup.Put("/", h.UpdatePlayers)
 }

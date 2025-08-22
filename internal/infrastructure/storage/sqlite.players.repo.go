@@ -40,3 +40,29 @@ func (r *SQLitePlayersRepository) GetAll(ctx context.Context) (*[]players.Player
 	err := r.db.NewSelect().Model(players).Scan(ctx)
 	return players, err
 }
+
+func (r *SQLitePlayersRepository) Update(ctx context.Context, id uuid.UUID, updates map[string]interface{}) (*players.Players, error) {
+	query := r.db.NewUpdate().Model(&players.Players{}).Where("id = ?", id)
+
+	// Armamos Set dinámicamente
+	for k, v := range updates {
+		query = query.Set(k+" = ?", v)
+	}
+
+	_, err := query.Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Traemos el jugador actualizado
+	var updatedPlayer players.Players
+	err = r.db.NewSelect().
+		Model(&updatedPlayer).
+		Where("id = ?", id).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedPlayer, nil
+}

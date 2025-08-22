@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"html/template"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 	"github.com/monzork/table-tennis-backend/internal/domain/players"
 )
 
@@ -90,4 +92,68 @@ func (h *PlayersHandler) GetFormPlayers(c fiber.Ctx) error {
 
 func (h *PlayersHandler) GetFormToggle(c fiber.Ctx) error {
 	return c.Render("partials/form-toggle-button", nil)
+}
+
+func (h *PlayersHandler) UpdatePlayers(c fiber.Ctx) error {
+	var bodies []struct {
+		ID        uuid.UUID `json:"id"`
+		Name      *string   `json:"name,omitempty"`
+		Sex       *string   `json:"sex,omitempty"`
+		Country   *string   `json:"country,omitempty"`
+		City      *string   `json:"city,omitempty"`
+		Birthdate *string   `json:"birthdate,omitempty"`
+		Elo       *int16    `json:"elo,omitempty"`
+	}
+
+	// Intentamos parsear como array
+	if err := c.Bind().Body(&bodies); err != nil {
+		// Si falla, intentamos como objeto único
+		var single struct {
+			ID        uuid.UUID `json:"id"`
+			Name      *string   `json:"name,omitempty"`
+			Sex       *string   `json:"sex,omitempty"`
+			Country   *string   `json:"country,omitempty"`
+			City      *string   `json:"city,omitempty"`
+			Birthdate *string   `json:"birthdate,omitempty"`
+			Elo       *int16    `json:"elo,omitempty"`
+		}
+		if err := c.Bind().Body(&single); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+		bodies = append(bodies, single)
+	}
+
+	updatedPlayers := []*players.Players{}
+
+	for _, body := range bodies {
+		updates := map[string]interface{}{}
+		if body.Name != nil {
+			updates["name"] = *body.Name
+		}
+		if body.Sex != nil {
+			updates["sex"] = *body.Sex
+		}
+		if body.Country != nil {
+			updates["country"] = *body.Country
+		}
+		if body.City != nil {
+			updates["city"] = *body.City
+		}
+		if body.Birthdate != nil {
+			updates["birthdate"] = *body.Birthdate
+		}
+		if body.Elo != nil {
+			updates["elo"] = *body.Elo
+		}
+		updates["updated_at"] = time.Now().UTC()
+
+		updatedPlayer, err := h.service.UpdatePlayers(context.Background(), body.ID, updates)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		updatedPlayers = append(updatedPlayers, updatedPlayer)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(updatedPlayers)
 }

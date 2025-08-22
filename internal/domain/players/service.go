@@ -45,3 +45,7 @@ func (s *Service) GetAllPlayers(ctx context.Context) (*[]Players, error) {
 	players, err := s.repo.GetAll(ctx)
 	return players, err
 }
+
+func (s *Service) UpdatePlayers(ctx context.Context, id uuid.UUID, updates map[string]interface{}) (*Players, error) {
+	return s.repo.Update(ctx, id, updates)
+}
