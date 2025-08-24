@@ -19,7 +19,7 @@ func NewPlayersHandler(service *players.Service) *PlayersHandler {
 	return &PlayersHandler{service: service}
 }
 
-func (h *PlayersHandler) Register(c fiber.Ctx) error {
+func (h *PlayersHandler) RegisterPlayers(c fiber.Ctx) error {
 	var body struct {
 		Name      string `json:"name"`
 		Sex       string `json:"sex"`
@@ -105,9 +105,7 @@ func (h *PlayersHandler) UpdatePlayers(c fiber.Ctx) error {
 		Elo       *int16    `json:"elo,omitempty"`
 	}
 
-	// Intentamos parsear como array
 	if err := c.Bind().Body(&bodies); err != nil {
-		// Si falla, intentamos como objeto único
 		var single struct {
 			ID        uuid.UUID `json:"id"`
 			Name      *string   `json:"name,omitempty"`
@@ -156,4 +154,28 @@ func (h *PlayersHandler) UpdatePlayers(c fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(updatedPlayers)
+}
+
+func (h *PlayersHandler) DeletePlayers(c fiber.Ctx) error {
+	var body struct {
+		ID string `json:"id"`
+	}
+
+	if err := c.Bind().Body(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	uid, err := uuid.Parse(body.ID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid id format")
+	}
+
+	if err := h.service.DeletePlayers(context.Background(), uid); err != nil {
+		if err.Error() == "player not found" {
+			return fiber.NewError(fiber.StatusNotFound, err.Error())
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.SendStatus(fiber.StatusOK)
 }

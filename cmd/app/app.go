@@ -110,7 +110,7 @@ func SessionMiddleware(c fiber.Ctx) error {
 	return c.Next()
 }
 
-func buildUserDependencies(app *fiber.App, api fiber.Router, db *bun.DB) {
+func buildUserDependencies(_ *fiber.App, api fiber.Router, db *bun.DB) {
 	userRepository := Repos.NewSQLiteUserRepository(db)
 	userService := userService.NewService(userRepository)
 	userHandler := Handlers.NewUserHandler(userService)
@@ -124,7 +124,7 @@ func buildPlayersDependencies(app *fiber.App, api fiber.Router, db *bun.DB) {
 	Routes.RegisterPlayersRoutes(app, api, playersHandler)
 }
 
-func buildIndexDependecies(app *fiber.App, api fiber.Router, db *bun.DB) {
+func buildIndexDependecies(app *fiber.App, _ fiber.Router, db *bun.DB) {
 	//  build user for login
 	// TODO: find a better way to implement this
 	indexHandler := handler.NewIndexHandler()

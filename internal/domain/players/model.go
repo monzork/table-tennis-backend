@@ -18,4 +18,5 @@ type Players struct {
 	Elo           *int16    `bun:"elo,default:1000"`
 	Created_at    time.Time `bun:"created_at,notnull,default:current_timestamp,skipupdate"`
 	Updated_at    time.Time `bun:"updated_at,notnull,default:current_timestamp"`
+	Deleted_at    time.Time `bun:"deleted_at,null"`
 }

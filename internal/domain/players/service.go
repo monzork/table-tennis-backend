@@ -46,6 +46,10 @@ func (s *Service) GetAllPlayers(ctx context.Context) (*[]Players, error) {
 	return players, err
 }
 
-func (s *Service) UpdatePlayers(ctx context.Context, id uuid.UUID, updates map[string]interface{}) (*Players, error) {
+func (s *Service) UpdatePlayers(ctx context.Context, id uuid.UUID, updates map[string]any) (*Players, error) {
 	return s.repo.Update(ctx, id, updates)
+}
+
+func (s *Service) DeletePlayers(ctx context.Context, id uuid.UUID) error {
+	return s.repo.Delete(ctx, id)
 }
