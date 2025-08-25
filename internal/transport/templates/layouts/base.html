@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ .Title }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"
         integrity="sha384-Akqfrbj/HpNVo8k11SXBb6TlBWmXXlYQrCSqEWmyKJe+hDm3Z/B2WVG4smwBkRVm"
@@ -16,32 +17,23 @@
                 event.detail.headers['X-Csrf-Token'] = token;
             });
         });
+        document.addEventListener("open-delete", e => {
+            console.log("Evento recibido ✅", e.detail.url);
+        });
     </script>
+
 </head>
 
 <body class="bg-gray-100 text-gray-900 flex h-screen">
-    <!-- Sidebar -->
     {{ if .User.Username }}
-    <aside class="w-64 bg-gray-800 text-white flex-shrink-0">
-        <div class="p-6 font-bold text-xl">TTN</div>
-        <nav class="flex flex-col px-4">
-            <a href="/dashboard" class="py-2 px-3 rounded hover:bg-gray-700">Dashboard</a>
-            <a href="/players" class="py-2 px-3 rounded hover:bg-gray-700">Players</a>
-            <a href="#" class="py-2 px-3 rounded hover:bg-gray-700">Settings</a>
-        </nav>
-        <div class="absolute bottom-6 left-6">
-            <span class="block mb-2">Hello, {{ .User.Username }}</span>
-            <form hx-post="/logout" hx-target="#main-content" hx-swap="innerHTML">
-                <button type="submit" class="bg-red-500 px-2 py-1 rounded">Logout</button>
-            </form>
-        </div>
-    </aside>
+    {{ template "aside" . }}
     {{ end }}
 
     <!-- Main content -->
     <main id="main-content" class="flex-1 overflow-auto p-6">
         {{ embed }}
     </main>
+    {{ template "modal" . }}
 </body>
 
 </html>

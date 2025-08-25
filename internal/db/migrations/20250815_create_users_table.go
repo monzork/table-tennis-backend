@@ -38,7 +38,6 @@ func init() {
 				INSERT INTO users (id, username, password)
 				VALUES("%s","%s","%s");`, u.ID, u.Username, u.Password)
 
-	fmt.Printf("%v", value)
 	db.Migrations.MustRegister(
 		func(ctx context.Context, db *bun.DB) error {
 			_, err := DB.Exec(value)

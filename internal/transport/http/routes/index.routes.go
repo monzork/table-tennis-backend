@@ -10,5 +10,6 @@ func RegisterPublicRoutes(app fiber.Router, api fiber.Router, h *handler.IndexHa
 	app.Get("/login", h.ShowLogin)
 	app.Get("/dashboard", h.ShowDashboard)
 
+	app.Post("/logout", u.Logout)
 	api.Post("/login", u.Login)
 }

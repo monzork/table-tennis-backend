@@ -13,7 +13,7 @@ func RegisterPlayersRoutes(app *fiber.App, api fiber.Router, h *playersHandler.P
 func playersApiRoutes(api fiber.Router, h *playersHandler.PlayersHandler) {
 	apiPlayersGroup := api.Group("/players")
 	apiPlayersGroup.Get("/", h.GetAllPlayers)
-	apiPlayersGroup.Delete("/", h.DeletePlayers)
+	apiPlayersGroup.Delete("/:id", h.DeletePlayers)
 	apiPlayersGroup.Post("/", h.RegisterPlayers)
 }
 

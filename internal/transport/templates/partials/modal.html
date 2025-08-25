@@ -1,0 +1,21 @@
+{{ define "modal" }}
+<div x-data="{ open: false, deleteUrl: '' }" x-show="open" x-cloak
+    @open-delete.window="open = true; deleteUrl = $event.detail.url"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+
+    <div class="bg-white rounded-lg shadow-lg p-6 w-96">
+        <h2 class="text-lg font-semibold mb-4">Confirmar eliminación</h2>
+        <p class="mb-6">¿Seguro que deseas eliminar este jugador?</p>
+        <div class="flex justify-end space-x-2">
+            <button @click="open = false" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                Cancelar
+            </button>
+            <button id="confirm-delete" type="button" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                hx-delete="" hx-target="closest tr" hx-swap="delete"
+                @click="$el.setAttribute('hx-delete', deleteUrl); open = false">
+                Eliminar
+            </button>
+        </div>
+    </div>
+</div>
+{{ end }}

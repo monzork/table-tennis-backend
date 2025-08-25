@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
@@ -97,6 +98,10 @@ func GetCurrentUser(c fiber.Ctx) string {
 }
 
 func SessionMiddleware(c fiber.Ctx) error {
+	uri := c.Request().URI()
+	if strings.Contains(uri.String(), "/login") {
+		return c.Next()
+	}
 	sess := session.FromContext(c)
 	username := sess.Get("username")
 

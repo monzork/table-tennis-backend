@@ -1,0 +1,52 @@
+{{ define "aside" }}
+<aside x-data="{ open: true }" :class="open ? 'w-64' : 'w-16'"
+    class="relative bg-gray-800 text-white flex-shrink-0 h-screen transition-all duration-300 overflow-hidden">
+
+    <!-- Header con botón toggle -->
+    <div class="flex items-center justify-between p-4">
+        <div x-show="open" class="font-bold text-xl">TTN</div>
+        <button @click="open = !open" class="focus:outline-none">
+            <!-- Icono menú -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Nav items -->
+    <nav class="flex flex-col px-2 space-y-1">
+        <a href="/dashboard" class="py-2 px-2 rounded hover:bg-gray-700 flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                class="w-6 h-6 flex-shrink-0">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
+            </svg>
+            <span x-show="open" class="whitespace-nowrap">Dashboard</span>
+        </a>
+        <a href="/players" class="py-2 px-2 rounded hover:bg-gray-700 flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                class="w-6 h-6 flex-shrink-0">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5V9H2v11h5m10-9v-2a4 4 0 00-8 0v2" />
+            </svg>
+            <span x-show="open" class="whitespace-nowrap">Players</span>
+        </a>
+    </nav>
+
+    <!-- Footer -->
+    <div class="absolute bottom-6 left-0 w-full px-2">
+        <div x-show="open" class="mb-2 px-2">Hello, {{ .User.Username }}</div>
+        <form hx-post="/logout" hx-target="#main-content" hx-swap="innerHTML">
+            <button type="submit" class="bg-red-500 px-2 py-1 rounded w-full flex justify-center items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    class="w-5 h-5 flex-shrink-0">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-9V5" />
+                </svg>
+                <span x-show="open" class="ml-2">Logout</span>
+            </button>
+        </form>
+    </div>
+</aside>
+{{ end }}

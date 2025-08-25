@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/session"
@@ -55,6 +56,7 @@ func (h *UserHandler) Logout(c fiber.Ctx) error {
 }
 
 func (h *UserHandler) Login(c fiber.Ctx) error {
+	fmt.Printf("test")
 	var body struct {
 		Username string `json:"username" form:"username"`
 		Password string `json:"password" form:"password"`

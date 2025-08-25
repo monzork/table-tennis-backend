@@ -8,5 +8,4 @@ import (
 func RegisterUserRoutes(api fiber.Router, app *fiber.App, h *UserHandler.UserHandler) {
 	userGroup := app.Group("/user")
 	userGroup.Post("/", h.Register)
-	app.Post("/logout", h.Logout)
 }

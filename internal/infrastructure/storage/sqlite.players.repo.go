@@ -40,13 +40,14 @@ func (r *SQLitePlayersRepository) GetAll(ctx context.Context) (*[]players.Player
 
 	err := r.db.NewSelect().
 		Model(players).
-		Where("deleted_at IS NULL"). // Only showing players not deleted
+		Where("deleted_at IS NULL").
+		Order("elo DESC").
 		Scan(ctx)
 
 	return players, err
 }
 
-func (r *SQLitePlayersRepository) Update(ctx context.Context, id uuid.UUID, updates map[string]interface{}) (*players.Players, error) {
+func (r *SQLitePlayersRepository) Update(ctx context.Context, id uuid.UUID, updates map[string]any) (*players.Players, error) {
 	query := r.db.NewUpdate().Model(&players.Players{}).Where("id = ?", id)
 
 	for k, v := range updates {
@@ -75,8 +76,7 @@ func (r *SQLitePlayersRepository) Delete(ctx context.Context, id uuid.UUID) erro
 	res, err := r.db.NewUpdate().
 		Model((*players.Players)(nil)).
 		Set("deleted_at = ?", now).
-		Where("id = ?", id).
-		Where("deleted_at IS NULL").
+		Where("id = ? AND deleted_at IS NULL", id).
 		Exec(ctx)
 	if err != nil {
 		return err

@@ -107,7 +107,7 @@ func (h *PlayersHandler) UpdatePlayers(c fiber.Ctx) error {
 	updatedPlayers := []*players.Players{}
 
 	for _, body := range bodies {
-		updates := map[string]interface{}{}
+		updates := map[string]any{}
 		if body.Name != nil {
 			updates["name"] = *body.Name
 		}
@@ -140,25 +140,20 @@ func (h *PlayersHandler) UpdatePlayers(c fiber.Ctx) error {
 }
 
 func (h *PlayersHandler) DeletePlayers(c fiber.Ctx) error {
-	var body struct {
-		ID string `json:"id"`
-	}
+	param := struct {
+		ID uuid.UUID `uri:"id"`
+	}{}
 
-	if err := c.Bind().Body(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	uid, err := uuid.Parse(body.ID)
-	if err != nil {
+	if err := c.Bind().URI(&param); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid id format")
 	}
 
-	if err := h.service.DeletePlayers(context.Background(), uid); err != nil {
+	if err := h.service.DeletePlayers(context.Background(), param.ID); err != nil {
 		if err.Error() == "player not found" {
 			return fiber.NewError(fiber.StatusNotFound, err.Error())
 		}
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return nil
 }

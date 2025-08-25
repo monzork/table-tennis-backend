@@ -1,10 +1,20 @@
 {{ define "players-row" }}
-<tr>
+<tr id="player-{{ .ID }}">
     <td class="border px-4 py-2">{{ .Name }}</td>
     <td class="border px-4 py-2">{{ .Sex }}</td>
     <td class="border px-4 py-2">{{ .Country }}</td>
     <td class="border px-4 py-2">{{ .City }}</td>
     <td class="border px-4 py-2">{{ .Birthdate }}</td>
     <td class="border px-4 py-2">{{ .Elo }}</td>
+    <td class="border px-4 py-2 space-x-2">
+        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded" hx-get="/api/players/{{ .ID }}/edit"
+            hx-target="#player-{{ .ID }}" hx-swap="outerHTML">
+            Editar
+        </button>
+        <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+            @click="window.dispatchEvent(new CustomEvent('open-delete', { detail: { url: '/players/{{ .ID }}' } }))">
+            Eliminar
+        </button>
+    </td>
 </tr>
 {{ end }}

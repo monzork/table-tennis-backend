@@ -23,7 +23,7 @@ func init() {
 				"elo"		 	INTEGER NOT NULL DEFAULT 1000,
 				"created_at"	TEXT DEFAULT CURRENT_TIMESTAMP,
 				"updated_at"	TEXT DEFAULT CURRENT_TIMESTAMP,
-				"deleted_at" 	TEXT,
+				"deleted_at" 	TEXT DEFAULT NULL,
 				PRIMARY KEY("id")
 				);
 			`)
