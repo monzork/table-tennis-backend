@@ -47,6 +47,15 @@ func (r *SQLitePlayersRepository) GetAll(ctx context.Context) (*[]players.Player
 	return players, err
 }
 
+func (r *SQLitePlayersRepository) GetById(ctx context.Context, id uuid.UUID) (*players.Players, error) {
+	player := &players.Players{}
+	err := r.db.NewSelect().
+		Model(player).
+		Where("id = ?", id).
+		Scan(ctx)
+	return player, err
+}
+
 func (r *SQLitePlayersRepository) Update(ctx context.Context, id uuid.UUID, updates map[string]any) (*players.Players, error) {
 	query := r.db.NewUpdate().Model(&players.Players{}).Where("id = ?", id)
 

@@ -22,5 +22,6 @@ func playersStaticRoutes(app *fiber.App, h *playersHandler.PlayersHandler) {
 	playersGroup.Put("/", h.UpdatePlayers)
 	playersGroup.Get("/", h.ShowPlayersTab)
 	playersGroup.Get("/form", h.GetFormPlayers)
+	playersGroup.Get("/form/:id", h.GetFormPlayers)
 	playersGroup.Get("/form-toggle", h.GetFormToggle)
 }

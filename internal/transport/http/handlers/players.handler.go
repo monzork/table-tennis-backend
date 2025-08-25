@@ -70,7 +70,44 @@ func (h *PlayersHandler) ShowPlayersTab(c fiber.Ctx) error {
 }
 
 func (h *PlayersHandler) GetFormPlayers(c fiber.Ctx) error {
-	return c.Render("partials/form-players", fiber.Map{})
+	playerId := c.Params("id")
+	isEdit := playerId != ""
+	var player *players.Players
+	data := fiber.Map{
+		"IsEdit":    isEdit,
+		"ID":        "",
+		"Name":      "",
+		"Sex":       "",
+		"Country":   "",
+		"City":      "",
+		"Birthdate": "",
+		"Elo":       1000,
+	}
+
+	if isEdit {
+		uid, err := uuid.Parse(playerId)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+
+		player, err = h.service.GetByID(c, uid)
+		if err != nil {
+			return fiber.NewError(fiber.StatusNotFound, "Jugador no encontrado")
+		}
+
+		data = fiber.Map{
+			"IsEdit":    true,
+			"ID":        player.ID,
+			"Name":      player.Name,
+			"Sex":       player.Sex,
+			"Country":   player.Country,
+			"City":      player.City,
+			"Birthdate": player.Birthdate,
+			"Elo":       player.Elo,
+		}
+	}
+
+	return c.Render("partials/form-players", data)
 }
 
 func (h *PlayersHandler) GetFormToggle(c fiber.Ctx) error {
