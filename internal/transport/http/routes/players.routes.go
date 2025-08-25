@@ -19,7 +19,6 @@ func playersApiRoutes(api fiber.Router, h *playersHandler.PlayersHandler) {
 
 func playersStaticRoutes(app *fiber.App, h *playersHandler.PlayersHandler) {
 	playersGroup := app.Group("/players")
-	playersGroup.Get("/", h.GetAllPlayers)
 	playersGroup.Put("/", h.UpdatePlayers)
 	playersGroup.Get("/", h.ShowPlayersTab)
 	playersGroup.Get("/form", h.GetFormPlayers)

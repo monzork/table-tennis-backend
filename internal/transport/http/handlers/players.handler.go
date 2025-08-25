@@ -63,6 +63,7 @@ func (h *PlayersHandler) ShowPlayersTab(c fiber.Ctx) error {
 		c.Set("HX-Redirect", "/login")
 		return c.SendStatus(fiber.StatusOK)
 	}
+
 	return c.Render("partials/players", fiber.Map{
 		"Title": "Players",
 	}, "layouts/base")

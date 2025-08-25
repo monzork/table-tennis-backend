@@ -15,6 +15,8 @@ import (
 
 	playersService "github.com/monzork/table-tennis-backend/internal/domain/players"
 	userService "github.com/monzork/table-tennis-backend/internal/domain/user"
+	securityHandler "github.com/monzork/table-tennis-backend/internal/infrastructure/security"
+	sessionHandler "github.com/monzork/table-tennis-backend/internal/infrastructure/session"
 	Repos "github.com/monzork/table-tennis-backend/internal/infrastructure/storage"
 	Handlers "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
 	handler "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
@@ -63,8 +65,10 @@ func initApp() *fiber.App {
 		File: "favicon.ico",
 		URL:  "/favicon.ico",
 	}))
-	//app.Use(sessionHandler.InitializeSession())
-	//app.Use(securityHandler.InitializeCSRF())
+	app.Use(sessionHandler.InitializeSession())
+	app.Use(securityHandler.InitializeCSRF())
+
+	app.Use(SessionMiddleware)
 
 	return app
 }
@@ -105,7 +109,9 @@ func SessionMiddleware(c fiber.Ctx) error {
 		return c.Redirect().To("/login")
 	}
 
-	c.Locals("username", username)
+	c.Locals("User", fiber.Map{
+		"Username": username,
+	})
 
 	return c.Next()
 }
