@@ -5,9 +5,10 @@ import (
 	handler "github.com/monzork/table-tennis-backend/internal/transport/http/handlers"
 )
 
-func RegisterPublicRoutes(app fiber.Router, h *handler.IndexHandler, u *handler.UserHandler) {
+func RegisterPublicRoutes(app fiber.Router, api fiber.Router, h *handler.IndexHandler, u *handler.UserHandler) {
 	app.Get("/", func(c fiber.Ctx) error { return c.Redirect().To("/dashboard") })
-	app.Post("/login", u.Login)
 	app.Get("/login", h.ShowLogin)
 	app.Get("/dashboard", h.ShowDashboard)
+
+	api.Post("/login", u.Login)
 }

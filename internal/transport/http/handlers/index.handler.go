@@ -1,9 +1,6 @@
 package handler
 
 import (
-	"bytes"
-	"html/template"
-
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/session"
 )
@@ -20,26 +17,10 @@ func (h *IndexHandler) ShowLogin(c fiber.Ctx) error {
 		return c.Redirect().To("/dashboard")
 	}
 
-	var buf bytes.Buffer
-
-	err := c.App().Config().Views.Render(&buf, "partials/login", fiber.Map{
-		"Title": "Login",
-	})
-
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to render login: " + err.Error())
-	}
-
-	loginHTML := template.HTML(buf.String())
-
-	return c.Render("layouts/base", fiber.Map{
-		"Title":       "Login",
-		"MainContent": loginHTML,
-	})
+	return c.Render("pages/login", fiber.Map{"Title": "Login"}, "layouts/base")
 }
 
 func (h *IndexHandler) ShowDashboard(c fiber.Ctx) error {
-
 	sess := session.FromContext(c)
 	username := sess.Get("username")
 
@@ -51,22 +32,10 @@ func (h *IndexHandler) ShowDashboard(c fiber.Ctx) error {
 		return c.Redirect().To("/login")
 	}
 
-	var dashBuf bytes.Buffer
-	err := c.App().Config().Views.Render(&dashBuf, "partials/dashboard", fiber.Map{
+	return c.Render("pages/dashboard", fiber.Map{
+		"Title": "Dashboard",
 		"User": fiber.Map{
 			"Username": username,
 		},
-		"Title": "Dashboard",
-	})
-
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).
-			SendString("Failed to render dashboard: " + err.Error())
-	}
-
-	return c.Render("layouts/base", fiber.Map{
-		"Title":       "Dashboard",
-		"User":        fiber.Map{"Username": username}, // navbar info
-		"MainContent": template.HTML(dashBuf.String()),
-	})
+	}, "layouts/base")
 }

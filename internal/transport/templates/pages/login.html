@@ -6,7 +6,7 @@
         <p class="text-red-500 mb-4 text-center">{{ .Error }}</p>
         {{ end }}
 
-        <form hx-post="/api/login" hx-target="#main-content" hx-swap="outerHTML">
+        <form hx-post="/api/login">
             <div class="mb-4">
                 <label for="username" class="block font-semibold">Username</label>
                 <input type="text" name="username" id="username" required

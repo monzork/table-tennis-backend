@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"bytes"
 	"context"
-	"html/template"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -55,35 +53,19 @@ func (h *PlayersHandler) GetAllPlayers(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	// Render the partial template with players
-	var buf bytes.Buffer
-	if err := c.App().Config().Views.Render(&buf, "partials/players-list", fiber.Map{
+	return c.Render("partials/players-list", fiber.Map{
 		"Players": playersList,
-	}); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-	}
-
-	return c.Type("html").SendString(buf.String())
+	})
 }
 
 func (h *PlayersHandler) ShowPlayersTab(c fiber.Ctx) error {
-	var formBuf bytes.Buffer
-	_ = c.App().Config().Views.Render(&formBuf, "partials/form-players", fiber.Map{})
-	formHTML := template.HTML(formBuf.String())
-
-	// Render Players tab
-	var tabBuf bytes.Buffer
-	username := 0
-	_ = c.App().Config().Views.Render(&tabBuf, "partials/players", fiber.Map{
-		"User":        fiber.Map{"Username": username},
-		"FormPlayers": formHTML,
-	})
-
-	return c.Render("layouts/base", fiber.Map{
-		"Title":       "Players",
-		"User":        fiber.Map{"Username": username},
-		"MainContent": template.HTML(tabBuf.String()),
-	})
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Redirect", "/login")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Render("partials/players", fiber.Map{
+		"Title": "Players",
+	}, "layouts/base")
 }
 
 func (h *PlayersHandler) GetFormPlayers(c fiber.Ctx) error {
