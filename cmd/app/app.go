@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/favicon"
 	"github.com/gofiber/fiber/v3/middleware/session"
+	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 	"github.com/monzork/table-tennis-backend/internal/db"
@@ -35,6 +36,7 @@ func Run() error {
 		c.Locals("CSRF", token)
 		return c.Next()
 	})
+
 	RegisterRoutes(app, dbConn)
 
 	port := getPort()
@@ -60,6 +62,12 @@ func initApp() *fiber.App {
 		Views:             engine,
 		PassLocalsToViews: true,
 	})
+
+	app.Use("/static/css", static.New("./internal/transport/templates/css", static.Config{
+		Compress:      true,
+		CacheDuration: 86400,
+		MaxAge:        86400,
+	}))
 
 	// Middlewares
 	app.Use(favicon.New(favicon.Config{
