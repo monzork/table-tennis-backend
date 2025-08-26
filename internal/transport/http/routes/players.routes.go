@@ -13,15 +13,14 @@ func RegisterPlayersRoutes(app *fiber.App, api fiber.Router, h *playersHandler.P
 func playersApiRoutes(api fiber.Router, h *playersHandler.PlayersHandler) {
 	apiPlayersGroup := api.Group("/players")
 	apiPlayersGroup.Get("/", h.GetAllPlayers)
-	apiPlayersGroup.Delete("/:id", h.DeletePlayers)
 	apiPlayersGroup.Post("/", h.RegisterPlayers)
 }
 
 func playersStaticRoutes(app *fiber.App, h *playersHandler.PlayersHandler) {
 	playersGroup := app.Group("/players")
-	playersGroup.Put("/", h.UpdatePlayers)
+	playersGroup.Delete("/:id", h.DeletePlayers)
+	playersGroup.Put("/:id", h.UpdatePlayers)
 	playersGroup.Get("/", h.ShowPlayersTab)
 	playersGroup.Get("/form", h.GetFormPlayers)
 	playersGroup.Get("/form/:id", h.GetFormPlayers)
-	playersGroup.Get("/form-toggle", h.GetFormToggle)
 }

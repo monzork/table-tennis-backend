@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
@@ -76,7 +77,21 @@ func initApp() *fiber.App {
 	}))
 	app.Use(sessionHandler.InitializeSession())
 	app.Use(securityHandler.InitializeCSRF())
+	app.Use(func(c fiber.Ctx) error {
+		start := time.Now()
+		err := c.Next()
 
+		duration := time.Since(start)
+		log.Printf("[%s] %s %s -> %d (%s)",
+			time.Now().Format(time.RFC3339),
+			c.Method(),
+			c.Path(),
+			c.Response().StatusCode(),
+			duration,
+		)
+
+		return err
+	})
 	app.Use(SessionMiddleware)
 
 	return app

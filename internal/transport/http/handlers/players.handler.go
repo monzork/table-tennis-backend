@@ -115,25 +115,34 @@ func (h *PlayersHandler) GetFormToggle(c fiber.Ctx) error {
 }
 
 func (h *PlayersHandler) UpdatePlayers(c fiber.Ctx) error {
+	playerId := c.Params("id")
+
+	if playerId == "" {
+		return fiber.ErrBadRequest
+	}
+
+	playerUUID, err := uuid.Parse(playerId)
+	if err != nil {
+		return fiber.ErrBadRequest
+	}
+
 	var bodies []struct {
-		ID        uuid.UUID `json:"id"`
-		Name      *string   `json:"name,omitempty"`
-		Sex       *string   `json:"sex,omitempty"`
-		Country   *string   `json:"country,omitempty"`
-		City      *string   `json:"city,omitempty"`
-		Birthdate *string   `json:"birthdate,omitempty"`
-		Elo       *int16    `json:"elo,omitempty"`
+		Name      *string `json:"name,omitempty"`
+		Sex       *string `json:"sex,omitempty"`
+		Country   *string `json:"country,omitempty"`
+		City      *string `json:"city,omitempty"`
+		Birthdate *string `json:"birthdate,omitempty"`
+		Elo       *int16  `json:"elo,omitempty"`
 	}
 
 	if err := c.Bind().Body(&bodies); err != nil {
 		var single struct {
-			ID        uuid.UUID `json:"id"`
-			Name      *string   `json:"name,omitempty"`
-			Sex       *string   `json:"sex,omitempty"`
-			Country   *string   `json:"country,omitempty"`
-			City      *string   `json:"city,omitempty"`
-			Birthdate *string   `json:"birthdate,omitempty"`
-			Elo       *int16    `json:"elo,omitempty"`
+			Name      *string `json:"name,omitempty"`
+			Sex       *string `json:"sex,omitempty"`
+			Country   *string `json:"country,omitempty"`
+			City      *string `json:"city,omitempty"`
+			Birthdate *string `json:"birthdate,omitempty"`
+			Elo       *int16  `json:"elo,omitempty"`
 		}
 		if err := c.Bind().Body(&single); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -165,7 +174,7 @@ func (h *PlayersHandler) UpdatePlayers(c fiber.Ctx) error {
 		}
 		updates["updated_at"] = time.Now().UTC()
 
-		updatedPlayer, err := h.service.UpdatePlayers(context.Background(), body.ID, updates)
+		updatedPlayer, err := h.service.UpdatePlayers(context.Background(), playerUUID, updates)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		}
@@ -173,7 +182,7 @@ func (h *PlayersHandler) UpdatePlayers(c fiber.Ctx) error {
 		updatedPlayers = append(updatedPlayers, updatedPlayer)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(updatedPlayers)
+	return c.Render("players-row", updatedPlayers[0])
 }
 
 func (h *PlayersHandler) DeletePlayers(c fiber.Ctx) error {
