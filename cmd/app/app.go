@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 	"github.com/monzork/table-tennis-backend/internal/db"
+	"github.com/monzork/table-tennis-backend/internal/db/backup"
 	"github.com/uptrace/bun"
 
 	playersService "github.com/monzork/table-tennis-backend/internal/domain/players"
@@ -30,6 +32,13 @@ func Run() error {
 	loadEnv()
 	dbConn := initDB()
 	defer dbConn.Close()
+
+	ctx := context.Background()
+	_, err := backup.StartBackupScheduler(ctx, dbConn)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	app := initApp()
 	app.Use(func(c fiber.Ctx) error {
@@ -102,6 +111,7 @@ func RegisterRoutes(app *fiber.App, dbConn *bun.DB) {
 	buildUserDependencies(app, api, dbConn)
 	buildPlayersDependencies(app, api, dbConn)
 	buildIndexDependecies(app, api, dbConn)
+	buildTournamentDependencies(app, api, dbConn)
 }
 
 func getPort() string {
@@ -165,4 +175,7 @@ func buildIndexDependecies(app *fiber.App, api fiber.Router, db *bun.DB) {
 	userService := userService.NewService(userRepository)
 	userHandler := Handlers.NewUserHandler(userService)
 	Routes.RegisterPublicRoutes(app, api, indexHandler, userHandler)
+}
+
+func buildTournamentDependencies(app *fiber.App, api fiber.Router, db *bun.DB) {
 }

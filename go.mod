@@ -10,6 +10,7 @@ require (
 	github.com/chasefleming/elem-go v0.31.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/go-co-op/gocron/v2 v2.16.4 // indirect
 	github.com/gofiber/fiber/v3 v3.0.0-beta.5 // indirect
 	github.com/gofiber/schema v1.6.0 // indirect
 	github.com/gofiber/storage/sqlite3/v2 v2.2.0 // indirect
@@ -20,6 +21,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -28,6 +30,7 @@ require (
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/tinylib/msgp v1.3.0 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
