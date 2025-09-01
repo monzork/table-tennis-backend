@@ -12,9 +12,10 @@
             Editar
         </button>
 
-        <!-- Eliminar con confirm -->
-        <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" hx-delete="/players/{{ .ID }}"
-            hx-target="#player-{{ .ID }}" hx-swap="delete" hx-confirm="¿Seguro que deseas eliminar este jugador?">
+        <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" @click="$dispatch('open-delete', { 
+                url: '/players/{{ .ID }}', 
+                target: '#player-{{ .ID }}' 
+            })">
             Eliminar
         </button>
     </td>

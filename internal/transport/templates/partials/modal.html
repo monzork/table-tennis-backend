@@ -1,4 +1,23 @@
 {{ define "modal" }}
-<div>
+<div id="delete-modal" x-data="{ open: false, deleteUrl: '', deleteTarget: '' }" x-show="open" x-cloak
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @open-delete.window="
+        open = true;
+        deleteUrl = $event.detail.url;
+        deleteTarget = $event.detail.target;
+        $nextTick(() => htmx.process($el));">
+
+    <div class="bg-white rounded-lg shadow-lg p-6 w-96">
+        <h2 class="text-lg font-semibold mb-4">Confirmar eliminación</h2>
+        <p class="mb-6">¿Seguro que deseas eliminar este jugador?</p>
+        <div class="flex justify-end space-x-2">
+            <button @click="open = false" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                Cancelar
+            </button>
+            <button type="button" :hx-delete="deleteUrl" :hx-target="deleteTarget" hx-swap="delete"
+                @htmx:after-request="open = false" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                Eliminar
+            </button>
+        </div>
+    </div>
 </div>
 {{ end }}
