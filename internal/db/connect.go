@@ -33,6 +33,7 @@ func Connect() *bun.DB {
 		db.Exec("PRAGMA synchronous=NORMAL;") // faster than FULL, still safe
 		db.Exec("PRAGMA cache_size=10000;")   // increase in-memory cache
 		db.Exec("PRAGMA temp_store=MEMORY;")  // store temp tables in memory
+		db.Exec("PRAGMA foreign_keys=ON;")
 	})
 	return db
 }
