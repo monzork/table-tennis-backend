@@ -111,7 +111,7 @@ func (h *PlayersHandler) GetFormPlayers(c fiber.Ctx) error {
 }
 
 func (h *PlayersHandler) GetFormToggle(c fiber.Ctx) error {
-	return c.Render("partials/form-toggle-button", nil)
+	return c.Render("form-toggle-button", nil)
 }
 
 func (h *PlayersHandler) UpdatePlayers(c fiber.Ctx) error {

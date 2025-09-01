@@ -1,6 +1,8 @@
+{{ define "form-toggle-button" }}
 <div id="form-toggle" class="text-center">
     <button class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
         hx-get="/players/form" hx-target="#form-toggle" hx-swap="outerHTML">
         Add New Player
     </button>
 </div>
+{{ end }}

@@ -19,6 +19,7 @@ func playersApiRoutes(api fiber.Router, h *playersHandler.PlayersHandler) {
 func playersStaticRoutes(app *fiber.App, h *playersHandler.PlayersHandler) {
 	playersGroup := app.Group("/players")
 	playersGroup.Delete("/:id", h.DeletePlayers)
+	playersGroup.Get("/form-toggle", h.GetFormToggle)
 	playersGroup.Put("/:id", h.UpdatePlayers)
 	playersGroup.Get("/", h.ShowPlayersTab)
 	playersGroup.Get("/form", h.GetFormPlayers)
