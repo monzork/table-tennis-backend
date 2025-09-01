@@ -1,6 +1,9 @@
 {{ define "players-row" }}
 <tr id="player-{{ .ID }}">
-    <td class="border px-4 py-2">{{ .Name }}</td>
+    <td class="border px-4 py-2">{{ .FirstName }}</td>
+    <td class="border px-4 py-2">{{ .LastName }}</td>
+    <td class="border px-4 py-2">{{ .IdentificationType }}</td>
+    <td class="border px-4 py-2">{{ .IdentificationId }}</td>
     <td class="border px-4 py-2">{{ .Sex }}</td>
     <td class="border px-4 py-2">{{ .Country }}</td>
     <td class="border px-4 py-2">{{ .City }}</td>

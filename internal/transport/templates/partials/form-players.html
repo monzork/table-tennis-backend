@@ -4,8 +4,24 @@
         hx-post="/api/players" hx-target="#players-list-container" hx-swap="beforeend" {{ end }}
         @htmx:after-request="htmx.ajax('GET','/players/form-toggle',{target:'#players-form-container'})">
         <div class="mb-4">
-            <label class="block font-semibold">Name</label>
-            <input type="text" name="name" required value="{{ .Name }}" class="w-full px-3 py-2 border rounded-lg" />
+            <label class="block font-semibold">First Name</label>
+            <input type="text" name="firstName" required value="{{ .FirstName }}" class="w-full px-3 py-2 border rounded-lg" />
+        </div>
+        <div class="mb-4">
+            <label class="block font-semibold">Last Name</label>
+            <input type="text" name="lastName" required value="{{ .LastName }}" class="w-full px-3 py-2 border rounded-lg" />
+        </div>
+        <div class="mb-4">
+            <label class="block font-semibold">Identification Type</label>
+            <select name="identificationType" required class="w-full px-3 py-2 border rounded-lg">
+                <option value="">Select...</option>
+                <option value="ID Card" {{ if eq .IdentificationType "ID Card" }}selected{{ end }}>ID Card</option>
+                <option value="Passport" {{ if eq .IdentificationType "Passport" }}selected{{ end }}>Passport</option>
+            </select>
+        </div>
+      <div class="mb-4">
+            <label class="block font-semibold">IdentificationId</label>
+            <input type="text" name="identificationId" required value="{{ .IdentificationId }}" class="w-full px-3 py-2 border rounded-lg" />
         </div>
         <div class="mb-4">
             <label class="block font-semibold">Sex</label>

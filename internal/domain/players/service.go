@@ -15,7 +15,7 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) RegisterPlayers(ctx context.Context, name, sex, country, city, birthdate string, elo *int16) (*Players, error) {
+func (s *Service) RegisterPlayers(ctx context.Context, firstName, lastName, identificationType, identificationId, sex, country, city, birthdate string, elo *int16) (*Players, error) {
 
 	if elo == nil {
 		init_elo := int16(1000)
@@ -23,15 +23,18 @@ func (s *Service) RegisterPlayers(ctx context.Context, name, sex, country, city,
 	}
 
 	p := &Players{
-		ID:         uuid.New(),
-		Name:       name,
-		Sex:        sex,
-		Country:    country,
-		City:       city,
-		Birthdate:  birthdate,
-		Elo:        elo,
-		Created_at: time.Now().UTC(),
-		Updated_at: time.Now().UTC(),
+		ID:                 uuid.New(),
+		FirstName:          firstName,
+		LastName:           lastName,
+		IdentificationType: identificationType,
+		IdentificationId:   identificationId,
+		Sex:                sex,
+		Country:            country,
+		City:               city,
+		Birthdate:          birthdate,
+		Elo:                elo,
+		Created_at:         time.Now().UTC(),
+		Updated_at:         time.Now().UTC(),
 	}
 
 	if err := s.repo.Create(ctx, p); err != nil {

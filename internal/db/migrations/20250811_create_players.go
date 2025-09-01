@@ -14,16 +14,19 @@ func init() {
 		func(ctx context.Context, db *bun.DB) error {
 			_, err := DB.Exec(`
 				CREATE TABLE IF NOT EXISTS "players" (
-				"id"			TEXT,
-				"name"			TEXT NOT NULL,
-				"sex"			TEXT NOT NULL,
-				"country"		TEXT NOT NULL,
-				"city"			TEXT NOT NULL,
-				"birthdate"		TEXT NOT NULL,
-				"elo"		 	INTEGER NOT NULL DEFAULT 1000,
-				"created_at"	TEXT DEFAULT CURRENT_TIMESTAMP,
-				"updated_at"	TEXT DEFAULT CURRENT_TIMESTAMP,
-				"deleted_at" 	TEXT DEFAULT NULL,
+				"id"									TEXT,
+				"firstName"						TEXT NOT NULL,
+				"lastName"						TEXT NOT NULL,
+				"identificationType"	TEXT NOT NULL,
+				"identificationId"		TEXT NOT NULL,
+				"sex"									TEXT NOT NULL,
+				"country"							TEXT NOT NULL,
+				"city"								TEXT NOT NULL,
+				"birthdate"						TEXT NOT NULL,
+				"elo"		 							INTEGER NOT NULL DEFAULT 1000,
+				"created_at"					TEXT DEFAULT CURRENT_TIMESTAMP,
+				"updated_at"					TEXT DEFAULT CURRENT_TIMESTAMP,
+				"deleted_at" 					TEXT DEFAULT NULL,
 				PRIMARY KEY("id")
 				);
 			`)
