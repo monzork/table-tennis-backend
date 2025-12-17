@@ -169,7 +169,6 @@ func buildPlayersDependencies(app *fiber.App, api fiber.Router, db *bun.DB) {
 }
 
 func buildIndexDependecies(app *fiber.App, api fiber.Router, db *bun.DB) {
-	// TODO: find a better way to implement this
 	indexHandler := handler.NewIndexHandler()
 	userRepository := Repos.NewSQLiteUserRepository(db)
 	userService := userService.NewService(userRepository)
