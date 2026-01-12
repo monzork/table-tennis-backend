@@ -1,0 +1,23 @@
+<section class="bg-white p-6 rounded shadow" id="leaderboard-table">
+    <h2 class="text-2xl font-bold mb-4">Leaderboard</h2>
+    <table class="min-w-full bg-white rounded shadow">
+        <thead>
+            <tr>
+                <th class="px-4 py-2">Rank</th>
+                <th class="px-4 py-2">Player</th>
+                <th class="px-4 py-2">ELO</th>
+                <th class="px-4 py-2">Country</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range $index, $player := .Players }}
+            <tr class="border-b">
+                <!-- <td class="px-4 py-2">{{ $index 1 }}</td> -->
+                <td class="px-4 py-2">{{ $player.FullName }}</td>
+                <td class="px-4 py-2">{{ $player.Elo }}</td>
+                <td class="px-4 py-2">{{ $player.Country }}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+</section>

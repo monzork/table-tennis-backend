@@ -1,0 +1,26 @@
+{{ define "dashboard" }}
+<div class="grid grid-cols-1 gap-8">
+
+    <!-- Players Section -->
+    <section class="bg-white p-6 rounded shadow">
+        <h2 class="text-2xl font-bold mb-4">Players</h2>
+        {{ template "form-players" . }}
+        {{ template "players-table" . }}
+    </section>
+
+    <!-- Tournaments Section -->
+    <section class="bg-white p-6 rounded shadow">
+        <h2 class="text-2xl font-bold mb-4">Tournaments</h2>
+        {{ template "form-tournaments" . }}
+        {{ template "tournaments-table" . }}
+    </section>
+
+    <!-- Matches Section -->
+    <section class="bg-white p-6 rounded shadow">
+        <h2 class="text-2xl font-bold mb-4">Matches</h2>
+        {{ template "form-matches" . }}
+        {{ template "matches-table" . }}
+    </section>
+
+</div>
+{{ end }}

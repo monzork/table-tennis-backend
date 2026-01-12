@@ -1,0 +1,11 @@
+{{ define "form-players" }}
+<form hx-post="/players" hx-target="#players-table" hx-swap="afterbegin" class="mb-4 p-4 bg-white rounded shadow">
+    <div class="grid grid-cols-2 gap-4">
+        <input type="text" name="firstName" placeholder="First Name" class="p-2 border rounded" required>
+        <input type="text" name="lastName" placeholder="Last Name" class="p-2 border rounded" required>
+        <input type="date" name="birthdate" placeholder="Birthdate" class="p-2 border rounded" required>
+        <input type="text" name="country" placeholder="Country" class="p-2 border rounded" required>
+    </div>
+    <button type="submit" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add Player</button>
+</form>
+{{ end }}

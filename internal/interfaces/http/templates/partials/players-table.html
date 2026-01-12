@@ -1,0 +1,16 @@
+{{ define "players-table"}}
+<table class="min-w-full bg-white rounded shadow" id="players-table">
+    <thead>
+        <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">ELO</th>
+            <th class="px-4 py-2">Country</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{ range .Players }}
+        {{ template "player-row" . }}
+        {{ end }}
+    </tbody>
+</table>
+{{ end }}

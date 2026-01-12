@@ -1,0 +1,19 @@
+{{ define "matches-table" }}
+<table class="min-w-full bg-white rounded shadow" id="matches-table">
+    <thead>
+        <tr>
+            <th class="px-4 py-2">Tournament</th>
+            <th class="px-4 py-2">Player A</th>
+            <th class="px-4 py-2">Player B</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Winner</th>
+            <th class="px-4 py-2">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{ range .Matches }}
+        {{ template "match-row" . }}
+        {{ end }}
+    </tbody>
+</table>
+{{ end }}

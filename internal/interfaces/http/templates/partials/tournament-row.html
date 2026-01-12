@@ -1,0 +1,7 @@
+{{ define "tournament-row"}}
+<tr id="tournament-{{ .ID }}" class="border-b">
+    <td class="px-4 py-2">{{ .Name }}</td>
+    <td class="px-4 py-2">{{ .StartDate.Format "2006-01-02" }}</td>
+    <td class="px-4 py-2">{{ .EndDate.Format "2006-01-02" }}</td>
+</tr>
+{{ end }}

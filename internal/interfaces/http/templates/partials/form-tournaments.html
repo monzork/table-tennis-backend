@@ -1,0 +1,12 @@
+{{ define "form-tournaments" }}
+<form hx-post="/tournaments" hx-target="#tournaments-table" hx-swap="afterbegin"
+    class="mb-4 p-4 bg-white rounded shadow">
+    <div class="grid grid-cols-3 gap-4">
+        <input type="text" name="name" placeholder="Tournament Name" class="p-2 border rounded" required>
+        <input type="date" name="startDate" class="p-2 border rounded" required>
+        <input type="date" name="endDate" class="p-2 border rounded" required>
+    </div>
+    <button type="submit" class="mt-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Add
+        Tournament</button>
+</form>
+{{ end }}

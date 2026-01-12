@@ -1,0 +1,16 @@
+{{ define "tournaments-table"}}
+<table class="min-w-full bg-white rounded shadow" id="tournaments-table">
+    <thead>
+        <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Start</th>
+            <th class="px-4 py-2">End</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{ range .Tournaments }}
+        {{ template "tournament-row" . }}
+        {{ end }}
+    </tbody>
+</table>
+{{ end }}

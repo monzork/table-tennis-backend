@@ -1,0 +1,38 @@
+{{ define "match-row" }}
+<tr id="match-{{ .ID }}" class="border-b">
+    <td class="px-4 py-2">{{ .TournamentID }}</td>
+
+    {{ $playerA := index .Players 0 }}
+    {{ $playerB := index .Players 1 }}
+
+    <td class="px-4 py-2">
+        {{ $playerA.FirstName }} {{ $playerA.LastName }}
+        vs
+        {{ $playerB.FirstName }} {{ $playerB.LastName }}
+    </td>
+
+    <td class="px-4 py-2">{{ .Status }}</td>
+
+    <td class="px-4 py-2">
+        {{ if .Winner }}
+        {{ .Winner.FirstName }} {{ .Winner.LastName }}
+        {{ end }}
+    </td>
+
+    <td class="px-4 py-2">
+        {{ if eq .Status "in_progress" }}
+        <button hx-post="/matches/finish" hx-vals='{"matchId":"{{ .ID }}","winnerId":"{{ $playerA.ID }}"}'
+            hx-target="#match-{{ .ID }}" hx-swap="outerHTML" hx-get="/leaderboard" hx-target="#leaderboard-table"
+            class="bg-green-500 text-white px-2 py-1 rounded">
+            Finish as Player A
+        </button>
+
+        <button hx-post="/matches/finish" hx-vals='{"matchId":"{{ .ID }}","winnerId":"{{ $playerB.ID }}"}'
+            hx-target="#match-{{ .ID }}" hx-swap="outerHTML" hx-get="/leaderboard" hx-target="#leaderboard-table"
+            class="bg-green-500 text-white px-2 py-1 rounded">
+            Finish as Player B
+        </button>
+        {{ end }}
+    </td>
+</tr>
+{{ end }}
