@@ -1,0 +1,9 @@
+{{define "admin/partials/player-row"}}
+<tr class="hover:bg-white/5 transition-colors group">
+    <td class="p-4 font-semibold">{{.FirstName}} <span class="uppercase font-bold">{{.LastName}}</span></td>
+    <td class="p-4 text-gray-400">{{.Country}}</td>
+    <td class="p-4 text-gray-400">{{.Gender}}</td>
+    <td class="p-4 text-wtt-gold font-bold">{{.SinglesElo}}</td>
+    <td class="p-4 text-wtt-gold font-bold">{{.DoublesElo}}</td>
+</tr>
+{{end}}

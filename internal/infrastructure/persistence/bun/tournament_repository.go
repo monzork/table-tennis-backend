@@ -20,6 +20,7 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 	model := &TournamentModel{
 		ID:        t.ID,
 		Name:      t.Name,
+		Type:      t.Type,
 		StartDate: t.StartDate,
 		EndDate:   t.EndDate,
 	}
@@ -37,6 +38,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 		tournaments[i] = &tournament.Tournament{
 			ID:        m.ID,
 			Name:      m.Name,
+			Type:      m.Type,
 			StartDate: m.StartDate,
 			EndDate:   m.EndDate,
 			Rules:     []tournament.Rule{},
@@ -55,6 +57,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 	return &tournament.Tournament{
 		ID:        model.ID,
 		Name:      model.Name,
+		Type:      model.Type,
 		StartDate: model.StartDate,
 		EndDate:   model.EndDate,
 		Rules:     []tournament.Rule{},

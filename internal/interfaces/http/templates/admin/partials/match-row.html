@@ -1,0 +1,44 @@
+{{define "admin/partials/match-row"}}
+<tr class="hover:bg-white/5 transition-colors group" id="match-row-{{.ID}}">
+    <td class="p-4 text-xs font-mono text-gray-500" title="{{.TournamentID}}">{{.TournamentID}}</td>
+    <td class="p-4 text-gray-300 capitalize">{{.MatchType}}</td>
+    
+    <td class="p-4">
+        {{range $index, $p := .TeamA}}
+            <div class="{{if eq $.WinnerTeam "A"}}text-wtt-gold font-bold{{else}}text-gray-300{{end}}">
+                {{$p.FirstName}} <span class="uppercase font-bold">{{$p.LastName}}</span>
+            </div>
+        {{end}}
+    </td>
+    
+    <td class="p-4">
+        {{range $index, $p := .TeamB}}
+            <div class="{{if eq $.WinnerTeam "B"}}text-wtt-gold font-bold{{else}}text-gray-300{{end}}">
+                {{$p.FirstName}} <span class="uppercase font-bold">{{$p.LastName}}</span>
+            </div>
+        {{end}}
+    </td>
+
+    <td class="p-4">
+        {{if eq .Status "finished"}}
+            <span class="px-2 py-1 rounded bg-green-900/50 text-green-400 text-xs font-bold uppercase tracking-wider border border-green-500/30">Finished</span>
+        {{else}}
+            <span class="px-2 py-1 rounded bg-yellow-900/50 text-yellow-400 text-xs font-bold uppercase tracking-wider border border-yellow-500/30">In Progress</span>
+        {{end}}
+    </td>
+
+    <td class="p-4">
+        {{if eq .Status "in_progress"}}
+            <form hx-post="/matches/finish" hx-swap="outerHTML" hx-target="#match-row-{{.ID}}" class="flex gap-2">
+                <input type="hidden" name="matchId" value="{{.ID}}">
+                <select name="winnerTeam" class="bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white uppercase" required>
+                    <option value="" disabled selected>Winner</option>
+                    <option value="A">Team A</option>
+                    <option value="B">Team B</option>
+                </select>
+                <button type="submit" class="bg-wtt-red hover:bg-red-700 text-white font-bold py-1 px-3 text-xs rounded transition-all uppercase tracking-wider">Finish</button>
+            </form>
+        {{end}}
+    </td>
+</tr>
+{{end}}

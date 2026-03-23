@@ -19,9 +19,11 @@ type Rule struct {
 type Match struct {
 	ID           uuid.UUID
 	TournamentID uuid.UUID
-	Players      []*player.Player
+	MatchType    string // 'singles' or 'doubles'
+	TeamA        []*player.Player
+	TeamB        []*player.Player
 	Status       string // scheduled, in_progress, finished
-	Winner       *player.Player
+	WinnerTeam   string // 'A', 'B'
 	Sets         []MatchSet
 }
 
@@ -34,19 +36,24 @@ type MatchSet struct {
 type Tournament struct {
 	ID        uuid.UUID
 	Name      string
+	Type      string // "singles", "doubles", "teams"
 	StartDate time.Time
 	EndDate   time.Time
 	Rules     []Rule
 	Matches   []Match
 }
 
-func NewTournament(name string, start, end time.Time, rules []Rule) (*Tournament, error) {
+func NewTournament(name string, tournamentType string, start, end time.Time, rules []Rule) (*Tournament, error) {
 	if end.Before(start) {
 		return nil, ErrInvalidDates
+	}
+	if tournamentType == "" {
+		tournamentType = "singles"
 	}
 	return &Tournament{
 		ID:        uuid.New(),
 		Name:      name,
+		Type:      tournamentType,
 		StartDate: start,
 		EndDate:   end,
 		Rules:     rules,

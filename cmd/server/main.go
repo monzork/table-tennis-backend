@@ -1,57 +1,99 @@
 package main
 
-import (
-	"log"
-	"table-tennis-backend/internal/application/leaderboard"
-	"table-tennis-backend/internal/application/match"
-	"table-tennis-backend/internal/application/player"
-	"table-tennis-backend/internal/application/tournament"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
-	"table-tennis-backend/internal/interfaces/http/handler"
+	import (
+		"context"
+		"log"
+		"os"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/template/html/v2"
-)
+		adminDomain "table-tennis-backend/internal/domain/admin"
+		"table-tennis-backend/internal/application/leaderboard"
+		"table-tennis-backend/internal/application/match"
+		"table-tennis-backend/internal/application/player"
+		"table-tennis-backend/internal/application/tournament"
+		"table-tennis-backend/internal/infrastructure/persistence/bun"
+		"table-tennis-backend/internal/interfaces/http/handler"
+		"table-tennis-backend/internal/interfaces/http/middleware"
 
-func main() {
-	bun.Connect()
+		"github.com/gofiber/fiber/v2"
+		"github.com/gofiber/fiber/v2/middleware/session"
+		"github.com/gofiber/template/html/v2"
+	)
 
-	playerRepo := bun.NewPlayerRepository(bun.DB)
-	playerUC := player.NewRegisterPlayerUseCase(playerRepo)
-	playerHandler := handler.NewPlayerHandler(playerUC)
+	func main() {
+		bun.Connect()
 
-	tournamentRepo := bun.NewTournamentRepository(bun.DB)
-	createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo)
-	tournamentHandler := handler.NewTournamentHandler(createTournamentUC)
+		playerRepo := bun.NewPlayerRepository(bun.DB)
+		playerUC := player.NewRegisterPlayerUseCase(playerRepo)
+		playerHandler := handler.NewPlayerHandler(playerUC)
 
-	matchRepo := bun.NewMatchRepository(bun.DB)
-	createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
-	finishMatchUC := match.NewFinishMatchUseCase()
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC)
+		tournamentRepo := bun.NewTournamentRepository(bun.DB)
+		createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo)
+		tournamentHandler := handler.NewTournamentHandler(createTournamentUC)
 
-	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(*playerRepo)
-	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC)
+		matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
+		GetMatchesUC := match.NewGetMatchesUseCase(*bun.DB, *playerRepo)
 
-	engine := html.New("./internal/interfaces/http/templates", ".html")
+		createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
+		finishMatchUC := match.NewFinishMatchUseCase()
+		matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC)
 
-	app := fiber.New(fiber.Config{
-		Views: engine,
-	})
+		leaderboardUC := leaderboard.NewGetLeaderboardUseCase(*playerRepo)
+		leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC)
+		
+		adminRepo := bun.NewAdminRepository(bun.DB)
+		
+		// Seed default admin if DB empty
+		count, _ := adminRepo.Count(context.Background())
+		if count == 0 {
+			user := os.Getenv("ADMIN_USERNAME")
+			pass := os.Getenv("ADMIN_PASSWORD")
+			if user == "" { user = "admin" }
+			if pass == "" { pass = "password" }
+			if a, err := adminDomain.NewAdmin(user, pass); err == nil {
+				adminRepo.Save(context.Background(), a)
+			}
+		}
 
-	app.Get("/leaderboard", leaderboardHandler.Get)
+		store := session.New()
+		authHandler := handler.NewAuthHandler(store, adminRepo)
+		authMiddleware := middleware.Protected(store)
 
-	// Dashboard
-	dashboardHandler := handler.NewDashboardHandler()
-	app.Get("/", dashboardHandler.Show)
+		engine := html.New("./internal/interfaces/http/templates", ".html")
+		app := fiber.New(fiber.Config{
+			Views: engine,
+		})
 
-	// Players
-	app.Post("/players", playerHandler.Register)
+		adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC)
 
-	// Tournaments
-	app.Post("/tournaments", tournamentHandler.Create)
+		app.Get("/rankings/singles", leaderboardHandler.GetSingles)
+		app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)
 
-	// Matches
-	app.Post("/matches/create", matchHandler.Create)
-	app.Post("/matches/finish", matchHandler.Finish)
-	log.Fatal(app.Listen(":8080"))
-}
+
+		// Redirect Root to Public Rankings
+		app.Get("/", func(c *fiber.Ctx) error {
+			return c.Redirect("/rankings/singles")
+		})
+
+		// Auth endpoints
+		app.Get("/admin/login", authHandler.ShowLogin)
+		app.Post("/admin/login", authHandler.Login)
+		app.Post("/admin/logout", authHandler.Logout)
+
+		// Admin functionality protected by session auth
+		admin := app.Group("/admin")
+		admin.Use(authMiddleware)
+		admin.Get("/", adminHandler.Dashboard)
+		admin.Get("/players", adminHandler.Players)
+		admin.Get("/tournaments", adminHandler.Tournaments)
+		admin.Get("/matches", adminHandler.Matches)
+
+		// Existing Form Post Endpoints mapped internally, protected
+		api := app.Group("/")
+		api.Use(authMiddleware)
+		api.Post("/players", playerHandler.Register)
+		api.Post("/tournaments", tournamentHandler.Create)
+		api.Post("/matches/create", matchHandler.Create)
+		api.Post("/matches/finish", matchHandler.Finish)
+
+		log.Fatal(app.Listen(":8080"))
+	}

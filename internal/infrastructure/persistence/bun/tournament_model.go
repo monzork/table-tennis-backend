@@ -12,6 +12,7 @@ type TournamentModel struct {
 
 	ID        uuid.UUID  `bun:"id,pk,type:uuid"`
 	Name      string     `bun:"name,notnull"`
+	Type      string     `bun:"type,notnull,default:'singles'"`
 	StartDate time.Time  `bun:"start_date,notnull"`
 	EndDate   time.Time  `bun:"end_date,notnull"`
 	CreatedAt time.Time  `bun:"created_at,notnull,default:current_timestamp"`

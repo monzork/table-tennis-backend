@@ -14,14 +14,26 @@ func NewLeaderboardHandler(uc *leaderboard.GetLeaderboardUseCase) *LeaderboardHa
 	return &LeaderboardHandler{getUC: uc}
 }
 
-// Returns leaderboard partial (for HTMX)
-func (h *LeaderboardHandler) Get(c *fiber.Ctx) error {
-	players, err := h.getUC.Execute(c.Context())
+func (h *LeaderboardHandler) GetSingles(c *fiber.Ctx) error {
+	players, err := h.getUC.Execute(c.Context(), "singles")
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	return c.Render("partials/leaderboard.html", fiber.Map{
+	return c.Render("rankings", fiber.Map{
 		"Players": players,
-	})
+		"Type":    "Singles",
+	}, "layouts/public")
+}
+
+func (h *LeaderboardHandler) GetDoubles(c *fiber.Ctx) error {
+	players, err := h.getUC.Execute(c.Context(), "doubles")
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.Render("rankings", fiber.Map{
+		"Players": players,
+		"Type":    "Doubles",
+	}, "layouts/public")
 }

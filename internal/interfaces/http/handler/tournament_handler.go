@@ -17,18 +17,19 @@ func NewTournamentHandler(createUC *tournament.CreateTournamentUseCase) *Tournam
 
 func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	var body struct {
-		Name      string `json:"name"`
-		StartDate string `json:"startDate"`
-		EndDate   string `json:"endDate"`
+		Name      string `json:"name" form:"name"`
+		Type      string `json:"type" form:"type"`
+		StartDate string `json:"startDate" form:"startDate"`
+		EndDate   string `json:"endDate" form:"endDate"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	t, err := h.createUC.Execute(context.Background(), body.Name, body.StartDate, body.EndDate)
+	t, err := h.createUC.Execute(context.Background(), body.Name, body.Type, body.StartDate, body.EndDate)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	return c.Render("partials/tournament-row", t)
+	return c.Render("tournament-row", t)
 }

@@ -15,7 +15,7 @@ func NewCreateTournamentUseCase(repo *bun.TournamentRepository) *CreateTournamen
 	return &CreateTournamentUseCase{repo: repo}
 }
 
-func (uc *CreateTournamentUseCase) Execute(ctx context.Context, name string, startStr, endStr string) (*tournamentDomain.Tournament, error) {
+func (uc *CreateTournamentUseCase) Execute(ctx context.Context, name string, tournamentType string, startStr, endStr string) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, name string, sta
 		return nil, err
 	}
 
-	t, err := tournamentDomain.NewTournament(name, start, end, []tournamentDomain.Rule{})
+	t, err := tournamentDomain.NewTournament(name, tournamentType, start, end, []tournamentDomain.Rule{})
 	if err != nil {
 		return nil, err
 	}

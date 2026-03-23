@@ -32,27 +32,41 @@ func NewCreateMatchUseCase(
 	}
 }
 
-func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID, playerAID, playerBID uuid.UUID) (*tournament.Match, error) {
+func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID uuid.UUID, matchType string, teamAPlayerIDs, teamBPlayerIDs []uuid.UUID) (*tournament.Match, error) {
 	t, err := uc.tournamentRepo.GetByID(ctx, tournamentID)
 	if err != nil {
 		return nil, errors.New("tournament not found")
 	}
 
-	pA, ok := uc.playerRepo.GetById(ctx, playerAID)
-	if ok != nil {
-		return nil, errors.New("player A not found")
+	var teamA []*player.Player
+	for _, id := range teamAPlayerIDs {
+		p, err := uc.playerRepo.GetById(ctx, id)
+		if err != nil {
+			return nil, errors.New("team A player not found")
+		}
+		teamA = append(teamA, p)
 	}
 
-	pB, ok := uc.playerRepo.GetById(ctx, playerBID)
-	if ok != nil {
-		return nil, errors.New("player B not found")
+	var teamB []*player.Player
+	for _, id := range teamBPlayerIDs {
+		p, err := uc.playerRepo.GetById(ctx, id)
+		if err != nil {
+			return nil, errors.New("team B player not found")
+		}
+		teamB = append(teamB, p)
+	}
+
+	if matchType == "" {
+		matchType = "singles"
 	}
 
 	m := &tournament.Match{
 		ID:           uuid.New(),
-		Players:      []*player.Player{pA, pB},
-		Status:       "in_progress",
 		TournamentID: tournamentID,
+		MatchType:    matchType,
+		TeamA:        teamA,
+		TeamB:        teamB,
+		Status:       "in_progress",
 		Sets:         []tournament.MatchSet{},
 	}
 

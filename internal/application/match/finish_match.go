@@ -1,11 +1,9 @@
 package match
 
 import (
+	"errors"
 	match "table-tennis-backend/internal/domain/match"
-	"table-tennis-backend/internal/domain/player"
 	tournament "table-tennis-backend/internal/domain/tournament"
-
-	"github.com/google/uuid"
 )
 
 type FinishMatchUseCase struct{}
@@ -14,24 +12,15 @@ func NewFinishMatchUseCase() *FinishMatchUseCase {
 	return &FinishMatchUseCase{}
 }
 
-func (uc *FinishMatchUseCase) Execute(m *tournament.Match, winnerID uuid.UUID) error {
-	for _, p := range m.Players {
-		if p.ID == winnerID {
-			m.Winner = p
-			break
-		}
+func (uc *FinishMatchUseCase) Execute(m *tournament.Match, winnerTeam string) error {
+	if winnerTeam != "A" && winnerTeam != "B" {
+		return errors.New("invalid winner team")
 	}
 
-	if m.Winner == nil {
-		return player.ErrInvalidName
-	}
+	m.WinnerTeam = winnerTeam
 
-	// Update ELO
-	if len(m.Players) == 2 {
-		newElo1, newElo2 := match.CalculateElo(m.Players[0], m.Players[1], m.Winner)
-		m.Players[0].UpdateElo(newElo1)
-		m.Players[1].UpdateElo(newElo2)
-	}
+	// Calculate and directly apply Elo
+	match.CalculateAndApplyElo(m.MatchType, m.TeamA, m.TeamB, m.WinnerTeam)
 
 	m.Status = "finished"
 	return nil

@@ -10,33 +10,45 @@ import (
 var ErrInvalidName = errors.New("first and last name required")
 
 type Player struct {
-	ID        uuid.UUID
-	FirstName string
-	LastName  string
-	Birthdate time.Time
-	Elo       int16
-	Country   string
+	ID         uuid.UUID
+	FirstName  string
+	LastName   string
+	Birthdate  time.Time
+	Gender     string
+	SinglesElo int16
+	DoublesElo int16
+	Country    string
 }
 
-func NewPlayer(firstName, lastName string, birthdate time.Time, country string) (*Player, error) {
+func NewPlayer(firstName, lastName string, birthdate time.Time, gender, country string) (*Player, error) {
 	if firstName == "" || lastName == "" {
 		return nil, ErrInvalidName
 	}
+	if gender == "" {
+		gender = "M"
+	}
 	return &Player{
-		ID:        uuid.New(),
-		FirstName: firstName,
-		LastName:  lastName,
-		Birthdate: birthdate,
-		Elo:       1000,
-		Country:   country,
+		ID:         uuid.New(),
+		FirstName:  firstName,
+		LastName:   lastName,
+		Birthdate:  birthdate,
+		Gender:     gender,
+		SinglesElo: 1000,
+		DoublesElo: 1000,
+		Country:    country,
 	}, nil
 }
 
-func (p *Player) UpdateElo(newElo int16) {
+func (p *Player) UpdateSinglesElo(newElo int16) {
 	if newElo >= 0 {
-		p.Elo = newElo
+		p.SinglesElo = newElo
 	}
+}
 
+func (p *Player) UpdateDoublesElo(newElo int16) {
+	if newElo >= 0 {
+		p.DoublesElo = newElo
+	}
 }
 
 func (p *Player) FullName() string {

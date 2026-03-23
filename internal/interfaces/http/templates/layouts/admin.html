@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WTT Admin Portal</title>
+    <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        wtt: {
+                            red: '#E60000',
+                            dark: '#0e1111',
+                            panel: '#1a1d1d',
+                            gold: '#d4af37'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0e1111; color: #fff; }
+        .glass { background: rgba(26, 29, 29, 0.75); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <nav class="glass border-b border-white/10 sticky top-0 z-50">
+        <div class="container mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-wtt-red rounded flex items-center justify-center font-bold text-white tracking-tighter">WTT</div>
+                <span class="text-xl font-extrabold uppercase tracking-widest text-white/90">Admin</span>
+            </div>
+            <div class="flex gap-6 font-semibold text-sm tracking-wider uppercase text-gray-400">
+                <a href="/admin" class="hover:text-wtt-red transition-colors">Dashboard</a>
+                <a href="/admin/players" class="hover:text-wtt-red transition-colors">Players</a>
+                <a href="/admin/tournaments" class="hover:text-wtt-red transition-colors">Tournaments</a>
+                <a href="/admin/matches" class="hover:text-wtt-red transition-colors">Matches</a>
+                <span class="w-px h-6 bg-white/20 mx-2"></span>
+                <a href="/rankings/singles" class="hover:text-wtt-gold transition-colors text-wtt-gold/80" target="_blank">Public Rankings</a>
+                <form method="POST" action="/admin/logout" class="ml-2">
+                    <button type="submit" class="hover:text-white transition-colors uppercase tracking-wider font-semibold text-gray-400 text-sm">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+    <main class="flex-grow container mx-auto px-6 py-10">
+        {{embed}}
+    </main>
+</body>
+</html>

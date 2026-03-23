@@ -1,0 +1,47 @@
+<div class="space-y-8 animate-fade-in text-white/90">
+    <header class="flex justify-between items-center">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tight uppercase">Tournaments <span class="text-wtt-red">.</span></h1>
+            <p class="text-gray-400 mt-1">Manage Series Events</p>
+        </div>
+        <button onclick="document.getElementById('add-tournament-modal').classList.remove('hidden')" class="bg-wtt-red hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Tournament</button>
+    </header>
+
+    <div class="glass rounded-2xl overflow-hidden border border-white/10">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-black/40 border-b border-white/10">
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Name</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Type</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Start Date</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">End Date</th>
+                </tr>
+            </thead>
+            <tbody id="tournament-list" class="divide-y divide-white/10">
+                <!-- Data populated dynamically or via template range if passed -->
+                 <tr><td colspan="4" class="p-4 text-center text-gray-500">No tournaments yet. Click Add to create one.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div id="add-tournament-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]">
+    <div class="bg-wtt-panel border border-white/10 p-8 rounded-2xl max-w-md w-full relative">
+        <button onclick="document.getElementById('add-tournament-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
+        <h2 class="text-2xl font-bold uppercase mb-6 tracking-wide">New Event</h2>
+        <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" class="space-y-4" onsubmit="setTimeout(() => document.getElementById('add-tournament-modal').classList.add('hidden'), 50)">
+            <input type="text" name="name" placeholder="Tournament Name" required class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors">
+            <select name="type" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors appearance-none" required>
+                <option value="singles">Singles</option>
+                <option value="doubles">Doubles</option>
+                <option value="teams">Teams</option>
+            </select>
+            <div class="flex gap-4">
+                <input type="date" name="startDate" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors [color-scheme:dark]" title="Start Date">
+                <input type="date" name="endDate" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors [color-scheme:dark]" title="End Date">
+            </div>
+            <button type="submit" class="w-full bg-wtt-red hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all uppercase tracking-wider mt-4">Create Event</button>
+        </form>
+    </div>
+</div>

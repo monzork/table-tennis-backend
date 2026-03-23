@@ -14,7 +14,15 @@ func NewGetLeaderboardUseCase(repo bun.PlayerRepository) *GetLeaderboardUseCase 
 	return &GetLeaderboardUseCase{playerRepo: repo}
 }
 
-// Returns players ordered by ELO descending
-func (uc *GetLeaderboardUseCase) Execute(ctx context.Context) ([]*player.Player, error) {
-	return uc.playerRepo.GetAll(ctx)
+// Returns players ordered by Elo descending based on type
+func (uc *GetLeaderboardUseCase) Execute(ctx context.Context, rankingType string) ([]*player.Player, error) {
+	if rankingType == "doubles" {
+		return uc.playerRepo.GetAllDoubles(ctx)
+	}
+	return uc.playerRepo.GetAllSingles(ctx)
+}
+
+// For backward compatibility with Admin list
+func (uc *GetLeaderboardUseCase) ExecuteSingles(ctx context.Context) ([]*player.Player, error) {
+	return uc.playerRepo.GetAllSingles(ctx)
 }
