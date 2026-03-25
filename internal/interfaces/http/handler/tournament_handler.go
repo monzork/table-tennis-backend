@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/tournament"
 
@@ -125,9 +126,32 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		}
 	}
 
+	// Parse per-stage rule overrides (sent as stage_rule[group][best_of]=5 etc.)
+	stages := []string{"group", "r32", "r16", "quarterfinal", "semifinal", "final"}
+	var stageRules []tournament.StageRuleOverride
+	for _, stage := range stages {
+		boStr := string(c.Request().PostArgs().Peek("stage_rule[" + stage + "][best_of]"))
+		ptStr := string(c.Request().PostArgs().Peek("stage_rule[" + stage + "][points_to_win]"))
+		pmStr := string(c.Request().PostArgs().Peek("stage_rule[" + stage + "][points_margin]"))
+		if boStr != "" {
+			bo := 5
+			pt := 11
+			pm := 2
+			fmt.Sscanf(boStr, "%d", &bo)
+			fmt.Sscanf(ptStr, "%d", &pt)
+			fmt.Sscanf(pmStr, "%d", &pm)
+			stageRules = append(stageRules, tournament.StageRuleOverride{
+				Stage:        stage,
+				BestOf:       bo,
+				PointsToWin:  pt,
+				PointsMargin: pm,
+			})
+		}
+	}
+
 	t, err := h.updateUC.Execute(
 		c.Context(), id, body.Name, body.Type, body.Format, body.StartDate, body.EndDate,
-		participantIDs, newPlayers,
+		participantIDs, newPlayers, stageRules,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())

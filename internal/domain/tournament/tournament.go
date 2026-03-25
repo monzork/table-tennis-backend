@@ -18,6 +18,30 @@ type Rule struct {
 	Description string
 }
 
+// StageRule defines how many sets and points are played at a given tournament stage.
+type StageRule struct {
+	ID           uuid.UUID
+	TournamentID uuid.UUID
+	Stage        string // "group","r32","r16","quarterfinal","semifinal","final"
+	BestOf       int    // e.g. 5 or 7
+	PointsToWin  int    // e.g. 11
+	PointsMargin int    // must win by this many (e.g. 2)
+}
+
+// DefaultStageRules returns WTT-standard rules for all 6 stages.
+func DefaultStageRules(tournamentID uuid.UUID) []StageRule {
+	short := []string{"group", "r32", "r16"}
+	long := []string{"quarterfinal", "semifinal", "final"}
+	rules := make([]StageRule, 0, 6)
+	for _, s := range short {
+		rules = append(rules, StageRule{ID: uuid.New(), TournamentID: tournamentID, Stage: s, BestOf: 5, PointsToWin: 11, PointsMargin: 2})
+	}
+	for _, s := range long {
+		rules = append(rules, StageRule{ID: uuid.New(), TournamentID: tournamentID, Stage: s, BestOf: 7, PointsToWin: 11, PointsMargin: 2})
+	}
+	return rules
+}
+
 type Match struct {
 	ID           uuid.UUID
 	TournamentID uuid.UUID
@@ -47,11 +71,12 @@ type Tournament struct {
 	ID           uuid.UUID
 	Name         string
 	Type         string // "singles", "doubles", "teams"
-	Format       string // "elimination", "groups_elimination"
+	Format       string // "elimination", "groups_elimination", "round_robin"
 	Participants []*player.Player
 	StartDate    time.Time
 	EndDate      time.Time
 	Rules        []Rule
+	StageRules   []StageRule
 	Matches      []Match
 	Groups       []Group
 }
@@ -78,6 +103,7 @@ func NewTournament(name string, tournamentType string, format string, start, end
 		Matches:      []Match{},
 		Groups:       []Group{},
 	}
+	t.StageRules = DefaultStageRules(t.ID)
 
 	if format == "groups_elimination" || format == "round_robin" {
 		if err := t.AutoAssignGroups(); err != nil {

@@ -74,6 +74,11 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 		}
 	}
 
+	// Save default stage rules
+	if err := saveStageRules(ctx, tx, t.StageRules); err != nil {
+		return err
+	}
+
 	return tx.Commit()
 }
 
@@ -164,6 +169,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		Participants: participantPlayers,
 		Groups:       groups,
 		Rules:        []tournament.Rule{},
+		StageRules:   loadStageRules(ctx, r.db, model.ID),
 		Matches:      []tournament.Match{},
 	}, nil
 }
@@ -227,6 +233,13 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+	// Replace stage rules if changed
+	if len(t.StageRules) > 0 {
+		if err := replaceStageRules(ctx, tx, t.ID, t.StageRules); err != nil {
+			return err
 		}
 	}
 

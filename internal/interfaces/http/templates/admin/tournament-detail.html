@@ -106,6 +106,22 @@
   </section>
   {{end}}
 
+  {{/* ── Match Rules ──────────────────────────────────────────── */}}
+  {{if .Tournament.StageRules}}
+  <section class="space-y-3">
+    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Match Rules</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {{range .Tournament.StageRules}}
+      <div class="glass rounded-xl border border-white/10 p-3 space-y-1 text-center">
+        <p class="text-[10px] uppercase tracking-widest text-wtt-red font-bold">{{.Stage}}</p>
+        <p class="text-lg font-extrabold text-white">Bo{{.BestOf}}</p>
+        <p class="text-[10px] text-gray-500">{{.PointsToWin}} pts · +{{.PointsMargin}}</p>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
   {{/* ── Elimination Bracket ──────────────────────────────────── */}}
   <section class="space-y-4">
     <div class="flex items-center justify-between">
@@ -191,6 +207,34 @@
             <option value="{{.ID}}">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
           {{end}}
         </select>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between cursor-pointer" onclick="document.getElementById('rules-panel').classList.toggle('hidden')">
+          <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">Match Rules</label>
+          <span class="text-[10px] text-wtt-red uppercase tracking-widest">Expand ▾</span>
+        </div>
+        <div id="rules-panel" class="hidden space-y-3">
+          {{range .Tournament.StageRules}}
+          <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+            <span class="text-xs font-bold uppercase text-wtt-red tracking-widest">{{.Stage}}</span>
+            <div class="space-y-1">
+              <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+              <select name="stage_rule[{{.Stage}}][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-wtt-red appearance-none">
+                <option value="3" {{if eq .BestOf 3}}selected{{end}}>3</option>
+                <option value="5" {{if eq .BestOf 5}}selected{{end}}>5</option>
+                <option value="7" {{if eq .BestOf 7}}selected{{end}}>7</option>
+                <option value="9" {{if eq .BestOf 9}}selected{{end}}>9</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+              <input type="number" name="stage_rule[{{.Stage}}][points_to_win]" value="{{.PointsToWin}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-wtt-red">
+            </div>
+            <input type="hidden" name="stage_rule[{{.Stage}}][points_margin]" value="{{.PointsMargin}}">
+          </div>
+          {{end}}
+        </div>
       </div>
 
       <button type="submit" class="w-full bg-wtt-red hover:bg-red-700 text-white font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest mt-2">Save Changes</button>

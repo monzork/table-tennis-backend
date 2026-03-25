@@ -39,9 +39,18 @@ func NewUpdateTournamentUseCase(repo *bun.TournamentRepository, playerRepo *bun.
 	return &UpdateTournamentUseCase{repo: repo, playerRepo: playerRepo}
 }
 
+// StageRuleOverride carries user-submitted rule changes for a single stage.
+type StageRuleOverride struct {
+	Stage        string
+	BestOf       int
+	PointsToWin  int
+	PointsMargin int
+}
+
 func (uc *UpdateTournamentUseCase) Execute(
 	ctx context.Context, idStr, name, tournamentType, format, startStr, endStr string,
 	participantIDs []string, newPlayers []NewPlayerData,
+	stageRuleOverrides []StageRuleOverride,
 ) (*tournamentDomain.Tournament, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -87,6 +96,18 @@ func (uc *UpdateTournamentUseCase) Execute(
 		return nil, err
 	}
 	t.ID = id
+
+	// Apply any stage rule overrides submitted by the admin
+	for i := range t.StageRules {
+		for _, ov := range stageRuleOverrides {
+			if t.StageRules[i].Stage == ov.Stage {
+				t.StageRules[i].TournamentID = id
+				t.StageRules[i].BestOf = ov.BestOf
+				t.StageRules[i].PointsToWin = ov.PointsToWin
+				t.StageRules[i].PointsMargin = ov.PointsMargin
+			}
+		}
+	}
 
 	if err := uc.repo.Update(ctx, t); err != nil {
 		return nil, err
