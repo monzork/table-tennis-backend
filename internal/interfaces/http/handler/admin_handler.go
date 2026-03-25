@@ -64,21 +64,6 @@ func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 		"Tournaments": tourneys,
 	}, "layouts/admin")
 }
-
-func (h *AdminHandler) Matches(c *fiber.Ctx) error {
-	matches, err := h.matchList.GetAllViews(c.Context())
-	if err != nil {
-		return c.Status(500).SendString(err.Error())
-	}
-	// We also need to send players and tournaments to populate the dropdowns
-	players, _ := h.leaderboard.ExecuteSingles(c.Context())
-	
-	return c.Render("admin/matches", fiber.Map{
-		"Matches": matches,
-		"Players": players,
-	}, "layouts/admin")
-}
-
 func (h *AdminHandler) Divisions(c *fiber.Ctx) error {
 	divisions, err := h.divisionUC.GetAll(c.Context())
 	if err != nil {

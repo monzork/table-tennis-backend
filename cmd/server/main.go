@@ -96,7 +96,6 @@ package main
 		admin.Get("/", adminHandler.Dashboard)
 		admin.Get("/players", adminHandler.Players)
 		admin.Get("/tournaments", adminHandler.Tournaments)
-		admin.Get("/matches", adminHandler.Matches)
 		admin.Get("/divisions", adminHandler.Divisions)
 
 		// Existing Form Post Endpoints mapped internally, protected

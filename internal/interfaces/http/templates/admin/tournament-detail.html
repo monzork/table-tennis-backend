@@ -333,6 +333,15 @@
   ]
 </script>
 
+<script type="application/json" id="matches-data">
+  [
+    {{range $i, $m := .Tournament.Matches}}
+      {{if $i}},{{end}}
+      { "id": "{{$m.ID}}", "status": "{{$m.Status}}", "winner": "{{$m.WinnerTeam}}", "teamA": "{{(index $m.TeamA 0).ID}}", "teamB": "{{(index $m.TeamB 0).ID}}" }
+    {{end}}
+  ]
+</script>
+
 <style>
 .custom-scrollbar::-webkit-scrollbar { height: 8px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
@@ -343,6 +352,7 @@
 <script>
 (function() {
   const participants = JSON.parse(document.getElementById('participants-data').textContent);
+  const playedMatches = JSON.parse(document.getElementById('matches-data').textContent);
 
   function nextPow2(n) {
     let p = 1;
@@ -392,12 +402,52 @@
     while (current.length > 1) {
       const next = [];
       for (let i = 0; i < current.length; i += 2) {
-        next.push([null, null]); // TBD match
+        const matchLeft = current[i];
+        const matchRight = current[i+1];
+
+        const getWinner = (m) => {
+          const p1 = m[0], p2 = m[1];
+          const valid1 = p1 && !p1.byeslot;
+          const valid2 = p2 && !p2.byeslot;
+
+          if (!valid1 && !valid2) return null;
+          if (valid1 && !valid2) return p1;
+          if (!valid1 && valid2) return p2;
+          
+          let em = playedMatches.find(x => (x.teamA === p1.id && x.teamB === p2.id) || (x.teamA === p2.id && x.teamB === p1.id));
+          if (em && em.status === 'finished') {
+             return em.winner === 'A' ? (em.teamA === p1.id ? p1 : p2) : (em.teamB === p2.id ? p2 : p1);
+          }
+          return null;
+        };
+
+        next.push([getWinner(matchLeft), getWinner(matchRight)]);
       }
       rounds.push(next);
       current = next;
     }
-    rounds.push([[null, null]]);
+    
+    // Final champion block
+    let champion = null;
+    let finalMatch = current[0];
+    if (finalMatch && finalMatch.length === 2) {
+      let p1 = finalMatch[0], p2 = finalMatch[1];
+      const valid1 = p1 && !p1.byeslot;
+      const valid2 = p2 && !p2.byeslot;
+      
+      if (valid1 && valid2) {
+        let em = playedMatches.find(x => (x.teamA === p1.id && x.teamB === p2.id) || (x.teamA === p2.id && x.teamB === p1.id));
+        if (em && em.status === 'finished') {
+           champion = em.winner === 'A' ? (em.teamA === p1.id ? p1 : p2) : (em.teamB === p2.id ? p2 : p1);
+        }
+      } else if (valid1) {
+        champion = p1;
+      } else if (valid2) {
+        champion = p2;
+      }
+    }
+
+    rounds.push([[champion, null]]);
     return rounds;
   }
 
@@ -453,27 +503,49 @@
         matchDiv.appendChild(vs);
         matchDiv.appendChild(makeSlot(p2));
 
-        // Score button — only when both players are known
+        // Score button or winner status — only when both players are known
         if (p1 && p2) {
-          const stages = ['group','r32','r16','quarterfinal','semifinal','final'];
-          const stageName = stages[Math.min(ri, stages.length - 1)];
-          // Derive best_of from stage rules displayed on page
-          const stageRuleEl = document.querySelector(`[data-stage="${stageName}"]`);
-          const bestOf = stageRuleEl ? parseInt(stageRuleEl.dataset.bestof) : 5;
-          const tournId = document.getElementById('score-tournament-id').value;
+          let existingMatch = playedMatches.find(m => 
+            (m.teamA === p1.id && m.teamB === p2.id) || 
+            (m.teamA === p2.id && m.teamB === p1.id)
+          );
 
-          const btn = document.createElement('button');
-          btn.className = 'mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-white hover:text-gray-300 border border-white/20 hover:border-white/40 rounded-lg py-1 px-2 transition-all';
-          btn.textContent = '⚡ Score Match';
-          btn.onclick = async () => {
-            // Create match in DB
-            const body = new URLSearchParams({ tournamentId: tournId, matchType: 'singles', teamAPlayerIds: p1.id, teamBPlayerIds: p2.id });
-            const res = await fetch('/matches/create', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: body.toString() });
-            if (!res.ok) { alert('Could not create match: ' + await res.text()); return; }
-            const data = await res.json();
-            openScoreModal(data.id || data.ID, p1.name, p2.name, stageName, bestOf);
-          };
-          matchDiv.appendChild(btn);
+          if (existingMatch && existingMatch.status === 'finished') {
+             const winnerName = existingMatch.winner === 'A' ? (existingMatch.teamA === p1.id ? p1.name : p2.name) : (existingMatch.teamB === p2.id ? p2.name : p1.name);
+             const badge = document.createElement('div');
+             badge.className = 'mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-gray-400 bg-white/5 border border-white/10 rounded-lg py-1 px-2 text-center';
+             badge.textContent = 'Winner: ' + winnerName;
+             matchDiv.appendChild(badge);
+          } else {
+            const stages = ['group','r32','r16','quarterfinal','semifinal','final'];
+            const stageName = stages[Math.min(ri, stages.length - 1)];
+            // Derive best_of from stage rules displayed on page
+            const stageRuleEl = document.querySelector(`[data-stage="${stageName}"]`);
+            const bestOf = stageRuleEl ? parseInt(stageRuleEl.dataset.bestof) : 5;
+            const tournId = document.getElementById('score-tournament-id').value;
+
+            const btn = document.createElement('button');
+            if (existingMatch && existingMatch.status === 'in_progress') {
+              btn.className = 'mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 rounded-lg py-1 px-2 transition-all';
+              btn.textContent = '✏️ Edit Score';
+            } else {
+              btn.className = 'mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-white hover:text-gray-300 border border-white/20 hover:border-white/40 rounded-lg py-1 px-2 transition-all';
+              btn.textContent = '⚡ Score Match';
+            }
+            btn.onclick = async () => {
+              let mId = existingMatch ? existingMatch.id : null;
+              if (!mId) {
+                // Create match in DB
+                const body = new URLSearchParams({ tournamentId: tournId, matchType: 'singles', teamAPlayerIds: p1.id, teamBPlayerIds: p2.id });
+                const res = await fetch('/matches/create', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: body.toString() });
+                if (!res.ok) { alert('Could not create match: ' + await res.text()); return; }
+                const data = await res.json();
+                mId = data.id || data.ID;
+              }
+              openScoreModal(mId, p1.name, p2.name, stageName, bestOf);
+            };
+            matchDiv.appendChild(btn);
+          }
         }
 
         matchesWrap.appendChild(matchDiv);

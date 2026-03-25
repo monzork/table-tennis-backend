@@ -28,7 +28,10 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 		Country:    p.Country,
 	}
 
-	_, err := r.db.NewInsert().Model(model).Exec(ctx)
+	_, err := r.db.NewInsert().Model(model).
+		On("CONFLICT (id) DO UPDATE").
+		Set("first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country").
+		Exec(ctx)
 
 	return err
 }

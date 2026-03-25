@@ -2,6 +2,7 @@ package bun
 
 import (
 	"context"
+	"database/sql"
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
 
@@ -159,6 +160,26 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		})
 	}
 
+	var matchModels []MatchModel
+	if err := r.db.NewSelect().Model(&matchModels).Where("tournament_id = ?", id).Scan(ctx); err != nil && err != sql.ErrNoRows {
+		// Just log or ignore if matches fail to load; it shouldn't fail the tournament
+	}
+	var matches []tournament.Match
+	for _, mm := range matchModels {
+		wt := ""
+		if mm.WinnerTeam != nil {
+			wt = *mm.WinnerTeam
+		}
+		m := tournament.Match{
+			ID:         mm.ID,
+			Status:     mm.Status,
+			WinnerTeam: wt,
+			TeamA:      []*player.Player{{ID: mm.TeamAPlayer1ID}},
+			TeamB:      []*player.Player{{ID: mm.TeamBPlayer1ID}},
+		}
+		matches = append(matches, m)
+	}
+
 	return &tournament.Tournament{
 		ID:           model.ID,
 		Name:         model.Name,
@@ -170,7 +191,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		Groups:       groups,
 		Rules:        []tournament.Rule{},
 		StageRules:   loadStageRules(ctx, r.db, model.ID),
-		Matches:      []tournament.Match{},
+		Matches:      matches,
 	}, nil
 }
 

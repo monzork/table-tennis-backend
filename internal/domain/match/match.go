@@ -1,6 +1,10 @@
 package match
 
-import "table-tennis-backend/internal/domain/player"
+import (
+	"math"
+	"table-tennis-backend/internal/domain/player"
+)
+
 
 // CalculateAndApplyElo computes the new Elo ratings for players after a match
 // and applies them to the player structs.
@@ -21,8 +25,8 @@ func CalculateAndApplyElo(matchType string, teamA, teamB []*player.Player, winne
 		r2 = float64(teamB[0].SinglesElo)
 	}
 
-	e1 := 1.0 / (1 + pow10((r2-r1)/400))
-	e2 := 1.0 / (1 + pow10((r1-r2)/400))
+	e1 := 1.0 / (1 + math.Pow(10, (r2-r1)/400.0))
+	e2 := 1.0 / (1 + math.Pow(10, (r1-r2)/400.0))
 
 	var s1, s2 float64
 	if winnerTeam == "A" {
@@ -47,13 +51,4 @@ func CalculateAndApplyElo(matchType string, teamA, teamB []*player.Player, winne
 		teamA[0].UpdateSinglesElo(int16(float64(teamA[0].SinglesElo) + delta1))
 		teamB[0].UpdateSinglesElo(int16(float64(teamB[0].SinglesElo) + delta2))
 	}
-}
-
-func pow10(x float64) float64 {
-	res := 1.0
-	for i := 0; i < int(x*0.43429); i++ {
-		res *= 10
-	}
-	// Fallback for an actual math.Pow replacement if needed, but keeping original app's logic
-	return res
 }
