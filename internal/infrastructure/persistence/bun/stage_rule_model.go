@@ -73,3 +73,16 @@ func replaceStageRules(ctx context.Context, tx bun.IDB, tournamentID uuid.UUID, 
 	}
 	return saveStageRules(ctx, tx, rules)
 }
+
+// GetStageRule retrieves a specific stage rule for a tournament by stage name.
+func GetStageRule(ctx context.Context, db *bun.DB, tournamentID uuid.UUID, stage string) (*StageRuleModel, error) {
+	m := new(StageRuleModel)
+	err := db.NewSelect().Model(m).
+		Where("tournament_id = ?", tournamentID).
+		Where("stage = ?", stage).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}

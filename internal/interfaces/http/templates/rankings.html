@@ -1,18 +1,18 @@
 <div class="space-y-10 animate-fade-in text-white/90 max-w-5xl mx-auto">
     <header class="text-center space-y-4">
-        <h1 class="text-6xl font-black tracking-tight uppercase italic"><span class="text-transparent bg-clip-text bg-gradient-to-r from-wtt-gold to-yellow-200">{{.Type}}</span> Rankings</h1>
+        <h1 class="text-6xl font-black tracking-tight uppercase italic"><span class="text-white">{{.Type}}</span> Rankings</h1>
         <p class="text-xl text-gray-400 font-light tracking-wide">The official world ranking for men's and women's {{.Type}}.</p>
     </header>
 
     <div class="glass rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative">
-        <div class="absolute inset-0 bg-gradient-to-b from-wtt-gold/5 to-transparent pointer-events-none"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-white/3 to-transparent pointer-events-none"></div>
         <table class="w-full text-left border-collapse relative z-10">
             <thead>
-                <tr class="bg-black/60 border-b border-wtt-gold/20">
-                    <th class="py-6 px-4 font-bold text-wtt-gold uppercase text-xs tracking-widest w-24 text-center">Rank</th>
-                    <th class="py-6 px-4 font-bold text-wtt-gold uppercase text-xs tracking-widest">Player</th>
-                    <th class="py-6 px-4 font-bold text-wtt-gold uppercase text-xs tracking-widest text-center">Assoc.</th>
-                    <th class="py-6 px-4 font-bold text-wtt-gold uppercase text-xs tracking-widest text-right">Points</th>
+                <tr class="bg-black/60 border-b border-white/15">
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest w-24 text-center">Rank</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest">Player</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-center">Assoc.</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-right">Points</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
@@ -31,7 +31,7 @@
                                 <span class="rank-number"></span>
                             </td>
                             <td class="py-6 px-4 flex items-center gap-6">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-gray-300 border border-white/10 font-black shadow-lg group-hover:border-wtt-red transition-colors">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-gray-300 border border-white/10 font-black shadow-lg group-hover:border-white/30 transition-colors">
                                     {{$p.Gender}}
                                 </div>
                                 <div>
@@ -45,7 +45,7 @@
                                     {{$p.Country}}
                                 </div>
                             </td>
-                            <td class="py-6 px-4 text-right font-black text-3xl italic text-wtt-red tracking-tight pr-8">
+                            <td class="py-6 px-4 text-right font-black text-3xl italic text-white tracking-tight pr-8">
                                 {{if eq $.Type "Doubles"}}{{$p.DoublesElo}}{{else}}{{$p.SinglesElo}}{{end}}
                             </td>
                         </tr>

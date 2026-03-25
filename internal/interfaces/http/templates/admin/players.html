@@ -1,10 +1,10 @@
 <div class="space-y-8 animate-fade-in text-white/90">
     <header class="flex justify-between items-center">
         <div>
-            <h1 class="text-4xl font-extrabold tracking-tight uppercase">Players <span class="text-wtt-red">.</span></h1>
+            <h1 class="text-4xl font-extrabold tracking-tight uppercase">Players <span class="text-white">.</span></h1>
             <p class="text-gray-400 mt-1">Global Athlete Database</p>
         </div>
-        <button onclick="document.getElementById('add-player-modal').classList.remove('hidden')" class="bg-wtt-red hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Player</button>
+        <button onclick="document.getElementById('add-player-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Player</button>
     </header>
 
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
@@ -34,18 +34,18 @@
         <h2 class="text-2xl font-bold uppercase mb-6 tracking-wide">New Athlete</h2>
         <form hx-post="/players" hx-target="#player-list" hx-swap="beforeend" class="space-y-4" onsubmit="setTimeout(() => document.getElementById('add-player-modal').classList.add('hidden'), 50)">
             <div class="flex gap-4">
-                <input type="text" name="firstName" placeholder="First Name" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors">
-                <input type="text" name="lastName" placeholder="Last Name" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors">
+                <input type="text" name="firstName" placeholder="First Name" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
+                <input type="text" name="lastName" placeholder="Last Name" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
             </div>
             <div class="flex gap-4">
-                <input type="date" name="birthdate" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors [color-scheme:dark]">
-                <select name="gender" class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors appearance-none">
+                <input type="date" name="birthdate" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors [color-scheme:dark]">
+                <select name="gender" class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none">
                     <option value="M">Male</option>
                     <option value="F">Female</option>
                 </select>
             </div>
-            <input type="text" name="country" placeholder="Country Code (e.g. CHN)" required class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors">
-            <button type="submit" class="w-full bg-wtt-red hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all uppercase tracking-wider mt-4">Register</button>
+            <input type="text" name="country" placeholder="Country Code (e.g. CHN)" required class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
+            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-bold py-3 rounded-xl transition-all uppercase tracking-wider mt-4">Register</button>
         </form>
     </div>
 </div>

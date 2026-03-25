@@ -1,10 +1,10 @@
 <div class="space-y-8 animate-fade-in text-white/90">
     <header class="flex justify-between items-center">
         <div>
-            <h1 class="text-4xl font-extrabold tracking-tight uppercase">Matches <span class="text-wtt-red">.</span></h1>
+            <h1 class="text-4xl font-extrabold tracking-tight uppercase">Matches <span class="text-white">.</span></h1>
             <p class="text-gray-400 mt-1">Score Updates & Elo Ratings</p>
         </div>
-        <button onclick="document.getElementById('add-match-modal').classList.remove('hidden')" class="bg-wtt-red hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Match</button>
+        <button onclick="document.getElementById('add-match-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Match</button>
     </header>
 
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
@@ -34,24 +34,24 @@
         <button onclick="document.getElementById('add-match-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
         <h2 class="text-2xl font-bold uppercase mb-6 tracking-wide">New Match</h2>
         <form hx-post="/matches/create" hx-target="#match-list" hx-swap="afterbegin" class="space-y-4" onsubmit="setTimeout(() => document.getElementById('add-match-modal').classList.add('hidden'), 50)">
-            <input type="text" name="tournamentId" placeholder="Tournament ID (UUID)" required class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors">
+            <input type="text" name="tournamentId" placeholder="Tournament ID (UUID)" required class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
             
-            <select name="matchType" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors appearance-none" required onchange="document.getElementById('doubles-fields').classList.toggle('hidden', this.value !== 'doubles')">
+            <select name="matchType" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none" required onchange="document.getElementById('doubles-fields').classList.toggle('hidden', this.value !== 'doubles')">
                 <option value="singles" selected>Singles</option>
                 <option value="doubles">Doubles</option>
             </select>
 
             <!-- Team A -->
             <div class="bg-black/30 p-4 rounded-lg border border-white/5 space-y-3">
-                <h3 class="text-xs uppercase text-wtt-red font-bold tracking-widest">Team A</h3>
-                <select name="teamAPlayerIds" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors appearance-none" required>
+                <h3 class="text-xs uppercase text-white font-bold tracking-widest">Team A</h3>
+                <select name="teamAPlayerIds" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none" required>
                     <option value="" disabled selected>Select Player 1</option>
                     {{range $.Players}}
                         <option value="{{.ID}}">{{.FirstName}} {{.LastName}} ({{.Country}})</option>
                     {{end}}
                 </select>
                 <div id="doubles-fields" class="hidden">
-                    <select name="teamAPlayerIds" class="w-full mt-3 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors appearance-none">
+                    <select name="teamAPlayerIds" class="w-full mt-3 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none">
                         <option value="">Select Player 2 (Optional for Singles)</option>
                         {{range $.Players}}
                             <option value="{{.ID}}">{{.FirstName}} {{.LastName}} ({{.Country}})</option>
@@ -62,15 +62,15 @@
 
             <!-- Team B -->
             <div class="bg-black/30 p-4 rounded-lg border border-white/5 space-y-3">
-                <h3 class="text-xs uppercase text-wtt-gold font-bold tracking-widest">Team B</h3>
-                <select name="teamBPlayerIds" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors appearance-none" required>
+                <h3 class="text-xs uppercase text-gray-300 font-bold tracking-widest">Team B</h3>
+                <select name="teamBPlayerIds" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none" required>
                     <option value="" disabled selected>Select Player 1</option>
                     {{range $.Players}}
                         <option value="{{.ID}}">{{.FirstName}} {{.LastName}} ({{.Country}})</option>
                     {{end}}
                 </select>
                 <div id="doubles-fields-b" class="hidden">
-                    <select name="teamBPlayerIds" class="w-full mt-3 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors appearance-none">
+                    <select name="teamBPlayerIds" class="w-full mt-3 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none">
                         <option value="">Select Player 2 (Optional for Singles)</option>
                         {{range $.Players}}
                             <option value="{{.ID}}">{{.FirstName}} {{.LastName}} ({{.Country}})</option>
@@ -92,7 +92,7 @@
                 });
             </script>
 
-            <button type="submit" class="w-full bg-wtt-red hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all uppercase tracking-wider mt-4">Create Match</button>
+            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-bold py-3 rounded-xl transition-all uppercase tracking-wider mt-4">Create Match</button>
         </form>
     </div>
 </div>

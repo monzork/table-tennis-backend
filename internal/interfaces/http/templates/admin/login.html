@@ -1,28 +1,29 @@
 <div class="space-y-10 animate-fade-in text-white/90 max-w-md mx-auto pt-20">
     <header class="text-center space-y-4">
-        <h1 class="text-4xl font-black tracking-tight uppercase italic"><span class="text-wtt-red">Admin</span> Portal</h1>
+        <h1 class="text-4xl font-black tracking-tight uppercase italic"><span class="text-white">Admin</span> Portal</h1>
         <p class="text-sm text-gray-400 font-light tracking-wide">Enter your credentials to manage the WTT system.</p>
     </header>
 
     <div class="glass p-8 rounded-3xl border border-white/10 shadow-2xl relative">
-        <div class="absolute inset-0 bg-gradient-to-br from-wtt-red/5 to-transparent pointer-events-none rounded-3xl"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-white/3 to-transparent pointer-events-none rounded-3xl"></div>
         {{if .Error}}
-            <div class="bg-red-900/50 border border-wtt-red/50 text-red-200 p-4 rounded-xl mb-6 text-sm text-center font-bold tracking-wide">
+            <div class="bg-white/5 border border-white/20 text-gray-200 p-4 rounded-xl mb-6 text-sm text-center font-bold tracking-wide">
                 {{.Error}}
             </div>
         {{end}}
         <form method="POST" action="/admin/login" class="space-y-6 relative z-10" hx-boost="true">
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Username</label>
-                <input type="text" name="username" required class="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-wtt-red transition-colors shadow-inner" autocomplete="username">
+                <input type="text" name="username" required class="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-colors shadow-inner" autocomplete="username">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Password</label>
-                <input type="password" name="password" required class="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-wtt-red transition-colors shadow-inner" autocomplete="current-password">
+                <input type="password" name="password" required class="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-colors shadow-inner" autocomplete="current-password">
             </div>
-            <button type="submit" class="w-full bg-wtt-red hover:bg-black hover:text-wtt-red border border-wtt-red text-white font-black py-4 rounded-xl transition-all uppercase tracking-widest text-sm shadow-[0_0_15px_rgba(230,0,0,0.3)] mt-2">
+            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-black py-4 rounded-xl transition-all uppercase tracking-widest text-sm mt-2">
                 Sign In
             </button>
         </form>
     </div>
 </div>
+

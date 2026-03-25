@@ -41,16 +41,17 @@ package main
 
 		createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
 		finishMatchUC := match.NewFinishMatchUseCase()
-		matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC)
-		
+		updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo)
+		matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC)
+
 		divisionRepo := bun.NewDivisionRepository(bun.DB)
 		divisionUC := division.NewDivisionUseCase(divisionRepo)
-		
+
 		leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 		divisionHandler := handler.NewDivisionHandler(divisionUC)
-		
+
 		adminRepo := bun.NewAdminRepository(bun.DB)
-		
+
 		// Seed default admin if DB empty
 		count, _ := adminRepo.Count(context.Background())
 		if count == 0 {
@@ -105,6 +106,7 @@ package main
 		api.Post("/tournaments", tournamentHandler.Create)
 		api.Post("/matches/create", matchHandler.Create)
 		api.Post("/matches/finish", matchHandler.Finish)
+		api.Put("/matches/:id/score", matchHandler.UpdateScore)
 		api.Post("/divisions", divisionHandler.CreateOrUpdate)
 		api.Delete("/divisions/:id", divisionHandler.Delete)
 

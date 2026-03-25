@@ -10,14 +10,16 @@ import (
 )
 
 type MatchHandler struct {
-	createUC *match.CreateMatchUseCase
-	finishUC *match.FinishMatchUseCase
+	createUC      *match.CreateMatchUseCase
+	finishUC      *match.FinishMatchUseCase
+	updateScoreUC *match.UpdateMatchScoreUseCase
 }
 
-func NewMatchHandler(createUC *match.CreateMatchUseCase, finishUC *match.FinishMatchUseCase) *MatchHandler {
+func NewMatchHandler(createUC *match.CreateMatchUseCase, finishUC *match.FinishMatchUseCase, updateScoreUC *match.UpdateMatchScoreUseCase) *MatchHandler {
 	return &MatchHandler{
-		finishUC: finishUC,
-		createUC: createUC,
+		finishUC:      finishUC,
+		createUC:      createUC,
+		updateScoreUC: updateScoreUC,
 	}
 }
 
@@ -59,7 +61,11 @@ func (h *MatchHandler) Create(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	// Return rendered match row for HTMX
+	// Score modal requests come without HX-Request header — return JSON with match ID
+	if c.Get("HX-Request") == "" {
+		return c.JSON(fiber.Map{"id": newMatch.ID.String()})
+	}
+	// HTMX requests get the rendered row
 	return c.Render("admin/partials/match-row", newMatch)
 }
 
@@ -90,4 +96,29 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(m)
+}
+// UpdateScore accepts set scores via JSON/form and persists them, auto-resolving winner.
+func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
+	matchID := c.Params("id")
+	var body struct {
+		TournamentID string   `json:"tournamentId" form:"tournamentId"`
+		Stage        string   `json:"stage" form:"stage"`
+		Scores       []string `json:"scores" form:"scores[]"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	// Also accept form multi-values
+	if len(body.Scores) == 0 {
+		for _, s := range c.Request().PostArgs().PeekMulti("scores[]") {
+			body.Scores = append(body.Scores, string(s))
+		}
+	}
+	if body.Stage == "" {
+		body.Stage = "group"
+	}
+	if err := h.updateScoreUC.Execute(c.Context(), matchID, body.Scores, body.TournamentID, body.Stage); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.SendStatus(fiber.StatusOK)
 }

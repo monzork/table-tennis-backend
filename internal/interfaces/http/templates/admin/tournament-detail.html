@@ -9,7 +9,7 @@
     top: 50%;
     width: 2rem;
     height: 1px;
-    background: rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.12);
   }
   .bracket-match::before {
     content: '';
@@ -31,14 +31,14 @@
   {{/* ── Header ──────────────────────────────────────────────── */}}
   <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <div>
-      <a href="/admin/tournaments" class="text-xs text-gray-500 uppercase tracking-widest hover:text-wtt-red transition-colors flex items-center gap-1 mb-2">
+      <a href="/admin/tournaments" class="text-xs text-gray-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1 mb-2">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
         All Tournaments
       </a>
-      <h1 class="text-4xl font-extrabold tracking-tighter uppercase">{{.Tournament.Name}}<span class="text-wtt-red">.</span></h1>
+      <h1 class="text-4xl font-extrabold tracking-tighter uppercase">{{.Tournament.Name}}<span class="text-white">.</span></h1>
       <div class="flex gap-3 mt-2 flex-wrap">
         <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Tournament.Type}}</span>
-        <span class="px-3 py-1 bg-wtt-red/10 border border-wtt-red/30 rounded-full text-[11px] uppercase tracking-widest text-wtt-red">{{.Tournament.Format}}</span>
+        <span class="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[11px] uppercase tracking-widest text-white">{{.Tournament.Format}}</span>
         <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
           {{.Tournament.StartDate.Format "Jan 02"}} – {{.Tournament.EndDate.Format "Jan 02, 2006"}}
         </span>
@@ -53,7 +53,7 @@
         Edit
       </button>
       <button onclick="deleteTournament('{{.Tournament.ID}}')"
-        class="bg-red-900/50 hover:bg-red-800 border border-red-700/50 text-white text-sm font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider">
+        class="bg-white/5 hover:bg-white/10 border border-white/20 text-gray-400 hover:text-white text-sm font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider">
         Delete
       </button>
     </div>
@@ -65,7 +65,7 @@
     <div class="flex flex-wrap gap-2">
       {{range .Tournament.Participants}}
       <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-        <div class="w-6 h-6 rounded-full bg-wtt-red/20 border border-wtt-red/30 flex items-center justify-center text-[9px] font-extrabold text-wtt-red">{{slice .FirstName 0 1}}</div>
+        <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">{{slice .FirstName 0 1}}</div>
         <span class="text-sm font-semibold">{{.FirstName}} {{.LastName}}</span>
         <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
       </div>
@@ -82,8 +82,8 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {{range $i, $g := .Tournament.Groups}}
       <div class="glass rounded-2xl border border-white/10 overflow-hidden fade-up">
-        <div class="bg-wtt-red/10 border-b border-wtt-red/20 px-4 py-3 flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-wtt-red/20 border border-wtt-red/40 flex items-center justify-center font-extrabold text-wtt-red text-xs">{{slice $g.Name 6 7}}</div>
+        <div class="bg-white/5 border-b border-white/10 px-4 py-3 flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center font-extrabold text-white text-xs">{{slice $g.Name 6 7}}</div>
           <span class="font-extrabold uppercase tracking-widest text-sm">{{$g.Name}}</span>
           <span class="ml-auto text-[10px] text-gray-500">{{len $g.Players}} players</span>
         </div>
@@ -112,8 +112,8 @@
     <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Match Rules</h2>
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       {{range .Tournament.StageRules}}
-      <div class="glass rounded-xl border border-white/10 p-3 space-y-1 text-center">
-        <p class="text-[10px] uppercase tracking-widest text-wtt-red font-bold">{{.Stage}}</p>
+      <div class="glass rounded-xl border border-white/10 p-3 space-y-1 text-center" data-stage="{{.Stage}}" data-bestof="{{.BestOf}}">
+        <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold">{{.Stage}}</p>
         <p class="text-lg font-extrabold text-white">Bo{{.BestOf}}</p>
         <p class="text-[10px] text-gray-500">{{.PointsToWin}} pts · +{{.PointsMargin}}</p>
       </div>
@@ -135,11 +135,11 @@
     <div class="flex gap-4 mb-2">
       <label class="cursor-pointer group flex items-center gap-2">
         <input type="radio" name="bracket-view" value="all" checked onchange="renderViewMode()" class="hidden peer">
-        <div class="px-4 py-2 rounded-xl border border-white/10 bg-black/20 peer-checked:border-wtt-red peer-checked:bg-wtt-red/20 transition-all text-xs font-bold uppercase tracking-widest text-gray-400 peer-checked:text-white group-hover:text-white">All Against All</div>
+        <div class="px-4 py-2 rounded-xl border border-white/10 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-xs font-bold uppercase tracking-widest text-gray-400 peer-checked:text-white group-hover:text-white">All Against All</div>
       </label>
       <label class="cursor-pointer group flex items-center gap-2">
         <input type="radio" name="bracket-view" value="ranking" onchange="renderViewMode()" class="hidden peer">
-        <div class="px-4 py-2 rounded-xl border border-white/10 bg-black/20 peer-checked:border-wtt-red peer-checked:bg-wtt-red/20 transition-all text-xs font-bold uppercase tracking-widest text-gray-400 peer-checked:text-white group-hover:text-white">Per Ranking</div>
+        <div class="px-4 py-2 rounded-xl border border-white/10 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-xs font-bold uppercase tracking-widest text-gray-400 peer-checked:text-white group-hover:text-white">Per Ranking</div>
       </label>
     </div>
 
@@ -156,22 +156,104 @@
 
 </div>
 
+{{/* ── Score Entry Modal ──────────────────────────────────── */}}
+<div id="score-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
+  <div class="bg-wtt-panel border border-white/10 p-8 rounded-3xl max-w-md w-full relative shadow-2xl">
+    <button onclick="document.getElementById('score-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter">Enter <span class="text-white">Scores</span></h2>
+    <p id="score-modal-label" class="text-xs text-gray-500 mb-6 font-mono"></p>
+
+    <input type="hidden" id="score-match-id">
+    <input type="hidden" id="score-tournament-id" value="{{.Tournament.ID}}">
+    <input type="hidden" id="score-stage">
+
+    <div id="set-rows" class="space-y-3 mb-6"></div>
+
+    <div id="score-error" class="hidden text-sm text-red-400 mb-4 font-mono"></div>
+
+    <button onclick="submitScores()" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest">Save Scores</button>
+  </div>
+</div>
+
+<script>
+  function openScoreModal(matchId, playerA, playerB, stage, bestOf) {
+    document.getElementById('score-match-id').value = matchId;
+    document.getElementById('score-stage').value = stage || 'group';
+    document.getElementById('score-modal-label').textContent = playerA + ' vs ' + playerB + ' · Bo' + bestOf;
+    const container = document.getElementById('set-rows');
+    container.innerHTML = '';
+    for (let i = 1; i <= bestOf; i++) {
+      container.innerHTML += `
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-gray-500 w-8 text-right">Set ${i}</span>
+          <input id="set-a-${i}" type="number" min="0" max="99" placeholder="A" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-center text-lg font-bold focus:outline-none focus:ring-1 focus:ring-white">
+          <span class="text-gray-600 font-bold">–</span>
+          <input id="set-b-${i}" type="number" min="0" max="99" placeholder="B" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-center text-lg font-bold focus:outline-none focus:ring-1 focus:ring-white">
+        </div>`;
+    }
+    document.getElementById('score-error').classList.add('hidden');
+    document.getElementById('score-modal').classList.remove('hidden');
+  }
+
+  async function submitScores() {
+    const matchId = document.getElementById('score-match-id').value;
+    const tournamentId = document.getElementById('score-tournament-id').value;
+    const stage = document.getElementById('score-stage').value;
+    const errEl = document.getElementById('score-error');
+    const scores = [];
+    let i = 1;
+    while (document.getElementById('set-a-' + i)) {
+      const a = document.getElementById('set-a-' + i).value;
+      const b = document.getElementById('set-b-' + i).value;
+      if (a !== '' && b !== '') {
+        scores.push(a + '-' + b);
+      }
+      i++;
+    }
+    if (scores.length === 0) {
+      errEl.textContent = 'Enter at least one set score.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    const body = new URLSearchParams();
+    body.append('tournamentId', tournamentId);
+    body.append('stage', stage);
+    scores.forEach(s => body.append('scores[]', s));
+    const res = await fetch('/matches/' + matchId + '/score', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString()
+    });
+    if (!res.ok) {
+      const msg = await res.text();
+      errEl.textContent = msg || 'Error saving scores.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    document.getElementById('score-modal').classList.add('hidden');
+    // Soft refresh the page to reflect the updated bracket
+    window.location.reload();
+  }
+</script>
+
 {{/* ── Edit Modal ───────────────────────────────────────────── */}}
 <div id="edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100]">
   <div class="bg-wtt-panel border border-white/10 p-8 rounded-3xl max-w-lg w-full relative shadow-2xl overflow-y-auto max-h-[90vh]">
     <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
-    <h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Edit <span class="text-wtt-red">Event</span></h2>
+    <h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Edit <span class="text-white">Event</span></h2>
     <form id="edit-form" class="space-y-5">
       <div class="space-y-2">
         <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
-        <input type="text" name="name" value="{{.Tournament.Name}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red">
+        <input type="text" name="name" value="{{.Tournament.Name}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
           <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Type</label>
-          <select name="type" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red appearance-none">
+          <select name="type" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
             <option value="singles" {{if eq .Tournament.Type "singles"}}selected{{end}}>Singles</option>
             <option value="doubles" {{if eq .Tournament.Type "doubles"}}selected{{end}}>Doubles</option>
             <option value="teams" {{if eq .Tournament.Type "teams"}}selected{{end}}>Teams</option>
@@ -179,7 +261,7 @@
         </div>
         <div class="space-y-2">
           <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Format</label>
-          <select name="format" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red appearance-none">
+          <select name="format" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
             <option value="elimination" {{if eq .Tournament.Format "elimination"}}selected{{end}}>Elimination</option>
             <option value="groups_elimination" {{if eq .Tournament.Format "groups_elimination"}}selected{{end}}>WTT Standard</option>
             <option value="round_robin" {{if eq .Tournament.Format "round_robin"}}selected{{end}}>All Against All</option>
@@ -189,11 +271,11 @@
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
           <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Start Date</label>
-          <input type="date" name="startDate" value="{{.Tournament.StartDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red [color-scheme:dark]">
+          <input type="date" name="startDate" value="{{.Tournament.StartDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
         </div>
         <div class="space-y-2">
           <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">End Date</label>
-          <input type="date" name="endDate" value="{{.Tournament.EndDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red [color-scheme:dark]">
+          <input type="date" name="endDate" value="{{.Tournament.EndDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
         </div>
       </div>
       
@@ -202,7 +284,7 @@
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Manage Participants</label>
             <span class="text-[10px] text-gray-500 font-mono">Hold Ctrl/Cmd to select multiple</span>
         </div>
-        <select id="edit-participants" name="participant_ids[]" multiple class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white custom-scrollbar h-48 focus:outline-none focus:ring-1 focus:ring-wtt-red">
+        <select id="edit-participants" name="participant_ids[]" multiple class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white custom-scrollbar h-48 focus:outline-none focus:ring-1 focus:ring-white">
           {{range .Players}}
             <option value="{{.ID}}">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
           {{end}}
@@ -212,15 +294,15 @@
       <div class="space-y-2">
         <div class="flex items-center justify-between cursor-pointer" onclick="document.getElementById('rules-panel').classList.toggle('hidden')">
           <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">Match Rules</label>
-          <span class="text-[10px] text-wtt-red uppercase tracking-widest">Expand ▾</span>
+          <span class="text-[10px] text-gray-400 uppercase tracking-widest">Expand ▾</span>
         </div>
         <div id="rules-panel" class="hidden space-y-3">
           {{range .Tournament.StageRules}}
           <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
-            <span class="text-xs font-bold uppercase text-wtt-red tracking-widest">{{.Stage}}</span>
+            <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{.Stage}}</span>
             <div class="space-y-1">
               <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
-              <select name="stage_rule[{{.Stage}}][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-wtt-red appearance-none">
+              <select name="stage_rule[{{.Stage}}][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
                 <option value="3" {{if eq .BestOf 3}}selected{{end}}>3</option>
                 <option value="5" {{if eq .BestOf 5}}selected{{end}}>5</option>
                 <option value="7" {{if eq .BestOf 7}}selected{{end}}>7</option>
@@ -229,7 +311,7 @@
             </div>
             <div class="space-y-1">
               <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
-              <input type="number" name="stage_rule[{{.Stage}}][points_to_win]" value="{{.PointsToWin}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-wtt-red">
+              <input type="number" name="stage_rule[{{.Stage}}][points_to_win]" value="{{.PointsToWin}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
             </div>
             <input type="hidden" name="stage_rule[{{.Stage}}][points_margin]" value="{{.PointsMargin}}">
           </div>
@@ -237,7 +319,7 @@
         </div>
       </div>
 
-      <button type="submit" class="w-full bg-wtt-red hover:bg-red-700 text-white font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest mt-2">Save Changes</button>
+      <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest mt-2">Save Changes</button>
     </form>
   </div>
 </div>
@@ -371,6 +453,29 @@
         matchDiv.appendChild(vs);
         matchDiv.appendChild(makeSlot(p2));
 
+        // Score button — only when both players are known
+        if (p1 && p2) {
+          const stages = ['group','r32','r16','quarterfinal','semifinal','final'];
+          const stageName = stages[Math.min(ri, stages.length - 1)];
+          // Derive best_of from stage rules displayed on page
+          const stageRuleEl = document.querySelector(`[data-stage="${stageName}"]`);
+          const bestOf = stageRuleEl ? parseInt(stageRuleEl.dataset.bestof) : 5;
+          const tournId = document.getElementById('score-tournament-id').value;
+
+          const btn = document.createElement('button');
+          btn.className = 'mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-white hover:text-gray-300 border border-white/20 hover:border-white/40 rounded-lg py-1 px-2 transition-all';
+          btn.textContent = '⚡ Score Match';
+          btn.onclick = async () => {
+            // Create match in DB
+            const body = new URLSearchParams({ tournamentId: tournId, matchType: 'singles', teamAPlayerIds: p1.id, teamBPlayerIds: p2.id });
+            const res = await fetch('/matches/create', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: body.toString() });
+            if (!res.ok) { alert('Could not create match: ' + await res.text()); return; }
+            const data = await res.json();
+            openScoreModal(data.id || data.ID, p1.name, p2.name, stageName, bestOf);
+          };
+          matchDiv.appendChild(btn);
+        }
+
         matchesWrap.appendChild(matchDiv);
       });
 
@@ -407,7 +512,7 @@
         
         const head = document.createElement('div');
         head.className = 'flex items-center gap-3 mb-6';
-        head.innerHTML = `<div class="w-8 h-8 rounded-full bg-wtt-red/20 border border-wtt-red flex items-center justify-center font-extrabold text-wtt-red">${idx + 1}</div>
+        head.innerHTML = `<div class="w-8 h-8 rounded-full bg-white/10 border border-white/30 flex items-center justify-center font-extrabold text-white">${idx + 1}</div>
           <h3 class="text-lg font-extrabold uppercase tracking-widest text-white/90">Division ${idx + 1}</h3>
           <span class="ml-auto text-xs text-gray-500 uppercase">${divPlayers.length} Players</span>`;
         wrap.appendChild(head);

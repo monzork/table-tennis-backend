@@ -5,7 +5,7 @@
     
     <td class="p-4">
         {{range $index, $p := .TeamA}}
-            <div class="{{if eq $.WinnerTeam "A"}}text-wtt-gold font-bold{{else}}text-gray-300{{end}}">
+            <div class="{{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
                 {{$p.FirstName}} <span class="uppercase font-bold">{{$p.LastName}}</span>
             </div>
         {{end}}
@@ -13,7 +13,7 @@
     
     <td class="p-4">
         {{range $index, $p := .TeamB}}
-            <div class="{{if eq $.WinnerTeam "B"}}text-wtt-gold font-bold{{else}}text-gray-300{{end}}">
+            <div class="{{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
                 {{$p.FirstName}} <span class="uppercase font-bold">{{$p.LastName}}</span>
             </div>
         {{end}}
@@ -21,9 +21,9 @@
 
     <td class="p-4">
         {{if eq .Status "finished"}}
-            <span class="px-2 py-1 rounded bg-green-900/50 text-green-400 text-xs font-bold uppercase tracking-wider border border-green-500/30">Finished</span>
+            <span class="px-2 py-1 rounded bg-white/10 text-white text-xs font-bold uppercase tracking-wider border border-white/20">Finished</span>
         {{else}}
-            <span class="px-2 py-1 rounded bg-yellow-900/50 text-yellow-400 text-xs font-bold uppercase tracking-wider border border-yellow-500/30">In Progress</span>
+            <span class="px-2 py-1 rounded bg-white/5 text-gray-300 text-xs font-bold uppercase tracking-wider border border-white/10">In Progress</span>
         {{end}}
     </td>
 
@@ -36,9 +36,10 @@
                     <option value="A">Team A</option>
                     <option value="B">Team B</option>
                 </select>
-                <button type="submit" class="bg-wtt-red hover:bg-red-700 text-white font-bold py-1 px-3 text-xs rounded transition-all uppercase tracking-wider">Finish</button>
+                <button type="submit" class="bg-white hover:bg-gray-200 text-black font-bold py-1 px-3 text-xs rounded transition-all uppercase tracking-wider">Finish</button>
             </form>
         {{end}}
     </td>
 </tr>
 {{end}}
+
