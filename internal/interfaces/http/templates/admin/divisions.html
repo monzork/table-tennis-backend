@@ -1,0 +1,119 @@
+<div class="space-y-8 animate-fade-in text-white/90">
+    <header class="flex justify-between items-center border-b border-white/10 pb-6">
+        <div>
+            <h1 class="text-4xl font-black tracking-tight uppercase italic"><span class="text-transparent bg-clip-text bg-gradient-to-r from-wtt-red to-orange-500">Manage</span> DIVISIONS</h1>
+            <p class="text-gray-400 mt-2 tracking-wide font-light">Configure ranking divisions and ELO brackets.</p>
+        </div>
+        <button onclick="document.getElementById('divisionModal').classList.remove('hidden')" class="bg-wtt-red hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-[0_0_15px_rgba(230,0,0,0.5)] transition-all uppercase tracking-widest text-sm flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Add Division
+        </button>
+    </header>
+
+    <div class="glass rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-black/60 border-b border-white/10">
+                    <th class="py-4 px-6 text-wtt-red font-bold uppercase text-xs tracking-widest">Order</th>
+                    <th class="py-4 px-6 text-wtt-red font-bold uppercase text-xs tracking-widest">Division Name</th>
+                    <th class="py-4 px-6 text-wtt-red font-bold uppercase text-xs tracking-widest">ELO Range</th>
+                    <th class="py-4 px-6 text-wtt-red font-bold uppercase text-xs tracking-widest text-center">Color</th>
+                    <th class="py-4 px-6 text-wtt-red font-bold uppercase text-xs tracking-widest text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {{range .Divisions}}
+                <tr class="hover:bg-white/5 transition-colors group">
+                    <td class="py-4 px-6 font-bold text-gray-400">{{.DisplayOrder}}</td>
+                    <td class="py-4 px-6 font-bold text-lg text-white" style="color: {{.Color}}">{{.Name}}</td>
+                    <td class="py-4 px-6 text-gray-300 font-mono">
+                        {{.MinElo}} - {{if .MaxElo}}{{.MaxElo}}{{else}}∞{{end}}
+                    </td>
+                    <td class="py-4 px-6 text-center">
+                        <div class="w-6 h-6 rounded-full mx-auto shadow-sm border border-white/20" style="background-color: {{.Color}};"></div>
+                    </td>
+                    <td class="py-4 px-6 text-right space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="editDivision('{{.ID}}', '{{.Name}}', {{.DisplayOrder}}, {{.MinElo}}, '{{if .MaxElo}}{{.MaxElo}}{{end}}', '{{.Color}}')" class="text-wtt-gold hover:text-yellow-200 uppercase tracking-widest text-xs font-bold">Edit</button>
+                        <form action="/divisions/{{.ID}}?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this division?');">
+                            <button type="submit" class="text-wtt-red hover:text-red-400 uppercase tracking-widest text-xs font-bold">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="5" class="py-12 text-center text-gray-500 italic font-light tracking-wider">No divisions configured. Add one to get started.</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add/Edit Division Modal -->
+<div id="divisionModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex justify-center items-center overflow-y-auto pt-10 pb-10">
+    <div class="glass w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl relative">
+        <div class="absolute inset-0 bg-gradient-to-b from-wtt-red/10 to-transparent pointer-events-none rounded-2xl"></div>
+        <div class="p-8 relative z-10">
+            <h2 id="modalTitle" class="text-3xl font-black uppercase italic tracking-tight mb-8">Add <span class="text-wtt-red">Division</span></h2>
+            <form id="divisionForm" method="POST" action="/divisions">
+                <input type="hidden" name="id" id="divisionId">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-wtt-red text-xs font-bold uppercase tracking-widest mb-2">Division Name</label>
+                        <input type="text" name="name" id="name" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-wtt-red focus:ring-1 focus:ring-wtt-red transition-all">
+                    </div>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-wtt-red text-xs font-bold uppercase tracking-widest mb-2">Display Order</label>
+                            <input type="number" name="display_order" id="displayOrder" required value="0" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-wtt-red transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-wtt-red text-xs font-bold uppercase tracking-widest mb-2">Color (Hex)</label>
+                            <div class="flex gap-2">
+                                <input type="color" id="colorPicker" value="#ffffff" class="h-12 w-12 rounded bg-transparent border-0 cursor-pointer" onchange="document.getElementById('colorInput').value = this.value">
+                                <input type="text" name="color" id="colorInput" required value="#ffffff" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-wtt-red transition-all uppercase font-mono">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-wtt-red text-xs font-bold uppercase tracking-widest mb-2">Min ELO</label>
+                            <input type="number" name="min_elo" id="minElo" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-wtt-red transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-wtt-red text-xs font-bold uppercase tracking-widest mb-2">Max ELO</label>
+                            <input type="number" name="max_elo" id="maxElo" placeholder="Leave empty for infinity" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-wtt-red transition-all">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-white/10">
+                        <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-400 hover:text-white uppercase tracking-widest text-sm font-bold transition-colors">Cancel</button>
+                        <button type="submit" class="bg-wtt-red hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg uppercase tracking-widest text-sm transition-all">Save Division</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function closeModal() {
+        document.getElementById('divisionModal').classList.add('hidden');
+        document.getElementById('divisionForm').reset();
+        document.getElementById('divisionId').value = '';
+        document.getElementById('modalTitle').innerHTML = 'Add <span class="text-wtt-red">Division</span>';
+        document.getElementById('colorPicker').value = '#ffffff';
+    }
+
+    function editDivision(id, name, order, minElo, maxElo, color) {
+        document.getElementById('divisionId').value = id;
+        document.getElementById('name').value = name;
+        document.getElementById('displayOrder').value = order;
+        document.getElementById('minElo').value = minElo;
+        document.getElementById('maxElo').value = maxElo;
+        document.getElementById('colorInput').value = color;
+        document.getElementById('colorPicker').value = color;
+        
+        document.getElementById('modalTitle').innerHTML = 'Edit <span class="text-wtt-red">Division</span>';
+        document.getElementById('divisionModal').classList.remove('hidden');
+    }
+</script>

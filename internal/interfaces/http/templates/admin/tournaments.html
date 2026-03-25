@@ -15,6 +15,7 @@
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Type</th>
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Start Date</th>
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">End Date</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody id="tournament-list" class="divide-y divide-white/10">
@@ -55,19 +56,26 @@
 
             <div class="space-y-2">
                 <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Competition Format</label>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-2">
                     <label class="cursor-pointer group">
                         <input type="radio" name="format" value="elimination" checked class="hidden peer">
-                        <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-wtt-red/50 peer-checked:bg-wtt-red/10 transition-all text-center">
-                            <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Direct Elimination</span>
-                            <span class="text-[10px] text-gray-500 uppercase">Knockout Brackets</span>
+                        <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-wtt-red/50 peer-checked:bg-wtt-red/10 transition-all text-center h-full flex flex-col justify-center">
+                            <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Elimination</span>
+                            <span class="text-[9px] text-gray-500 uppercase mt-1">Knockout</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
                         <input type="radio" name="format" value="groups_elimination" class="hidden peer">
-                        <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-wtt-red/50 peer-checked:bg-wtt-red/10 transition-all text-center">
+                        <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-wtt-red/50 peer-checked:bg-wtt-red/10 transition-all text-center h-full flex flex-col justify-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">WTT Standard</span>
-                            <span class="text-[10px] text-gray-500 uppercase">Groups + Knockout</span>
+                            <span class="text-[9px] text-gray-500 uppercase mt-1">Groups + Knockout</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer group">
+                        <input type="radio" name="format" value="round_robin" class="hidden peer">
+                        <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-wtt-red/50 peer-checked:bg-wtt-red/10 transition-all text-center h-full flex flex-col justify-center">
+                            <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">All Against All</span>
+                            <span class="text-[9px] text-gray-500 uppercase mt-1">Round Robin</span>
                         </div>
                     </label>
                 </div>

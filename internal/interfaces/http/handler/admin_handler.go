@@ -5,6 +5,7 @@ import (
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/application/player"
 	"table-tennis-backend/internal/application/tournament"
+	"table-tennis-backend/internal/application/division"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -16,6 +17,7 @@ type AdminHandler struct {
 	matchList      *match.GetMatchesUseCase
 	leaderboard    *leaderboard.GetLeaderboardUseCase
 	getTournaments *tournament.GetTournamentsUseCase
+	divisionUC     *division.DivisionUseCase
 }
 
 func NewAdminHandler(
@@ -25,6 +27,7 @@ func NewAdminHandler(
 	ml *match.GetMatchesUseCase,
 	l *leaderboard.GetLeaderboardUseCase,
 	gt *tournament.GetTournamentsUseCase,
+	duc *division.DivisionUseCase,
 ) *AdminHandler {
 	return &AdminHandler{
 		playerUC:       p,
@@ -33,6 +36,7 @@ func NewAdminHandler(
 		matchList:      ml,
 		leaderboard:    l,
 		getTournaments: gt,
+		divisionUC:     duc,
 	}
 }
 
@@ -72,5 +76,15 @@ func (h *AdminHandler) Matches(c *fiber.Ctx) error {
 	return c.Render("admin/matches", fiber.Map{
 		"Matches": matches,
 		"Players": players,
+	}, "layouts/admin")
+}
+
+func (h *AdminHandler) Divisions(c *fiber.Ctx) error {
+	divisions, err := h.divisionUC.GetAll(c.Context())
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+	return c.Render("admin/divisions", fiber.Map{
+		"Divisions": divisions,
 	}, "layouts/admin")
 }

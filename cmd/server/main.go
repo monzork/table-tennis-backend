@@ -10,6 +10,7 @@ package main
 		"table-tennis-backend/internal/application/match"
 		"table-tennis-backend/internal/application/player"
 		"table-tennis-backend/internal/application/tournament"
+		"table-tennis-backend/internal/application/division"
 		"table-tennis-backend/internal/infrastructure/persistence/bun"
 		"table-tennis-backend/internal/interfaces/http/handler"
 		"table-tennis-backend/internal/interfaces/http/middleware"
@@ -26,9 +27,14 @@ package main
 		playerUC := player.NewRegisterPlayerUseCase(playerRepo)
 		playerHandler := handler.NewPlayerHandler(playerUC)
 
+		leaderboardUC := leaderboard.NewGetLeaderboardUseCase(*playerRepo)
+
 		tournamentRepo := bun.NewTournamentRepository(bun.DB)
 		createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo, playerRepo)
-		tournamentHandler := handler.NewTournamentHandler(createTournamentUC)
+		getTournamentByIDUC := tournament.NewGetTournamentByIDUseCase(tournamentRepo)
+		updateTournamentUC := tournament.NewUpdateTournamentUseCase(tournamentRepo, playerRepo)
+		deleteTournamentUC := tournament.NewDeleteTournamentUseCase(tournamentRepo)
+		tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC)
 
 		matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
 		GetMatchesUC := match.NewGetMatchesUseCase(*bun.DB, *playerRepo)
@@ -36,9 +42,12 @@ package main
 		createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
 		finishMatchUC := match.NewFinishMatchUseCase()
 		matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC)
-
-		leaderboardUC := leaderboard.NewGetLeaderboardUseCase(*playerRepo)
-		leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC)
+		
+		divisionRepo := bun.NewDivisionRepository(bun.DB)
+		divisionUC := division.NewDivisionUseCase(divisionRepo)
+		
+		leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
+		divisionHandler := handler.NewDivisionHandler(divisionUC)
 		
 		adminRepo := bun.NewAdminRepository(bun.DB)
 		
@@ -64,7 +73,7 @@ package main
 		})
 
 		getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
-		adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC)
+		adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC)
 
 		app.Get("/rankings/singles", leaderboardHandler.GetSingles)
 		app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)
@@ -87,6 +96,7 @@ package main
 		admin.Get("/players", adminHandler.Players)
 		admin.Get("/tournaments", adminHandler.Tournaments)
 		admin.Get("/matches", adminHandler.Matches)
+		admin.Get("/divisions", adminHandler.Divisions)
 
 		// Existing Form Post Endpoints mapped internally, protected
 		api := app.Group("/")
@@ -95,6 +105,13 @@ package main
 		api.Post("/tournaments", tournamentHandler.Create)
 		api.Post("/matches/create", matchHandler.Create)
 		api.Post("/matches/finish", matchHandler.Finish)
+		api.Post("/divisions", divisionHandler.CreateOrUpdate)
+		api.Delete("/divisions/:id", divisionHandler.Delete)
+
+		// Tournament CRUD routes (admin protected)
+		admin.Get("/tournaments/:id", tournamentHandler.Detail)
+		api.Put("/tournaments/:id", tournamentHandler.Update)
+		api.Delete("/tournaments/:id", tournamentHandler.Delete)
 
 		log.Fatal(app.Listen(":8080"))
 	}

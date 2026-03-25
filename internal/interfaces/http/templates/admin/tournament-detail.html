@@ -1,0 +1,417 @@
+{{define "admin/tournament-detail"}}
+<style>
+  /* Bracket connector lines */
+  .bracket-match { position: relative; }
+  .bracket-match::after {
+    content: '';
+    position: absolute;
+    right: -2rem;
+    top: 50%;
+    width: 2rem;
+    height: 1px;
+    background: rgba(255,255,255,0.15);
+  }
+  .bracket-match::before {
+    content: '';
+    position: absolute;
+    right: -2rem;
+    top: 0;
+    height: 100%;
+    width: 1px;
+    background: rgba(255,255,255,0.15);
+  }
+  .bracket-round:last-child .bracket-match::after,
+  .bracket-round:last-child .bracket-match::before { display: none; }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+  .fade-up { animation: fadeInUp 0.4s ease forwards; }
+</style>
+
+<div class="space-y-10 text-white/90 animate-fade-in">
+
+  {{/* ── Header ──────────────────────────────────────────────── */}}
+  <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <a href="/admin/tournaments" class="text-xs text-gray-500 uppercase tracking-widest hover:text-wtt-red transition-colors flex items-center gap-1 mb-2">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        All Tournaments
+      </a>
+      <h1 class="text-4xl font-extrabold tracking-tighter uppercase">{{.Tournament.Name}}<span class="text-wtt-red">.</span></h1>
+      <div class="flex gap-3 mt-2 flex-wrap">
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Tournament.Type}}</span>
+        <span class="px-3 py-1 bg-wtt-red/10 border border-wtt-red/30 rounded-full text-[11px] uppercase tracking-widest text-wtt-red">{{.Tournament.Format}}</span>
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
+          {{.Tournament.StartDate.Format "Jan 02"}} – {{.Tournament.EndDate.Format "Jan 02, 2006"}}
+        </span>
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
+          {{len .Tournament.Participants}} players
+        </span>
+      </div>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="document.getElementById('edit-modal').classList.remove('hidden')"
+        class="border border-white/20 hover:border-white/40 text-white text-sm font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider">
+        Edit
+      </button>
+      <button onclick="deleteTournament('{{.Tournament.ID}}')"
+        class="bg-red-900/50 hover:bg-red-800 border border-red-700/50 text-white text-sm font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider">
+        Delete
+      </button>
+    </div>
+  </header>
+
+  {{/* ── Participants ─────────────────────────────────────────── */}}
+  <section class="space-y-3">
+    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">All Participants</h2>
+    <div class="flex flex-wrap gap-2">
+      {{range .Tournament.Participants}}
+      <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+        <div class="w-6 h-6 rounded-full bg-wtt-red/20 border border-wtt-red/30 flex items-center justify-center text-[9px] font-extrabold text-wtt-red">{{slice .FirstName 0 1}}</div>
+        <span class="text-sm font-semibold">{{.FirstName}} {{.LastName}}</span>
+        <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
+      </div>
+      {{else}}
+      <p class="text-sm text-gray-600">No participants registered.</p>
+      {{end}}
+    </div>
+  </section>
+
+  {{/* ── Group Phase ──────────────────────────────────────────── */}}
+  {{if .Tournament.Groups}}
+  <section class="space-y-4">
+    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Group Phase</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {{range $i, $g := .Tournament.Groups}}
+      <div class="glass rounded-2xl border border-white/10 overflow-hidden fade-up">
+        <div class="bg-wtt-red/10 border-b border-wtt-red/20 px-4 py-3 flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-wtt-red/20 border border-wtt-red/40 flex items-center justify-center font-extrabold text-wtt-red text-xs">{{slice $g.Name 6 7}}</div>
+          <span class="font-extrabold uppercase tracking-widest text-sm">{{$g.Name}}</span>
+          <span class="ml-auto text-[10px] text-gray-500">{{len $g.Players}} players</span>
+        </div>
+        <div class="divide-y divide-white/5">
+          {{range $j, $p := $g.Players}}
+          <div class="px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors">
+            <span class="w-5 h-5 rounded-full bg-white/5 text-[10px] flex items-center justify-center font-bold text-gray-400">&bull;</span>
+            <div>
+              <p class="text-sm font-semibold">{{$p.FirstName}} {{$p.LastName}}</p>
+              <p class="text-[10px] text-gray-500 font-mono">Elo {{$p.SinglesElo}}</p>
+            </div>
+          </div>
+          {{else}}
+          <p class="px-4 py-3 text-sm text-gray-600">Empty group</p>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+  {{/* ── Elimination Bracket ──────────────────────────────────── */}}
+  <section class="space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Elimination Bracket</h2>
+      <span class="text-[10px] text-gray-600 uppercase tracking-widest">Seeded by Elo</span>
+    </div>
+
+    {{$participants := .Tournament.Participants}}
+    {{$count := len $participants}}
+    {{if gt $count 1}}
+    <div class="flex gap-4 mb-2">
+      <label class="cursor-pointer group flex items-center gap-2">
+        <input type="radio" name="bracket-view" value="all" checked onchange="renderViewMode()" class="hidden peer">
+        <div class="px-4 py-2 rounded-xl border border-white/10 bg-black/20 peer-checked:border-wtt-red peer-checked:bg-wtt-red/20 transition-all text-xs font-bold uppercase tracking-widest text-gray-400 peer-checked:text-white group-hover:text-white">All Against All</div>
+      </label>
+      <label class="cursor-pointer group flex items-center gap-2">
+        <input type="radio" name="bracket-view" value="ranking" onchange="renderViewMode()" class="hidden peer">
+        <div class="px-4 py-2 rounded-xl border border-white/10 bg-black/20 peer-checked:border-wtt-red peer-checked:bg-wtt-red/20 transition-all text-xs font-bold uppercase tracking-widest text-gray-400 peer-checked:text-white group-hover:text-white">Per Ranking</div>
+      </label>
+    </div>
+
+    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar">
+      <!-- Brackets will be rendered here -->
+    </div>
+    {{else}}
+    <div class="glass rounded-2xl border border-white/10 p-8 text-center text-gray-600">
+      <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+      <p class="text-sm">At least 2 participants needed to generate brackets.</p>
+    </div>
+    {{end}}
+  </section>
+
+</div>
+
+{{/* ── Edit Modal ───────────────────────────────────────────── */}}
+<div id="edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100]">
+  <div class="bg-wtt-panel border border-white/10 p-8 rounded-3xl max-w-lg w-full relative shadow-2xl overflow-y-auto max-h-[90vh]">
+    <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Edit <span class="text-wtt-red">Event</span></h2>
+    <form id="edit-form" class="space-y-5">
+      <div class="space-y-2">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
+        <input type="text" name="name" value="{{.Tournament.Name}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Type</label>
+          <select name="type" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red appearance-none">
+            <option value="singles" {{if eq .Tournament.Type "singles"}}selected{{end}}>Singles</option>
+            <option value="doubles" {{if eq .Tournament.Type "doubles"}}selected{{end}}>Doubles</option>
+            <option value="teams" {{if eq .Tournament.Type "teams"}}selected{{end}}>Teams</option>
+          </select>
+        </div>
+        <div class="space-y-2">
+          <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Format</label>
+          <select name="format" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red appearance-none">
+            <option value="elimination" {{if eq .Tournament.Format "elimination"}}selected{{end}}>Elimination</option>
+            <option value="groups_elimination" {{if eq .Tournament.Format "groups_elimination"}}selected{{end}}>WTT Standard</option>
+            <option value="round_robin" {{if eq .Tournament.Format "round_robin"}}selected{{end}}>All Against All</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Start Date</label>
+          <input type="date" name="startDate" value="{{.Tournament.StartDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red [color-scheme:dark]">
+        </div>
+        <div class="space-y-2">
+          <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">End Date</label>
+          <input type="date" name="endDate" value="{{.Tournament.EndDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red [color-scheme:dark]">
+        </div>
+      </div>
+      
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Manage Participants</label>
+            <span class="text-[10px] text-gray-500 font-mono">Hold Ctrl/Cmd to select multiple</span>
+        </div>
+        <select id="edit-participants" name="participant_ids[]" multiple class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white custom-scrollbar h-48 focus:outline-none focus:ring-1 focus:ring-wtt-red">
+          {{range .Players}}
+            <option value="{{.ID}}">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+          {{end}}
+        </select>
+      </div>
+
+      <button type="submit" class="w-full bg-wtt-red hover:bg-red-700 text-white font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest mt-2">Save Changes</button>
+    </form>
+  </div>
+</div>
+
+<script type="application/json" id="participants-data">
+  [
+    {{range $i, $p := .Tournament.Participants}}
+      {{if $i}},{{end}}
+      { "id": "{{$p.ID}}", "name": "{{$p.FirstName}} {{$p.LastName}}", "elo": {{$p.SinglesElo}} }
+    {{end}}
+  ]
+</script>
+
+<style>
+.custom-scrollbar::-webkit-scrollbar { height: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,51,51,0.5); }
+</style>
+
+<script>
+(function() {
+  const participants = JSON.parse(document.getElementById('participants-data').textContent);
+
+  function nextPow2(n) {
+    let p = 1;
+    while (p < n) p *= 2;
+    return p;
+  }
+
+  // Generates canonical 1-indexed seeding order ensuring top 4 seeds enter corner positions
+  function getSeedingArrangement(size) {
+    let rounds = Math.log2(size);
+    if (rounds === 0) return [1];
+    let bracket = [1, 2];
+    for (let r = 2; r <= rounds; r++) {
+      let newBracket = [];
+      let sum = Math.pow(2, r) + 1;
+      for (let i = 0; i < bracket.length; i++) {
+        let seed = bracket[i];
+        if (i % 2 === 0) {
+          newBracket.push(seed, sum - seed);
+        } else {
+          newBracket.push(sum - seed, seed); // Ensures bottom-aligned seeds go into the lower slot
+        }
+      }
+      bracket = newBracket;
+    }
+    return bracket;
+  }
+
+  function buildBracket(players) {
+    const size = nextPow2(players.length);
+    const sorted = [...players].sort((a,b) => b.elo - a.elo);
+    const arrangement = getSeedingArrangement(size);
+
+    const pairs = [];
+    for (let i = 0; i < arrangement.length; i += 2) {
+      const s1 = arrangement[i] - 1;
+      const s2 = arrangement[i+1] - 1;
+      const p1 = s1 < sorted.length ? { ...sorted[s1], seed: s1 + 1 } : null;
+      const p2 = s2 < sorted.length ? { ...sorted[s2], seed: s2 + 1 } : null;
+      pairs.push([p1, p2]);
+    }
+
+    const rounds = [];
+    let current = pairs;
+    rounds.push(current);
+
+    while (current.length > 1) {
+      const next = [];
+      for (let i = 0; i < current.length; i += 2) {
+        next.push([null, null]); // TBD match
+      }
+      rounds.push(next);
+      current = next;
+    }
+    rounds.push([[null, null]]);
+    return rounds;
+  }
+
+  function createBracketElement(players) {
+    const rounds = buildBracket(players);
+    const roundNames = [];
+    const r = rounds.length;
+    for (let i = 0; i < r; i++) {
+      const remaining = rounds.length - i;
+      if (remaining === 1) roundNames.push('🏆 Final');
+      else if (remaining === 2) roundNames.push('Semi-Finals');
+      else if (remaining === 3) roundNames.push('Quarter-Finals');
+      else roundNames.push('Round ' + (i + 1));
+    }
+
+    const bracketWrap = document.createElement('div');
+    bracketWrap.className = 'flex gap-8 min-w-max px-2 py-4';
+
+    rounds.forEach((round, ri) => {
+      const col = document.createElement('div');
+      col.className = 'flex flex-col gap-0 bracket-round';
+
+      const header = document.createElement('div');
+      header.className = 'text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center';
+      header.textContent = roundNames[ri];
+      col.appendChild(header);
+
+      const matchesWrap = document.createElement('div');
+      matchesWrap.className = 'flex flex-col justify-around flex-1';
+      matchesWrap.style.gap = (ri === 0 ? '8px' : '0');
+
+      round.forEach(([p1, p2], mi) => {
+        const matchDiv = document.createElement('div');
+        matchDiv.className = 'bracket-match flex flex-col w-52 mr-8';
+        const spacer = ri > 0 ? (Math.pow(2, ri) - 1) * 8 : 0;
+        matchDiv.style.marginTop = mi === 0 ? '0' : spacer + 'px';
+
+        const makeSlot = (p) => {
+          const slot = document.createElement('div');
+          slot.className = 'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ' +
+            (p ? 'bg-white/5 border-white/10 hover:border-white/20' : 'bg-black/20 border-white/5 border-dashed');
+          if (p) {
+            slot.innerHTML = `<span class="text-[10px] text-gray-500 font-mono w-4 text-right">${p.seed}</span><span class="font-semibold truncate text-white/90" style="max-width:110px">${p.name}</span><span class="ml-auto text-[9px] text-gray-600 font-mono">${p.elo}</span>`;
+          } else {
+            slot.innerHTML = `<span class="text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">${ri === 0 ? 'BYE' : 'TBD'}</span>`;
+          }
+          return slot;
+        };
+
+        matchDiv.appendChild(makeSlot(p1));
+        const vs = document.createElement('div');
+        vs.className = 'h-px bg-white/5 mx-2 my-0.5';
+        matchDiv.appendChild(vs);
+        matchDiv.appendChild(makeSlot(p2));
+
+        matchesWrap.appendChild(matchDiv);
+      });
+
+      col.appendChild(matchesWrap);
+      bracketWrap.appendChild(col);
+    });
+
+    return bracketWrap;
+  }
+
+  window.renderViewMode = function() {
+    const view = document.querySelector('input[name="bracket-view"]:checked')?.value || 'all';
+    const container = document.getElementById('bracket-container');
+    container.innerHTML = '';
+    
+    if (view === 'all') {
+      const el = createBracketElement(participants);
+      container.appendChild(el);
+    } else {
+      // Per Ranking: Group players by clusters of 8 (or custom division chunks)
+      const sorted = [...participants].sort((a, b) => b.elo - a.elo);
+      const divisions = [];
+      const CHUNK_SIZE = 8;
+      for (let i = 0; i < sorted.length; i += CHUNK_SIZE) {
+        divisions.push(sorted.slice(i, i + CHUNK_SIZE));
+      }
+      
+      const flexContainer = document.createElement('div');
+      flexContainer.className = 'flex flex-col gap-10';
+
+      divisions.forEach((divPlayers, idx) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'glass rounded-2xl border border-white/10 p-6 overscroll-x-auto';
+        
+        const head = document.createElement('div');
+        head.className = 'flex items-center gap-3 mb-6';
+        head.innerHTML = `<div class="w-8 h-8 rounded-full bg-wtt-red/20 border border-wtt-red flex items-center justify-center font-extrabold text-wtt-red">${idx + 1}</div>
+          <h3 class="text-lg font-extrabold uppercase tracking-widest text-white/90">Division ${idx + 1}</h3>
+          <span class="ml-auto text-xs text-gray-500 uppercase">${divPlayers.length} Players</span>`;
+        wrap.appendChild(head);
+        
+        wrap.appendChild(createBracketElement(divPlayers));
+        flexContainer.appendChild(wrap);
+      });
+      container.appendChild(flexContainer);
+    }
+  };
+
+  // Run initial render
+  if (participants.length > 0) renderViewMode();
+
+  // Pre-select players in the edit modal
+  const selectNode = document.getElementById('edit-participants');
+  if (selectNode && participants.length > 0) {
+    const pIDs = participants.map(p => p.id);
+    for (const opt of selectNode.options) {
+      if (pIDs.includes(opt.value)) opt.selected = true;
+    }
+  }
+
+  document.getElementById('edit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = new URLSearchParams(new FormData(form));
+    const res = await fetch('/tournaments/{{.Tournament.ID}}', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: data.toString()
+    });
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      alert('Failed to update tournament: ' + await res.text());
+    }
+  });
+
+  window.deleteTournament = async function(id) {
+    if (!confirm('Delete this tournament and all its data? This cannot be undone.')) return;
+    const res = await fetch('/tournaments/' + id, { method: 'DELETE' });
+    if (res.ok) {
+      window.location.href = '/admin/tournaments';
+    } else {
+      alert('Failed to delete tournament.');
+    }
+  };
+})();
+</script>
+{{end}}

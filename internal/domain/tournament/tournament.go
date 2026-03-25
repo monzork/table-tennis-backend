@@ -79,7 +79,7 @@ func NewTournament(name string, tournamentType string, format string, start, end
 		Groups:       []Group{},
 	}
 
-	if format == "groups_elimination" {
+	if format == "groups_elimination" || format == "round_robin" {
 		if err := t.AutoAssignGroups(); err != nil {
 			return nil, err
 		}
@@ -113,20 +113,13 @@ func (t *Tournament) RemoveMatch(matchID uuid.UUID) error {
 }
 
 func (t *Tournament) AutoAssignGroups() error {
-	if t.Format != "groups_elimination" {
+	if t.Format != "groups_elimination" && t.Format != "round_robin" {
 		return nil
 	}
 	// Number of participants
 	n := len(t.Participants)
 	if n == 0 {
 		return nil
-	}
-
-	// WTT standard: groups of 3 or 4.
-	// Let's aim for groups of 4 if possible, otherwise 3.
-	numGroups := n / 4
-	if n%4 != 0 {
-		numGroups++
 	}
 
 	// Sort participants by Elo (descending)
@@ -136,6 +129,25 @@ func (t *Tournament) AutoAssignGroups() error {
 		}
 		return t.Participants[i].SinglesElo > t.Participants[j].SinglesElo
 	})
+
+	if t.Format == "round_robin" {
+		t.Groups = []Group{
+			{
+				ID:           uuid.New(),
+				TournamentID: t.ID,
+				Name:         "All Against All",
+				Players:      t.Participants, // Everyone in one single group
+			},
+		}
+		return nil
+	}
+
+	// WTT standard: groups of 3 or 4.
+	// Let's aim for groups of 4 if possible, otherwise 3.
+	numGroups := n / 4
+	if n%4 != 0 {
+		numGroups++
+	}
 
 	t.Groups = make([]Group, numGroups)
 	for i := 0; i < numGroups; i++ {
@@ -153,7 +165,6 @@ func (t *Tournament) AutoAssignGroups() error {
 		// In snake seeding:
 		// Row 0: 0, 1, 2, 3
 		// Row 1: 7, 6, 5, 4
-		// Row 2: 8, 9, 10, 11
 		row := i / numGroups
 		if row%2 != 0 {
 			groupIndex = numGroups - 1 - groupIndex

@@ -1,66 +1,144 @@
 package handler
 
 import (
+	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/tournament"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type TournamentHandler struct {
-	createUC *tournament.CreateTournamentUseCase
+	createUC      *tournament.CreateTournamentUseCase
+	getByID       *tournament.GetTournamentByIDUseCase
+	updateUC      *tournament.UpdateTournamentUseCase
+	deleteUC      *tournament.DeleteTournamentUseCase
+	leaderboardUC *leaderboard.GetLeaderboardUseCase
 }
 
-func NewTournamentHandler(createUC *tournament.CreateTournamentUseCase) *TournamentHandler {
-	return &TournamentHandler{createUC: createUC}
+func NewTournamentHandler(
+	createUC *tournament.CreateTournamentUseCase,
+	getByID *tournament.GetTournamentByIDUseCase,
+	updateUC *tournament.UpdateTournamentUseCase,
+	deleteUC *tournament.DeleteTournamentUseCase,
+	leaderboardUC *leaderboard.GetLeaderboardUseCase,
+) *TournamentHandler {
+	return &TournamentHandler{
+		createUC:      createUC,
+		getByID:       getByID,
+		updateUC:      updateUC,
+		deleteUC:      deleteUC,
+		leaderboardUC: leaderboardUC,
+	}
 }
+
 
 func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	var body struct {
-		Name           string   `json:"name" form:"name"`
-		Type           string   `json:"type" form:"type"`
-		Format         string   `json:"format" form:"format"`
-		StartDate      string   `json:"startDate" form:"startDate"`
-		EndDate        string   `json:"endDate" form:"endDate"`
-		ParticipantIDs []string `json:"participant_ids" form:"participant_ids[]"`
+		Name      string `json:"name" form:"name"`
+		Type      string `json:"type" form:"type"`
+		Format    string `form:"format"`
+		StartDate string `form:"startDate"`
+		EndDate   string `form:"endDate"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	// Extract new players from form manually since BodyParser doesn't handle multiple slices as structs well
-	newPlayerFirstNames := c.FormValue("new_player_first_name")
+	// Parse arrays directly from PostArgs since the form is application/x-www-form-urlencoded
+	var participantIDs []string
+	for _, id := range c.Request().PostArgs().PeekMulti("participant_ids[]") {
+		participantIDs = append(participantIDs, string(id))
+	}
+
 	var newPlayers []tournament.NewPlayerData
-	if newPlayerFirstNames != "" {
-		// If there's at least one, we might have multiple. 
-		// Fiber's FormValue only returns the first one. 
-		// We should use context's internal form values for slices.
-		form, err := c.MultipartForm()
-		if err == nil {
-			names := form.Value["new_player_first_name[]"]
-			lasts := form.Value["new_player_last_name[]"]
-			genders := form.Value["new_player_gender[]"]
-			for i := 0; i < len(names); i++ {
-				np := tournament.NewPlayerData{
-					FirstName: names[i],
-				}
-				if i < len(lasts) {
-					np.LastName = lasts[i]
-				}
-				if i < len(genders) {
-					np.Gender = genders[i]
-				}
-				if np.FirstName != "" && np.LastName != "" {
-					newPlayers = append(newPlayers, np)
-				}
-			}
+	firstNames := c.Request().PostArgs().PeekMulti("new_player_first_name[]")
+	lastNames := c.Request().PostArgs().PeekMulti("new_player_last_name[]")
+	genders := c.Request().PostArgs().PeekMulti("new_player_gender[]")
+
+	for i := 0; i < len(firstNames); i++ {
+		np := tournament.NewPlayerData{FirstName: string(firstNames[i])}
+		if i < len(lastNames) {
+			np.LastName = string(lastNames[i])
+		}
+		if i < len(genders) {
+			np.Gender = string(genders[i])
+		}
+		if np.FirstName != "" && np.LastName != "" {
+			newPlayers = append(newPlayers, np)
 		}
 	}
 
-	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.StartDate, body.EndDate, body.ParticipantIDs, newPlayers)
+	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.StartDate, body.EndDate, participantIDs, newPlayers)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	// Updated path for the partial
 	return c.Render("admin/partials/tournament-row", t)
+}
+
+func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
+	id := c.Params("id")
+	t, err := h.getByID.Execute(c.Context(), id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
+	players, _ := h.leaderboardUC.ExecuteSingles(c.Context())
+	return c.Render("admin/tournament-detail", fiber.Map{
+		"Tournament": t,
+		"Players":    players,
+	}, "layouts/admin")
+}
+
+func (h *TournamentHandler) Update(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var body struct {
+		Name      string `form:"name"`
+		Type      string `form:"type"`
+		Format    string `form:"format"`
+		StartDate string `form:"startDate"`
+		EndDate   string `form:"endDate"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	var participantIDs []string
+	for _, pid := range c.Request().PostArgs().PeekMulti("participant_ids[]") {
+		participantIDs = append(participantIDs, string(pid))
+	}
+
+	var newPlayers []tournament.NewPlayerData
+	firstNames := c.Request().PostArgs().PeekMulti("new_player_first_name[]")
+	lastNames := c.Request().PostArgs().PeekMulti("new_player_last_name[]")
+	genders := c.Request().PostArgs().PeekMulti("new_player_gender[]")
+
+	for i := 0; i < len(firstNames); i++ {
+		np := tournament.NewPlayerData{FirstName: string(firstNames[i])}
+		if i < len(lastNames) {
+			np.LastName = string(lastNames[i])
+		}
+		if i < len(genders) {
+			np.Gender = string(genders[i])
+		}
+		if np.FirstName != "" && np.LastName != "" {
+			newPlayers = append(newPlayers, np)
+		}
+	}
+
+	t, err := h.updateUC.Execute(
+		c.Context(), id, body.Name, body.Type, body.Format, body.StartDate, body.EndDate,
+		participantIDs, newPlayers,
+	)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.Render("admin/partials/tournament-row", t)
+}
+
+func (h *TournamentHandler) Delete(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if err := h.deleteUC.Execute(c.Context(), id); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.SendStatus(fiber.StatusOK)
 }
