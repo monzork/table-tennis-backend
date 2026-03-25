@@ -17,15 +17,63 @@ func NewTournamentRepository(db *bun.DB) *TournamentRepository {
 }
 
 func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournament) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	model := &TournamentModel{
 		ID:        t.ID,
 		Name:      t.Name,
 		Type:      t.Type,
+		Format:    t.Format,
 		StartDate: t.StartDate,
 		EndDate:   t.EndDate,
 	}
-	_, err := r.db.NewInsert().Model(model).Exec(ctx)
-	return err
+	_, err = tx.NewInsert().Model(model).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Save participants
+	for _, p := range t.Participants {
+		partModel := &TournamentParticipantModel{
+			TournamentID: t.ID,
+			PlayerID:     p.ID,
+		}
+		_, err = tx.NewInsert().Model(partModel).Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Save groups
+	for _, g := range t.Groups {
+		groupModel := &GroupModel{
+			ID:           g.ID,
+			TournamentID: t.ID,
+			Name:         g.Name,
+		}
+		_, err = tx.NewInsert().Model(groupModel).Exec(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Save group participants
+		for _, p := range g.Players {
+			gpModel := &GroupParticipantModel{
+				GroupID:  g.ID,
+				PlayerID: p.ID,
+			}
+			_, err = tx.NewInsert().Model(gpModel).Exec(ctx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tournament, error) {
@@ -39,6 +87,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			ID:        m.ID,
 			Name:      m.Name,
 			Type:      m.Type,
+			Format:    m.Format,
 			StartDate: m.StartDate,
 			EndDate:   m.EndDate,
 			Rules:     []tournament.Rule{},

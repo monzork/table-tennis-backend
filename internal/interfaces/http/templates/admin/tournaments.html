@@ -18,30 +18,116 @@
                 </tr>
             </thead>
             <tbody id="tournament-list" class="divide-y divide-white/10">
-                <!-- Data populated dynamically or via template range if passed -->
+                {{range .Tournaments}}
+                {{template "admin/partials/tournament-row" .}}
+                {{else}}
                  <tr><td colspan="4" class="p-4 text-center text-gray-500">No tournaments yet. Click Add to create one.</td></tr>
+                {{end}}
             </tbody>
         </table>
     </div>
 </div>
 
 <!-- Add Modal -->
-<div id="add-tournament-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]">
-    <div class="bg-wtt-panel border border-white/10 p-8 rounded-2xl max-w-md w-full relative">
-        <button onclick="document.getElementById('add-tournament-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
-        <h2 class="text-2xl font-bold uppercase mb-6 tracking-wide">New Event</h2>
-        <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" class="space-y-4" onsubmit="setTimeout(() => document.getElementById('add-tournament-modal').classList.add('hidden'), 50)">
-            <input type="text" name="name" placeholder="Tournament Name" required class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors">
-            <select name="type" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors appearance-none" required>
-                <option value="singles">Singles</option>
-                <option value="doubles">Doubles</option>
-                <option value="teams">Teams</option>
-            </select>
-            <div class="flex gap-4">
-                <input type="date" name="startDate" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors [color-scheme:dark]" title="Start Date">
-                <input type="date" name="endDate" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-wtt-red transition-colors [color-scheme:dark]" title="End Date">
+<div id="add-tournament-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] transition-all duration-300">
+    <div class="bg-wtt-panel border border-white/10 p-8 rounded-3xl max-w-2xl w-full relative shadow-2xl overflow-y-auto max-h-[90vh]">
+        <button onclick="document.getElementById('add-tournament-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        
+        <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-wtt-red">New Event</span>.</h2>
+        
+        <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" class="space-y-6" onsubmit="setTimeout(() => document.getElementById('add-tournament-modal').classList.add('hidden'), 50)">
+            <div class="grid grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
+                    <input type="text" name="name" placeholder="e.g., Grand Smash" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Game Type</label>
+                    <select name="type" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red transition-all appearance-none" required>
+                        <option value="singles">Singles</option>
+                        <option value="doubles">Doubles</option>
+                        <option value="teams">Teams</option>
+                    </select>
+                </div>
             </div>
-            <button type="submit" class="w-full bg-wtt-red hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all uppercase tracking-wider mt-4">Create Event</button>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Competition Format</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="cursor-pointer group">
+                        <input type="radio" name="format" value="elimination" checked class="hidden peer">
+                        <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-wtt-red/50 peer-checked:bg-wtt-red/10 transition-all text-center">
+                            <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Direct Elimination</span>
+                            <span class="text-[10px] text-gray-500 uppercase">Knockout Brackets</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer group">
+                        <input type="radio" name="format" value="groups_elimination" class="hidden peer">
+                        <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-wtt-red/50 peer-checked:bg-wtt-red/10 transition-all text-center">
+                            <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">WTT Standard</span>
+                            <span class="text-[10px] text-gray-500 uppercase">Groups + Knockout</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Start Date</label>
+                    <input type="date" name="startDate" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red transition-all [color-scheme:dark]">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">End Date</label>
+                    <input type="date" name="endDate" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red transition-all [color-scheme:dark]">
+                </div>
+            </div>
+
+            <div class="space-y-4 pt-4 border-t border-white/5">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Participants</label>
+                    <button type="button" onclick="addNewPlayerFields()" class="text-wtt-red hover:text-red-400 text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                        Add New Player
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="space-y-2">
+                         <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Select Registered Players</p>
+                         <select name="participant_ids[]" multiple class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-wtt-red transition-all h-32 scrollbar-thin">
+                             {{range .Players}}
+                             <option value="{{.ID}}" class="py-1">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+                             {{end}}
+                         </select>
+                    </div>
+
+                    <div id="new-players-list" class="space-y-3">
+                        <!-- Dynamic fields for new players -->
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-wtt-red hover:bg-red-700 text-white font-extrabold py-5 rounded-2xl transition-all uppercase tracking-widest shadow-lg shadow-wtt-red/20 transform hover:-translate-y-0.5 mt-4">Initialize Tournament</button>
         </form>
     </div>
 </div>
+
+<script>
+function addNewPlayerFields() {
+    const list = document.getElementById('new-players-list');
+    const div = document.createElement('div');
+    div.className = 'grid grid-cols-3 gap-3 p-3 bg-white/5 rounded-xl animate-fade-in relative group';
+    div.innerHTML = `
+        <input type="text" name="new_player_first_name[]" placeholder="First Name" required class="bg-black/40 border border-white/5 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-wtt-red">
+        <input type="text" name="new_player_last_name[]" placeholder="Last Name" required class="bg-black/40 border border-white/5 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-wtt-red">
+        <select name="new_player_gender[]" class="bg-black/40 border border-white/5 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-wtt-red">
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+        </select>
+        <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-black border border-white/10 text-gray-400 hover:text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
+    `;
+    list.appendChild(div);
+}
+</script>

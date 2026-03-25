@@ -27,7 +27,7 @@ package main
 		playerHandler := handler.NewPlayerHandler(playerUC)
 
 		tournamentRepo := bun.NewTournamentRepository(bun.DB)
-		createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo)
+		createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo, playerRepo)
 		tournamentHandler := handler.NewTournamentHandler(createTournamentUC)
 
 		matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
@@ -63,7 +63,8 @@ package main
 			Views: engine,
 		})
 
-		adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC)
+		getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
+		adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC)
 
 		app.Get("/rankings/singles", leaderboardHandler.GetSingles)
 		app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)

@@ -19,4 +19,10 @@ func Connect() {
 	}
 
 	DB = bun.NewDB(sqldb, sqlitedialect.New())
+
+	// Bun requires join-table models to be registered for any lookup
+	DB.RegisterModel(
+		(*TournamentParticipantModel)(nil),
+		(*GroupParticipantModel)(nil),
+	)
 }

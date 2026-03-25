@@ -13,8 +13,9 @@ type AdminHandler struct {
 	playerUC     *player.RegisterPlayerUseCase
 	tournamentUC *tournament.CreateTournamentUseCase
 	matchCreate  *match.CreateMatchUseCase
-	matchList    *match.GetMatchesUseCase
-	leaderboard  *leaderboard.GetLeaderboardUseCase
+	matchList      *match.GetMatchesUseCase
+	leaderboard    *leaderboard.GetLeaderboardUseCase
+	getTournaments *tournament.GetTournamentsUseCase
 }
 
 func NewAdminHandler(
@@ -23,13 +24,15 @@ func NewAdminHandler(
 	mc *match.CreateMatchUseCase,
 	ml *match.GetMatchesUseCase,
 	l *leaderboard.GetLeaderboardUseCase,
+	gt *tournament.GetTournamentsUseCase,
 ) *AdminHandler {
 	return &AdminHandler{
-		playerUC:     p,
-		tournamentUC: t,
-		matchCreate:  mc,
-		matchList:    ml,
-		leaderboard:  l,
+		playerUC:       p,
+		tournamentUC:   t,
+		matchCreate:    mc,
+		matchList:      ml,
+		leaderboard:    l,
+		getTournaments: gt,
 	}
 }
 
@@ -50,7 +53,12 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
-	return c.Render("admin/tournaments", fiber.Map{}, "layouts/admin")
+	players, _ := h.leaderboard.ExecuteSingles(c.Context())
+	tourneys, _ := h.getTournaments.Execute(c.Context())
+	return c.Render("admin/tournaments", fiber.Map{
+		"Players":     players,
+		"Tournaments": tourneys,
+	}, "layouts/admin")
 }
 
 func (h *AdminHandler) Matches(c *fiber.Ctx) error {

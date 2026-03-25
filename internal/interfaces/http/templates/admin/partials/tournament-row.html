@@ -1,8 +1,8 @@
 {{define "admin/partials/tournament-row"}}
 <tr class="hover:bg-white/5 transition-colors group">
     <td class="p-4 font-bold uppercase text-white tracking-widest">{{.Name}}</td>
-    <td class="p-4 text-gray-400 capitalize tracking-widest text-xs">{{.Type}}</td>
-    <td class="p-4 text-gray-400 font-mono text-sm">{{.StartDate.Format "Jan 02, 2006"}}</td>
-    <td class="p-4 text-gray-400 font-mono text-sm">{{.EndDate.Format "Jan 02, 2006"}}</td>
+    <td class="p-4 text-gray-400 capitalize tracking-widest text-xs">{{.Type}} / {{.Format}}</td>
+    <td class="p-4 text-gray-400 font-mono text-xs">{{.StartDate.Format "Jan 02, 2006"}}</td>
+    <td class="p-4 text-gray-400 font-mono text-xs">{{.EndDate.Format "Jan 02, 2006"}}</td>
 </tr>
 {{end}}
