@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/tournament"
+	"table-tennis-backend/internal/application/division"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type TournamentHandler struct {
@@ -14,6 +16,8 @@ type TournamentHandler struct {
 	updateUC      *tournament.UpdateTournamentUseCase
 	deleteUC      *tournament.DeleteTournamentUseCase
 	leaderboardUC *leaderboard.GetLeaderboardUseCase
+	divisionUC    *division.DivisionUseCase
+	finishUC      *tournament.FinishTournamentUseCase
 }
 
 func NewTournamentHandler(
@@ -22,6 +26,8 @@ func NewTournamentHandler(
 	updateUC *tournament.UpdateTournamentUseCase,
 	deleteUC *tournament.DeleteTournamentUseCase,
 	leaderboardUC *leaderboard.GetLeaderboardUseCase,
+	divisionUC *division.DivisionUseCase,
+	finishUC *tournament.FinishTournamentUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:      createUC,
@@ -29,6 +35,8 @@ func NewTournamentHandler(
 		updateUC:      updateUC,
 		deleteUC:      deleteUC,
 		leaderboardUC: leaderboardUC,
+		divisionUC:    divisionUC,
+		finishUC:      finishUC,
 	}
 }
 
@@ -84,9 +92,11 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 	players, _ := h.leaderboardUC.ExecuteSingles(c.Context())
+	divisions, _ := h.divisionUC.GetAll(c.Context())
 	return c.Render("admin/tournament-detail", fiber.Map{
 		"Tournament": t,
 		"Players":    players,
+		"Divisions":  divisions,
 	}, "layouts/admin")
 }
 
@@ -165,4 +175,16 @@ func (h *TournamentHandler) Delete(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 	return c.SendStatus(fiber.StatusOK)
+}
+
+func (h *TournamentHandler) Finish(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid tournament id")
+	}
+	if err := h.finishUC.Execute(c.Context(), id); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(fiber.Map{"status": "finished"})
 }

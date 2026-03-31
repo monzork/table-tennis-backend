@@ -96,5 +96,9 @@ func (r *PlayerRepository) GetById(ctx context.Context, id uuid.UUID) (*player.P
 		DoublesElo: model.DoublesElo,
 		Country:    model.Country,
 	}, nil
+}
 
+func (r *PlayerRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.NewDelete().Model((*PlayerModel)(nil)).Where("id = ?", id).Exec(ctx)
+	return err
 }

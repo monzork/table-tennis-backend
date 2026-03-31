@@ -72,6 +72,7 @@ type Tournament struct {
 	Name         string
 	Type         string // "singles", "doubles", "teams"
 	Format       string // "elimination", "groups_elimination", "round_robin"
+	Status       string // "in_progress", "finished"
 	Participants []*player.Player
 	StartDate    time.Time
 	EndDate      time.Time

@@ -47,7 +47,19 @@
         </span>
       </div>
     </div>
-    <div class="flex gap-3">
+    <div class="flex gap-3 items-center">
+      {{if eq .Tournament.Status "finished"}}
+      <span class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 border border-white/10 rounded-full px-4 py-2">
+        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+        Finished
+      </span>
+      {{else}}
+      <button onclick="finishTournament('{{.Tournament.ID}}')"
+        class="bg-white text-black text-sm font-black py-2 px-5 rounded-full transition-all uppercase tracking-wider hover:bg-gray-200"
+        title="Apply Elo changes and mark tournament as finished">
+        ✓ Finish Tournament
+      </button>
+      {{end}}
       <button onclick="document.getElementById('edit-modal').classList.remove('hidden')"
         class="border border-white/20 hover:border-white/40 text-white text-sm font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider">
         Edit
@@ -112,11 +124,21 @@
     <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Match Rules</h2>
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       {{range .Tournament.StageRules}}
-      <div class="glass rounded-xl border border-white/10 p-3 space-y-1 text-center" data-stage="{{.Stage}}" data-bestof="{{.BestOf}}">
-        <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold">{{.Stage}}</p>
-        <p class="text-lg font-extrabold text-white">Bo{{.BestOf}}</p>
-        <p class="text-[10px] text-gray-500">{{.PointsToWin}} pts · +{{.PointsMargin}}</p>
-      </div>
+        {{if eq $.Tournament.Format "round_robin"}}
+           {{if eq .Stage "group"}}
+           <div class="glass rounded-xl border border-white/10 p-3 space-y-1 text-center" data-stage="{{.Stage}}" data-bestof="{{.BestOf}}">
+             <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Round Robin</p>
+             <p class="text-lg font-extrabold text-white">Bo{{.BestOf}}</p>
+             <p class="text-[10px] text-gray-500">{{.PointsToWin}} pts · +{{.PointsMargin}}</p>
+           </div>
+           {{end}}
+        {{else}}
+           <div class="glass rounded-xl border border-white/10 p-3 space-y-1 text-center" data-stage="{{.Stage}}" data-bestof="{{.BestOf}}">
+             <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold">{{.Stage}}</p>
+             <p class="text-lg font-extrabold text-white">Bo{{.BestOf}}</p>
+             <p class="text-[10px] text-gray-500">{{.PointsToWin}} pts · +{{.PointsMargin}}</p>
+           </div>
+        {{end}}
       {{end}}
     </div>
   </section>
@@ -125,23 +147,14 @@
   {{/* ── Elimination Bracket ──────────────────────────────────── */}}
   <section class="space-y-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Elimination Bracket</h2>
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{if eq .Tournament.Format "round_robin"}}Round Robin Matchups{{else}}Elimination Bracket{{end}}</h2>
       <span class="text-[10px] text-gray-600 uppercase tracking-widest">Seeded by Elo</span>
     </div>
 
     {{$participants := .Tournament.Participants}}
     {{$count := len $participants}}
     {{if gt $count 1}}
-    <div class="flex gap-4 mb-2">
-      <label class="cursor-pointer group flex items-center gap-2">
-        <input type="radio" name="bracket-view" value="all" checked onchange="renderViewMode()" class="hidden peer">
-        <div class="px-4 py-2 rounded-xl border border-white/10 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-xs font-bold uppercase tracking-widest text-gray-400 peer-checked:text-white group-hover:text-white">All Against All</div>
-      </label>
-      <label class="cursor-pointer group flex items-center gap-2">
-        <input type="radio" name="bracket-view" value="ranking" onchange="renderViewMode()" class="hidden peer">
-        <div class="px-4 py-2 rounded-xl border border-white/10 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-xs font-bold uppercase tracking-widest text-gray-400 peer-checked:text-white group-hover:text-white">Per Ranking</div>
-      </label>
-    </div>
+    <input type="hidden" name="bracket-view" value="ranking" id="bracket-view-hidden">
 
     <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar">
       <!-- Brackets will be rendered here -->
@@ -158,7 +171,7 @@
 
 {{/* ── Score Entry Modal ──────────────────────────────────── */}}
 <div id="score-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
-  <div class="bg-wtt-panel border border-white/10 p-8 rounded-3xl max-w-md w-full relative shadow-2xl">
+  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-md w-full relative shadow-2xl">
     <button onclick="document.getElementById('score-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
@@ -240,7 +253,7 @@
 
 {{/* ── Edit Modal ───────────────────────────────────────────── */}}
 <div id="edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100]">
-  <div class="bg-wtt-panel border border-white/10 p-8 rounded-3xl max-w-lg w-full relative shadow-2xl overflow-y-auto max-h-[90vh]">
+  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-lg w-full relative shadow-2xl overflow-y-auto max-h-[90vh]">
     <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
@@ -263,7 +276,7 @@
           <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Format</label>
           <select name="format" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
             <option value="elimination" {{if eq .Tournament.Format "elimination"}}selected{{end}}>Elimination</option>
-            <option value="groups_elimination" {{if eq .Tournament.Format "groups_elimination"}}selected{{end}}>WTT Standard</option>
+            <option value="groups_elimination" {{if eq .Tournament.Format "groups_elimination"}}selected{{end}}>Group + Knockout</option>
             <option value="round_robin" {{if eq .Tournament.Format "round_robin"}}selected{{end}}>All Against All</option>
           </select>
         </div>
@@ -298,8 +311,15 @@
         </div>
         <div id="rules-panel" class="hidden space-y-3">
           {{range .Tournament.StageRules}}
+          {{$shouldShow := true}}
+          {{if eq $.Tournament.Format "round_robin"}}
+            {{if ne .Stage "group"}}{{$shouldShow = false}}{{end}}
+          {{end}}
+          {{if $shouldShow}}
           <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
-            <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{.Stage}}</span>
+            <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">
+              {{if eq $.Tournament.Format "round_robin"}}Round Robin{{else}}{{.Stage}}{{end}}
+            </span>
             <div class="space-y-1">
               <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
               <select name="stage_rule[{{.Stage}}][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
@@ -316,6 +336,7 @@
             <input type="hidden" name="stage_rule[{{.Stage}}][points_margin]" value="{{.PointsMargin}}">
           </div>
           {{end}}
+          {{end}}
         </div>
       </div>
 
@@ -328,7 +349,16 @@
   [
     {{range $i, $p := .Tournament.Participants}}
       {{if $i}},{{end}}
-      { "id": "{{$p.ID}}", "name": "{{$p.FirstName}} {{$p.LastName}}", "elo": {{$p.SinglesElo}} }
+      { "id": "{{$p.ID}}", "name": "{{$p.FirstName}} {{$p.LastName}}", "elo": {{if eq $.Tournament.Type "doubles"}}{{$p.DoublesElo}}{{else}}{{$p.SinglesElo}}{{end}} }
+    {{end}}
+  ]
+</script>
+
+<script type="application/json" id="divisions-data">
+  [
+    {{range $i, $d := .Divisions}}
+      {{if $i}},{{end}}
+      { "name": "{{$d.Name}}", "category": "{{$d.Category}}", "min_elo": {{$d.MinElo}}, "max_elo": {{if $d.MaxElo}}{{$d.MaxElo}}{{else}}null{{end}}, "color": "{{$d.Color}}" }
     {{end}}
   ]
 </script>
@@ -353,6 +383,9 @@
 (function() {
   const participants = JSON.parse(document.getElementById('participants-data').textContent);
   const playedMatches = JSON.parse(document.getElementById('matches-data').textContent);
+  const globalDivisions = JSON.parse(document.getElementById('divisions-data').textContent);
+  const tournamentFormat = "{{.Tournament.Format}}";
+  const tournamentType = "{{.Tournament.Type}}";
 
   function nextPow2(n) {
     let p = 1;
@@ -559,42 +592,391 @@
   }
 
   window.renderViewMode = function() {
-    const view = document.querySelector('input[name="bracket-view"]:checked')?.value || 'all';
     const container = document.getElementById('bracket-container');
+    if (!container) return;
     container.innerHTML = '';
-    
-    if (view === 'all') {
-      const el = createBracketElement(participants);
-      container.appendChild(el);
-    } else {
-      // Per Ranking: Group players by clusters of 8 (or custom division chunks)
+
+      // Per Ranking: Group players strictly by Global Divisions boundaries
       const sorted = [...participants].sort((a, b) => b.elo - a.elo);
-      const divisions = [];
-      const CHUNK_SIZE = 8;
-      for (let i = 0; i < sorted.length; i += CHUNK_SIZE) {
-        divisions.push(sorted.slice(i, i + CHUNK_SIZE));
-      }
       
       const flexContainer = document.createElement('div');
       flexContainer.className = 'flex flex-col gap-10';
 
-      divisions.forEach((divPlayers, idx) => {
-        const wrap = document.createElement('div');
-        wrap.className = 'glass rounded-2xl border border-white/10 p-6 overscroll-x-auto';
-        
-        const head = document.createElement('div');
-        head.className = 'flex items-center gap-3 mb-6';
-        head.innerHTML = `<div class="w-8 h-8 rounded-full bg-white/10 border border-white/30 flex items-center justify-center font-extrabold text-white">${idx + 1}</div>
-          <h3 class="text-lg font-extrabold uppercase tracking-widest text-white/90">Division ${idx + 1}</h3>
-          <span class="ml-auto text-xs text-gray-500 uppercase">${divPlayers.length} Players</span>`;
-        wrap.appendChild(head);
-        
-        wrap.appendChild(createBracketElement(divPlayers));
-        flexContainer.appendChild(wrap);
+      let assignedPlayers = new Set();
+      
+      // Process players bucketed by the precise Min/Max constraints of each Global Division
+      // Filter the divisions strictly by whether they apply to the current Tournament Type (Singles vs Doubles)
+      const validDivisions = globalDivisions.filter(d => d.category === 'both' || d.category === tournamentType);
+
+      validDivisions.forEach((divData) => {
+        const divPlayers = sorted.filter(p => !assignedPlayers.has(p.id) && p.elo >= divData.min_elo && (divData.max_elo === null || p.elo <= divData.max_elo));
+        if (divPlayers.length > 0) {
+          const wrap = document.createElement('div');
+          wrap.className = 'glass rounded-2xl border border-white/10 p-6 overscroll-x-auto';
+          
+           const head = document.createElement('div');
+           head.className = 'flex items-center gap-5 mb-8 border-b border-white/10 pb-8';
+           head.innerHTML = `
+             <div class="w-14 h-14 rounded-2xl border flex items-center justify-center font-black text-xl relative" 
+                  style="box-shadow: 0 8px 20px ${divData.color}20; background: linear-gradient(135deg, ${divData.color}20, ${divData.color}05); border-color:${divData.color}30; color: ${divData.color};">
+                ${divData.name.charAt(0)}
+                <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white flex items-center justify-center border-2 border-black">
+                   <div class="w-1.5 h-1.5 rounded-full" style="background-color: ${divData.color}"></div>
+                </div>
+             </div>
+             <div class="flex-1">
+                <div class="flex items-center gap-3">
+                   <h3 class="text-3xl font-black uppercase tracking-tighter text-white">${divData.name} Division</h3>
+                   <span class="text-[10px] font-black bg-white/10 text-gray-400 px-3 py-1 rounded-full border border-white/10 tracking-widest uppercase opacity-70">Ranking Area</span>
+                </div>
+                <div class="flex items-center gap-4 mt-2">
+                   <div class="flex items-center gap-1.5 grayscale opacity-50">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                      <span class="text-[10px] font-bold text-white uppercase tracking-widest">${divData.min_elo}</span>
+                   </div>
+                   <div class="w-8 h-px bg-white/10"></div>
+                   <div class="flex items-center gap-1.5 grayscale opacity-50">
+                      <span class="text-[10px] font-bold text-white uppercase tracking-widest">${divData.max_elo ? divData.max_elo : '∞'}</span>
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>
+                   </div>
+                </div>
+             </div>
+             <div class="text-right">
+                <div class="text-3xl font-black text-white/90 tabular-nums line-height-1 leading-none">${divPlayers.length}</div>
+                <div class="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mt-1">Participants</div>
+             </div>`;
+           wrap.appendChild(head);
+           
+           let el;
+           if (tournamentFormat === 'round_robin') {
+               el = createRoundRobinElement(divPlayers, 'full', divData.name);
+           } else if (tournamentFormat === 'groups_elimination') {
+               el = createGroupsEliminationElement(divPlayers, divData.name);
+           } else {
+               el = createBracketElement(divPlayers);
+           }
+           wrap.appendChild(el);
+           flexContainer.appendChild(wrap);
+          
+          // Mark assigned
+          divPlayers.forEach(p => assignedPlayers.add(p.id));
+        }
       });
+
+      // Process any fallback unranked players who miss parameters mathematically
+      const unassigned = sorted.filter(p => !assignedPlayers.has(p.id));
+      if (unassigned.length > 0) {
+          const wrap = document.createElement('div');
+          wrap.className = 'glass rounded-2xl border border-white/10 p-6 overscroll-x-auto';
+          
+          const head = document.createElement('div');
+          head.className = 'flex items-center gap-3 mb-6 opacity-60';
+          head.innerHTML = `<h3 class="text-lg font-extrabold uppercase tracking-widest text-gray-400">Unclassified Division</h3>
+            <span class="ml-auto text-xs text-gray-500 uppercase">${unassigned.length} Players</span>`;
+          wrap.appendChild(head);
+          
+           let el;
+           if (tournamentFormat === 'round_robin') {
+               el = createRoundRobinElement(unassigned, 'full', 'Unclassified');
+           } else if (tournamentFormat === 'groups_elimination') {
+               el = createGroupsEliminationElement(unassigned, 'Unclassified');
+           } else {
+               el = createBracketElement(unassigned);
+           }
+           wrap.appendChild(el);
+           flexContainer.appendChild(wrap);
+      }
+
       container.appendChild(flexContainer);
-    }
   };
+
+  function createStandingsTable(players, containerClass = '') {
+    const tableWrap = document.createElement('div');
+    tableWrap.className = 'w-full glass rounded-3xl overflow-hidden border border-white/5 mb-8 ' + containerClass;
+    
+    const stats = players.map(p => {
+        const pMatches = playedMatches.filter(m => (m.teamA === p.id || m.teamB === p.id) && m.status === 'finished');
+        let wins = 0;
+        pMatches.forEach(m => {
+            const isA = m.teamA === p.id;
+            if ((isA && m.winner === 'A') || (!isA && m.winner === 'B')) wins++;
+        });
+        return { 
+           player: p, 
+           played: pMatches.length, 
+           wins: wins,
+           losses: pMatches.length - wins,
+           winRate: pMatches.length > 0 ? (wins / pMatches.length) : 0
+        };
+    }).sort((a,b) => (b.wins - a.wins) || (b.winRate - a.winRate) || (a.losses - b.losses));
+
+    let html = `
+      <table class="w-full text-left text-[11px] font-bold tracking-tight">
+        <thead>
+          <tr class="bg-white/5 text-gray-500 uppercase tracking-[0.2em] text-[9px] border-b border-white/10">
+            <th class="p-4 w-16 text-center">Rank</th>
+            <th class="p-4">Player</th>
+            <th class="p-4 text-center">Played</th>
+            <th class="p-4 text-center">W</th>
+            <th class="p-4 text-center">L</th>
+            <th class="p-4 text-center">Win%</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+    `;
+
+    stats.forEach((s, idx) => {
+        let rankClass = "opacity-40";
+        if (idx === 0) rankClass = "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]";
+        else if (idx === 1) rankClass = "text-gray-300";
+        else if (idx === 2) rankClass = "text-amber-600";
+
+        html += `
+          <tr class="${idx < 2 ? 'bg-white/[0.03]' : ''} hover:bg-white/[0.05] transition-colors group">
+            <td class="p-4 text-center font-black ${rankClass}">
+               ${idx === 0 ? "🏆" : (idx + 1)}
+            </td>
+            <td class="p-4">
+               <div class="flex flex-col">
+                  <span class="text-white uppercase group-hover:translate-x-1 transition-transform inline-block">${s.player.name}</span>
+                  <span class="text-[8px] text-gray-500 uppercase tracking-widest font-black mt-0.5">Elo: ${s.player.elo}</span>
+               </div>
+            </td>
+            <td class="p-4 text-center opacity-60 tabular-nums">${s.played}</td>
+            <td class="p-4 text-center font-black text-white tabular-nums">${s.wins}</td>
+            <td class="p-4 text-center opacity-40 tabular-nums">${s.losses}</td>
+            <td class="p-4 text-center">
+               <div class="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] text-gray-400">
+                  ${(s.winRate * 100).toFixed(0)}%
+               </div>
+            </td>
+          </tr>
+        `;
+    });
+
+    html += '</tbody></table>';
+    tableWrap.innerHTML = html;
+    return tableWrap;
+  }
+
+  function createGroupsEliminationElement(players, divName = '') {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex flex-col gap-12 mt-4';
+
+    const groupsHeader = document.createElement('h3');
+    groupsHeader.className = 'text-sm font-black uppercase text-gray-400 tracking-[0.2em] text-center border-b border-white/5 pb-4 mb-4';
+    groupsHeader.textContent = divName ? `${divName} - Group Phase` : 'Group Phase';
+    wrap.appendChild(groupsHeader);
+
+    // Group Stage
+    const groupStageWrap = document.createElement('div');
+    groupStageWrap.className = 'w-full';
+
+    // Standings for the whole division (Overview)
+    // const overview = createStandingsTable(players, 'mb-12 border-white/20 shadow-2xl');
+    // wrap.appendChild(overview);
+
+    // Snake Seeding into groups of 4
+    const GROUP_SIZE = 4;
+    const numGroups = Math.ceil(players.length / GROUP_SIZE);
+    const groups = Array.from({ length: numGroups }, () => []);
+    
+    players.forEach((p, i) => {
+        const row = Math.floor(i / numGroups);
+        const col = i % numGroups;
+        const groupIdx = (row % 2 === 0) ? col : (numGroups - 1 - col);
+        groups[groupIdx].push(p);
+    });
+
+    let allGroupsFinished = true;
+    let advancingPlayers = [];
+
+    const groupsContainer = document.createElement('div');
+    groupsContainer.className = 'grid grid-cols-1 xl:grid-cols-2 gap-8';
+
+    groups.forEach((gPlayers, gIdx) => {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'bg-black/20 rounded-3xl p-6 border border-white/5 shadow-lg relative';
+
+        const groupHeader = document.createElement('div');
+        groupHeader.className = 'flex justify-between items-center border-b border-white/10 pb-4';
+        groupHeader.innerHTML = `<div class="flex flex-col">
+                                   <h4 class="text-xs font-black uppercase text-white tracking-widest">Group ${String.fromCharCode(65 + gIdx)}</h4>
+                                   <span class="text-[8px] text-gray-500 uppercase font-bold tracking-tighter">${divName}</span>
+                                 </div>
+                                 <span class="text-[10px] text-gray-500 uppercase tracking-widest">${gPlayers.length} Players</span>`;
+        groupEl.appendChild(groupHeader);
+
+        // Add Standing Table for the Group
+        const standings = createStandingsTable(gPlayers, 'my-6 border-white/10 glass-dark scale-95 origin-top');
+        groupEl.appendChild(standings);
+
+        let expectedMatches = (gPlayers.length * (gPlayers.length - 1)) / 2;
+        let finishedMatchesCount = 0;
+        let pStats = {};
+        gPlayers.forEach(p => pStats[p.id] = { wins: 0 });
+
+        for (let i = 0; i < gPlayers.length; i++) {
+           for (let j = i + 1; j < gPlayers.length; j++) {
+              const m = playedMatches.find(m => 
+                 (m.teamA === gPlayers[i].id && m.teamB === gPlayers[j].id) || 
+                 (m.teamA === gPlayers[j].id && m.teamB === gPlayers[i].id)
+              );
+              if (m && m.status === 'finished') {
+                 finishedMatchesCount++;
+                 if (m.winner === 'A') {
+                    const winnerId = m.teamA === gPlayers[i].id ? gPlayers[i].id : gPlayers[j].id;
+                    pStats[winnerId].wins++;
+                 } else if (m.winner === 'B') {
+                    const winnerId = m.teamB === gPlayers[i].id ? gPlayers[i].id : gPlayers[j].id;
+                    pStats[winnerId].wins++;
+                 }
+              }
+           }
+        }
+
+        if (finishedMatchesCount < expectedMatches || expectedMatches === 0) {
+            allGroupsFinished = false;
+        } else {
+            const sortedGroup = [...gPlayers].sort((a,b) => pStats[b.id].wins - pStats[a.id].wins);
+            let take = Math.min(2, gPlayers.length);
+            for(let x=0; x<take; x++) {
+               advancingPlayers.push(sortedGroup[x]);
+            }
+            
+            const groupStatus = document.createElement('div');
+            groupStatus.className = 'absolute top-6 right-6 flex items-center gap-1 text-[10px] font-bold uppercase text-green-400';
+            groupStatus.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg> FINISHED';
+            groupEl.appendChild(groupStatus);
+        }
+
+        const rrWrap = createRoundRobinElement(gPlayers, 'group');
+        groupEl.appendChild(rrWrap);
+
+        groupsContainer.appendChild(groupEl);
+    });
+
+    groupStageWrap.appendChild(groupsContainer);
+    wrap.appendChild(groupStageWrap);
+
+    // Knockout Stage
+    const knockoutWrap = document.createElement('div');
+    knockoutWrap.className = 'w-full mt-8 border-t border-white/10 pt-10';
+
+    const knockoutHeader = document.createElement('h3');
+    knockoutHeader.className = 'text-lg font-black uppercase text-white tracking-widest mb-8 text-center';
+    knockoutHeader.textContent = 'Knockout Phase';
+    knockoutWrap.appendChild(knockoutHeader);
+
+    if (allGroupsFinished && groups.length > 0) {
+        advancingPlayers.sort((a,b) => b.elo - a.elo);
+        const bracket = createBracketElement(advancingPlayers);
+        knockoutWrap.appendChild(bracket);
+    } else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'glass rounded-3xl border border-white/10 border-dashed p-12 text-center text-gray-500';
+        placeholder.innerHTML = `<svg class="w-12 h-12 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                 <p class="text-xs font-bold uppercase tracking-widest">Knockout Bracket dynamically generates</p>
+                                 <p class="text-[10px] mt-1">after all Group Stage matches finish</p>`;
+        knockoutWrap.appendChild(placeholder);
+    }
+
+    wrap.appendChild(knockoutWrap);
+    return wrap;
+  }
+
+  function createRoundRobinElement(players, displayMode = 'full', divName = '') {
+    const mainWrap = document.createElement('div');
+    mainWrap.className = 'flex flex-col gap-6';
+
+    if (divName && displayMode === 'full') {
+      const header = document.createElement('h4');
+      header.className = 'text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] mb-2 text-center border-b border-white/5 pb-2';
+      header.textContent = `${divName} Standings`;
+      mainWrap.appendChild(header);
+    }
+    
+    // Standings Table for Round Robin
+    const standings = createStandingsTable(players, 'mb-8 border-white/10 shadow-2xl');
+    mainWrap.appendChild(standings);
+
+    const listWrap = document.createElement('div');
+    if (displayMode === 'full') {
+      listWrap.className = 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max px-2 py-4 items-start w-full';
+    } else {
+      listWrap.className = 'flex flex-col gap-4 mt-4';
+    }
+
+    for (let i = 0; i < players.length; i++) {
+       for (let j = i+1; j < players.length; j++) {
+         const p1 = players[i];
+         const p2 = players[j];
+
+         const matchDiv = document.createElement('div');
+         matchDiv.className = 'w-full glass rounded-xl p-3 border border-white/10 flex flex-col gap-1';
+
+         const makeSlot = (p) => {
+           const slot = document.createElement('div');
+           slot.className = 'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ' +
+             (p ? 'bg-white/5 border-white/10 hover:border-white/20' : 'bg-black/20 border-white/5 border-dashed');
+           if (p) {
+             slot.innerHTML = `<span class="text-[10px] text-gray-500 font-mono w-4 text-right">${p.seed || '-'}</span><span class="font-semibold truncate text-white/90" style="max-width:110px">${p.name}</span><span class="ml-auto text-[9px] text-gray-600 font-mono">${p.elo}</span>`;
+           } else {
+             slot.innerHTML = `<span class="text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">TBD</span>`;
+           }
+           return slot;
+         };
+
+         matchDiv.appendChild(makeSlot(p1));
+         matchDiv.appendChild(makeSlot(p2));
+
+         if (p1 && p2 && !p1.byeslot && !p2.byeslot) {
+           let existingMatch = playedMatches.find(m => 
+             (m.teamA === p1.id && m.teamB === p2.id) || 
+             (m.teamA === p2.id && m.teamB === p1.id)
+           );
+
+           if (existingMatch && existingMatch.status === 'finished') {
+              const winnerName = existingMatch.winner === 'A' ? (existingMatch.teamA === p1.id ? p1.name : p2.name) : (existingMatch.teamB === p2.id ? p2.name : p1.name);
+              const badge = document.createElement('div');
+              badge.className = 'mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-gray-400 bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-center shadow-inner';
+              badge.textContent = 'Winner: ' + winnerName;
+              matchDiv.appendChild(badge);
+           } else {
+             const stageName = 'group';
+             const stageRuleEl = document.querySelector(`[data-stage="${stageName}"]`);
+             const bestOf = stageRuleEl ? parseInt(stageRuleEl.dataset.bestof) : 5;
+             const tournId = document.getElementById('score-tournament-id').value;
+
+             const btn = document.createElement('button');
+             if (existingMatch && existingMatch.status === 'in_progress') {
+               btn.className = 'mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 rounded-lg py-2 px-2 transition-all';
+               btn.textContent = '✏️ Edit Score';
+             } else {
+               btn.className = 'mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-white hover:text-white border border-white/20 hover:border-white/50 bg-white/10 hover:bg-white/20 rounded-lg py-2 px-2 transition-all';
+               btn.textContent = '⚡ Score Match';
+             }
+             btn.onclick = async () => {
+               let mId = existingMatch ? existingMatch.id : null;
+               if (!mId) {
+                 const body = new URLSearchParams({ tournamentId: tournId, matchType: 'singles', teamAPlayerIds: p1.id, teamBPlayerIds: p2.id });
+                 const res = await fetch('/matches/create', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: body.toString() });
+                 if (!res.ok) { alert('Could not create match: ' + await res.text()); return; }
+                 const data = await res.json();
+                 mId = data.id || data.ID;
+               }
+               openScoreModal(mId, p1.name, p2.name, stageName, bestOf);
+             };
+             matchDiv.appendChild(btn);
+           }
+         }
+         listWrap.appendChild(matchDiv);
+       }
+    }
+    mainWrap.appendChild(listWrap);
+    return mainWrap;
+  }
+
 
   // Run initial render
   if (participants.length > 0) renderViewMode();
@@ -631,6 +1013,16 @@
       window.location.href = '/admin/tournaments';
     } else {
       alert('Failed to delete tournament.');
+    }
+  };
+
+  window.finishTournament = async function(id) {
+    if (!confirm('Are you sure you want to finish this tournament? Elo changes will be calculated and applied to all players.')) return;
+    const res = await fetch('/admin/tournaments/' + id + '/finish', { method: 'POST' });
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      alert('Failed to finish tournament: ' + await res.text());
     }
   };
 })();

@@ -14,6 +14,7 @@ type TournamentModel struct {
 	Name      string     `bun:"name,notnull"`
 	Type      string     `bun:"type,notnull,default:'singles'"`
 	Format    string     `bun:"format,notnull,default:'elimination'"`
+	Status    string     `bun:"status,notnull,default:'in_progress'"`
 	StartDate time.Time  `bun:"start_date,notnull"`
 	EndDate   time.Time  `bun:"end_date,notnull"`
 	CreatedAt time.Time  `bun:"created_at,notnull,default:current_timestamp"`

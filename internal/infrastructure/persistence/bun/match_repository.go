@@ -2,8 +2,7 @@ package bun
 
 import (
 	"context"
-	matchDomain "table-tennis-backend/internal/domain/match"
-	playerDomain "table-tennis-backend/internal/domain/player"
+
 	"table-tennis-backend/internal/domain/tournament"
 	"time"
 
@@ -140,14 +139,7 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, id uuid.UUID, sets []
 		m.WinnerTeam = &winner
 		m.Status = "finished"
 
-		// Update player Elo ratings
-		p1a, _ := r.playerRepo.GetById(ctx, m.TeamAPlayer1ID)
-		p1b, _ := r.playerRepo.GetById(ctx, m.TeamBPlayer1ID)
-		if p1a != nil && p1b != nil {
-			matchDomain.CalculateAndApplyElo(m.MatchType, []*playerDomain.Player{p1a}, []*playerDomain.Player{p1b}, winner)
-			_ = r.playerRepo.Save(ctx, p1a)
-			_ = r.playerRepo.Save(ctx, p1b)
-		}
+
 
 		// Advance winner to next match slot if configured
 		if m.NextMatchID != nil {

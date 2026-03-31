@@ -25,18 +25,23 @@ package main
 
 		playerRepo := bun.NewPlayerRepository(bun.DB)
 		playerUC := player.NewRegisterPlayerUseCase(playerRepo)
-		playerHandler := handler.NewPlayerHandler(playerUC)
+		updatePlayerUC := player.NewUpdatePlayerUseCase(playerRepo)
+		deletePlayerUC := player.NewDeletePlayerUseCase(playerRepo)
+		playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC)
 
 		leaderboardUC := leaderboard.NewGetLeaderboardUseCase(*playerRepo)
+
+		divisionRepo := bun.NewDivisionRepository(bun.DB)
+		divisionUC := division.NewDivisionUseCase(divisionRepo)
 
 		tournamentRepo := bun.NewTournamentRepository(bun.DB)
 		createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo, playerRepo)
 		getTournamentByIDUC := tournament.NewGetTournamentByIDUseCase(tournamentRepo)
 		updateTournamentUC := tournament.NewUpdateTournamentUseCase(tournamentRepo, playerRepo)
 		deleteTournamentUC := tournament.NewDeleteTournamentUseCase(tournamentRepo)
-		tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC)
-
 		matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
+		finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
+		tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC, divisionUC, finishTournamentUC)
 		GetMatchesUC := match.NewGetMatchesUseCase(*bun.DB, *playerRepo)
 
 		createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
@@ -44,8 +49,7 @@ package main
 		updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo)
 		matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC)
 
-		divisionRepo := bun.NewDivisionRepository(bun.DB)
-		divisionUC := division.NewDivisionUseCase(divisionRepo)
+
 
 		leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 		divisionHandler := handler.NewDivisionHandler(divisionUC)
@@ -102,6 +106,8 @@ package main
 		api := app.Group("/")
 		api.Use(authMiddleware)
 		api.Post("/players", playerHandler.Register)
+		api.Put("/players/:id", playerHandler.Update)
+		api.Delete("/players/:id", playerHandler.Delete)
 		api.Post("/tournaments", tournamentHandler.Create)
 		api.Post("/matches/create", matchHandler.Create)
 		api.Post("/matches/finish", matchHandler.Finish)
@@ -113,6 +119,7 @@ package main
 		admin.Get("/tournaments/:id", tournamentHandler.Detail)
 		api.Put("/tournaments/:id", tournamentHandler.Update)
 		api.Delete("/tournaments/:id", tournamentHandler.Delete)
+		admin.Post("/tournaments/:id/finish", tournamentHandler.Finish)
 
 		log.Fatal(app.Listen(":8080"))
 	}

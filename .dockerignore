@@ -1,0 +1,26 @@
+# Git
+.git
+.gitignore
+
+# Go
+tmp/
+vendor/
+**/*.test
+
+# Environment variables
+.env
+
+# Build outputs
+main
+server
+
+# Database 
+# (You might want to comment this out if you need the existing table_tennis.db shipped in the image context, 
+# but usually it's better to avoid shipping stateful data in images)
+table_tennis.db*
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+.DS_Store

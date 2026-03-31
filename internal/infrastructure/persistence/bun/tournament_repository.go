@@ -95,6 +95,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			Name:      m.Name,
 			Type:      m.Type,
 			Format:    m.Format,
+			Status:    m.Status,
 			StartDate: m.StartDate,
 			EndDate:   m.EndDate,
 			Rules:     []tournament.Rule{},
@@ -183,6 +184,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 	return &tournament.Tournament{
 		ID:           model.ID,
 		Name:         model.Name,
+		Status:       model.Status,
 		Type:         model.Type,
 		Format:       model.Format,
 		StartDate:    model.StartDate,
@@ -207,11 +209,12 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		Name:      t.Name,
 		Type:      t.Type,
 		Format:    t.Format,
+		Status:    t.Status,
 		StartDate: t.StartDate,
 		EndDate:   t.EndDate,
 	}
 
-	_, err = tx.NewUpdate().Model(model).WherePK().Exec(ctx)
+	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "status", "start_date", "end_date").Exec(ctx)
 	if err != nil {
 		return err
 	}
