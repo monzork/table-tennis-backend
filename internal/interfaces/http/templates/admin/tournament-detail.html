@@ -60,6 +60,12 @@
         ✓ Finish Tournament
       </button>
       {{end}}
+      <a href="/admin/tournaments/{{.Tournament.ID}}/export"
+        class="bg-white/10 hover:bg-white/20 text-white text-sm font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider flex items-center gap-2 border border-white/10"
+        title="Download CSV Report">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Export Report
+      </a>
       <button onclick="document.getElementById('edit-modal').classList.remove('hidden')"
         class="border border-white/20 hover:border-white/40 text-white text-sm font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider">
         Edit
@@ -274,7 +280,7 @@
         </div>
         <div class="space-y-2">
           <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Format</label>
-          <select name="format" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+          <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" onchange="toggleEditGroupPassCount(this.value)">
             <option value="elimination" {{if eq .Tournament.Format "elimination"}}selected{{end}}>Elimination</option>
             <option value="groups_elimination" {{if eq .Tournament.Format "groups_elimination"}}selected{{end}}>Group + Knockout</option>
             <option value="round_robin" {{if eq .Tournament.Format "round_robin"}}selected{{end}}>All Against All</option>
@@ -290,6 +296,11 @@
           <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">End Date</label>
           <input type="date" name="endDate" value="{{.Tournament.EndDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
         </div>
+      </div>
+      
+      <div id="edit-group-pass-count-container" class="space-y-2 hidden">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Knockout Pass Count</label>
+        <input type="number" id="edit-group-pass-count-input" name="groupPassCount" value="{{.Tournament.GroupPassCount}}" min="1" disabled class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
       </div>
       
       <div class="space-y-2">
@@ -344,6 +355,24 @@
     </form>
   </div>
 </div>
+
+<script>
+function toggleEditGroupPassCount(format) {
+    const container = document.getElementById('edit-group-pass-count-container');
+    const input = document.getElementById('edit-group-pass-count-input');
+    if (format === 'groups_elimination') {
+        container.classList.remove('hidden');
+        input.disabled = false;
+        input.required = true;
+    } else {
+        container.classList.add('hidden');
+        input.disabled = true;
+        input.required = false;
+    }
+}
+// Init State
+toggleEditGroupPassCount(document.getElementById('edit-format-select')?.value || 'elimination');
+</script>
 
 <script type="application/json" id="participants-data">
   [

@@ -71,6 +71,7 @@ type Tournament struct {
 	ID           uuid.UUID
 	Name         string
 	Type         string // "singles", "doubles", "teams"
+	EventCategory string // "men", "women", "mixed", "open"
 	Format       string // "elimination", "groups_elimination", "round_robin"
 	Status       string // "in_progress", "finished"
 	Participants []*player.Player
@@ -80,9 +81,10 @@ type Tournament struct {
 	StageRules   []StageRule
 	Matches      []Match
 	Groups       []Group
+	GroupPassCount int
 }
 
-func NewTournament(name string, tournamentType string, format string, start, end time.Time, rules []Rule, participants []*player.Player) (*Tournament, error) {
+func NewTournament(name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player) (*Tournament, error) {
 	if end.Before(start) {
 		return nil, ErrInvalidDates
 	}
@@ -92,10 +94,25 @@ func NewTournament(name string, tournamentType string, format string, start, end
 	if format == "" {
 		format = "elimination"
 	}
+	if category == "" {
+		category = "open"
+	}
+
+	// Validation mapping mapping depending on tournament category
+	for _, p := range participants {
+		if category == "men" && p.Gender != "M" {
+			return nil, errors.New("restricted: mens category cannot contain female players")
+		}
+		if category == "women" && p.Gender != "F" {
+			return nil, errors.New("restricted: womens category cannot contain male players")
+		}
+	}
+
 	t := &Tournament{
 		ID:           uuid.New(),
 		Name:         name,
 		Type:         tournamentType,
+		EventCategory: category,
 		Format:       format,
 		Participants: participants,
 		StartDate:    start,
@@ -103,6 +120,7 @@ func NewTournament(name string, tournamentType string, format string, start, end
 		Rules:        rules,
 		Matches:      []Match{},
 		Groups:       []Group{},
+		GroupPassCount: groupPassCount,
 	}
 	t.StageRules = DefaultStageRules(t.ID)
 

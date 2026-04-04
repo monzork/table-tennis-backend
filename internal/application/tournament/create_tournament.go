@@ -30,9 +30,11 @@ func (uc *CreateTournamentUseCase) Execute(
 	name string,
 	tournamentType string,
 	format string,
+	category string,
 	startStr, endStr string,
 	participantIDs []string,
 	newPlayers []NewPlayerData,
+	groupPassCount int,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -69,7 +71,24 @@ func (uc *CreateTournamentUseCase) Execute(
 		participants = append(participants, p)
 	}
 
-	t, err := tournamentDomain.NewTournament(name, tournamentType, format, start, end, []tournamentDomain.Rule{}, participants)
+	// Filter participants by category
+	var filteredParticipants []*playerDomain.Player
+	for _, p := range participants {
+		switch category {
+		case "men":
+			if p.Gender == "M" {
+				filteredParticipants = append(filteredParticipants, p)
+			}
+		case "women":
+			if p.Gender == "F" {
+				filteredParticipants = append(filteredParticipants, p)
+			}
+		default:
+			filteredParticipants = append(filteredParticipants, p)
+		}
+	}
+
+	t, err := tournamentDomain.NewTournament(name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, filteredParticipants)
 	if err != nil {
 		return nil, err
 	}
@@ -77,5 +96,27 @@ func (uc *CreateTournamentUseCase) Execute(
 	if err := uc.repo.Save(ctx, t); err != nil {
 		return nil, err
 	}
+
+	// Auto-create a paired tournament for the opposite gender
+	if category == "men" || category == "women" {
+		pairCategory, pairGender, pairSuffix := "women", "F", "Women's"
+		if category == "women" {
+			pairCategory, pairGender, pairSuffix = "men", "M", "Men's"
+		}
+
+		var pairParticipants []*playerDomain.Player
+		for _, p := range participants {
+			if p.Gender == pairGender {
+				pairParticipants = append(pairParticipants, p)
+			}
+		}
+
+		pairName := pairSuffix + " " + name
+		pairT, err := tournamentDomain.NewTournament(pairName, tournamentType, format, pairCategory, start, end, []tournamentDomain.Rule{}, groupPassCount, pairParticipants)
+		if err == nil {
+			uc.repo.Save(ctx, pairT)
+		}
+	}
+
 	return t, nil
 }

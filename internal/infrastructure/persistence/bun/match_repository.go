@@ -149,9 +149,9 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, id uuid.UUID, sets []
 				winnedPlayerID = m.TeamBPlayer1ID
 			}
 			if m.NextMatchSlot == "A" {
-				_, _ = tx.NewUpdate().TableExpr("matches").Set("team_a_player_1_id = ?, status = 'scheduled'", winnedPlayerID).Where("id = ?", nextID).Exec(ctx)
+				_, _ = tx.NewUpdate().TableExpr("matches").Set("team_a_player_1_id = ?, status = 'scheduled'", winnedPlayerID).Where("id = ? AND status = 'scheduled'", nextID).Exec(ctx)
 			} else {
-				_, _ = tx.NewUpdate().TableExpr("matches").Set("team_b_player_1_id = ?, status = 'scheduled'", winnedPlayerID).Where("id = ?", nextID).Exec(ctx)
+				_, _ = tx.NewUpdate().TableExpr("matches").Set("team_b_player_1_id = ?, status = 'scheduled'", winnedPlayerID).Where("id = ? AND status = 'scheduled'", nextID).Exec(ctx)
 			}
 		}
 	} else {

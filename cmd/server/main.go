@@ -41,7 +41,8 @@ package main
 		deleteTournamentUC := tournament.NewDeleteTournamentUseCase(tournamentRepo)
 		matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
 		finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
-		tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC, divisionUC, finishTournamentUC)
+		exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
+		tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC)
 		GetMatchesUC := match.NewGetMatchesUseCase(*bun.DB, *playerRepo)
 
 		createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
@@ -82,6 +83,11 @@ package main
 
 		app.Get("/rankings/singles", leaderboardHandler.GetSingles)
 		app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)
+		app.Get("/rankings/mens/singles", leaderboardHandler.GetMensSingles)
+		app.Get("/rankings/womens/singles", leaderboardHandler.GetWomensSingles)
+		app.Get("/rankings/mens/doubles", leaderboardHandler.GetMensDoubles)
+		app.Get("/rankings/womens/doubles", leaderboardHandler.GetWomensDoubles)
+		app.Get("/rankings/mixed/doubles", leaderboardHandler.GetMixedDoubles)
 
 
 		// Redirect Root to Public Rankings
@@ -120,6 +126,7 @@ package main
 		api.Put("/tournaments/:id", tournamentHandler.Update)
 		api.Delete("/tournaments/:id", tournamentHandler.Delete)
 		admin.Post("/tournaments/:id/finish", tournamentHandler.Finish)
+		admin.Get("/tournaments/:id/export", tournamentHandler.Export)
 
 		log.Fatal(app.Listen(":8080"))
 	}

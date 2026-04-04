@@ -48,9 +48,9 @@ type StageRuleOverride struct {
 }
 
 func (uc *UpdateTournamentUseCase) Execute(
-	ctx context.Context, idStr, name, tournamentType, format, startStr, endStr string,
+	ctx context.Context, idStr, name, tournamentType, format, category, startStr, endStr string,
 	participantIDs []string, newPlayers []NewPlayerData,
-	stageRuleOverrides []StageRuleOverride,
+	stageRuleOverrides []StageRuleOverride, groupPassCount int,
 ) (*tournamentDomain.Tournament, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -91,7 +91,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 		participants = append(participants, p)
 	}
 
-	t, err := tournamentDomain.NewTournament(name, tournamentType, format, start, end, []tournamentDomain.Rule{}, participants)
+	t, err := tournamentDomain.NewTournament(name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, participants)
 	if err != nil {
 		return nil, err
 	}

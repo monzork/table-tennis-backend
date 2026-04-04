@@ -61,6 +61,32 @@ func (r *PlayerRepository) GetAll(ctx context.Context) ([]*player.Player, error)
 	return r.GetAllSingles(ctx)
 }
 
+// GetSinglesByGender returns singles ranking filtered by gender ("M" or "F")
+func (r *PlayerRepository) GetSinglesByGender(ctx context.Context, gender string) ([]*player.Player, error) {
+	var models []PlayerModel
+	q := r.db.NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc)
+	if gender != "" {
+		q = q.Where("gender = ?", gender)
+	}
+	if err := q.Scan(ctx); err != nil {
+		return nil, err
+	}
+	return r.mapModelsToDomain(models), nil
+}
+
+// GetDoublesByGender returns doubles ranking filtered by gender ("M", "F", or "" for mixed/all)
+func (r *PlayerRepository) GetDoublesByGender(ctx context.Context, gender string) ([]*player.Player, error) {
+	var models []PlayerModel
+	q := r.db.NewSelect().Model(&models).OrderBy("doubles_elo", bun.OrderDesc)
+	if gender != "" {
+		q = q.Where("gender = ?", gender)
+	}
+	if err := q.Scan(ctx); err != nil {
+		return nil, err
+	}
+	return r.mapModelsToDomain(models), nil
+}
+
 func (r *PlayerRepository) mapModelsToDomain(models []PlayerModel) []*player.Player {
 	players := make([]*player.Player, len(models))
 	for i, m := range models {

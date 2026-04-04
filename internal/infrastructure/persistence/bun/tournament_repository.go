@@ -18,6 +18,8 @@ func NewTournamentRepository(db *bun.DB) *TournamentRepository {
 	return &TournamentRepository{db: db}
 }
 
+func (r *TournamentRepository) DB() *bun.DB { return r.db }
+
 func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournament) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -30,8 +32,11 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 		Name:      t.Name,
 		Type:      t.Type,
 		Format:    t.Format,
+		Status:    t.Status,
+		EventCategory: t.EventCategory,
 		StartDate: t.StartDate,
 		EndDate:   t.EndDate,
+		GroupPassCount: t.GroupPassCount,
 	}
 	_, err = tx.NewInsert().Model(model).Exec(ctx)
 	if err != nil {
@@ -43,6 +48,8 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 		partModel := &TournamentParticipantModel{
 			TournamentID: t.ID,
 			PlayerID:     p.ID,
+			EloBeforeSingles: &p.SinglesElo,
+			EloBeforeDoubles: &p.DoublesElo,
 		}
 		_, err = tx.NewInsert().Model(partModel).Exec(ctx)
 		if err != nil {
@@ -96,8 +103,10 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			Type:      m.Type,
 			Format:    m.Format,
 			Status:    m.Status,
+			EventCategory: m.EventCategory,
 			StartDate: m.StartDate,
 			EndDate:   m.EndDate,
+			GroupPassCount: m.GroupPassCount,
 			Rules:     []tournament.Rule{},
 			Matches:   []tournament.Match{},
 		}
@@ -187,8 +196,10 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		Status:       model.Status,
 		Type:         model.Type,
 		Format:       model.Format,
+		EventCategory: model.EventCategory,
 		StartDate:    model.StartDate,
 		EndDate:      model.EndDate,
+		GroupPassCount: model.GroupPassCount,
 		Participants: participantPlayers,
 		Groups:       groups,
 		Rules:        []tournament.Rule{},
@@ -210,11 +221,13 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		Type:      t.Type,
 		Format:    t.Format,
 		Status:    t.Status,
+		EventCategory: t.EventCategory,
 		StartDate: t.StartDate,
 		EndDate:   t.EndDate,
+		GroupPassCount: t.GroupPassCount,
 	}
 
-	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "status", "start_date", "end_date").Exec(ctx)
+	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count").Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -229,6 +242,8 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		partModel := &TournamentParticipantModel{
 			TournamentID: t.ID,
 			PlayerID:     p.ID,
+			EloBeforeSingles: &p.SinglesElo,
+			EloBeforeDoubles: &p.DoublesElo,
 		}
 		_, err = tx.NewInsert().Model(partModel).Exec(ctx)
 		if err != nil {

@@ -2,9 +2,9 @@ package handler
 
 import (
 	"fmt"
+	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/tournament"
-	"table-tennis-backend/internal/application/division"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -18,6 +18,7 @@ type TournamentHandler struct {
 	leaderboardUC *leaderboard.GetLeaderboardUseCase
 	divisionUC    *division.DivisionUseCase
 	finishUC      *tournament.FinishTournamentUseCase
+	exportUC      *tournament.ExportTournamentReportUseCase
 }
 
 func NewTournamentHandler(
@@ -28,6 +29,7 @@ func NewTournamentHandler(
 	leaderboardUC *leaderboard.GetLeaderboardUseCase,
 	divisionUC *division.DivisionUseCase,
 	finishUC *tournament.FinishTournamentUseCase,
+	exportUC *tournament.ExportTournamentReportUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:      createUC,
@@ -37,17 +39,19 @@ func NewTournamentHandler(
 		leaderboardUC: leaderboardUC,
 		divisionUC:    divisionUC,
 		finishUC:      finishUC,
+		exportUC:      exportUC,
 	}
 }
 
-
 func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	var body struct {
-		Name      string `json:"name" form:"name"`
-		Type      string `json:"type" form:"type"`
-		Format    string `form:"format"`
-		StartDate string `form:"startDate"`
-		EndDate   string `form:"endDate"`
+		Name           string `json:"name" form:"name"`
+		Type           string `json:"type" form:"type"`
+		Format         string `form:"format"`
+		EventCategory  string `form:"eventCategory"`
+		StartDate      string `form:"startDate"`
+		EndDate        string `form:"endDate"`
+		GroupPassCount int    `form:"groupPassCount"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -77,7 +81,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		}
 	}
 
-	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.StartDate, body.EndDate, participantIDs, newPlayers)
+	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -103,11 +107,13 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var body struct {
-		Name      string `form:"name"`
-		Type      string `form:"type"`
-		Format    string `form:"format"`
-		StartDate string `form:"startDate"`
-		EndDate   string `form:"endDate"`
+		Name           string `form:"name"`
+		Type           string `form:"type"`
+		Format         string `form:"format"`
+		EventCategory  string `form:"eventCategory"`
+		StartDate      string `form:"startDate"`
+		EndDate        string `form:"endDate"`
+		GroupPassCount int    `form:"groupPassCount"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -160,8 +166,8 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	}
 
 	t, err := h.updateUC.Execute(
-		c.Context(), id, body.Name, body.Type, body.Format, body.StartDate, body.EndDate,
-		participantIDs, newPlayers, stageRules,
+		c.Context(), id, body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
+		participantIDs, newPlayers, stageRules, body.GroupPassCount,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -187,4 +193,16 @@ func (h *TournamentHandler) Finish(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(fiber.Map{"status": "finished"})
+}
+
+func (h *TournamentHandler) Export(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	csvBytes, err := h.exportUC.Execute(c.Context(), idStr)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	
+	c.Set("Content-Type", "text/csv")
+	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"tournament_report_%s.csv\"", idStr))
+	return c.Send(csvBytes)
 }

@@ -90,6 +90,17 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID uui
 		}
 	}
 
+	// Finalize EloAfter snapshots
+	for _, p := range t.Participants {
+		if updatedPlayer, err := uc.playerRepo.GetById(ctx, p.ID); err == nil {
+			_, _ = uc.matchRepo.DB().NewUpdate().
+				TableExpr("tournament_participants").
+				Set("elo_after_singles = ?, elo_after_doubles = ?", updatedPlayer.SinglesElo, updatedPlayer.DoublesElo).
+				Where("tournament_id = ? AND player_id = ?", tournamentID, p.ID).
+				Exec(ctx)
+		}
+	}
+
 	// Mark tournament as finished
 	t.Status = "finished"
 	return uc.tournamentRepo.Update(ctx, t)

@@ -1,8 +1,17 @@
 <div class="space-y-10 animate-fade-in text-white/90 max-w-5xl mx-auto">
     <header class="text-center space-y-4">
         <h1 class="text-6xl font-black tracking-tight uppercase italic"><span class="text-white">{{.Type}}</span> Rankings</h1>
-        <p class="text-xl text-gray-400 font-light tracking-wide">The official world ranking for men's and women's {{.Type}}.</p>
+        <p class="text-xl text-gray-400 font-light tracking-wide">Official world rankings by category.</p>
     </header>
+
+    <!-- Gender / Format Navigation Tabs -->
+    <div class="flex flex-wrap justify-center gap-2">
+        <a href="/rankings/mens/singles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "M-singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">♂ Men's Singles</a>
+        <a href="/rankings/womens/singles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "F-singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">♀ Women's Singles</a>
+        <a href="/rankings/mens/doubles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "M-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">♂ Men's Doubles</a>
+        <a href="/rankings/womens/doubles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "F-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">♀ Women's Doubles</a>
+        <a href="/rankings/mixed/doubles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">⚤ Mixed Doubles</a>
+    </div>
 
     <div class="glass p-6 rounded-3xl border border-white/10 flex flex-col md:flex-row gap-4 items-end relative z-20">
         <div class="flex-1 min-w-[200px] w-full">
@@ -16,14 +25,6 @@
                 {{range .Groups}}
                 <option value="{{.Division.Name}}">{{.Division.Name}}</option>
                 {{end}}
-            </select>
-        </div>
-        <div class="w-full md:w-32">
-            <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">Gender</label>
-            <select id="gender-filter" onchange="applyFilters()" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer">
-                <option value="all">Both</option>
-                <option value="M">Men</option>
-                <option value="F">Women</option>
             </select>
         </div>
         <div class="w-full md:w-48">
@@ -104,7 +105,6 @@
     function applyFilters() {
         const query = document.getElementById('search-input').value.toLowerCase().trim();
         const divFilter = document.getElementById('division-filter').value;
-        const genFilter = document.getElementById('gender-filter').value;
         const sortOrder = document.getElementById('sort-order').value;
 
         const tbody = document.getElementById('rankings-tbody');
@@ -120,13 +120,11 @@
             const name = r.getAttribute('data-name').toLowerCase();
             const country = r.getAttribute('data-country').toLowerCase();
             const div = r.getAttribute('data-division');
-            const gen = r.getAttribute('data-gender');
             
             const matchQuery = name.includes(query) || country.includes(query);
             const matchDiv = divFilter === 'all' || div === divFilter;
-            const matchGen = genFilter === 'all' || gen === genFilter;
 
-            if (matchQuery && matchDiv && matchGen) {
+            if (matchQuery && matchDiv) {
                 visibleRows.push(r);
                 r.style.display = '';
             } else {

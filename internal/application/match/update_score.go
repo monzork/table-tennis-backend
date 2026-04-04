@@ -73,6 +73,13 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 		return err
 	}
 
+	var status string
+	if err := uc.matchRepo.DB().NewSelect().TableExpr("tournaments").Column("status").Where("id = ?", tournamentID).Scan(ctx, &status); err == nil {
+		if status == "finished" {
+			return fmt.Errorf("cannot update score of a finished tournament")
+		}
+	}
+
 	// Load the stage rule for this stage
 	stageRule, err := bun.GetStageRule(ctx, uc.matchRepo.DB(), tournamentID, stage)
 	if err != nil {
