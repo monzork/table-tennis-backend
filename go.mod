@@ -7,7 +7,10 @@ require (
 	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/google/uuid v1.6.0
 	github.com/uptrace/bun v1.2.18
-	github.com/uptrace/bun/dialect/sqlitedialect v1.2.16
+	github.com/uptrace/bun/dialect/pgdialect v1.2.18
+	github.com/uptrace/bun/dialect/sqlitedialect v1.2.18
+	github.com/uptrace/bun/driver/pgdriver v1.2.18
+	github.com/xuri/excelize/v2 v2.10.1
 	golang.org/x/crypto v0.49.0
 	modernc.org/sqlite v1.48.0
 )
@@ -33,15 +36,12 @@ require (
 	github.com/tiendc/go-deepcopy v1.7.2 // indirect
 	github.com/tinylib/msgp v1.2.5 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
-	github.com/uptrace/bun/dialect/pgdialect v1.2.18 // indirect
-	github.com/uptrace/bun/driver/pgdriver v1.2.18 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xuri/efp v0.0.1 // indirect
-	github.com/xuri/excelize/v2 v2.10.1 // indirect
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
