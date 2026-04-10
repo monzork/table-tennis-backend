@@ -4,7 +4,7 @@
             <h1 class="text-4xl font-extrabold tracking-tight uppercase">Tournaments <span class="text-white">.</span></h1>
             <p class="text-gray-400 mt-1">Manage Series Events</p>
         </div>
-        <button onclick="document.getElementById('add-tournament-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Tournament</button>
+        <button hx-on:click="document.getElementById('add-tournament-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Tournament</button>
     </header>
 
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
@@ -22,7 +22,7 @@
                 {{range .Tournaments}}
                 {{template "admin/partials/tournament-row" .}}
                 {{else}}
-                 <tr><td colspan="4" class="p-4 text-center text-gray-500">No tournaments yet. Click Add to create one.</td></tr>
+                 <tr id="empty-state"><td colspan="5" class="p-4 text-center text-gray-500">No tournaments yet. Click Add to create one.</td></tr>
                 {{end}}
             </tbody>
         </table>
@@ -32,13 +32,13 @@
 <!-- Add Modal -->
 <div id="add-tournament-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] transition-all duration-300">
     <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-2xl w-full relative shadow-2xl overflow-y-auto max-h-[90vh]">
-        <button onclick="document.getElementById('add-tournament-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+        <button hx-on:click="document.getElementById('add-tournament-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         
         <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">New Event</span>.</h2>
         
-        <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" class="space-y-6" onsubmit="setTimeout(() => document.getElementById('add-tournament-modal').classList.add('hidden'), 50)">
+        <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" class="space-y-6" hx-on::after-request="if(event.detail.successful) document.getElementById('add-tournament-modal').classList.add('hidden')" hx-on:submit="console.log('submitting tournament...')">
             <div class="grid grid-cols-2 gap-6">
                 <div class="space-y-2">
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
@@ -92,21 +92,21 @@
                 <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Competition Format</label>
                 <div class="grid grid-cols-3 gap-2">
                     <label class="cursor-pointer group">
-                        <input type="radio" name="format" value="elimination" checked class="hidden peer" onchange="toggleGroupPassCount(this.value)">
+                        <input type="radio" name="format" value="elimination" checked class="hidden peer format-radio">
                         <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center h-full flex flex-col justify-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Elimination</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">Knockout</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
-                        <input type="radio" name="format" value="groups_elimination" class="hidden peer" onchange="toggleGroupPassCount(this.value)">
+                        <input type="radio" name="format" value="groups_elimination" class="hidden peer format-radio">
                         <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center h-full flex flex-col justify-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Group + Knockout</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">Standard</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
-                        <input type="radio" name="format" value="round_robin" class="hidden peer" onchange="toggleGroupPassCount(this.value)">
+                        <input type="radio" name="format" value="round_robin" class="hidden peer format-radio">
                         <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center h-full flex flex-col justify-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">All Against All</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">Round Robin</span>
@@ -126,16 +126,24 @@
                 </div>
             </div>
 
-            <div id="group-pass-count-container" class="space-y-2 hidden">
+            <div id="group-pass-count-container" class="space-y-2">
                 <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Knockout Pass Count</label>
-                <input type="number" id="group-pass-count-input" name="groupPassCount" value="2" min="1" disabled class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                <input type="number" name="groupPassCount" value="2" min="1" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
                 <p class="text-[10px] text-gray-500">Number of participants advancing from each group to the knockout stage.</p>
             </div>
+            <style>
+                #group-pass-count-container { display: none; }
+                form:has(.format-radio[value="groups_elimination"]:checked) #group-pass-count-container { display: block; }
+            </style>
 
             <div class="space-y-4 pt-4 border-t border-white/5">
                 <div class="flex justify-between items-center">
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Participants</label>
-                    <button type="button" onclick="addNewPlayerFields()" class="text-white hover:text-gray-300 text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1">
+                    <button type="button"
+                        hx-get="/admin/player-field"
+                        hx-target="#new-players-list"
+                        hx-swap="beforeend"
+                        class="text-white hover:text-gray-300 text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
                         Add New Player
                     </button>
@@ -146,9 +154,18 @@
                         <div class="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                             <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Select Registered Players</p>
                             <div class="flex gap-2">
-                                <button type="button" onclick="selectAllByGender('M')" class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 transition-all">All Male</button>
-                                <button type="button" onclick="selectAllByGender('F')" class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 text-pink-400 transition-all">All Female</button>
-                                <button type="button" onclick="clearAllSelections()" class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 transition-all">Clear</button>
+                                <button type="button"
+                                    hx-get="/players/search/cards?gender=M&selectAll=true"
+                                    hx-target="#player-selection-grid"
+                                    class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 transition-all">All Male</button>
+                                <button type="button"
+                                    hx-get="/players/search/cards?gender=F&selectAll=true"
+                                    hx-target="#player-selection-grid"
+                                    class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 text-pink-400 transition-all">All Female</button>
+                                <button type="button"
+                                    hx-get="/players/search/cards"
+                                    hx-target="#player-selection-grid"
+                                    class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 transition-all">Clear</button>
                             </div>
                         </div>
 
@@ -166,7 +183,20 @@
                         
                         <div id="player-selection-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto p-2 bg-black/20 rounded-xl border border-white/5 scrollbar-thin">
                             {{range .Players}}
-                                {{template "admin/partials/player-selection-cards" dict "Players" (slice .) "SelectedIDs" (map)}}
+                            <label class="player-card relative cursor-pointer group" data-gender="{{.Gender}}">
+                                <input type="checkbox" name="participant_ids[]" value="{{.ID}}" class="hidden peer">
+                                <div class="p-3 rounded-lg border border-white/5 bg-white/[0.02] peer-checked:border-white/40 peer-checked:bg-white/10 group-hover:bg-white/5 transition-all">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <p class="text-[11px] font-bold text-gray-300 truncate">{{.FirstName}} <span class="uppercase">{{.LastName}}</span></p>
+                                            <p class="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">{{.SinglesElo}} ELO • {{.Gender}}</p>
+                                        </div>
+                                        <div class="w-4 h-4 rounded border border-white/10 flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-black opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
                             {{end}}
                         </div>
                     </div>
@@ -182,51 +212,4 @@
     </div>
 </div>
 
-<script>
-function selectAllByGender(gender) {
-    const cards = document.querySelectorAll(`.player-card[data-gender="${gender}"]`);
-    cards.forEach(card => {
-        if (!card.classList.contains('hidden')) {
-            const input = card.querySelector('input');
-            input.checked = true;
-        }
-    });
-}
 
-function clearAllSelections() {
-    const inputs = document.querySelectorAll('.player-card input');
-    inputs.forEach(input => input.checked = false);
-}
-
-function addNewPlayerFields() {
-    const list = document.getElementById('new-players-list');
-    const div = document.createElement('div');
-    div.className = 'grid grid-cols-3 gap-3 p-3 bg-white/5 rounded-xl animate-fade-in relative group';
-    div.innerHTML = `
-        <input type="text" name="new_player_first_name[]" placeholder="First Name" required class="bg-black/40 border border-white/5 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-white">
-        <input type="text" name="new_player_last_name[]" placeholder="Last Name" required class="bg-black/40 border border-white/5 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-white">
-        <select name="new_player_gender[]" class="bg-black/40 border border-white/5 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-white">
-            <option value="M">Male</option>
-            <option value="F">Female</option>
-        </select>
-        <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-black border border-white/10 text-gray-400 hover:text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
-    `;
-    list.appendChild(div);
-}
-
-function toggleGroupPassCount(format) {
-    const container = document.getElementById('group-pass-count-container');
-    const input = document.getElementById('group-pass-count-input');
-    if (format === 'groups_elimination') {
-        container.classList.remove('hidden');
-        input.disabled = false;
-        input.required = true;
-    } else {
-        container.classList.add('hidden');
-        input.disabled = true;
-        input.required = false;
-    }
-}
-// Init State
-toggleGroupPassCount(document.querySelector('input[name="format"]:checked')?.value || 'elimination');
-</script>

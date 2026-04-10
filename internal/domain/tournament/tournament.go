@@ -59,6 +59,26 @@ type MatchSet struct {
 	ScoreB int
 }
 
+func (m Match) ScoreA() int {
+	score := 0
+	for _, s := range m.Sets {
+		if s.ScoreA > s.ScoreB {
+			score++
+		}
+	}
+	return score
+}
+
+func (m Match) ScoreB() int {
+	score := 0
+	for _, s := range m.Sets {
+		if s.ScoreB > s.ScoreA {
+			score++
+		}
+	}
+	return score
+}
+
 type Group struct {
 	ID           uuid.UUID
 	TournamentID uuid.UUID

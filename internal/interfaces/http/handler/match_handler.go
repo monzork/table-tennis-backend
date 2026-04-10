@@ -7,19 +7,22 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
 type MatchHandler struct {
 	createUC      *match.CreateMatchUseCase
 	finishUC      *match.FinishMatchUseCase
 	updateScoreUC *match.UpdateMatchScoreUseCase
+	playerRepo    *bun.PlayerRepository
 }
 
-func NewMatchHandler(createUC *match.CreateMatchUseCase, finishUC *match.FinishMatchUseCase, updateScoreUC *match.UpdateMatchScoreUseCase) *MatchHandler {
+func NewMatchHandler(createUC *match.CreateMatchUseCase, finishUC *match.FinishMatchUseCase, updateScoreUC *match.UpdateMatchScoreUseCase, playerRepo *bun.PlayerRepository) *MatchHandler {
 	return &MatchHandler{
-		finishUC:      finishUC,
 		createUC:      createUC,
+		finishUC:      finishUC,
 		updateScoreUC: updateScoreUC,
+		playerRepo:    playerRepo,
 	}
 }
 
@@ -97,16 +100,88 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 
 	return c.JSON(m)
 }
+func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
+	matchID := c.Params("id")
+	if matchID == "" {
+		matchID = c.Query("matchId")
+	}
+	tID := c.Query("tournamentId")
+	stage := c.Query("stage")
+	bestOf := c.QueryInt("bestOf", 5)
+
+	// In the new bracket we pass p1Id and p2Id
+	p1Id := c.Query("p1Id")
+	p2Id := c.Query("p2Id")
+
+	// We'll need player names for the form
+	playerAName := "Player 1"
+	playerBName := "Player 2"
+
+	if p1Id != "" {
+		p1UUID, _ := uuid.Parse(p1Id)
+		if p, err := h.playerRepo.GetById(c.Context(), p1UUID); err == nil {
+			playerAName = p.FirstName + " " + p.LastName
+		}
+	}
+	if p2Id != "" {
+		p2UUID, _ := uuid.Parse(p2Id)
+		if p, err := h.playerRepo.GetById(c.Context(), p2UUID); err == nil {
+			playerBName = p.FirstName + " " + p.LastName
+		}
+	}
+
+	var sets []int
+	for i := 1; i <= bestOf; i++ {
+		sets = append(sets, i)
+	}
+
+	return c.Render("admin/partials/match-score-form", fiber.Map{
+		"MatchID":      matchID,
+		"TournamentID": tID,
+		"Stage":        stage,
+		"BestOf":       bestOf,
+		"PlayerA":      playerAName,
+		"PlayerB":      playerBName,
+		"Sets":         sets,
+		"P1Id":         p1Id,
+		"P2Id":         p2Id,
+	})
+}
+
 // UpdateScore accepts set scores via JSON/form and persists them, auto-resolving winner.
 func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	matchID := c.Params("id")
 	var body struct {
 		TournamentID string   `json:"tournamentId" form:"tournamentId"`
+		MatchID      string   `json:"matchId" form:"matchId"`
 		Stage        string   `json:"stage" form:"stage"`
+		P1Id         string   `json:"p1Id" form:"p1Id"`
+		P2Id         string   `json:"p2Id" form:"p2Id"`
 		Scores       []string `json:"scores" form:"scores[]"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	
+	if matchID == "" {
+		matchID = body.MatchID
+	}
+
+	// If still no matchID, create it on the fly if we have players
+	if matchID == "" && body.P1Id != "" && body.P2Id != "" {
+		tUUID, _ := uuid.Parse(body.TournamentID)
+		p1UUID, _ := uuid.Parse(body.P1Id)
+		p2UUID, _ := uuid.Parse(body.P2Id)
+		
+		// Determine match type from tournament
+		matchType := "singles" // default
+		
+		m, err := h.createUC.Execute(c.Context(), tUUID, matchType, []uuid.UUID{p1UUID}, []uuid.UUID{p2UUID})
+		if err == nil {
+			matchID = m.ID.String()
+		} else {
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to create match: "+err.Error())
+		}
 	}
 	// Also accept form multi-values
 	if len(body.Scores) == 0 {
@@ -114,11 +189,27 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 			body.Scores = append(body.Scores, string(s))
 		}
 	}
+
+	// Support split A/B scores from HTMX form
+	if len(body.Scores) == 0 {
+		as := c.Request().PostArgs().PeekMulti("scores[]_a")
+		bs := c.Request().PostArgs().PeekMulti("scores[]_b")
+		for i := 0; i < len(as) && i < len(bs); i++ {
+			aStr := string(as[i])
+			bStr := string(bs[i])
+			if aStr != "" && bStr != "" {
+				body.Scores = append(body.Scores, aStr+"-"+bStr)
+			}
+		}
+	}
 	if body.Stage == "" {
 		body.Stage = "group"
 	}
 	if err := h.updateScoreUC.Execute(c.Context(), matchID, body.Scores, body.TournamentID, body.Stage); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
 	}
 	return c.SendStatus(fiber.StatusOK)
 }

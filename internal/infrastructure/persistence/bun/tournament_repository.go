@@ -182,12 +182,27 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		if mm.WinnerTeam != nil {
 			wt = *mm.WinnerTeam
 		}
+		
+		// Load sets for this match
+		var setModels []MatchSetModel
+		_ = r.db.NewSelect().Model(&setModels).Where("match_id = ?", mm.ID).Order("set_number ASC").Scan(ctx)
+		
+		var sets []tournament.MatchSet
+		for _, sm := range setModels {
+			sets = append(sets, tournament.MatchSet{
+				Number: sm.SetNumber,
+				ScoreA: sm.ScoreA,
+				ScoreB: sm.ScoreB,
+			})
+		}
+
 		m := tournament.Match{
 			ID:         mm.ID,
 			Status:     mm.Status,
 			WinnerTeam: wt,
 			TeamA:      []*player.Player{{ID: mm.TeamAPlayer1ID}},
 			TeamB:      []*player.Player{{ID: mm.TeamBPlayer1ID}},
+			Sets:       sets,
 		}
 		matches = append(matches, m)
 	}

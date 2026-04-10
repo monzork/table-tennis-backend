@@ -16,23 +16,45 @@
     <div class="glass p-6 rounded-3xl border border-white/10 flex flex-col md:flex-row gap-4 items-end relative z-20">
         <div class="flex-1 min-w-[200px] w-full">
             <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">Search Player</label>
-            <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Name or Country..." class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors placeholder:text-gray-600">
+            <input type="text" 
+                   name="q" 
+                   value="{{.Query}}"
+                   placeholder="Name or Country..." 
+                   class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors placeholder:text-gray-600"
+                   hx-get=""
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#rankings-tbody"
+                   hx-include="#division-filter, #sort-order"
+                   hx-push-url="true">
         </div>
         <div class="w-full md:w-48">
             <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">Filter Division</label>
-            <select id="division-filter" onchange="applyFilters()" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer">
-                <option value="all">All Divisions</option>
-                {{range .Groups}}
-                <option value="{{.Division.Name}}">{{.Division.Name}}</option>
+            <select id="division-filter" 
+                    name="division" 
+                    class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer"
+                    hx-get=""
+                    hx-target="#rankings-tbody"
+                    hx-include="[name='q'], #sort-order"
+                    hx-push-url="true">
+                <option value="all" {{if eq .Division "all"}}selected{{end}}>All Divisions</option>
+                {{/* We need divisions list which we might not have in .Groups if they are filtered. Let's assume we have .Divisions */}}
+                {{range .Divisions}}
+                <option value="{{.Name}}" {{if eq .Name $.Division}}selected{{end}}>{{.Name}}</option>
                 {{end}}
             </select>
         </div>
         <div class="w-full md:w-48">
             <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">Sort Order</label>
-            <select id="sort-order" onchange="applyFilters()" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer">
-                <option value="points_desc">Points (High to Low)</option>
-                <option value="points_asc">Points (Low to High)</option>
-                <option value="name_asc">Name (A-Z)</option>
+            <select id="sort-order" 
+                    name="sort" 
+                    class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer"
+                    hx-get=""
+                    hx-target="#rankings-tbody"
+                    hx-include="[name='q'], #division-filter"
+                    hx-push-url="true">
+                <option value="points_desc" {{if eq .Sort "points_desc"}}selected{{end}}>Points (High to Low)</option>
+                <option value="points_asc" {{if eq .Sort "points_asc"}}selected{{end}}>Points (Low to High)</option>
+                <option value="name_asc" {{if eq .Sort "name_asc"}}selected{{end}}>Name (A-Z)</option>
             </select>
         </div>
     </div>
@@ -49,155 +71,10 @@
                 </tr>
             </thead>
             <tbody id="rankings-tbody" class="divide-y divide-white/5">
-                {{range $group := .Groups}}
-                    <tr class="division-header bg-black/80 border-y-2 border-white/10" data-division="{{$group.Division.Name}}">
-                        <td colspan="4" class="py-4 px-6 font-black uppercase italic text-2xl tracking-widest text-left" style="color: {{$group.Division.Color}};">
-                            {{$group.Division.Name}}
-                            <span class="text-xs font-light tracking-normal text-gray-400 ml-3 not-italic">
-                                {{$group.Division.MinElo}} - {{if $group.Division.MaxElo}}{{$group.Division.MaxElo}}{{else}}∞{{end}}
-                            </span>
-                        </td>
-                    </tr>
-                    {{range $index, $p := $group.Players}}
-                        <tr class="ranking-row group cursor-default transition-all duration-300" data-division="{{$group.Division.Name}}" data-gender="{{$p.Gender}}" data-name="{{$p.FirstName}} {{$p.LastName}}" data-country="{{$p.Country}}" data-points="{{if eq $.Type "Doubles"}}{{$p.DoublesElo}}{{else}}{{$p.SinglesElo}}{{end}}">
-                            <td class="py-6 px-4 text-center font-black text-3xl italic text-gray-400 group-hover:text-white transition-colors">
-                                <span class="rank-number"></span>
-                            </td>
-                            <td class="py-6 px-4 flex items-center gap-6">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-gray-300 border border-white/10 font-black shadow-lg group-hover:border-white/30 transition-colors">
-                                    {{$p.Gender}}
-                                </div>
-                                <div>
-                                    <div class="text-2xl tracking-wide text-gray-200 font-bold group-hover:text-white transition-colors">
-                                        <span class="font-light text-gray-400 mr-1">{{$p.FirstName}}</span><span class="uppercase">{{$p.LastName}}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="py-6 px-4 text-center">
-                                <div class="inline-flex items-center px-4 py-2 rounded-lg bg-black/60 border border-white/10 text-gray-300 text-sm font-bold tracking-widest shadow-inner group-hover:border-white/30 transition-colors">
-                                    {{$p.Country}}
-                                </div>
-                            </td>
-                            <td class="py-6 px-4 text-right font-black text-3xl italic text-white tracking-tight pr-8">
-                                {{if eq $.Type "Doubles"}}{{$p.DoublesElo}}{{else}}{{$p.SinglesElo}}{{end}}
-                            </td>
-                        </tr>
-                    {{end}}
-                {{else}}
-                    <tr><td colspan="4" class="p-12 text-center text-gray-500 italic font-light tracking-wider">No rankings available yet for {{.Type}}.</td></tr>
-                {{end}}
+                {{template "partials/rankings-table" .}}
             </tbody>
         </table>
     </div>
 </div>
 
-<script>
-    let allRows = [];
-    let allHeaders = [];
 
-    document.addEventListener("DOMContentLoaded", () => {
-        const tbody = document.getElementById('rankings-tbody');
-        allRows = Array.from(tbody.getElementsByClassName('ranking-row'));
-        allHeaders = Array.from(tbody.getElementsByClassName('division-header'));
-        applyFilters(); // Initial setup of ranks safely
-    });
-
-    function applyFilters() {
-        const query = document.getElementById('search-input').value.toLowerCase().trim();
-        const divFilter = document.getElementById('division-filter').value;
-        const sortOrder = document.getElementById('sort-order').value;
-
-        const tbody = document.getElementById('rankings-tbody');
-
-        // Detach rows to sort
-        allRows.forEach(r => { if(r.parentNode) tbody.removeChild(r); });
-        allHeaders.forEach(h => { if(h.parentNode) tbody.removeChild(h); });
-
-        // Filter valid rows
-        let visibleRows = [];
-        allRows.forEach(r => {
-
-            const name = r.getAttribute('data-name').toLowerCase();
-            const country = r.getAttribute('data-country').toLowerCase();
-            const div = r.getAttribute('data-division');
-            
-            const matchQuery = name.includes(query) || country.includes(query);
-            const matchDiv = divFilter === 'all' || div === divFilter;
-
-            if (matchQuery && matchDiv) {
-                visibleRows.push(r);
-                r.style.display = '';
-            } else {
-                r.style.display = 'none';
-            }
-        });
-
-        // Sort rows
-        visibleRows.sort((a, b) => {
-            if (sortOrder === 'name_asc') {
-                return a.getAttribute('data-name').localeCompare(b.getAttribute('data-name'));
-            } else {
-                const ptsA = parseInt(a.getAttribute('data-points'));
-                const ptsB = parseInt(b.getAttribute('data-points'));
-                return sortOrder === 'points_desc' ? ptsB - ptsA : ptsA - ptsB;
-            }
-        });
-
-        // Reconstruct table
-        // We either group by division if sort logic aligns with division defaults (points_desc),
-        // or we just flatten it if custom sorting is applied preventing strict division separation.
-        let isDivisionalSort = (sortOrder === 'points_desc' && query === '');
-
-        if (isDivisionalSort && divFilter === 'all') {
-            // Restore headers and append cleanly under them
-            allHeaders.forEach(h => {
-                const hDiv = h.getAttribute('data-division');
-                let hasChildren = false;
-                tbody.appendChild(h);
-                // First visible rows in sort order
-                visibleRows.forEach(r => {
-                    if (r.getAttribute('data-division') === hDiv) {
-                        hasChildren = true;
-                        tbody.appendChild(r);
-                    }
-                });
-                // Then hidden rows at bottom of division
-                allRows.forEach(r => {
-                    if (!visibleRows.includes(r) && r.getAttribute('data-division') === hDiv) {
-                        tbody.appendChild(r);
-                    }
-                });
-                h.style.display = hasChildren ? '' : 'none';
-            });
-        } else {
-            // Flat list, hide all division headers
-            allHeaders.forEach(h => h.style.display = 'none');
-            allHeaders.forEach(h => tbody.appendChild(h)); // keep in DOM
-            
-            visibleRows.forEach(r => tbody.appendChild(r));
-            // Ensure hidden are kept in DOM for next filter pass
-            allRows.forEach(r => {
-                if (!visibleRows.includes(r)) tbody.appendChild(r);
-            });
-        }
-
-        // Reassign generic ranking numbers organically for visible rows
-        visibleRows.forEach((r, idx) => {
-            r.querySelector('.rank-number').textContent = idx + 1;
-        });
-
-        // Empty state
-        let emptyTr = tbody.querySelector('.empty-state');
-        if (!emptyTr) {
-            emptyTr = document.createElement('tr');
-            emptyTr.className = 'empty-state';
-            emptyTr.innerHTML = '<td colspan="4" class="p-12 text-center text-gray-500 italic font-light tracking-wider">No matching players found.</td>';
-        }
-        if (visibleRows.length === 0) {
-            emptyTr.style.display = '';
-            tbody.appendChild(emptyTr);
-        } else if (emptyTr.parentNode) {
-            emptyTr.style.display = 'none';
-        }
-    }
-</script>

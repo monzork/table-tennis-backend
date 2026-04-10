@@ -1,0 +1,39 @@
+{{range $group := .Groups}}
+    {{if and $.IsDivisional $group.Division}}
+        <tr class="division-header bg-black/80 border-y-2 border-white/10">
+            <td colspan="4" class="py-4 px-6 font-black uppercase italic text-2xl tracking-widest text-left" style="color: {{$group.Division.Color}};">
+                {{$group.Division.Name}}
+                <span class="text-xs font-light tracking-normal text-gray-400 ml-3 not-italic">
+                    {{$group.Division.MinElo}} - {{if $group.Division.MaxElo}}{{$group.Division.MaxElo}}{{else}}∞{{end}}
+                </span>
+            </td>
+        </tr>
+    {{end}}
+    {{range $p := $group.Players}}
+        <tr class="ranking-row group cursor-default transition-all duration-300">
+            <td class="py-6 px-4 text-center font-black text-3xl italic text-gray-400 group-hover:text-white transition-colors">
+                {{.Rank}}
+            </td>
+            <td class="py-6 px-4 flex items-center gap-6">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-gray-300 border border-white/10 font-black shadow-lg group-hover:border-white/30 transition-colors">
+                    {{.Gender}}
+                </div>
+                <div>
+                    <div class="text-2xl tracking-wide text-gray-200 font-bold group-hover:text-white transition-colors">
+                        <span class="font-light text-gray-400 mr-1">{{.FirstName}}</span><span class="uppercase">{{.LastName}}</span>
+                    </div>
+                </div>
+            </td>
+            <td class="py-6 px-4 text-center">
+                <div class="inline-flex items-center px-4 py-2 rounded-lg bg-black/60 border border-white/10 text-gray-300 text-sm font-bold tracking-widest shadow-inner group-hover:border-white/30 transition-colors">
+                    {{.Country}}
+                </div>
+            </td>
+            <td class="py-6 px-4 text-right font-black text-3xl italic text-white tracking-tight pr-8">
+                {{if eq $.Type "Doubles"}}{{.DoublesElo}}{{else}}{{.SinglesElo}}{{end}}
+            </td>
+        </tr>
+    {{end}}
+{{else}}
+    <tr><td colspan="4" class="p-12 text-center text-gray-500 italic font-light tracking-wider">No matching players found.</td></tr>
+{{end}}

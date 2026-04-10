@@ -73,3 +73,13 @@ func (h *AdminHandler) Divisions(c *fiber.Ctx) error {
 		"Divisions": divisions,
 	}, "layouts/admin")
 }
+
+// NewPlayerField returns an empty player field row for inline new-player entry in tournament creation.
+func (h *AdminHandler) NewPlayerField(c *fiber.Ctx) error {
+	return c.Render("admin/partials/new-player-field", nil)
+}
+
+// CloseModal returns an empty response so HTMX can clear the modal root container.
+func (h *AdminHandler) CloseModal(c *fiber.Ctx) error {
+	return c.SendString("")
+}

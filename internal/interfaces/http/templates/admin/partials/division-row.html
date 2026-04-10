@@ -11,7 +11,7 @@
         <button 
             hx-get="/divisions/{{.ID}}/edit" 
             hx-target="#division-modal-content"
-            onclick="document.getElementById('divisionModal').classList.remove('hidden')"
+            hx-on:click="document.getElementById('divisionModal').classList.remove('hidden')"
             class="text-gray-300 hover:text-white uppercase tracking-widest text-xs font-bold">Edit</button>
         <button 
             hx-delete="/divisions/{{.ID}}" 

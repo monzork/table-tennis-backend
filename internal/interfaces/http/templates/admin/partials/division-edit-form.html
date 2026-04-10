@@ -1,6 +1,6 @@
 <div class="p-8 relative z-10">
     <h2 class="text-3xl font-black uppercase italic tracking-tight mb-8">{{if .ID}}Edit <span class="text-white">Division</span>{{else}}Add <span class="text-white">Division</span>{{end}}</h2>
-    <form hx-post="/divisions" hx-target="{{if .ID}}#division-{{.ID}}{{else}}#division-list{{end}}" hx-swap="{{if .ID}}outerHTML{{else}}beforeend{{end}}" onsubmit="setTimeout(() => document.getElementById('divisionModal').classList.add('hidden'), 50)">
+    <form hx-post="/divisions" hx-target="{{if .ID}}#division-{{.ID}}{{else}}#division-list{{end}}" hx-swap="{{if .ID}}outerHTML{{else}}beforeend{{end}}" hx-on::after-request="if(event.detail.successful) document.getElementById('divisionModal').classList.add('hidden')">
         <input type="hidden" name="id" value="{{.ID}}">
         <div class="space-y-6">
             <div>
@@ -15,7 +15,7 @@
                 <div>
                     <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Color (Hex)</label>
                     <div class="flex gap-2">
-                        <input type="color" id="colorPicker" value="{{if .Color}}{{.Color}}{{else}}#ffffff{{end}}" class="h-12 w-12 rounded bg-transparent border-0 cursor-pointer" onchange="document.getElementById('colorInput').value = this.value">
+                        <input type="color" id="colorPicker" value="{{if .Color}}{{.Color}}{{else}}#ffffff{{end}}" class="h-12 w-12 rounded bg-transparent border-0 cursor-pointer" hx-on:change="htmx.find('#colorInput').value = this.value">
                         <input type="text" name="color" id="colorInput" value="{{if .Color}}{{.Color}}{{else}}#ffffff{{end}}" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all uppercase font-mono">
                     </div>
                 </div>
@@ -31,7 +31,7 @@
                 </div>
             </div>
             <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-white/10">
-                <button type="button" onclick="document.getElementById('divisionModal').classList.add('hidden')" class="px-6 py-3 text-gray-400 hover:text-white uppercase tracking-widest text-sm font-bold transition-colors">Cancel</button>
+                <button type="button" hx-on:click="document.getElementById('divisionModal').classList.add('hidden')" class="px-6 py-3 text-gray-400 hover:text-white uppercase tracking-widest text-sm font-bold transition-colors">Cancel</button>
                 <button type="submit" class="bg-white hover:bg-gray-200 text-black font-bold py-3 px-8 rounded-lg uppercase tracking-widest text-sm transition-all">Save Division</button>
             </div>
         </div>

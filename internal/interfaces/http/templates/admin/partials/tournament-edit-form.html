@@ -1,0 +1,86 @@
+<h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Edit <span class="text-white">Event</span></h2>
+<form hx-put="/tournaments/{{.Tournament.ID}}" hx-target="#score-error" class="space-y-5">
+    <div class="space-y-2">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
+        <input type="text" name="name" value="{{.Tournament.Name}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-2">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Type</label>
+            <select name="type" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                <option value="singles" {{if eq .Tournament.Type "singles"}}selected{{end}}>Singles</option>
+                <option value="doubles" {{if eq .Tournament.Type "doubles"}}selected{{end}}>Doubles</option>
+                <option value="teams" {{if eq .Tournament.Type "teams"}}selected{{end}}>Teams</option>
+            </select>
+        </div>
+        <div class="space-y-2">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Format</label>
+            <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" hx-on:change="this.value === 'groups_elimination' ? (document.getElementById('edit-group-pass-count-container').classList.remove('hidden'), document.getElementById('edit-group-pass-count-input').disabled = false) : (document.getElementById('edit-group-pass-count-container').classList.add('hidden'), document.getElementById('edit-group-pass-count-input').disabled = true)">
+                <option value="elimination" {{if eq .Tournament.Format "elimination"}}selected{{end}}>Elimination</option>
+                <option value="groups_elimination" {{if eq .Tournament.Format "groups_elimination"}}selected{{end}}>Group + Knockout</option>
+                <option value="round_robin" {{if eq .Tournament.Format "round_robin"}}selected{{end}}>All Against All</option>
+            </select>
+        </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-2">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Start Date</label>
+            <input type="date" name="startDate" value="{{.Tournament.StartDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
+        </div>
+        <div class="space-y-2">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">End Date</label>
+            <input type="date" name="endDate" value="{{.Tournament.EndDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
+        </div>
+    </div>
+    
+    <div id="edit-group-pass-count-container" class="space-y-2 {{if ne .Tournament.Format "groups_elimination"}}hidden{{end}}">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Knockout Pass Count</label>
+        <input type="number" id="edit-group-pass-count-input" name="groupPassCount" value="{{.Tournament.GroupPassCount}}" min="1" {{if ne .Tournament.Format "groups_elimination"}}disabled{{end}} class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
+    </div>
+    
+    <div class="space-y-2">
+        <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Manage Participants</label>
+            <span class="text-[10px] text-gray-500 font-mono">Hold Ctrl/Cmd to select multiple</span>
+        </div>
+        <select id="edit-participants" name="participant_ids[]" multiple class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white custom-scrollbar h-48 focus:outline-none focus:ring-1 focus:ring-white">
+            {{$selectedPlayers := .Tournament.Participants}}
+            {{range .Players}}
+            {{$isTagged := false}}
+            {{$pid := .ID}}
+            {{range $selectedPlayers}}{{if eq .ID $pid}}{{$isTagged = true}}{{end}}{{end}}
+            <option value="{{.ID}}" {{if $isTagged}}selected{{end}}>{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+            {{end}}
+        </select>
+    </div>
+
+    <div class="space-y-2">
+        <div class="flex items-center justify-between cursor-pointer" hx-on:click="document.getElementById('rules-panel').classList.toggle('hidden')">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">Match Rules</label>
+            <span class="text-[10px] text-gray-400 uppercase tracking-widest">Expand ▾</span>
+        </div>
+        <div id="rules-panel" class="hidden space-y-3">
+            {{range .Tournament.StageRules}}
+            <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{.Stage}}</span>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <select name="stage_rule[{{.Stage}}][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                        <option value="3" {{if eq .BestOf 3}}selected{{end}}>3</option>
+                        <option value="5" {{if eq .BestOf 5}}selected{{end}}>5</option>
+                        <option value="7" {{if eq .BestOf 7}}selected{{end}}>7</option>
+                        <option value="9" {{if eq .BestOf 9}}selected{{end}}>9</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <input type="number" name="stage_rule[{{.Stage}}][points_to_win]" value="{{.PointsToWin}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                </div>
+                <input type="hidden" name="stage_rule[{{.Stage}}][points_margin]" value="{{.PointsMargin}}">
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest mt-2">Save Changes</button>
+</form>

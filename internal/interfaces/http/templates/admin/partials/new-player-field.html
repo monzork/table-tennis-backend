@@ -1,0 +1,13 @@
+<div class="grid grid-cols-3 gap-3 p-3 bg-white/5 rounded-xl relative group animate-fade-in">
+    <input type="text" name="new_player_first_name[]" placeholder="First Name" required 
+        class="bg-black/40 border border-white/5 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-white">
+    <input type="text" name="new_player_last_name[]" placeholder="Last Name" required 
+        class="bg-black/40 border border-white/5 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-white">
+    <select name="new_player_gender[]" class="bg-black/40 border border-white/5 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-white">
+        <option value="M">Male</option>
+        <option value="F">Female</option>
+    </select>
+    <button type="button" 
+        hx-on:click="this.closest('div').remove()"
+        class="absolute -top-2 -right-2 bg-black border border-white/10 text-gray-400 hover:text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
+</div>

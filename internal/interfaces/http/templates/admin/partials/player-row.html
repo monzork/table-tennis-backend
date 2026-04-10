@@ -10,7 +10,7 @@
             <button 
                 hx-get="/players/{{.ID}}/edit" 
                 hx-target="#edit-modal-content"
-                onclick="document.getElementById('edit-player-modal').classList.remove('hidden')"
+                hx-on:click="document.getElementById('edit-player-modal').classList.remove('hidden')"
                 class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-all">
                 Edit
             </button>

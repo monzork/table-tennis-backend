@@ -118,15 +118,35 @@ func (h *PlayerHandler) Search(c *fiber.Ctx) error {
 
 func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
 	query := c.Query("q")
+	gender := c.Query("gender")        // optional: "M" or "F"
+	selectAll := c.Query("selectAll") == "true" // if true, mark all returned players as checked
+
 	players, err := h.searchPlayerUC.Execute(c.Context(), query)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
-	
-	// Get currently selected IDs from the query to preserve state
+
+	// Filter by gender if requested
+	if gender != "" {
+		filtered := players[:0]
+		for _, p := range players {
+			if p.Gender == gender {
+				filtered = append(filtered, p)
+			}
+		}
+		players = filtered
+	}
+
+	// Build selected map: preserve existing selections OR select all returned
 	selectedMap := make(map[string]bool)
-	for _, id := range c.Request().URI().QueryArgs().PeekMulti("participant_ids[]") {
-		selectedMap[string(id)] = true
+	if selectAll {
+		for _, p := range players {
+			selectedMap[p.ID.String()] = true
+		}
+	} else {
+		for _, id := range c.Request().URI().QueryArgs().PeekMulti("participant_ids[]") {
+			selectedMap[string(id)] = true
+		}
 	}
 
 	return c.Render("admin/partials/player-selection-cards", fiber.Map{
@@ -294,18 +314,24 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 func (h *PlayerHandler) Import(c *fiber.Ctx) error {
 	file, err := c.FormFile("file")
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "no file uploaded")
+		return c.Status(fiber.StatusBadRequest).SendString(
+			`<p class="text-red-400 font-bold">✗ No file uploaded</p>`,
+		)
 	}
 
 	f, err := file.Open()
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "failed to open file")
+		return c.Status(fiber.StatusInternalServerError).SendString(
+			`<p class="text-red-400 font-bold">✗ Failed to open file</p>`,
+		)
 	}
 	defer f.Close()
 
 	result, err := h.importPlayersUC.Execute(c.Context(), file.Filename, f)
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return c.Status(fiber.StatusBadRequest).SendString(
+			fmt.Sprintf(`<p class="text-red-400 font-bold">✗ %s</p>`, err.Error()),
+		)
 	}
 
 	msg := fmt.Sprintf("Imported %d players", result.Imported)
@@ -313,11 +339,21 @@ func (h *PlayerHandler) Import(c *fiber.Ctx) error {
 		msg += fmt.Sprintf(", %d skipped", result.Skipped)
 	}
 
-	// Return an HTMX-friendly JSON summary; the UI will handle the toast + reload
-	return c.JSON(fiber.Map{
-		"imported": result.Imported,
-		"skipped":  result.Skipped,
-		"errors":   result.Errors,
-		"message":  msg,
-	})
+	// Build error list HTML
+	errHTML := ""
+	if len(result.Errors) > 0 {
+		errHTML = `<ul class="text-yellow-400 mt-2 space-y-1 text-xs">`
+		for _, e := range result.Errors {
+			errHTML += fmt.Sprintf(`<li>⚠ %s</li>`, e)
+		}
+		errHTML += `</ul>`
+	}
+
+	// Signal HTMX to refresh the player list after a short delay
+	c.Set("HX-Trigger-After-Settle", `{"refreshPlayerList": true}`)
+
+	return c.SendString(fmt.Sprintf(
+		`<p class="text-green-400 font-bold mb-1">✓ %s</p>%s`,
+		msg, errHTML,
+	))
 }

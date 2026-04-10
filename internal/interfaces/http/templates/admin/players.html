@@ -13,11 +13,11 @@
                     class="bg-white/5 border border-white/10 rounded-full py-2 px-10 text-sm text-white focus:outline-none focus:border-white/40 transition-all w-64">
                 <svg class="w-4 h-4 absolute left-4 top-2.5 text-gray-500 group-focus-within:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
-            <button onclick="document.getElementById('import-player-modal').classList.remove('hidden')" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider text-sm flex items-center gap-2">
+            <button hx-on:click="document.getElementById('import-player-modal').classList.remove('hidden')" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider text-sm flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 Import
             </button>
-            <button onclick="document.getElementById('add-player-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Player</button>
+            <button hx-on:click="document.getElementById('add-player-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Player</button>
         </div>
     </header>
 
@@ -45,39 +45,34 @@
 <!-- Import Modal -->
 <div id="import-player-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]">
     <div class="bg-club-panel border border-white/10 p-8 rounded-2xl max-w-lg w-full relative">
-        <button onclick="document.getElementById('import-player-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
+        <button hx-on:click="document.getElementById('import-player-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
         <h2 class="text-2xl font-bold uppercase mb-2 tracking-wide">Import Players</h2>
         <p class="text-gray-400 text-sm mb-6">Upload a <strong>.csv</strong> or <strong>.xlsx</strong> file. Required columns: <code class="text-white bg-white/10 px-1 rounded">first_name</code>, <code class="text-white bg-white/10 px-1 rounded">last_name</code>, <code class="text-white bg-white/10 px-1 rounded">gender</code> (M/F), <code class="text-white bg-white/10 px-1 rounded">country</code>, <code class="text-white bg-white/10 px-1 rounded">birthdate</code> (YYYY-MM-DD).</p>
 
-        <!-- Drop zone -->
-        <div id="import-dropzone" class="border-2 border-dashed border-white/20 rounded-xl p-10 text-center cursor-pointer hover:border-white/50 transition-colors mb-4" onclick="document.getElementById('import-file-input').click()" ondragover="event.preventDefault()" ondrop="handleImportDrop(event)">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <p id="import-dropzone-label" class="text-gray-400 text-sm">Drop file here or <span class="text-white underline">browse</span></p>
-        </div>
-        <input id="import-file-input" type="file" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleImportFileSelect(this)">
+        <form hx-post="/players/import" hx-encoding="multipart/form-data" hx-target="#import-result" hx-on::after-request="if(event.detail.successful) setTimeout(() => document.getElementById('import-player-modal').classList.add('hidden'), 1500)">
+            <input type="file" name="file" accept=".csv,.xlsx,.xls" required class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 mb-4 cursor-pointer">
+            
+            <div class="flex gap-4 mb-5">
+                <a href="/players/import/template" class="text-xs text-gray-400 hover:text-white underline transition-colors">⬇ Download Excel template (.xlsx)</a>
+                <span class="text-gray-600 text-xs">·</span>
+                <a href="/players/import/template?format=csv" class="text-xs text-gray-400 hover:text-white underline transition-colors">⬇ Download CSV template</a>
+            </div>
 
-        <!-- Download template -->
-        <div class="flex gap-4 mb-5">
-            <a href="/players/import/template" class="text-xs text-gray-400 hover:text-white underline transition-colors">⬇ Download Excel template (.xlsx)</a>
-            <span class="text-gray-600 text-xs">·</span>
-            <a href="/players/import/template?format=csv" class="text-xs text-gray-400 hover:text-white underline transition-colors">⬇ Download CSV template</a>
-        </div>
+            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-bold py-3 rounded-xl transition-all uppercase tracking-wider">
+                Upload &amp; Import
+            </button>
+        </form>
 
-        <button id="import-submit-btn" onclick="submitImport()" disabled class="w-full bg-white disabled:bg-white/20 disabled:text-gray-500 hover:bg-gray-200 text-black font-bold py-3 rounded-xl transition-all uppercase tracking-wider">
-            Upload &amp; Import
-        </button>
-
-        <!-- Result area -->
-        <div id="import-result" class="hidden mt-5 p-4 rounded-xl bg-white/5 border border-white/10 text-sm"></div>
+        <div id="import-result" class="mt-5 text-sm"></div>
     </div>
 </div>
 
 <!-- Add Modal -->
 <div id="add-player-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]">
     <div class="bg-club-panel border border-white/10 p-8 rounded-2xl max-w-md w-full relative">
-        <button onclick="document.getElementById('add-player-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
+        <button hx-on:click="document.getElementById('add-player-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
         <h2 class="text-2xl font-bold uppercase mb-6 tracking-wide">New Athlete</h2>
-        <form hx-post="/players" hx-target="#player-list" hx-swap="beforeend" class="space-y-4" onsubmit="setTimeout(() => document.getElementById('add-player-modal').classList.add('hidden'), 50)">
+        <form hx-post="/players" hx-target="#player-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) document.getElementById('add-player-modal').classList.add('hidden')" class="space-y-4">
             <div class="flex gap-4">
                 <input type="text" name="firstName" placeholder="First Name" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
                 <input type="text" name="lastName" placeholder="Last Name" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
@@ -118,4 +113,3 @@
     </div>
 </div>
 
-<script>

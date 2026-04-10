@@ -7,7 +7,7 @@
         <button 
             hx-get="/divisions" 
             hx-target="#division-modal-content"
-            onclick="document.getElementById('divisionModal').classList.remove('hidden')"
+            hx-on:click="document.getElementById('divisionModal').classList.remove('hidden')"
             class="bg-white hover:bg-gray-200 text-black font-bold py-3 px-6 rounded-lg transition-all uppercase tracking-widest text-sm flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
             Add Division
@@ -46,6 +46,3 @@
     </div>
 </div>
 
-<script>
-    // Minimal JS for simple UI state if needed, but HTMX handles the rest
-</script>

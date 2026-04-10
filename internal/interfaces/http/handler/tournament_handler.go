@@ -97,11 +97,29 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	}
 	players, _ := h.leaderboardUC.ExecuteSingles(c.Context())
 	divisions, _ := h.divisionUC.GetAll(c.Context())
+
+	// Build the view model for the bracket rendering
+	vm := BuildTournamentViewModel(t, divisions)
+
 	return c.Render("admin/tournament-detail", fiber.Map{
+		"Tournament":       t,
+		"Players":          players,
+		"Divisions":        divisions,
+		"BracketViewModel": vm,
+	}, "layouts/admin")
+}
+
+func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
+	id := c.Params("id")
+	t, err := h.getByID.Execute(c.Context(), id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
+	players, _ := h.leaderboardUC.ExecuteSingles(c.Context())
+	return c.Render("admin/partials/tournament-edit-form", fiber.Map{
 		"Tournament": t,
 		"Players":    players,
-		"Divisions":  divisions,
-	}, "layouts/admin")
+	})
 }
 
 func (h *TournamentHandler) Update(c *fiber.Ctx) error {
@@ -173,6 +191,11 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
+
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
 	return c.Render("admin/partials/tournament-row", t)
 }
 
@@ -181,7 +204,13 @@ func (h *TournamentHandler) Delete(c *fiber.Ctx) error {
 	if err := h.deleteUC.Execute(c.Context(), id); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
-	return c.SendStatus(fiber.StatusOK)
+	if c.Get("HX-Request") != "" {
+		if c.Get("HX-Current-URL") != "" && fmt.Sprintf("/admin/tournaments/%s", id) == c.Get("HX-Current-URL") {
+			c.Set("HX-Redirect", "/admin/tournaments")
+		}
+		return c.SendStatus(fiber.StatusNoContent)
+	}
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *TournamentHandler) Finish(c *fiber.Ctx) error {
@@ -192,6 +221,10 @@ func (h *TournamentHandler) Finish(c *fiber.Ctx) error {
 	}
 	if err := h.finishUC.Execute(c.Context(), id); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
 	}
 	return c.JSON(fiber.Map{"status": "finished"})
 }

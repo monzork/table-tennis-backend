@@ -53,7 +53,7 @@ package main
 		createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
 		finishMatchUC := match.NewFinishMatchUseCase()
 		updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo)
-		matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC)
+		matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo)
 
 
 
@@ -124,6 +124,9 @@ package main
 		admin.Get("/players", adminHandler.Players)
 		admin.Get("/tournaments", adminHandler.Tournaments)
 		admin.Get("/divisions", adminHandler.Divisions)
+		admin.Get("/player-field", adminHandler.NewPlayerField)
+		admin.Get("/matches/score/form", matchHandler.ShowScoreForm)
+		admin.Post("/matches/score/update", matchHandler.UpdateScore)
 
 		// Existing Form Post Endpoints mapped internally, protected
 		api := app.Group("/")
@@ -139,6 +142,7 @@ package main
 		api.Post("/tournaments", tournamentHandler.Create)
 		api.Post("/matches/create", matchHandler.Create)
 		api.Post("/matches/finish", matchHandler.Finish)
+		api.Get("/matches/:id/score-form", matchHandler.ShowScoreForm)
 		api.Put("/matches/:id/score", matchHandler.UpdateScore)
 		api.Get("/divisions", divisionHandler.ShowEditForm) // for new
 		api.Get("/divisions/:id/edit", divisionHandler.ShowEditForm)
@@ -147,6 +151,7 @@ package main
 
 		// Tournament CRUD routes (admin protected)
 		admin.Get("/tournaments/:id", tournamentHandler.Detail)
+		api.Get("/tournaments/:id/edit", tournamentHandler.ShowEditForm)
 		api.Put("/tournaments/:id", tournamentHandler.Update)
 		api.Delete("/tournaments/:id", tournamentHandler.Delete)
 		admin.Post("/tournaments/:id/finish", tournamentHandler.Finish)
