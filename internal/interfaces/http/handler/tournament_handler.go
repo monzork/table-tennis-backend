@@ -208,9 +208,9 @@ func (h *TournamentHandler) Delete(c *fiber.Ctx) error {
 		if c.Get("HX-Current-URL") != "" && fmt.Sprintf("/admin/tournaments/%s", id) == c.Get("HX-Current-URL") {
 			c.Set("HX-Redirect", "/admin/tournaments")
 		}
-		return c.SendStatus(fiber.StatusNoContent)
+		return c.SendString("")
 	}
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.SendString("")
 }
 
 func (h *TournamentHandler) Finish(c *fiber.Ctx) error {

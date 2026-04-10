@@ -82,5 +82,8 @@
         </div>
     </div>
 
-    <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest mt-2">Save Changes</button>
+    <div class="flex gap-3 mt-2">
+        <button type="button" onclick="document.getElementById('edit-modal').classList.add('hidden')" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 font-bold py-4 rounded-2xl transition-all uppercase tracking-widest">Cancel</button>
+        <button type="submit" class="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest">Save Changes</button>
+    </div>
 </form>

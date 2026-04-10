@@ -40,7 +40,7 @@
         Finish Tournament
       </button>
       {{end}}
-      <button hx-get="/admin/tournaments/{{.Tournament.ID}}/edit" 
+      <button hx-get="/tournaments/{{.Tournament.ID}}/edit" 
         hx-target="#edit-modal-content"
         hx-on:click="document.getElementById('edit-modal').classList.remove('hidden')"
         class="bg-white hover:bg-gray-200 text-black text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider">

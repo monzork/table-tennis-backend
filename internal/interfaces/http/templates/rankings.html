@@ -21,7 +21,7 @@
                    value="{{.Query}}"
                    placeholder="Name or Country..." 
                    class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors placeholder:text-gray-600"
-                   hx-get=""
+                   hx-get="{{.CurrentPath}}"
                    hx-trigger="keyup changed delay:300ms"
                    hx-target="#rankings-tbody"
                    hx-include="#division-filter, #sort-order"
@@ -32,7 +32,7 @@
             <select id="division-filter" 
                     name="division" 
                     class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer"
-                    hx-get=""
+                    hx-get="{{.CurrentPath}}"
                     hx-target="#rankings-tbody"
                     hx-include="[name='q'], #sort-order"
                     hx-push-url="true">
@@ -48,7 +48,7 @@
             <select id="sort-order" 
                     name="sort" 
                     class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer"
-                    hx-get=""
+                    hx-get="{{.CurrentPath}}"
                     hx-target="#rankings-tbody"
                     hx-include="[name='q'], #division-filter"
                     hx-push-url="true">

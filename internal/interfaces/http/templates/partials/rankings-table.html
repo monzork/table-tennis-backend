@@ -30,7 +30,7 @@
                 </div>
             </td>
             <td class="py-6 px-4 text-right font-black text-3xl italic text-white tracking-tight pr-8">
-                {{if eq $.Type "Doubles"}}{{.DoublesElo}}{{else}}{{.SinglesElo}}{{end}}
+                {{if eq $.RankType "doubles"}}{{.DoublesElo}}{{else}}{{.SinglesElo}}{{end}}
             </td>
         </tr>
     {{end}}

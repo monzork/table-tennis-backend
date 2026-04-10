@@ -228,6 +228,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 		"Sort":          sortOrder,
 		"IsDivisional":  isDivisional,
 		"Divisions":     divisions,
+		"CurrentPath":   c.Path(),
 	}
 
 	if c.Get("HX-Request") == "true" {
