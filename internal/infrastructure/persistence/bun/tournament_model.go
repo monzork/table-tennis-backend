@@ -18,8 +18,9 @@ type TournamentModel struct {
 	EventCategory  string     `bun:"event_category,notnull,default:'open'"`
 	StartDate      time.Time  `bun:"start_date,notnull"`
 	EndDate        time.Time  `bun:"end_date,notnull"`
-	GroupPassCount int        `bun:"group_pass_count,notnull,default:2"`
-	CreatedAt      time.Time  `bun:"created_at,notnull,default:current_timestamp"`
+	GroupPassCount   int        `bun:"group_pass_count,notnull,default:2"`
+	RegistrationOpen bool       `bun:"registration_open,notnull,default:false"`
+	CreatedAt        time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
 }
 

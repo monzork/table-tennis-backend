@@ -49,6 +49,7 @@ type StageRuleOverride struct {
 
 func (uc *UpdateTournamentUseCase) Execute(
 	ctx context.Context, idStr, name, tournamentType, format, category, startStr, endStr string,
+	registrationOpen bool,
 	participantIDs []string, newPlayers []NewPlayerData,
 	stageRuleOverrides []StageRuleOverride, groupPassCount int,
 ) (*tournamentDomain.Tournament, error) {
@@ -96,6 +97,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 		return nil, err
 	}
 	t.ID = id
+	t.RegistrationOpen = registrationOpen
 
 	// Apply any stage rule overrides submitted by the admin
 	for i := range t.StageRules {

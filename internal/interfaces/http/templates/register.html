@@ -1,0 +1,71 @@
+<div class="max-w-xl mx-auto animate-fade-in">
+    <div class="mb-10 text-center">
+        <h1 class="text-5xl font-extrabold uppercase tracking-tighter mb-2">Join the <span class="text-white">Club</span>.</h1>
+        <p class="text-gray-400 font-bold uppercase tracking-widest text-xs">Official Athlete Registration</p>
+    </div>
+
+    <div class="glass p-10 rounded-3xl shadow-2xl relative overflow-hidden">
+        <!-- Decoration -->
+        <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
+
+        <form action="/register" method="POST" class="space-y-6 relative z-10">
+            <!-- Honeypot -->
+            <input type="text" name="website" class="hidden" tabindex="-1" autocomplete="off">
+
+            <div class="grid grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">First Name</label>
+                    <input type="text" name="firstName" required placeholder="John" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">Last Name</label>
+                    <input type="text" name="lastName" required placeholder="Doe" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">Birthdate</label>
+                    <input type="date" name="birthdate" required class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all [color-scheme:dark]">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">Gender</label>
+                    <select name="gender" required class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all appearance-none">
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">Country / ISO Code</label>
+                <input type="text" name="country" required placeholder="e.g. MEX or USA" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all uppercase">
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">WhatsApp Number (Optional)</label>
+                <input type="text" name="whatsAppNumber" placeholder="+52 1 123 456 7890" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all">
+                <p class="text-[9px] text-gray-500 uppercase tracking-tight italic">Used for tournament notifications and registration.</p>
+            </div>
+
+            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-black py-5 rounded-2xl transition-all uppercase tracking-[0.2em] shadow-lg transform hover:-translate-y-1 active:scale-95 mt-4">
+                Verify & Register
+            </button>
+        </form>
+    </div>
+
+    <p class="text-center mt-8 text-gray-500 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-colors cursor-pointer">
+        <a href="/rankings/singles">← Back to Rankings</a>
+    </p>
+</div>
+
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+</style>

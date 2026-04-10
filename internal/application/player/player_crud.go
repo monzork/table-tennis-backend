@@ -17,7 +17,7 @@ func NewUpdatePlayerUseCase(repo *bun.PlayerRepository) *UpdatePlayerUseCase {
 	return &UpdatePlayerUseCase{repo: repo}
 }
 
-func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, lastName, birthdate, gender, country string) (*player.Player, error) {
+func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, lastName, birthdate, gender, country, whatsAppNumber string, singlesElo, doublesElo int16) (*player.Player, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return nil, err
@@ -45,6 +45,11 @@ func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, la
 	if country != "" {
 		p.Country = country
 	}
+	
+	p.WhatsAppNumber = whatsAppNumber
+	
+	p.UpdateSinglesElo(singlesElo)
+	p.UpdateDoublesElo(doublesElo)
 
 	err = uc.repo.Save(ctx, p)
 	return p, err

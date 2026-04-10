@@ -18,19 +18,20 @@ func NewPlayerRepository(db *bun.DB) *PlayerRepository {
 
 func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 	model := &PlayerModel{
-		ID:         p.ID,
-		FirstName:  p.FirstName,
-		LastName:   p.LastName,
-		Birthdate:  p.Birthdate,
-		Gender:     p.Gender,
-		SinglesElo: p.SinglesElo,
-		DoublesElo: p.DoublesElo,
-		Country:    p.Country,
+		ID:             p.ID,
+		FirstName:      p.FirstName,
+		LastName:       p.LastName,
+		Birthdate:      p.Birthdate,
+		Gender:         p.Gender,
+		SinglesElo:     p.SinglesElo,
+		DoublesElo:     p.DoublesElo,
+		Country:        p.Country,
+		WhatsAppNumber: p.WhatsAppNumber,
 	}
 
 	_, err := r.db.NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country").
+		Set("first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number").
 		Exec(ctx)
 
 	return err
@@ -91,14 +92,15 @@ func (r *PlayerRepository) mapModelsToDomain(models []PlayerModel) []*player.Pla
 	players := make([]*player.Player, len(models))
 	for i, m := range models {
 		players[i] = &player.Player{
-			ID:         m.ID,
-			FirstName:  m.FirstName,
-			LastName:   m.LastName,
-			Birthdate:  m.Birthdate,
-			Gender:     m.Gender,
-			SinglesElo: m.SinglesElo,
-			DoublesElo: m.DoublesElo,
-			Country:    m.Country,
+			ID:             m.ID,
+			FirstName:      m.FirstName,
+			LastName:       m.LastName,
+			Birthdate:      m.Birthdate,
+			Gender:         m.Gender,
+			SinglesElo:     m.SinglesElo,
+			DoublesElo:     m.DoublesElo,
+			Country:        m.Country,
+			WhatsAppNumber: m.WhatsAppNumber,
 		}
 	}
 	return players
@@ -113,14 +115,15 @@ func (r *PlayerRepository) GetById(ctx context.Context, id uuid.UUID) (*player.P
 	}
 
 	return &player.Player{
-		ID:         model.ID,
-		FirstName:  model.FirstName,
-		LastName:   model.LastName,
-		Birthdate:  model.Birthdate,
-		Gender:     model.Gender,
-		SinglesElo: model.SinglesElo,
-		DoublesElo: model.DoublesElo,
-		Country:    model.Country,
+		ID:             model.ID,
+		FirstName:      model.FirstName,
+		LastName:       model.LastName,
+		Birthdate:      model.Birthdate,
+		Gender:         model.Gender,
+		SinglesElo:     model.SinglesElo,
+		DoublesElo:     model.DoublesElo,
+		Country:        model.Country,
+		WhatsAppNumber: model.WhatsAppNumber,
 	}, nil
 }
 

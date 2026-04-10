@@ -37,6 +37,7 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 		StartDate: t.StartDate,
 		EndDate:   t.EndDate,
 		GroupPassCount: t.GroupPassCount,
+		RegistrationOpen: t.RegistrationOpen,
 	}
 	_, err = tx.NewInsert().Model(model).Exec(ctx)
 	if err != nil {
@@ -107,6 +108,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			StartDate: m.StartDate,
 			EndDate:   m.EndDate,
 			GroupPassCount: m.GroupPassCount,
+			RegistrationOpen: m.RegistrationOpen,
 			Rules:     []tournament.Rule{},
 			Matches:   []tournament.Match{},
 		}
@@ -200,6 +202,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		StartDate:    model.StartDate,
 		EndDate:      model.EndDate,
 		GroupPassCount: model.GroupPassCount,
+		RegistrationOpen: model.RegistrationOpen,
 		Participants: participantPlayers,
 		Groups:       groups,
 		Rules:        []tournament.Rule{},
@@ -225,9 +228,10 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		StartDate: t.StartDate,
 		EndDate:   t.EndDate,
 		GroupPassCount: t.GroupPassCount,
+		RegistrationOpen: t.RegistrationOpen,
 	}
 
-	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count").Exec(ctx)
+	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open").Exec(ctx)
 	if err != nil {
 		return err
 	}

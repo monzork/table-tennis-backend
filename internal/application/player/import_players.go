@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -151,6 +152,8 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 	birthStr := cell(row, colIdx, "birthdate")
 	gender := strings.ToUpper(cell(row, colIdx, "gender"))
 	country := strings.ToUpper(cell(row, colIdx, "country"))
+	singlesEloStr := cell(row, colIdx, "singles_elo")
+	doublesEloStr := cell(row, colIdx, "doubles_elo")
 
 	if firstName == "" || lastName == "" {
 		result.Errors = append(result.Errors, fmt.Sprintf("row %d: missing first_name or last_name — skipped", rowNum))
@@ -180,6 +183,14 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 		result.Errors = append(result.Errors, fmt.Sprintf("row %d: %v", rowNum, err))
 		result.Skipped++
 		return err
+	}
+
+	// Apply optional Elo values if provided
+	if v, err := strconv.Atoi(singlesEloStr); err == nil && v > 0 {
+		p.UpdateSinglesElo(int16(v))
+	}
+	if v, err := strconv.Atoi(doublesEloStr); err == nil && v > 0 {
+		p.UpdateDoublesElo(int16(v))
 	}
 
 	if err := uc.playerRepo.Save(ctx, p); err != nil {

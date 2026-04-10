@@ -4,6 +4,7 @@ package main
 		"context"
 		"log"
 		"os"
+		"time"
 
 		adminDomain "table-tennis-backend/internal/domain/admin"
 		"table-tennis-backend/internal/application/leaderboard"
@@ -16,6 +17,7 @@ package main
 		"table-tennis-backend/internal/interfaces/http/middleware"
 
 		"github.com/gofiber/fiber/v2"
+		"github.com/gofiber/fiber/v2/middleware/limiter"
 		"github.com/gofiber/fiber/v2/middleware/session"
 		"github.com/gofiber/template/html/v2"
 	)
@@ -55,6 +57,7 @@ package main
 
 		leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 		divisionHandler := handler.NewDivisionHandler(divisionUC)
+		publicHandler := handler.NewPublicHandler(playerUC)
 
 		adminRepo := bun.NewAdminRepository(bun.DB)
 
@@ -95,6 +98,17 @@ package main
 		app.Get("/", func(c *fiber.Ctx) error {
 			return c.Redirect("/rankings/singles")
 		})
+
+		// Public Signup with Rate Limiting (5 requests per min)
+		signupLimiter := limiter.New(limiter.Config{
+			Max:        5,
+			Expiration: 1 * time.Minute,
+			KeyGenerator: func(c *fiber.Ctx) string {
+				return c.IP()
+			},
+		})
+		app.Get("/register", publicHandler.ShowSignup)
+		app.Post("/register", signupLimiter, publicHandler.Register)
 
 		// Auth endpoints
 		app.Get("/admin/login", authHandler.ShowLogin)

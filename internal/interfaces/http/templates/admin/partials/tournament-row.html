@@ -1,6 +1,16 @@
 {{define "admin/partials/tournament-row"}}
 <tr class="hover:bg-white/5 transition-colors group" id="tournament-{{.ID}}">
-    <td class="p-4 font-bold uppercase text-white tracking-widest">{{.Name}}</td>
+    <td class="p-4">
+        <div class="flex flex-col">
+            <span class="font-bold uppercase text-white tracking-widest">{{.Name}}</span>
+            {{if .RegistrationOpen}}
+            <span class="text-[8px] font-black uppercase tracking-tighter text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded w-fit mt-1 border border-green-500/20">Registration Open</span>
+            {{else}}
+            <span class="text-[8px] font-black uppercase tracking-tighter text-gray-500 bg-white/5 px-1.5 py-0.5 rounded w-fit mt-1 border border-white/5">Registration Closed</span>
+            {{third := ""}}
+            {{end}}
+        </div>
+    </td>
     <td class="p-4 text-gray-400 capitalize tracking-widest text-xs">{{.Type}} / {{.Format}}</td>
     <td class="p-4 text-gray-400 font-mono text-xs">{{.StartDate.Format "Jan 02, 2006"}}</td>
     <td class="p-4 text-gray-400 font-mono text-xs">{{.EndDate.Format "Jan 02, 2006"}}</td>

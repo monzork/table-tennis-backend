@@ -107,13 +107,14 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var body struct {
-		Name           string `form:"name"`
-		Type           string `form:"type"`
-		Format         string `form:"format"`
-		EventCategory  string `form:"eventCategory"`
-		StartDate      string `form:"startDate"`
-		EndDate        string `form:"endDate"`
-		GroupPassCount int    `form:"groupPassCount"`
+		Name             string `form:"name"`
+		Type             string `form:"type"`
+		Format           string `form:"format"`
+		EventCategory    string `form:"eventCategory"`
+		StartDate        string `form:"startDate"`
+		EndDate          string `form:"endDate"`
+		GroupPassCount   int    `form:"groupPassCount"`
+		RegistrationOpen bool   `form:"registrationOpen"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -167,7 +168,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 
 	t, err := h.updateUC.Execute(
 		c.Context(), id, body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
-		participantIDs, newPlayers, stageRules, body.GroupPassCount,
+		body.RegistrationOpen, participantIDs, newPlayers, stageRules, body.GroupPassCount,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
