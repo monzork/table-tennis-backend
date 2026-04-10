@@ -4,6 +4,7 @@ import (
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
+	appTournament "table-tennis-backend/internal/application/tournament"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -11,18 +12,29 @@ import (
 )
 
 type MatchHandler struct {
-	createUC      *match.CreateMatchUseCase
-	finishUC      *match.FinishMatchUseCase
-	updateScoreUC *match.UpdateMatchScoreUseCase
-	playerRepo    *bun.PlayerRepository
+	createUC           *match.CreateMatchUseCase
+	finishUC           *match.FinishMatchUseCase
+	updateScoreUC      *match.UpdateMatchScoreUseCase
+	playerRepo         *bun.PlayerRepository
+	matchRepo          *bun.MatchRepository
+	finishTournamentUC *appTournament.FinishTournamentUseCase
 }
 
-func NewMatchHandler(createUC *match.CreateMatchUseCase, finishUC *match.FinishMatchUseCase, updateScoreUC *match.UpdateMatchScoreUseCase, playerRepo *bun.PlayerRepository) *MatchHandler {
+func NewMatchHandler(
+	createUC *match.CreateMatchUseCase,
+	finishUC *match.FinishMatchUseCase,
+	updateScoreUC *match.UpdateMatchScoreUseCase,
+	playerRepo *bun.PlayerRepository,
+	matchRepo *bun.MatchRepository,
+	finishTournamentUC *appTournament.FinishTournamentUseCase,
+) *MatchHandler {
 	return &MatchHandler{
-		createUC:      createUC,
-		finishUC:      finishUC,
-		updateScoreUC: updateScoreUC,
-		playerRepo:    playerRepo,
+		createUC:           createUC,
+		finishUC:           finishUC,
+		updateScoreUC:      updateScoreUC,
+		playerRepo:         playerRepo,
+		matchRepo:          matchRepo,
+		finishTournamentUC: finishTournamentUC,
 	}
 }
 
@@ -130,9 +142,30 @@ func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
 		}
 	}
 
-	var sets []int
+	type setVM struct {
+		Number int
+		ScoreA interface{}
+		ScoreB interface{}
+	}
+	var sets []setVM
+
+	// Load existing scores if matchID is present
+	existingScores := make(map[int]bun.MatchSetModel)
+	if matchID != "" {
+		if s, err := h.matchRepo.GetSets(c.Context(), matchID); err == nil {
+			for _, sm := range s {
+				existingScores[sm.SetNumber] = sm
+			}
+		}
+	}
+
 	for i := 1; i <= bestOf; i++ {
-		sets = append(sets, i)
+		valA, valB := interface{}(""), interface{}("")
+		if sm, ok := existingScores[i]; ok {
+			valA = sm.ScoreA
+			valB = sm.ScoreB
+		}
+		sets = append(sets, setVM{Number: i, ScoreA: valA, ScoreB: valB})
 	}
 
 	return c.Render("admin/partials/match-score-form", fiber.Map{
@@ -208,6 +241,11 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	if err := h.updateScoreUC.Execute(c.Context(), matchID, body.Scores, body.TournamentID, body.Stage); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
+
+	// Automate finish: Try to finish tournament after each score update
+	tUUID, _ := uuid.Parse(body.TournamentID)
+	_ = h.finishTournamentUC.Execute(c.Context(), tUUID)
+
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
 	}

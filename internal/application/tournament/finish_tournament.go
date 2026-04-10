@@ -37,12 +37,22 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID uui
 		return errors.New("tournament is already finished")
 	}
 
-	// Fetch all finished matches for the tournament in chronological order
+	// Check if all matches are finished
+	count, _ := uc.matchRepo.DB().NewSelect().
+		Model((*bun.MatchModel)(nil)).
+		Where("tournament_id = ?", tournamentID).
+		Where("status != ?", "finished").
+		Count(ctx)
+	
+	if count > 0 {
+		return errors.New("cannot finish tournament: there are still matches in progress or scheduled")
+	}
+
+	// Fetch all matches for the tournament in chronological order
 	var matchModels []bun.MatchModel
 	err = uc.matchRepo.DB().NewSelect().
 		Model(&matchModels).
 		Where("tournament_id = ?", tournamentID).
-		Where("status = ?", "finished").
 		Order("updated_at ASC").
 		Scan(ctx)
 	if err != nil {

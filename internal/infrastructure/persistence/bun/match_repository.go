@@ -90,6 +90,14 @@ func (r *MatchRepository) GetByID(ctx context.Context, id uuid.UUID) (*MatchMode
 	return m, nil
 }
 
+func (r *MatchRepository) GetSets(ctx context.Context, matchID string) ([]MatchSetModel, error) {
+	var sets []MatchSetModel
+	if err := r.db.NewSelect().Model(&sets).Where("match_id = ?", matchID).Order("set_number ASC").Scan(ctx); err != nil {
+		return nil, err
+	}
+	return sets, nil
+}
+
 // UpdateScore replaces all set scores, resolves winner, persists, updates players' Elo,
 // and advances the winner into the next match if configured.
 func (r *MatchRepository) UpdateScore(ctx context.Context, id uuid.UUID, sets []tournament.MatchSet, stageRule *StageRuleModel) error {

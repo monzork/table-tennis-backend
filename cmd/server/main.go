@@ -53,7 +53,7 @@ package main
 		createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
 		finishMatchUC := match.NewFinishMatchUseCase()
 		updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo)
-		matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo)
+		matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, finishTournamentUC)
 
 
 
@@ -127,6 +127,7 @@ package main
 		admin.Get("/player-field", adminHandler.NewPlayerField)
 		admin.Get("/matches/score/form", matchHandler.ShowScoreForm)
 		admin.Post("/matches/score/update", matchHandler.UpdateScore)
+		admin.Post("/tournaments/:id/finish", tournamentHandler.Finish)
 
 		// Existing Form Post Endpoints mapped internally, protected
 		api := app.Group("/")

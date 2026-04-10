@@ -19,15 +19,25 @@
     <div class="space-y-3 mb-6">
         {{range .Sets}}
         <div class="flex items-center gap-3">
-            <span class="text-xs text-gray-500 w-8 text-right">Set {{.}}</span>
-            <input name="scores[]_a" type="number" min="0" max="99" placeholder="A" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-center text-lg font-bold focus:outline-none focus:ring-1 focus:ring-white">
+            <span class="text-xs text-gray-500 w-8 text-right">Set {{.Number}}</span>
+            <input name="scores[]_a" type="number" min="0" max="99" placeholder="A" value="{{.ScoreA}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-center text-lg font-bold focus:outline-none focus:ring-1 focus:ring-white">
             <span class="text-gray-600 font-bold">–</span>
-            <input name="scores[]_b" type="number" min="0" max="99" placeholder="B" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-center text-lg font-bold focus:outline-none focus:ring-1 focus:ring-white">
+            <input name="scores[]_b" type="number" min="0" max="99" placeholder="B" value="{{.ScoreB}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-center text-lg font-bold focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         {{end}}
     </div>
 
     <div id="score-error" class="hidden text-sm text-red-400 mb-4 font-mono"></div>
 
-    <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest">Save Scores</button>
+    <div class="flex gap-3">
+        <button type="button" 
+            onclick="document.getElementById('score-modal').classList.add('hidden')"
+            class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-bold py-4 rounded-2xl transition-all uppercase tracking-widest text-sm">
+            Cancel
+        </button>
+        <button type="submit" 
+            class="flex-[2] bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg">
+            Save Scores
+        </button>
+    </div>
 </form>
