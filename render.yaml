@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: table-tennis-backend
+    env: docker
+    plan: free # Can be 'free' because we use external Postgres
+    region: ohio
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /admin/login
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: DATABASE_URL
+        sync: false # User will provide this from Neon/Supabase
+      - key: ADMIN_USERNAME
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        generateValue: true

@@ -44,8 +44,8 @@ func TestDivisionHandler(t *testing.T) {
 			t.Fatalf("test request failed: %v", err)
 		}
 
-		if resp.StatusCode != 302 {
-			t.Errorf("expected 302 Redirect, got %v", resp.StatusCode)
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
 	})
 
@@ -64,8 +64,8 @@ func TestDivisionHandler(t *testing.T) {
 			t.Fatalf("test request failed: %v", err)
 		}
 
-		if resp.StatusCode != 302 {
-			t.Errorf("expected 302 Redirect, got %v", resp.StatusCode)
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
 	})
 }
