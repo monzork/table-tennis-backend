@@ -15,6 +15,8 @@ type PlayerHandler struct {
 	registerPlayerUC *player.RegisterPlayerUseCase
 	updatePlayerUC   *player.UpdatePlayerUseCase
 	deletePlayerUC   *player.DeletePlayerUseCase
+	getPlayerByIDUC  *player.GetPlayerByIDUseCase
+	searchPlayerUC   *player.SearchPlayersUseCase
 	importPlayersUC  *player.ImportPlayersUseCase
 }
 
@@ -22,12 +24,16 @@ func NewPlayerHandler(
 	uc *player.RegisterPlayerUseCase,
 	uuc *player.UpdatePlayerUseCase,
 	duc *player.DeletePlayerUseCase,
+	giuc *player.GetPlayerByIDUseCase,
+	siuc *player.SearchPlayersUseCase,
 	iuc *player.ImportPlayersUseCase,
 ) *PlayerHandler {
 	return &PlayerHandler{
 		registerPlayerUC: uc,
 		updatePlayerUC:   uuc,
 		deletePlayerUC:   duc,
+		getPlayerByIDUC:  giuc,
+		searchPlayerUC:   siuc,
 		importPlayersUC:  iuc,
 	}
 }
@@ -88,6 +94,45 @@ func (h *PlayerHandler) Delete(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 	return c.SendStatus(fiber.StatusOK)
+}
+
+func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
+	id := c.Params("id")
+	p, err := h.getPlayerByIDUC.Execute(c.Context(), id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "Player not found")
+	}
+	return c.Render("admin/partials/player-edit-form", p)
+}
+
+func (h *PlayerHandler) Search(c *fiber.Ctx) error {
+	query := c.Query("q")
+	players, err := h.searchPlayerUC.Execute(c.Context(), query)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.Render("admin/partials/player-list-rows", fiber.Map{
+		"Players": players,
+	})
+}
+
+func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
+	query := c.Query("q")
+	players, err := h.searchPlayerUC.Execute(c.Context(), query)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	
+	// Get currently selected IDs from the query to preserve state
+	selectedMap := make(map[string]bool)
+	for _, id := range c.Request().URI().QueryArgs().PeekMulti("participant_ids[]") {
+		selectedMap[string(id)] = true
+	}
+
+	return c.Render("admin/partials/player-selection-cards", fiber.Map{
+		"Players":     players,
+		"SelectedIDs": selectedMap,
+	})
 }
 
 // ImportTemplate returns a downloadable player template.

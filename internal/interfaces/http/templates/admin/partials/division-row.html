@@ -1,0 +1,23 @@
+<tr class="hover:bg-white/5 transition-colors group" id="division-{{.ID}}">
+    <td class="py-4 px-6 font-bold text-gray-400">{{.DisplayOrder}}</td>
+    <td class="py-4 px-6 font-bold text-lg text-white" style="color: {{.Color}}">{{.Name}}</td>
+    <td class="py-4 px-6 text-gray-300 font-mono">
+        {{.MinElo}} - {{if .MaxElo}}{{.MaxElo}}{{else}}∞{{end}}
+    </td>
+    <td class="py-4 px-6 text-center">
+        <div class="w-6 h-6 rounded-full mx-auto shadow-sm border border-white/20" style="background-color: {{.Color}};"></div>
+    </td>
+    <td class="py-4 px-6 text-right space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button 
+            hx-get="/divisions/{{.ID}}/edit" 
+            hx-target="#division-modal-content"
+            onclick="document.getElementById('divisionModal').classList.remove('hidden')"
+            class="text-gray-300 hover:text-white uppercase tracking-widest text-xs font-bold">Edit</button>
+        <button 
+            hx-delete="/divisions/{{.ID}}" 
+            hx-confirm="Delete this division?"
+            hx-target="#division-{{.ID}}" 
+            hx-swap="outerHTML"
+            class="text-gray-500 hover:text-white uppercase tracking-widest text-xs font-bold">Delete</button>
+    </td>
+</tr>

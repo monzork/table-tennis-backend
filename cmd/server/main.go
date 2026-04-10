@@ -30,7 +30,9 @@ package main
 		updatePlayerUC := player.NewUpdatePlayerUseCase(playerRepo)
 		deletePlayerUC := player.NewDeletePlayerUseCase(playerRepo)
 		importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
-		playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, importPlayerUC)
+		getPlayerByIDUC := player.NewGetPlayerByIDUseCase(playerRepo)
+		searchPlayerUC := player.NewSearchPlayersUseCase(playerRepo)
+		playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, importPlayerUC)
 
 		leaderboardUC := leaderboard.NewGetLeaderboardUseCase(*playerRepo)
 
@@ -127,6 +129,9 @@ package main
 		api := app.Group("/")
 		api.Use(authMiddleware)
 		api.Post("/players", playerHandler.Register)
+		api.Get("/players/search", playerHandler.Search)
+		api.Get("/players/search/cards", playerHandler.SearchSelectionCards)
+		api.Get("/players/:id/edit", playerHandler.ShowEditForm)
 		api.Put("/players/:id", playerHandler.Update)
 		api.Delete("/players/:id", playerHandler.Delete)
 		api.Post("/players/import", playerHandler.Import)
@@ -135,6 +140,8 @@ package main
 		api.Post("/matches/create", matchHandler.Create)
 		api.Post("/matches/finish", matchHandler.Finish)
 		api.Put("/matches/:id/score", matchHandler.UpdateScore)
+		api.Get("/divisions", divisionHandler.ShowEditForm) // for new
+		api.Get("/divisions/:id/edit", divisionHandler.ShowEditForm)
 		api.Post("/divisions", divisionHandler.CreateOrUpdate)
 		api.Delete("/divisions/:id", divisionHandler.Delete)
 

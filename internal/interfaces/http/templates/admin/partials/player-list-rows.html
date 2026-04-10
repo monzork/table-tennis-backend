@@ -1,0 +1,5 @@
+{{range .Players}}
+    {{template "admin/partials/player-row" .}}
+{{else}}
+    <tr><td colspan="6" class="p-8 text-center text-gray-500 italic uppercase tracking-widest text-xs">No athletes found matching your search.</td></tr>
+{{end}}

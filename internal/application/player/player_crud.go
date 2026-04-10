@@ -9,6 +9,22 @@ import (
 	"github.com/google/uuid"
 )
 
+type GetPlayerByIDUseCase struct {
+	repo *bun.PlayerRepository
+}
+
+func NewGetPlayerByIDUseCase(repo *bun.PlayerRepository) *GetPlayerByIDUseCase {
+	return &GetPlayerByIDUseCase{repo: repo}
+}
+
+func (uc *GetPlayerByIDUseCase) Execute(ctx context.Context, idStr string) (*player.Player, error) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, err
+	}
+	return uc.repo.GetById(ctx, id)
+}
+
 type UpdatePlayerUseCase struct {
 	repo *bun.PlayerRepository
 }
@@ -69,4 +85,16 @@ func (uc *DeletePlayerUseCase) Execute(ctx context.Context, idStr string) error 
 		return err
 	}
 	return uc.repo.Delete(ctx, id)
+}
+
+type SearchPlayersUseCase struct {
+	repo *bun.PlayerRepository
+}
+
+func NewSearchPlayersUseCase(repo *bun.PlayerRepository) *SearchPlayersUseCase {
+	return &SearchPlayersUseCase{repo: repo}
+}
+
+func (uc *SearchPlayersUseCase) Execute(ctx context.Context, query string) ([]*player.Player, error) {
+	return uc.repo.Search(ctx, query)
 }

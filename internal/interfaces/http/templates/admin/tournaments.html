@@ -153,26 +153,20 @@
                         </div>
 
                         <div class="relative">
-                            <input type="text" id="player-search" onkeyup="filterPlayers()" placeholder="Search athletes by name..." class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-white transition-all pl-10">
+                            <input type="text" id="player-search" 
+                                name="q"
+                                hx-get="/players/search/cards" 
+                                hx-trigger="keyup changed delay:300ms" 
+                                hx-target="#player-selection-grid"
+                                hx-include="[name='participant_ids[]']"
+                                placeholder="Search athletes by name..." 
+                                class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-white transition-all pl-10">
                             <svg class="w-4 h-4 absolute left-3 top-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </div>
                         
                         <div id="player-selection-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto p-2 bg-black/20 rounded-xl border border-white/5 scrollbar-thin">
                             {{range .Players}}
-                            <label class="player-card relative cursor-pointer group" data-name="{{.FirstName}} {{.LastName}}" data-gender="{{.Gender}}">
-                                <input type="checkbox" name="participant_ids[]" value="{{.ID}}" class="hidden peer">
-                                <div class="p-3 rounded-lg border border-white/5 bg-white/[0.02] peer-checked:border-white/40 peer-checked:bg-white/10 group-hover:bg-white/5 transition-all">
-                                    <div class="flex items-center justify-between gap-2">
-                                        <div class="min-w-0">
-                                            <p class="text-[11px] font-bold text-gray-300 truncate">{{.FirstName}} <span class="uppercase">{{.LastName}}</span></p>
-                                            <p class="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">{{.SinglesElo}} ELO • {{.Gender}}</p>
-                                        </div>
-                                        <div class="w-4 h-4 rounded border border-white/10 flex items-center justify-center peer-checked:bg-white">
-                                            <svg class="w-3 h-3 text-black opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                                        </div>
-                                    </div>
-                                </div>
-                            </label>
+                                {{template "admin/partials/player-selection-cards" dict "Players" (slice .) "SelectedIDs" (map)}}
                             {{end}}
                         </div>
                     </div>
@@ -189,19 +183,6 @@
 </div>
 
 <script>
-function filterPlayers() {
-    const query = document.getElementById('player-search').value.toLowerCase();
-    const cards = document.querySelectorAll('.player-card');
-    cards.forEach(card => {
-        const name = card.getAttribute('data-name').toLowerCase();
-        if (name.includes(query)) {
-            card.classList.remove('hidden');
-        } else {
-            card.classList.add('hidden');
-        }
-    });
-}
-
 function selectAllByGender(gender) {
     const cards = document.querySelectorAll(`.player-card[data-gender="${gender}"]`);
     cards.forEach(card => {

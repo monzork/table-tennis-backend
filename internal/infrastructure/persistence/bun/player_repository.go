@@ -131,3 +131,15 @@ func (r *PlayerRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.NewDelete().Model((*PlayerModel)(nil)).Where("id = ?", id).Exec(ctx)
 	return err
 }
+
+func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.Player, error) {
+	var models []PlayerModel
+	q := r.db.NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc)
+	if query != "" {
+		q = q.Where("first_name LIKE ? OR last_name LIKE ?", "%"+query+"%", "%"+query+"%")
+	}
+	if err := q.Scan(ctx); err != nil {
+		return nil, err
+	}
+	return r.mapModelsToDomain(models), nil
+}

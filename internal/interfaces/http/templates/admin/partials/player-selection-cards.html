@@ -1,0 +1,19 @@
+{{range .Players}}
+<label class="player-card relative cursor-pointer group" data-gender="{{.Gender}}">
+    <input type="checkbox" name="participant_ids[]" value="{{.ID}}" class="hidden peer" 
+        {{if index $.SelectedIDs .ID}}checked{{end}}>
+    <div class="p-3 rounded-lg border border-white/5 bg-white/[0.02] peer-checked:border-white/40 peer-checked:bg-white/10 group-hover:bg-white/5 transition-all">
+        <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0">
+                <p class="text-[11px] font-bold text-gray-300 truncate">{{.FirstName}} <span class="uppercase">{{.LastName}}</span></p>
+                <p class="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">{{.SinglesElo}} ELO • {{.Gender}}</p>
+            </div>
+            <div class="w-4 h-4 rounded border border-white/10 flex items-center justify-center peer-checked:bg-white">
+                <svg class="w-3 h-3 text-black opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+        </div>
+    </div>
+</label>
+{{else}}
+<div class="col-span-2 sm:col-span-3 p-4 text-center text-gray-500 italic text-[10px] uppercase tracking-widest">No athletes found.</div>
+{{end}}

@@ -44,7 +44,21 @@ func (h *DivisionHandler) CreateOrUpdate(c *fiber.Ctx) error {
 		return c.Status(400).SendString(err.Error())
 	}
 
-	return c.Redirect("/admin/divisions")
+	// For HTMX, return the row or the whole list. Let's try to get the one we just saved.
+	// We don't have a direct "Return object from Save" yet, so we fetch if we have an ID or get all if new.
+	// Actually, if it's new, we might not know the ID easily without refactoring UseCase.
+	// Let's just return a redirect or a signal to reload if new, or the partial if update.
+	// Better: just fetch all and return rows for simplicity.
+	
+	if id != "" {
+		d, _ := h.uc.GetById(c.Context(), id)
+		return c.Render("admin/partials/division-row", d)
+	}
+
+	// For new ones, it's easier to just redirect for now or return all rows.
+	// Let's return all rows.
+	divisions, _ := h.uc.GetAll(c.Context())
+	return c.Render("admin/divisions", fiber.Map{"Divisions": divisions}, "layouts/admin")
 }
 
 func (h *DivisionHandler) Delete(c *fiber.Ctx) error {
@@ -53,7 +67,18 @@ func (h *DivisionHandler) Delete(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
+	return c.SendStatus(fiber.StatusOK)
+}
 
-	// Because we might be hitting this with a form doing a POST with _method=DELETE
-	return c.Redirect("/admin/divisions")
+func (h *DivisionHandler) ShowEditForm(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		// New division
+		return c.Render("admin/partials/division-edit-form", fiber.Map{})
+	}
+	d, err := h.uc.GetById(c.Context(), id)
+	if err != nil {
+		return c.Status(404).SendString("Division not found")
+	}
+	return c.Render("admin/partials/division-edit-form", d)
 }
