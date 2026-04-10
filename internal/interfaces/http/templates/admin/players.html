@@ -4,7 +4,13 @@
             <h1 class="text-4xl font-extrabold tracking-tight uppercase">Players <span class="text-white">.</span></h1>
             <p class="text-gray-400 mt-1">Global Athlete Database</p>
         </div>
-        <button onclick="document.getElementById('add-player-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Player</button>
+        <div class="flex gap-3">
+            <button onclick="document.getElementById('import-player-modal').classList.remove('hidden')" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Import
+            </button>
+            <button onclick="document.getElementById('add-player-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Player</button>
+        </div>
     </header>
 
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
@@ -25,6 +31,32 @@
                 {{end}}
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="import-player-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]">
+    <div class="bg-club-panel border border-white/10 p-8 rounded-2xl max-w-lg w-full relative">
+        <button onclick="document.getElementById('import-player-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
+        <h2 class="text-2xl font-bold uppercase mb-2 tracking-wide">Import Players</h2>
+        <p class="text-gray-400 text-sm mb-6">Upload a <strong>.csv</strong> or <strong>.xlsx</strong> file. Required columns: <code class="text-white bg-white/10 px-1 rounded">first_name</code>, <code class="text-white bg-white/10 px-1 rounded">last_name</code>, <code class="text-white bg-white/10 px-1 rounded">gender</code> (M/F), <code class="text-white bg-white/10 px-1 rounded">country</code>, <code class="text-white bg-white/10 px-1 rounded">birthdate</code> (YYYY-MM-DD).</p>
+
+        <!-- Drop zone -->
+        <div id="import-dropzone" class="border-2 border-dashed border-white/20 rounded-xl p-10 text-center cursor-pointer hover:border-white/50 transition-colors mb-4" onclick="document.getElementById('import-file-input').click()" ondragover="event.preventDefault()" ondrop="handleImportDrop(event)">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto mb-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p id="import-dropzone-label" class="text-gray-400 text-sm">Drop file here or <span class="text-white underline">browse</span></p>
+        </div>
+        <input id="import-file-input" type="file" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleImportFileSelect(this)">
+
+        <!-- Download template -->
+        <a href="/players/import/template" class="text-xs text-gray-500 hover:text-white underline block mb-5 transition-colors">⬇ Download CSV template</a>
+
+        <button id="import-submit-btn" onclick="submitImport()" disabled class="w-full bg-white disabled:bg-white/20 disabled:text-gray-500 hover:bg-gray-200 text-black font-bold py-3 rounded-xl transition-all uppercase tracking-wider">
+            Upload &amp; Import
+        </button>
+
+        <!-- Result area -->
+        <div id="import-result" class="hidden mt-5 p-4 rounded-xl bg-white/5 border border-white/10 text-sm"></div>
     </div>
 </div>
 
@@ -118,6 +150,63 @@
             document.getElementById('player-' + id).remove();
         } else {
             alert('Failed to delete player');
+        }
+    }
+
+    // ─── Import helpers ───────────────────────────────────────────────────────
+    let importFile = null;
+
+    function handleImportFileSelect(input) {
+        if (input.files && input.files[0]) {
+            setImportFile(input.files[0]);
+        }
+    }
+
+    function handleImportDrop(event) {
+        event.preventDefault();
+        const file = event.dataTransfer.files[0];
+        if (file) setImportFile(file);
+    }
+
+    function setImportFile(file) {
+        importFile = file;
+        document.getElementById('import-dropzone-label').textContent = '📄 ' + file.name;
+        document.getElementById('import-dropzone').classList.add('border-white/50');
+        document.getElementById('import-submit-btn').disabled = false;
+        document.getElementById('import-result').classList.add('hidden');
+    }
+
+    async function submitImport() {
+        if (!importFile) return;
+
+        const btn = document.getElementById('import-submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Uploading…';
+
+        const fd = new FormData();
+        fd.append('file', importFile);
+
+        try {
+            const res = await fetch('/players/import', { method: 'POST', body: fd });
+            const data = await res.json();
+            const resultEl = document.getElementById('import-result');
+            resultEl.classList.remove('hidden');
+
+            if (res.ok) {
+                resultEl.innerHTML = `<p class="text-green-400 font-bold mb-1">✓ ${data.message}</p>` +
+                    (data.errors && data.errors.length ? `<ul class="text-yellow-400 mt-2 space-y-1 text-xs">${data.errors.map(e => `<li>⚠ ${e}</li>`).join('')}</ul>` : '');
+
+                // Reload player list after a short delay
+                setTimeout(() => { window.location.reload(); }, 1500);
+            } else {
+                resultEl.innerHTML = `<p class="text-red-400 font-bold">✗ ${data.message || 'Import failed'}</p>`;
+                btn.textContent = 'Upload & Import';
+                btn.disabled = false;
+            }
+        } catch (err) {
+            document.getElementById('import-result').innerHTML = `<p class="text-red-400">Network error: ${err.message}</p>`;
+            btn.textContent = 'Upload & Import';
+            btn.disabled = false;
         }
     }
 </script>

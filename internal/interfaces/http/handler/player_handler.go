@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"table-tennis-backend/internal/application/player"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,17 +12,20 @@ type PlayerHandler struct {
 	registerPlayerUC *player.RegisterPlayerUseCase
 	updatePlayerUC   *player.UpdatePlayerUseCase
 	deletePlayerUC   *player.DeletePlayerUseCase
+	importPlayersUC  *player.ImportPlayersUseCase
 }
 
 func NewPlayerHandler(
 	uc *player.RegisterPlayerUseCase,
 	uuc *player.UpdatePlayerUseCase,
 	duc *player.DeletePlayerUseCase,
+	iuc *player.ImportPlayersUseCase,
 ) *PlayerHandler {
 	return &PlayerHandler{
 		registerPlayerUC: uc,
 		updatePlayerUC:   uuc,
 		deletePlayerUC:   duc,
+		importPlayersUC:  iuc,
 	}
 }
 
@@ -75,4 +79,41 @@ func (h *PlayerHandler) Delete(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 	return c.SendStatus(fiber.StatusOK)
+}
+
+// ImportTemplate returns a downloadable CSV template with the correct headers.
+func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/csv")
+	c.Set("Content-Disposition", "attachment; filename=\"players_template.csv\"")
+	return c.SendString("first_name,last_name,birthdate,gender,country\nJohn,Doe,1995-06-15,M,MEX\nJane,Smith,1998-03-22,F,USA\n")
+}
+func (h *PlayerHandler) Import(c *fiber.Ctx) error {
+	file, err := c.FormFile("file")
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "no file uploaded")
+	}
+
+	f, err := file.Open()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "failed to open file")
+	}
+	defer f.Close()
+
+	result, err := h.importPlayersUC.Execute(c.Context(), file.Filename, f)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	msg := fmt.Sprintf("Imported %d players", result.Imported)
+	if result.Skipped > 0 {
+		msg += fmt.Sprintf(", %d skipped", result.Skipped)
+	}
+
+	// Return an HTMX-friendly JSON summary; the UI will handle the toast + reload
+	return c.JSON(fiber.Map{
+		"imported": result.Imported,
+		"skipped":  result.Skipped,
+		"errors":   result.Errors,
+		"message":  msg,
+	})
 }

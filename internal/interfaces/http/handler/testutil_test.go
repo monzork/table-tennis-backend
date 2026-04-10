@@ -79,7 +79,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	playerUC := player.NewRegisterPlayerUseCase(playerRepo)
 	updatePlayerUC := player.NewUpdatePlayerUseCase(playerRepo)
 	deletePlayerUC := player.NewDeletePlayerUseCase(playerRepo)
-	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC)
+	importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
+	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, importPlayerUC)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(*playerRepo)
 
@@ -137,6 +138,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	api.Post("/players", playerHandler.Register)
 	api.Put("/players/:id", playerHandler.Update)
 	api.Delete("/players/:id", playerHandler.Delete)
+	api.Post("/players/import", playerHandler.Import)
 	api.Post("/tournaments", tournamentHandler.Create)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)

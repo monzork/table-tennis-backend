@@ -27,7 +27,8 @@ package main
 		playerUC := player.NewRegisterPlayerUseCase(playerRepo)
 		updatePlayerUC := player.NewUpdatePlayerUseCase(playerRepo)
 		deletePlayerUC := player.NewDeletePlayerUseCase(playerRepo)
-		playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC)
+		importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
+		playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, importPlayerUC)
 
 		leaderboardUC := leaderboard.NewGetLeaderboardUseCase(*playerRepo)
 
@@ -114,6 +115,8 @@ package main
 		api.Post("/players", playerHandler.Register)
 		api.Put("/players/:id", playerHandler.Update)
 		api.Delete("/players/:id", playerHandler.Delete)
+		api.Post("/players/import", playerHandler.Import)
+		app.Get("/players/import/template", playerHandler.ImportTemplate)
 		api.Post("/tournaments", tournamentHandler.Create)
 		api.Post("/matches/create", matchHandler.Create)
 		api.Post("/matches/finish", matchHandler.Finish)
