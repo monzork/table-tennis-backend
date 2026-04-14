@@ -47,7 +47,8 @@ package main
 		matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
 		finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
 		exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
-		tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC)
+		exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo)
+		tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC)
 		GetMatchesUC := match.NewGetMatchesUseCase(*bun.DB, *playerRepo)
 
 		createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
@@ -157,6 +158,7 @@ package main
 		api.Delete("/tournaments/:id", tournamentHandler.Delete)
 		admin.Post("/tournaments/:id/finish", tournamentHandler.Finish)
 		admin.Get("/tournaments/:id/export", tournamentHandler.Export)
+		admin.Get("/tournaments/:id/export/pdf", tournamentHandler.ExportPDF)
 
 		log.Fatal(app.Listen(":8080"))
 	}

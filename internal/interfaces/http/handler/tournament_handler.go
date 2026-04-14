@@ -19,6 +19,7 @@ type TournamentHandler struct {
 	divisionUC    *division.DivisionUseCase
 	finishUC      *tournament.FinishTournamentUseCase
 	exportUC      *tournament.ExportTournamentReportUseCase
+	exportPdfUC   *tournament.ExportTournamentPdfUseCase
 }
 
 func NewTournamentHandler(
@@ -30,6 +31,7 @@ func NewTournamentHandler(
 	divisionUC *division.DivisionUseCase,
 	finishUC *tournament.FinishTournamentUseCase,
 	exportUC *tournament.ExportTournamentReportUseCase,
+	exportPdfUC *tournament.ExportTournamentPdfUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:      createUC,
@@ -40,6 +42,7 @@ func NewTournamentHandler(
 		divisionUC:    divisionUC,
 		finishUC:      finishUC,
 		exportUC:      exportUC,
+		exportPdfUC:   exportPdfUC,
 	}
 }
 
@@ -258,8 +261,20 @@ func (h *TournamentHandler) Export(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
-	
+
 	c.Set("Content-Type", "text/csv")
 	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"tournament_report_%s.csv\"", idStr))
 	return c.Send(csvBytes)
+}
+
+func (h *TournamentHandler) ExportPDF(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	pdfBytes, err := h.exportPdfUC.Execute(c.Context(), idStr)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	c.Set("Content-Type", "application/pdf")
+	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"tournament_report_%s.pdf\"", idStr))
+	return c.Send(pdfBytes)
 }

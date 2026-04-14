@@ -108,6 +108,24 @@ func TestTournamentHandler(t *testing.T) {
 			t.Errorf("expected text/csv Content-Type, got %v", resp.Header.Get("Content-Type"))
 		}
 	})
+
+	t.Run("Export Tournament PDF", func(t *testing.T) {
+		req := httptest.NewRequest("GET", fmt.Sprintf("/admin/tournaments/%s/export/pdf", createdTournamentID), nil)
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+		
+		if !strings.Contains(resp.Header.Get("Content-Type"), "application/pdf") {
+			t.Errorf("expected application/pdf Content-Type, got %v", resp.Header.Get("Content-Type"))
+		}
+	})
 	
 	t.Run("Delete Tournament", func(t *testing.T) {
 		tourney, _ := tournamentDomain.NewTournament("Temp", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, nil)

@@ -97,7 +97,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
 	finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
 	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
-	tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC)
+	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo)
+	tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC)
 	GetMatchesUC := match.NewGetMatchesUseCase(*db, *playerRepo)
 
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
@@ -153,6 +154,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	api.Delete("/tournaments/:id", tournamentHandler.Delete)
 	admin.Post("/tournaments/:id/finish", tournamentHandler.Finish)
 	admin.Get("/tournaments/:id/export", tournamentHandler.Export)
+	admin.Get("/tournaments/:id/export/pdf", tournamentHandler.ExportPDF)
 
 	return app, db, store, nil
 }
