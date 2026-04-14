@@ -136,6 +136,131 @@
                 form:has(.format-radio[value="groups_elimination"]:checked) #group-pass-count-container { display: block; }
             </style>
 
+            <div class="space-y-2 pt-2">
+                <div class="flex items-center justify-between cursor-pointer" onclick="var p=document.getElementById('create-rules-panel'); p.classList.toggle('hidden'); this.querySelector('span.toggle-arrow').textContent = p.classList.contains('hidden') ? 'Expand ▾' : 'Collapse ▴'">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">Match Rules per Stage</label>
+                    <span class="toggle-arrow text-[10px] text-gray-400 uppercase tracking-widest">Expand ▾</span>
+                </div>
+                <p class="text-[10px] text-gray-500">Defaults follow WTT standard (Best of 5 for groups/early rounds, Best of 7 for QF onwards).</p>
+                <div id="create-rules-panel" class="hidden space-y-2">
+
+                    <!-- Group -->
+                    <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                        <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Group</span>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                            <select name="stage_rule[group][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                <option value="3">3</option>
+                                <option value="5" selected>5</option>
+                                <option value="7">7</option>
+                                <option value="9">9</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                            <input type="number" name="stage_rule[group][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                        </div>
+                        <input type="hidden" name="stage_rule[group][points_margin]" value="2">
+                    </div>
+
+                    <!-- R32 -->
+                    <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                        <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Round of 32</span>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                            <select name="stage_rule[r32][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                <option value="3">3</option>
+                                <option value="5" selected>5</option>
+                                <option value="7">7</option>
+                                <option value="9">9</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                            <input type="number" name="stage_rule[r32][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                        </div>
+                        <input type="hidden" name="stage_rule[r32][points_margin]" value="2">
+                    </div>
+
+                    <!-- R16 -->
+                    <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                        <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Round of 16</span>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                            <select name="stage_rule[r16][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                <option value="3">3</option>
+                                <option value="5" selected>5</option>
+                                <option value="7">7</option>
+                                <option value="9">9</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                            <input type="number" name="stage_rule[r16][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                        </div>
+                        <input type="hidden" name="stage_rule[r16][points_margin]" value="2">
+                    </div>
+
+                    <!-- Quarterfinal -->
+                    <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                        <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">QF</span>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                            <select name="stage_rule[quarterfinal][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                <option value="3">3</option>
+                                <option value="5">5</option>
+                                <option value="7" selected>7</option>
+                                <option value="9">9</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                            <input type="number" name="stage_rule[quarterfinal][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                        </div>
+                        <input type="hidden" name="stage_rule[quarterfinal][points_margin]" value="2">
+                    </div>
+
+                    <!-- Semifinal -->
+                    <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                        <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">SF</span>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                            <select name="stage_rule[semifinal][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                <option value="3">3</option>
+                                <option value="5">5</option>
+                                <option value="7" selected>7</option>
+                                <option value="9">9</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                            <input type="number" name="stage_rule[semifinal][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                        </div>
+                        <input type="hidden" name="stage_rule[semifinal][points_margin]" value="2">
+                    </div>
+
+                    <!-- Final -->
+                    <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                        <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Final</span>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                            <select name="stage_rule[final][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                <option value="3">3</option>
+                                <option value="5">5</option>
+                                <option value="7" selected>7</option>
+                                <option value="9">9</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                            <input type="number" name="stage_rule[final][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                        </div>
+                        <input type="hidden" name="stage_rule[final][points_margin]" value="2">
+                    </div>
+
+                </div>
+            </div>
+
             <div class="space-y-4 pt-4 border-t border-white/5">
                 <div class="flex justify-between items-center">
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Participants</label>

@@ -81,7 +81,30 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		}
 	}
 
-	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount)
+	// Parse per-stage rule overrides
+	createStages := []string{"group", "r32", "r16", "quarterfinal", "semifinal", "final"}
+	var stageRules []tournament.StageRuleOverride
+	for _, stage := range createStages {
+		boStr := string(c.Request().PostArgs().Peek("stage_rule[" + stage + "][best_of]"))
+		ptStr := string(c.Request().PostArgs().Peek("stage_rule[" + stage + "][points_to_win]"))
+		pmStr := string(c.Request().PostArgs().Peek("stage_rule[" + stage + "][points_margin]"))
+		if boStr != "" {
+			bo := 5
+			pt := 11
+			pm := 2
+			fmt.Sscanf(boStr, "%d", &bo)
+			fmt.Sscanf(ptStr, "%d", &pt)
+			fmt.Sscanf(pmStr, "%d", &pm)
+			stageRules = append(stageRules, tournament.StageRuleOverride{
+				Stage:        stage,
+				BestOf:       bo,
+				PointsToWin:  pt,
+				PointsMargin: pm,
+			})
+		}
+	}
+
+	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

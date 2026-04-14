@@ -488,13 +488,19 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 		p1 := current[0].P1
 		p2 := current[0].P2
 		var champion *MatchSlot
-		
-		if p1 != nil && p2 != nil && p1.Player != nil && p2.Player != nil {
+
+		// Both finalists must be known and the final match finished before crowning a champion.
+		// If p2 is nil it means the other side of the bracket hasn't resolved yet — do NOT
+		// advance anyone to champion in that case.
+		bothFinalistsKnown := p1 != nil && p1.Player != nil && p2 != nil && p2.Player != nil
+
+		if bothFinalistsKnown {
 			for k := range t.Matches {
 				tm := t.Matches[k]
 				if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
 					if (tm.TeamA[0].ID == p1.Player.ID && tm.TeamB[0].ID == p2.Player.ID) || (tm.TeamA[0].ID == p2.Player.ID && tm.TeamB[0].ID == p1.Player.ID) {
 						finalMatch = &t.Matches[k]
+						// Only crown champion when the final match is actually finished
 						if tm.Status == "finished" {
 							if tm.WinnerTeam == "A" {
 								if tm.TeamA[0].ID == p1.Player.ID { champion = p1 } else { champion = p2 }
@@ -506,11 +512,9 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 					}
 				}
 			}
-		} else if p1 != nil && p1.Player != nil {
-			champion = p1
-		} else if p2 != nil && p2.Player != nil {
-			champion = p2
 		}
+		// If only one finalist is present due to a genuine bye (size-1 bracket), allow that.
+		// But do NOT auto-crown when the other side is merely unresolved.
 
 		rounds = append(rounds, RoundView{
 			Name: "🏆 Final",
@@ -524,13 +528,16 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 				},
 			},
 		})
-		
-		rounds = append(rounds, RoundView{
-			Name: "Champion",
-			Matches: []BracketMatchView{
-				{ Player1: champion, Player2: nil },
-			},
-		})
+
+		// Only append the Champion row when we actually have a champion
+		if champion != nil {
+			rounds = append(rounds, RoundView{
+				Name: "Champion",
+				Matches: []BracketMatchView{
+					{Player1: champion, Player2: nil},
+				},
+			})
+		}
 	}
 
 	return rounds

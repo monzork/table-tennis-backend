@@ -55,30 +55,133 @@
     </div>
 
     <div class="space-y-2">
-        <div class="flex items-center justify-between cursor-pointer" hx-on:click="document.getElementById('rules-panel').classList.toggle('hidden')">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">Match Rules</label>
-            <span class="text-[10px] text-gray-400 uppercase tracking-widest">Expand ▾</span>
+        <div class="flex items-center justify-between cursor-pointer" onclick="document.getElementById('edit-rules-panel').classList.toggle('hidden'); this.querySelector('span.toggle-arrow').textContent = document.getElementById('edit-rules-panel').classList.contains('hidden') ? 'Expand ▾' : 'Collapse ▴'">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">Match Rules per Stage</label>
+            <span class="toggle-arrow text-[10px] text-gray-400 uppercase tracking-widest">Expand ▾</span>
         </div>
-        <div id="rules-panel" class="hidden space-y-3">
-            {{range .Tournament.StageRules}}
+        <div id="edit-rules-panel" class="hidden space-y-3">
+            {{/* Build a lookup map of existing rules by stage */}}
+            {{$rules := .Tournament.StageRules}}
+
+            {{/* Group stage */}}
+            {{$bo := 5}}{{$pts := 11}}{{range $rules}}{{if eq .Stage "group"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
             <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
-                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{.Stage}}</span>
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Group</span>
                 <div class="space-y-1">
                     <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
-                    <select name="stage_rule[{{.Stage}}][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
-                        <option value="3" {{if eq .BestOf 3}}selected{{end}}>3</option>
-                        <option value="5" {{if eq .BestOf 5}}selected{{end}}>5</option>
-                        <option value="7" {{if eq .BestOf 7}}selected{{end}}>7</option>
-                        <option value="9" {{if eq .BestOf 9}}selected{{end}}>9</option>
+                    <select name="stage_rule[group][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                        <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
+                        <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
+                        <option value="7" {{if eq $bo 7}}selected{{end}}>7</option>
+                        <option value="9" {{if eq $bo 9}}selected{{end}}>9</option>
                     </select>
                 </div>
                 <div class="space-y-1">
                     <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
-                    <input type="number" name="stage_rule[{{.Stage}}][points_to_win]" value="{{.PointsToWin}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                    <input type="number" name="stage_rule[group][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                 </div>
-                <input type="hidden" name="stage_rule[{{.Stage}}][points_margin]" value="{{.PointsMargin}}">
+                <input type="hidden" name="stage_rule[group][points_margin]" value="2">
             </div>
-            {{end}}
+
+            {{/* R32 */}}
+            {{$bo = 5}}{{$pts = 11}}{{range $rules}}{{if eq .Stage "r32"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
+            <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Round of 32</span>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <select name="stage_rule[r32][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                        <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
+                        <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
+                        <option value="7" {{if eq $bo 7}}selected{{end}}>7</option>
+                        <option value="9" {{if eq $bo 9}}selected{{end}}>9</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <input type="number" name="stage_rule[r32][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                </div>
+                <input type="hidden" name="stage_rule[r32][points_margin]" value="2">
+            </div>
+
+            {{/* R16 */}}
+            {{$bo = 5}}{{$pts = 11}}{{range $rules}}{{if eq .Stage "r16"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
+            <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Round of 16</span>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <select name="stage_rule[r16][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                        <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
+                        <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
+                        <option value="7" {{if eq $bo 7}}selected{{end}}>7</option>
+                        <option value="9" {{if eq $bo 9}}selected{{end}}>9</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <input type="number" name="stage_rule[r16][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                </div>
+                <input type="hidden" name="stage_rule[r16][points_margin]" value="2">
+            </div>
+
+            {{/* Quarterfinal */}}
+            {{$bo = 7}}{{$pts = 11}}{{range $rules}}{{if eq .Stage "quarterfinal"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
+            <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">QF</span>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <select name="stage_rule[quarterfinal][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                        <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
+                        <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
+                        <option value="7" {{if eq $bo 7}}selected{{end}}>7</option>
+                        <option value="9" {{if eq $bo 9}}selected{{end}}>9</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <input type="number" name="stage_rule[quarterfinal][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                </div>
+                <input type="hidden" name="stage_rule[quarterfinal][points_margin]" value="2">
+            </div>
+
+            {{/* Semifinal */}}
+            {{$bo = 7}}{{$pts = 11}}{{range $rules}}{{if eq .Stage "semifinal"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
+            <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">SF</span>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <select name="stage_rule[semifinal][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                        <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
+                        <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
+                        <option value="7" {{if eq $bo 7}}selected{{end}}>7</option>
+                        <option value="9" {{if eq $bo 9}}selected{{end}}>9</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <input type="number" name="stage_rule[semifinal][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                </div>
+                <input type="hidden" name="stage_rule[semifinal][points_margin]" value="2">
+            </div>
+
+            {{/* Final */}}
+            {{$bo = 7}}{{$pts = 11}}{{range $rules}}{{if eq .Stage "final"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
+            <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Final</span>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <select name="stage_rule[final][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                        <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
+                        <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
+                        <option value="7" {{if eq $bo 7}}selected{{end}}>7</option>
+                        <option value="9" {{if eq $bo 9}}selected{{end}}>9</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <input type="number" name="stage_rule[final][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                </div>
+                <input type="hidden" name="stage_rule[final][points_margin]" value="2">
+            </div>
         </div>
     </div>
 

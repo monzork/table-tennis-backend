@@ -35,6 +35,7 @@ func (uc *CreateTournamentUseCase) Execute(
 	participantIDs []string,
 	newPlayers []NewPlayerData,
 	groupPassCount int,
+	stageRuleOverrides []StageRuleOverride,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -91,6 +92,17 @@ func (uc *CreateTournamentUseCase) Execute(
 	t, err := tournamentDomain.NewTournament(name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, filteredParticipants)
 	if err != nil {
 		return nil, err
+	}
+
+	// Apply any stage rule overrides submitted by the admin
+	for i := range t.StageRules {
+		for _, ov := range stageRuleOverrides {
+			if t.StageRules[i].Stage == ov.Stage {
+				t.StageRules[i].BestOf = ov.BestOf
+				t.StageRules[i].PointsToWin = ov.PointsToWin
+				t.StageRules[i].PointsMargin = ov.PointsMargin
+			}
+		}
 	}
 
 	if err := uc.repo.Save(ctx, t); err != nil {
