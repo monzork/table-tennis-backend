@@ -38,14 +38,32 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID uui
 	}
 
 	// Check if all matches are finished
-	count, _ := uc.matchRepo.DB().NewSelect().
+	unfinishedCount, _ := uc.matchRepo.DB().NewSelect().
 		Model((*bun.MatchModel)(nil)).
 		Where("tournament_id = ?", tournamentID).
 		Where("status != ?", "finished").
+		Where("team_match_id IS NULL").
 		Count(ctx)
-	
-	if count > 0 {
+
+	if unfinishedCount > 0 {
 		return errors.New("cannot finish tournament: there are still matches in progress or scheduled")
+	}
+
+	// Verify enough matches have been played for the format
+	finishedCount, _ := uc.matchRepo.DB().NewSelect().
+		Model((*bun.MatchModel)(nil)).
+		Where("tournament_id = ?", tournamentID).
+		Where("status = ?", "finished").
+		Where("team_match_id IS NULL").
+		Count(ctx)
+
+	participantCount := len(t.Participants)
+	if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
+		participantCount = len(t.Teams)
+	}
+
+	if participantCount > 1 && finishedCount < participantCount-1 {
+		return errors.New("cannot finish tournament: not all rounds have been played")
 	}
 
 	// Fetch all matches for the tournament in chronological order

@@ -484,10 +484,17 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		tUUID, _ := uuid.Parse(body.TournamentID)
 		p1UUID, _ := uuid.Parse(body.P1Id)
 		p2UUID, _ := uuid.Parse(body.P2Id)
-		
-		// Determine match type from tournament
-		matchType := "singles" // default
-		
+
+		matchType := "singles"
+		if t, err := h.tournamentRepo.GetByID(c.Context(), tUUID); err == nil {
+			switch t.Type {
+			case "doubles", "mixed_doubles":
+				matchType = "doubles"
+			case "teams":
+				matchType = "teams"
+			}
+		}
+
 		m, err := h.createUC.Execute(c.Context(), tUUID, matchType, []uuid.UUID{p1UUID}, []uuid.UUID{p2UUID})
 		if err == nil {
 			matchID = m.ID.String()

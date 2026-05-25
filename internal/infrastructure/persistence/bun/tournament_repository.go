@@ -28,6 +28,17 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 	}
 	defer tx.Rollback()
 
+	if err := r.saveTx(ctx, tx, t); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (r *TournamentRepository) SaveTx(ctx context.Context, tx bun.IDB, t *tournament.Tournament) error {
+	return r.saveTx(ctx, tx, t)
+}
+
+func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *tournament.Tournament) error {
 	model := &TournamentModel{
 		ID:        t.ID,
 		Name:      t.Name,
@@ -43,45 +54,48 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 		SkipElo:   t.SkipElo,
 		TeamFormat: t.TeamFormat,
 	}
-	_, err = tx.NewInsert().Model(model).Exec(ctx)
-	if err != nil {
+	if _, err := tx.NewInsert().Model(model).Exec(ctx); err != nil {
 		return err
 	}
 
-	// Save participants
-	for _, p := range t.Participants {
-		partModel := &TournamentParticipantModel{
-			TournamentID: t.ID,
-			PlayerID:     p.ID,
-			EloBeforeSingles: &p.SinglesElo,
-			EloBeforeDoubles: &p.DoublesElo,
+	// Save participants in bulk
+	if len(t.Participants) > 0 {
+		partModels := make([]TournamentParticipantModel, len(t.Participants))
+		for i, p := range t.Participants {
+			partModels[i] = TournamentParticipantModel{
+				TournamentID:     t.ID,
+				PlayerID:         p.ID,
+				EloBeforeSingles: &p.SinglesElo,
+				EloBeforeDoubles: &p.DoublesElo,
+			}
 		}
-		_, err = tx.NewInsert().Model(partModel).Exec(ctx)
-		if err != nil {
+		if _, err := tx.NewInsert().Model(&partModels).Exec(ctx); err != nil {
 			return err
 		}
 	}
 
-	// Save groups
-	for _, g := range t.Groups {
-		groupModel := &GroupModel{
-			ID:           g.ID,
-			TournamentID: t.ID,
-			Name:         g.Name,
+	// Save groups and group participants in bulk
+	if len(t.Groups) > 0 {
+		groupModels := make([]GroupModel, len(t.Groups))
+		var gpModels []GroupParticipantModel
+		for i, g := range t.Groups {
+			groupModels[i] = GroupModel{
+				ID:           g.ID,
+				TournamentID: t.ID,
+				Name:         g.Name,
+			}
+			for _, p := range g.Players {
+				gpModels = append(gpModels, GroupParticipantModel{
+					GroupID:  g.ID,
+					PlayerID: p.ID,
+				})
+			}
 		}
-		_, err = tx.NewInsert().Model(groupModel).Exec(ctx)
-		if err != nil {
+		if _, err := tx.NewInsert().Model(&groupModels).Exec(ctx); err != nil {
 			return err
 		}
-
-		// Save group participants
-		for _, p := range g.Players {
-			gpModel := &GroupParticipantModel{
-				GroupID:  g.ID,
-				PlayerID: p.ID,
-			}
-			_, err = tx.NewInsert().Model(gpModel).Exec(ctx)
-			if err != nil {
+		if len(gpModels) > 0 {
+			if _, err := tx.NewInsert().Model(&gpModels).Exec(ctx); err != nil {
 				return err
 			}
 		}
@@ -92,31 +106,34 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 		return err
 	}
 
-	// Save teams
-	for _, team := range t.Teams {
-		tmModel := &TeamModel{
-			ID:           team.ID,
-			TournamentID: t.ID,
-			Name:         team.Name,
+	// Save teams and team players in bulk
+	if len(t.Teams) > 0 {
+		teamModels := make([]TeamModel, len(t.Teams))
+		var tpModels []TeamPlayerModel
+		for i, team := range t.Teams {
+			teamModels[i] = TeamModel{
+				ID:           team.ID,
+				TournamentID: t.ID,
+				Name:         team.Name,
+			}
+			for _, p := range team.Players {
+				tpModels = append(tpModels, TeamPlayerModel{
+					TeamID:   team.ID,
+					PlayerID: p.ID,
+				})
+			}
 		}
-		_, err = tx.NewInsert().Model(tmModel).Exec(ctx)
-		if err != nil {
+		if _, err := tx.NewInsert().Model(&teamModels).Exec(ctx); err != nil {
 			return err
 		}
-
-		for _, p := range team.Players {
-			tpModel := &TeamPlayerModel{
-				TeamID:   team.ID,
-				PlayerID: p.ID,
-			}
-			_, err = tx.NewInsert().Model(tpModel).Exec(ctx)
-			if err != nil {
+		if len(tpModels) > 0 {
+			if _, err := tx.NewInsert().Model(&tpModels).Exec(ctx); err != nil {
 				return err
 			}
 		}
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tournament, error) {
@@ -153,68 +170,146 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		return nil, err
 	}
 
-	// Load participants
+	// ── 1. Load participants ────────────────────────────────────────────────
 	var partModels []TournamentParticipantModel
 	_ = r.db.NewSelect().Model(&partModels).Where("tournament_id = ?", id).Scan(ctx)
 
-	var participantPlayers []*player.Player
+	// Collect all player IDs we'll need
+	playerIDSet := make(map[uuid.UUID]bool)
 	for _, pt := range partModels {
-		var pm PlayerModel
-		if e := r.db.NewSelect().Model(&pm).Where("id = ?", pt.PlayerID).Scan(ctx); e == nil {
-			participantPlayers = append(participantPlayers, &player.Player{
-				ID:         pm.ID,
-				FirstName:  pm.FirstName,
-				LastName:   pm.LastName,
-				SinglesElo: pm.SinglesElo,
-				DoublesElo: pm.DoublesElo,
-				Country:    pm.Country,
-			})
-		}
+		playerIDSet[pt.PlayerID] = true
 	}
 
-	// Load groups with their players
+	// ── 2. Load groups and group participants in batch ───────────────────────
 	var groupModels []GroupModel
 	_ = r.db.NewSelect().Model(&groupModels).Where("tournament_id = ?", id).Order("name ASC").Scan(ctx)
 
+	groupIDs := make([]uuid.UUID, len(groupModels))
+	for i, gm := range groupModels {
+		groupIDs[i] = gm.ID
+	}
+
+	var allGPModels []GroupParticipantModel
+	if len(groupIDs) > 0 {
+		_ = r.db.NewSelect().Model(&allGPModels).Where("group_id IN (?)", bun.In(groupIDs)).Order("group_id", "position ASC").Scan(ctx)
+	}
+
+	for _, gp := range allGPModels {
+		playerIDSet[gp.PlayerID] = true
+	}
+
+	// ── 3. Load teams and team players in batch ─────────────────────────────
+	var teamModels []TeamModel
+	_ = r.db.NewSelect().Model(&teamModels).Where("tournament_id = ?", model.ID).Order("name ASC").Scan(ctx)
+
+	teamIDs := make([]uuid.UUID, len(teamModels))
+	teamMap := make(map[uuid.UUID]*TeamModel)
+	for i, tm := range teamModels {
+		teamIDs[i] = tm.ID
+		tmCopy := tm
+		teamMap[tm.ID] = &tmCopy
+	}
+
+	var allTPModels []TeamPlayerModel
+	if len(teamIDs) > 0 {
+		_ = r.db.NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.In(teamIDs)).Scan(ctx)
+	}
+
+	for _, tp := range allTPModels {
+		playerIDSet[tp.PlayerID] = true
+	}
+
+	// ── 4. Batch-load ALL players we need in a single query ─────────────────
+	playerIDs := make([]uuid.UUID, 0, len(playerIDSet))
+	for pid := range playerIDSet {
+		playerIDs = append(playerIDs, pid)
+	}
+
+	playerCache := make(map[uuid.UUID]*PlayerModel)
+	if len(playerIDs) > 0 {
+		var allPlayers []PlayerModel
+		_ = r.db.NewSelect().Model(&allPlayers).Where("id IN (?)", bun.In(playerIDs)).Scan(ctx)
+		for i := range allPlayers {
+			playerCache[allPlayers[i].ID] = &allPlayers[i]
+		}
+	}
+
+	// Helper to convert PlayerModel to domain player
+	toPlayer := func(pm *PlayerModel) *player.Player {
+		return &player.Player{
+			ID:         pm.ID,
+			FirstName:  pm.FirstName,
+			LastName:   pm.LastName,
+			Gender:     pm.Gender,
+			SinglesElo: pm.SinglesElo,
+			DoublesElo: pm.DoublesElo,
+			Country:    pm.Country,
+		}
+	}
+
+	// ── 5. Assemble participants ────────────────────────────────────────────
+	var participantPlayers []*player.Player
+	for _, pt := range partModels {
+		if pm, ok := playerCache[pt.PlayerID]; ok {
+			participantPlayers = append(participantPlayers, toPlayer(pm))
+		}
+	}
+
+	// ── 6. Assemble teams ───────────────────────────────────────────────────
+	// Group team players by team ID
+	tpByTeam := make(map[uuid.UUID][]TeamPlayerModel)
+	for _, tp := range allTPModels {
+		tpByTeam[tp.TeamID] = append(tpByTeam[tp.TeamID], tp)
+	}
+
+	var teams []*tournament.Team
+	for _, tm := range teamModels {
+		var teamPlayers []*player.Player
+		for _, tp := range tpByTeam[tm.ID] {
+			if pm, ok := playerCache[tp.PlayerID]; ok {
+				teamPlayers = append(teamPlayers, toPlayer(pm))
+			}
+		}
+		teams = append(teams, &tournament.Team{
+			ID:           tm.ID,
+			TournamentID: tm.TournamentID,
+			Name:         tm.Name,
+			Players:      teamPlayers,
+		})
+	}
+
+	// ── 7. Assemble groups ──────────────────────────────────────────────────
+	// Group participants by group ID
+	gpByGroup := make(map[uuid.UUID][]GroupParticipantModel)
+	for _, gp := range allGPModels {
+		gpByGroup[gp.GroupID] = append(gpByGroup[gp.GroupID], gp)
+	}
+
+	isTeamType := model.Type == "doubles" || model.Type == "mixed_doubles" || model.Type == "teams"
+
 	var groups []tournament.Group
 	for _, gm := range groupModels {
-		var gpModels []GroupParticipantModel
-		_ = r.db.NewSelect().Model(&gpModels).Where("group_id = ?", gm.ID).Order("position ASC").Scan(ctx)
-
 		var groupPlayers []*player.Player
-		for _, gp := range gpModels {
-			var pm PlayerModel
-			if e := r.db.NewSelect().Model(&pm).Where("id = ?", gp.PlayerID).Scan(ctx); e == nil {
-				groupPlayers = append(groupPlayers, &player.Player{
-					ID:         pm.ID,
-					FirstName:  pm.FirstName,
-					LastName:   pm.LastName,
-					SinglesElo: pm.SinglesElo,
-					DoublesElo: pm.DoublesElo,
-					Country:    pm.Country,
-				})
-			} else if model.Type == "doubles" || model.Type == "mixed_doubles" || model.Type == "teams" {
-				// For doubles/teams tournaments, group participants are stored with team IDs
-				// which don't exist in the players table. Look them up in the teams table.
-				var tm TeamModel
-				if te := r.db.NewSelect().Model(&tm).Where("id = ?", gp.PlayerID).Scan(ctx); te == nil {
-					// Build a synthetic player from the team
-					var tpModels []TeamPlayerModel
-					_ = r.db.NewSelect().Model(&tpModels).Where("team_id = ?", tm.ID).Scan(ctx)
+		for _, gp := range gpByGroup[gm.ID] {
+			if pm, ok := playerCache[gp.PlayerID]; ok {
+				groupPlayers = append(groupPlayers, toPlayer(pm))
+			} else if isTeamType {
+				// For doubles/teams, group participants use team IDs
+				if tm, ok := teamMap[gp.PlayerID]; ok {
 					avgElo := int16(1000)
-					if len(tpModels) > 0 {
+					tps := tpByTeam[tm.ID]
+					if len(tps) > 0 {
 						sum := int32(0)
-						for _, tp := range tpModels {
-							var tpm PlayerModel
-							if pe := r.db.NewSelect().Model(&tpm).Where("id = ?", tp.PlayerID).Scan(ctx); pe == nil {
+						for _, tp := range tps {
+							if pm, ok := playerCache[tp.PlayerID]; ok {
 								if model.Type == "doubles" || model.Type == "mixed_doubles" {
-									sum += int32(tpm.DoublesElo)
+									sum += int32(pm.DoublesElo)
 								} else {
-									sum += int32(tpm.SinglesElo)
+									sum += int32(pm.SinglesElo)
 								}
 							}
 						}
-						avgElo = int16(sum / int32(len(tpModels)))
+						avgElo = int16(sum / int32(len(tps)))
 					}
 					groupPlayers = append(groupPlayers, &player.Player{
 						ID:         tm.ID,
@@ -233,28 +328,61 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		})
 	}
 
+	// ── 8. Load matches and sets in batch ───────────────────────────────────
 	var matchModels []MatchModel
 	if err := r.db.NewSelect().Model(&matchModels).Where("tournament_id = ?", id).Scan(ctx); err != nil && err != sql.ErrNoRows {
-		// Just log or ignore if matches fail to load; it shouldn't fail the tournament
+		// Just ignore if matches fail to load
 	}
+
+	// Batch-load all match sets
+	matchIDs := make([]uuid.UUID, len(matchModels))
+	for i, mm := range matchModels {
+		matchIDs[i] = mm.ID
+	}
+	var allSetModels []MatchSetModel
+	if len(matchIDs) > 0 {
+		_ = r.db.NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.In(matchIDs)).Order("match_id", "set_number ASC").Scan(ctx)
+	}
+	setsByMatch := make(map[string][]MatchSetModel)
+	for _, sm := range allSetModels {
+		setsByMatch[sm.MatchID] = append(setsByMatch[sm.MatchID], sm)
+	}
+
+	// For doubles/teams, build a reverse map: player ID → team ID
+	playerToTeam := make(map[uuid.UUID]uuid.UUID)
+	if isTeamType {
+		for _, tm := range teamModels {
+			for _, tp := range tpByTeam[tm.ID] {
+				playerToTeam[tp.PlayerID] = tm.ID
+			}
+		}
+	}
+
 	var matches []tournament.Match
 	for _, mm := range matchModels {
 		wt := ""
 		if mm.WinnerTeam != nil {
 			wt = *mm.WinnerTeam
 		}
-		
-		// Load sets for this match
-		var setModels []MatchSetModel
-		_ = r.db.NewSelect().Model(&setModels).Where("match_id = ?", mm.ID).Order("set_number ASC").Scan(ctx)
-		
+
 		var sets []tournament.MatchSet
-		for _, sm := range setModels {
+		for _, sm := range setsByMatch[mm.ID.String()] {
 			sets = append(sets, tournament.MatchSet{
 				Number: sm.SetNumber,
 				ScoreA: sm.ScoreA,
 				ScoreB: sm.ScoreB,
 			})
+		}
+
+		teamAID := mm.TeamAPlayer1ID
+		teamBID := mm.TeamBPlayer1ID
+		if isTeamType && mm.TeamMatchID == nil {
+			if tid, ok := playerToTeam[mm.TeamAPlayer1ID]; ok {
+				teamAID = tid
+			}
+			if tid, ok := playerToTeam[mm.TeamBPlayer1ID]; ok {
+				teamBID = tid
+			}
 		}
 
 		m := tournament.Match{
@@ -263,43 +391,12 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 			MatchType:    mm.MatchType,
 			Status:       mm.Status,
 			WinnerTeam:   wt,
-			TeamA:        []*player.Player{{ID: mm.TeamAPlayer1ID}},
-			TeamB:        []*player.Player{{ID: mm.TeamBPlayer1ID}},
+			TeamA:        []*player.Player{{ID: teamAID}},
+			TeamB:        []*player.Player{{ID: teamBID}},
 			Sets:         sets,
 			TeamMatchID:  mm.TeamMatchID,
 		}
 		matches = append(matches, m)
-	}
-
-	// Load teams
-	var teamModels []TeamModel
-	_ = r.db.NewSelect().Model(&teamModels).Where("tournament_id = ?", model.ID).Order("name ASC").Scan(ctx)
-
-	var teams []*tournament.Team
-	for _, tm := range teamModels {
-		var tpModels []TeamPlayerModel
-		_ = r.db.NewSelect().Model(&tpModels).Where("team_id = ?", tm.ID).Scan(ctx)
-
-		var teamPlayers []*player.Player
-		for _, tp := range tpModels {
-			var pm PlayerModel
-			if e := r.db.NewSelect().Model(&pm).Where("id = ?", tp.PlayerID).Scan(ctx); e == nil {
-				teamPlayers = append(teamPlayers, &player.Player{
-					ID:         pm.ID,
-					FirstName:  pm.FirstName,
-					LastName:   pm.LastName,
-					SinglesElo: pm.SinglesElo,
-					DoublesElo: pm.DoublesElo,
-					Country:    pm.Country,
-				})
-			}
-		}
-		teams = append(teams, &tournament.Team{
-			ID:           tm.ID,
-			TournamentID: tm.TournamentID,
-			Name:         tm.Name,
-			Players:      teamPlayers,
-		})
 	}
 
 	return &tournament.Tournament{
@@ -360,64 +457,72 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 	tx.NewDelete().TableExpr("team_players").Where("team_id IN (SELECT id FROM teams WHERE tournament_id = ?)", t.ID).Exec(ctx)
 	tx.NewDelete().TableExpr("teams").Where("tournament_id = ?", t.ID).Exec(ctx)
 
-	// Refresh participants
-	for _, p := range t.Participants {
-		partModel := &TournamentParticipantModel{
-			TournamentID: t.ID,
-			PlayerID:     p.ID,
-			EloBeforeSingles: &p.SinglesElo,
-			EloBeforeDoubles: &p.DoublesElo,
+	// Refresh participants in bulk
+	if len(t.Participants) > 0 {
+		partModels := make([]TournamentParticipantModel, len(t.Participants))
+		for i, p := range t.Participants {
+			partModels[i] = TournamentParticipantModel{
+				TournamentID:     t.ID,
+				PlayerID:         p.ID,
+				EloBeforeSingles: &p.SinglesElo,
+				EloBeforeDoubles: &p.DoublesElo,
+			}
 		}
-		_, err = tx.NewInsert().Model(partModel).Exec(ctx)
-		if err != nil {
+		if _, err = tx.NewInsert().Model(&partModels).Exec(ctx); err != nil {
 			return err
 		}
 	}
 
-	// Refresh teams
-	for _, team := range t.Teams {
-		tmModel := &TeamModel{
-			ID:           team.ID,
-			TournamentID: t.ID,
-			Name:         team.Name,
+	// Refresh teams and team players in bulk
+	if len(t.Teams) > 0 {
+		teamModels := make([]TeamModel, len(t.Teams))
+		var tpModels []TeamPlayerModel
+		for i, team := range t.Teams {
+			teamModels[i] = TeamModel{
+				ID:           team.ID,
+				TournamentID: t.ID,
+				Name:         team.Name,
+			}
+			for _, p := range team.Players {
+				tpModels = append(tpModels, TeamPlayerModel{
+					TeamID:   team.ID,
+					PlayerID: p.ID,
+				})
+			}
 		}
-		_, err = tx.NewInsert().Model(tmModel).Exec(ctx)
-		if err != nil {
+		if _, err = tx.NewInsert().Model(&teamModels).Exec(ctx); err != nil {
 			return err
 		}
-
-		for _, p := range team.Players {
-			tpModel := &TeamPlayerModel{
-				TeamID:   team.ID,
-				PlayerID: p.ID,
-			}
-			_, err = tx.NewInsert().Model(tpModel).Exec(ctx)
-			if err != nil {
+		if len(tpModels) > 0 {
+			if _, err = tx.NewInsert().Model(&tpModels).Exec(ctx); err != nil {
 				return err
 			}
 		}
 	}
 
-	// Refresh groups
-	for _, g := range t.Groups {
-		groupModel := &GroupModel{
-			ID:           g.ID,
-			TournamentID: t.ID,
-			Name:         g.Name,
+	// Refresh groups and group participants in bulk
+	if len(t.Groups) > 0 {
+		groupModels := make([]GroupModel, len(t.Groups))
+		var gpModels []GroupParticipantModel
+		for i, g := range t.Groups {
+			groupModels[i] = GroupModel{
+				ID:           g.ID,
+				TournamentID: t.ID,
+				Name:         g.Name,
+			}
+			for idx, p := range g.Players {
+				gpModels = append(gpModels, GroupParticipantModel{
+					GroupID:  g.ID,
+					PlayerID: p.ID,
+					Position: idx,
+				})
+			}
 		}
-		_, err = tx.NewInsert().Model(groupModel).Exec(ctx)
-		if err != nil {
+		if _, err = tx.NewInsert().Model(&groupModels).Exec(ctx); err != nil {
 			return err
 		}
-
-		for idx, p := range g.Players {
-			gpModel := &GroupParticipantModel{
-				GroupID:  g.ID,
-				PlayerID: p.ID,
-				Position: idx,
-			}
-			_, err = tx.NewInsert().Model(gpModel).Exec(ctx)
-			if err != nil {
+		if len(gpModels) > 0 {
+			if _, err = tx.NewInsert().Model(&gpModels).Exec(ctx); err != nil {
 				return err
 			}
 		}
@@ -455,48 +560,102 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	if err := r.db.NewSelect().Model(&models).Where("event_id = ?", eventID).Scan(ctx); err != nil {
 		return nil, err
 	}
+	if len(models) == 0 {
+		return nil, nil
+	}
+
+	// Collect all tournament IDs
+	tournamentIDs := make([]uuid.UUID, len(models))
+	for i, m := range models {
+		tournamentIDs[i] = m.ID
+	}
+
+	// Batch-load all participants for all tournaments in this event
+	var allPartModels []TournamentParticipantModel
+	_ = r.db.NewSelect().Model(&allPartModels).Where("tournament_id IN (?)", bun.In(tournamentIDs)).Scan(ctx)
+
+	// Batch-load all teams for all tournaments
+	var allTeamModels []TeamModel
+	_ = r.db.NewSelect().Model(&allTeamModels).Where("tournament_id IN (?)", bun.In(tournamentIDs)).Order("name ASC").Scan(ctx)
+
+	teamIDs := make([]uuid.UUID, len(allTeamModels))
+	for i, tm := range allTeamModels {
+		teamIDs[i] = tm.ID
+	}
+
+	// Batch-load all team players
+	var allTPModels []TeamPlayerModel
+	if len(teamIDs) > 0 {
+		_ = r.db.NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.In(teamIDs)).Scan(ctx)
+	}
+
+	// Collect all player IDs needed
+	playerIDSet := make(map[uuid.UUID]bool)
+	for _, pt := range allPartModels {
+		playerIDSet[pt.PlayerID] = true
+	}
+	for _, tp := range allTPModels {
+		playerIDSet[tp.PlayerID] = true
+	}
+
+	// Batch-load all players
+	playerIDs := make([]uuid.UUID, 0, len(playerIDSet))
+	for pid := range playerIDSet {
+		playerIDs = append(playerIDs, pid)
+	}
+	playerCache := make(map[uuid.UUID]*PlayerModel)
+	if len(playerIDs) > 0 {
+		var allPlayers []PlayerModel
+		_ = r.db.NewSelect().Model(&allPlayers).Where("id IN (?)", bun.In(playerIDs)).Scan(ctx)
+		for i := range allPlayers {
+			playerCache[allPlayers[i].ID] = &allPlayers[i]
+		}
+	}
+
+	toPlayer := func(pm *PlayerModel) *player.Player {
+		return &player.Player{
+			ID:         pm.ID,
+			FirstName:  pm.FirstName,
+			LastName:   pm.LastName,
+			Gender:     pm.Gender,
+			SinglesElo: pm.SinglesElo,
+			DoublesElo: pm.DoublesElo,
+			Country:    pm.Country,
+		}
+	}
+
+	// Index participants by tournament
+	partsByTournament := make(map[uuid.UUID][]TournamentParticipantModel)
+	for _, pt := range allPartModels {
+		partsByTournament[pt.TournamentID] = append(partsByTournament[pt.TournamentID], pt)
+	}
+
+	// Index teams by tournament and team players by team
+	teamsByTournament := make(map[uuid.UUID][]TeamModel)
+	for _, tm := range allTeamModels {
+		teamsByTournament[tm.TournamentID] = append(teamsByTournament[tm.TournamentID], tm)
+	}
+	tpByTeam := make(map[uuid.UUID][]TeamPlayerModel)
+	for _, tp := range allTPModels {
+		tpByTeam[tp.TeamID] = append(tpByTeam[tp.TeamID], tp)
+	}
+
+	// Assemble tournaments
 	tournaments := make([]*tournament.Tournament, len(models))
 	for i, m := range models {
-		// Load participants
-		var partModels []TournamentParticipantModel
-		_ = r.db.NewSelect().Model(&partModels).Where("tournament_id = ?", m.ID).Scan(ctx)
-
 		var participantPlayers []*player.Player
-		for _, pt := range partModels {
-			var pm PlayerModel
-			if e := r.db.NewSelect().Model(&pm).Where("id = ?", pt.PlayerID).Scan(ctx); e == nil {
-				participantPlayers = append(participantPlayers, &player.Player{
-					ID:         pm.ID,
-					FirstName:  pm.FirstName,
-					LastName:   pm.LastName,
-					SinglesElo: pm.SinglesElo,
-					DoublesElo: pm.DoublesElo,
-					Country:    pm.Country,
-				})
+		for _, pt := range partsByTournament[m.ID] {
+			if pm, ok := playerCache[pt.PlayerID]; ok {
+				participantPlayers = append(participantPlayers, toPlayer(pm))
 			}
 		}
 
-		// Load teams
-		var teamModels []TeamModel
-		_ = r.db.NewSelect().Model(&teamModels).Where("tournament_id = ?", m.ID).Order("name ASC").Scan(ctx)
-
 		var teams []*tournament.Team
-		for _, tm := range teamModels {
-			var tpModels []TeamPlayerModel
-			_ = r.db.NewSelect().Model(&tpModels).Where("team_id = ?", tm.ID).Scan(ctx)
-
+		for _, tm := range teamsByTournament[m.ID] {
 			var teamPlayers []*player.Player
-			for _, tp := range tpModels {
-				var pm PlayerModel
-				if e := r.db.NewSelect().Model(&pm).Where("id = ?", tp.PlayerID).Scan(ctx); e == nil {
-					teamPlayers = append(teamPlayers, &player.Player{
-						ID:         pm.ID,
-						FirstName:  pm.FirstName,
-						LastName:   pm.LastName,
-						SinglesElo: pm.SinglesElo,
-						DoublesElo: pm.DoublesElo,
-						Country:    pm.Country,
-					})
+			for _, tp := range tpByTeam[tm.ID] {
+				if pm, ok := playerCache[tp.PlayerID]; ok {
+					teamPlayers = append(teamPlayers, toPlayer(pm))
 				}
 			}
 			teams = append(teams, &tournament.Team{
@@ -563,6 +722,9 @@ func (r *TournamentRepository) AddPlayerToTeam(ctx context.Context, teamID uuid.
 
 	if t.EventCategory == "women" && pm.Gender != "F" {
 		return fmt.Errorf("Only female athletes are allowed in women's tournaments")
+	}
+	if t.EventCategory == "men" && pm.Gender != "M" {
+		return fmt.Errorf("Only male athletes are allowed in men's tournaments")
 	}
 
 	var currentTeam *tournament.Team

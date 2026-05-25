@@ -31,8 +31,23 @@ func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (
 		return nil, err
 	}
 
-	// Self-healing: if an older elimination tournament doesn't have seeding groups, create them on the fly
+	// Self-healing: regenerate seeding groups when they are missing or stale.
+	needsGroupRegen := false
 	if t.Format == "elimination" && len(t.Groups) == 0 {
+		needsGroupRegen = true
+	}
+	// For doubles/teams tournaments, also regenerate if the group participant count
+	// doesn't match the number of teams (teams were added/removed after initial seeding).
+	if !needsGroupRegen && t.Format == "elimination" && (t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams") && len(t.Teams) > 0 {
+		totalGroupParticipants := 0
+		for _, g := range t.Groups {
+			totalGroupParticipants += len(g.Players)
+		}
+		if totalGroupParticipants != len(t.Teams) {
+			needsGroupRegen = true
+		}
+	}
+	if needsGroupRegen {
 		var divsList []tournamentDomain.DivisionSeeding
 		if !t.SkipElo && uc.divisionRepo != nil {
 			divs, err := uc.divisionRepo.GetAll(ctx)
@@ -132,6 +147,11 @@ func (uc *UpdateTournamentUseCase) Execute(
 	t.SkipElo = skipElo
 	t.EventID = eventID
 	t.TeamFormat = teamFormat
+
+	// Preserve existing teams
+	if existing, err := uc.repo.GetByID(ctx, id); err == nil {
+		t.Teams = existing.Teams
+	}
 
 	// Fetch divisions list to seed groups per-division
 	var divsList []tournamentDomain.DivisionSeeding

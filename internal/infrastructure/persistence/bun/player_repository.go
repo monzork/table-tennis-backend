@@ -127,6 +127,18 @@ func (r *PlayerRepository) GetById(ctx context.Context, id uuid.UUID) (*player.P
 	}, nil
 }
 
+func (r *PlayerRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]*player.Player, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var models []PlayerModel
+	err := r.db.NewSelect().Model(&models).Where("id IN (?)", bun.In(ids)).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.mapModelsToDomain(models), nil
+}
+
 func (r *PlayerRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.NewDelete().Model((*PlayerModel)(nil)).Where("id = ?", id).Exec(ctx)
 	return err
