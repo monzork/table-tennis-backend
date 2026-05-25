@@ -32,7 +32,7 @@ func NewCreateMatchUseCase(
 	}
 }
 
-func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID uuid.UUID, matchType string, teamAPlayerIDs, teamBPlayerIDs []uuid.UUID) (*tournament.Match, error) {
+func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID uuid.UUID, matchType string, teamAPlayerIDs, teamBPlayerIDs []uuid.UUID, opts ...string) (*tournament.Match, error) {
 	t, err := uc.tournamentRepo.GetByID(ctx, tournamentID)
 	if err != nil {
 		return nil, errors.New("tournament not found")
@@ -86,6 +86,11 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID uuid.UUI
 		matchType = "singles"
 	}
 
+	stage := "group"
+	if len(opts) > 0 && opts[0] != "" {
+		stage = opts[0]
+	}
+
 	m := &tournament.Match{
 		ID:           uuid.New(),
 		TournamentID: tournamentID,
@@ -94,6 +99,7 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID uuid.UUI
 		TeamB:        teamB,
 		Status:       "in_progress",
 		Sets:         []tournament.MatchSet{},
+		Stage:        stage,
 	}
 
 	// Add match to tournament
