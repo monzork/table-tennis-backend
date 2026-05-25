@@ -2,7 +2,7 @@
 <p class="text-xs text-gray-400 mb-6 font-mono">{{if .TeamA}}{{.TeamA.Name}}{{else}}Team A{{end}} vs {{if .TeamB}}{{.TeamB.Name}}{{else}}Team B{{end}} · {{.TeamFormat}} Cup</p>
 
 <!-- Squad Selection Form -->
-<form hx-put="/matches/{{.MatchID}}/score" hx-target="#score-modal-content" class="space-y-4 mb-6 border-b border-white/10 pb-6">
+<form hx-put="/matches/{{.MatchID}}/score" hx-target="#score-modal-content" hx-swap="innerHTML" class="space-y-4 mb-6 border-b border-white/10 pb-6">
     <input type="hidden" name="action" value="update_squads">
     <input type="hidden" name="tournamentId" value="{{.TournamentID}}">
     <input type="hidden" name="matchId" value="{{.MatchID}}">
@@ -99,7 +99,7 @@
         </div>
 
         <div class="ml-4">
-            <button hx-get="/matches/{{.ID}}/score?tournamentId={{$.TournamentID}}&stage={{$.Stage}}&bestOf=5&p1Id={{.TeamAPlayer1ID}}&p2Id={{.TeamBPlayer1ID}}"
+            <button hx-get="/admin/matches/score/form?tournamentId={{$.TournamentID}}&matchId={{.ID}}&stage={{$.Stage}}&bestOf=5&p1Id={{.TeamAPlayer1ID}}&p2Id={{.TeamBPlayer1ID}}"
                 hx-target="#score-modal-content"
                 class="bg-white hover:bg-gray-200 text-black font-extrabold text-[10px] uppercase tracking-widest px-3 py-2 rounded-xl transition-colors">
                 Score

@@ -573,6 +573,9 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 
 				for k := range t.Matches {
 					tm := t.Matches[k]
+					if tm.Stage == "group" || tm.TeamMatchID != nil {
+						continue
+					}
 					if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
 						if (tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID) {
 							if tm.WinnerTeam == "A" { return m.P1 } else { return m.P2 }
@@ -596,6 +599,9 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 			if p1 != nil && p2 != nil && p1.Player != nil && p2.Player != nil {
 				for k := range t.Matches {
 					tm := t.Matches[k]
+					if tm.Stage == "group" || tm.TeamMatchID != nil {
+						continue
+					}
 					if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
 						if (tm.TeamA[0].ID == p1.Player.ID && tm.TeamB[0].ID == p2.Player.ID) || (tm.TeamA[0].ID == p2.Player.ID && tm.TeamB[0].ID == p1.Player.ID) {
 							foundMatch = &t.Matches[k]
@@ -637,6 +643,9 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 		if bothFinalistsKnown {
 			for k := range t.Matches {
 				tm := t.Matches[k]
+				if tm.Stage == "group" || tm.TeamMatchID != nil {
+					continue
+				}
 				if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
 					if (tm.TeamA[0].ID == p1.Player.ID && tm.TeamB[0].ID == p2.Player.ID) || (tm.TeamA[0].ID == p2.Player.ID && tm.TeamB[0].ID == p1.Player.ID) {
 						finalMatch = &t.Matches[k]

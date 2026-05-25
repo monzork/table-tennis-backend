@@ -52,6 +52,7 @@ type Match struct {
 	WinnerTeam   string // 'A', 'B'
 	Sets         []MatchSet
 	TeamMatchID  *uuid.UUID
+	Stage        string
 }
 
 type MatchSet struct {
