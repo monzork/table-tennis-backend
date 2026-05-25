@@ -47,7 +47,7 @@ func (uc *CreateEventUseCase) Execute(
 	divisionID string,
 	skipElo bool,
 	startDateStr, endDateStr string,
-	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teams CategoryConfig,
+	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen CategoryConfig,
 ) (*eventDomain.Event, error) {
 	start, err := time.Parse("2006-01-02", startDateStr)
 	if err != nil {
@@ -63,13 +63,25 @@ func (uc *CreateEventUseCase) Execute(
 		return nil, err
 	}
 
-	if err := uc.eventRepo.Save(ctx, e); err != nil {
+	tx, err := uc.eventRepo.DB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.NewInsert().Model(&bun.EventModel{
+		ID:         e.ID,
+		Name:       e.Name,
+		DivisionID: e.DivisionID,
+		SkipElo:    e.SkipElo,
+		StartDate:  e.StartDate,
+		EndDate:    e.EndDate,
+	}).Exec(ctx); err != nil {
 		return nil, err
 	}
 
 	var div *divisionDomain.Division
 	if !skipElo && divisionID != "" {
-		// Fetch division for Elo limits
 		var err error
 		div, err = uc.divisionRepo.GetById(ctx, divisionID)
 		if err != nil {
@@ -77,7 +89,30 @@ func (uc *CreateEventUseCase) Execute(
 		}
 	}
 
-	// Helper to create a tournament under this event
+	// Collect all unique player IDs across all categories and batch-load them
+	allIDSet := make(map[uuid.UUID]bool)
+	for _, cfg := range []CategoryConfig{singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen} {
+		for _, idStr := range cfg.PlayerIDs {
+			if id, err := uuid.Parse(idStr); err == nil {
+				allIDSet[id] = true
+			}
+		}
+	}
+	allIDs := make([]uuid.UUID, 0, len(allIDSet))
+	for id := range allIDSet {
+		allIDs = append(allIDs, id)
+	}
+	playerCache := make(map[uuid.UUID]*playerDomain.Player)
+	if len(allIDs) > 0 {
+		loaded, err := uc.playerRepo.GetByIDs(ctx, allIDs)
+		if err == nil {
+			for _, p := range loaded {
+				playerCache[p.ID] = p
+			}
+		}
+	}
+
+	// Helper to create a tournament under this event (within the shared transaction)
 	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player) error {
 		t, err := tournamentDomain.NewTournament(tName, tType, tFormat, category, start, end, []tournamentDomain.Rule{}, groupPassCount, players)
 		if err != nil {
@@ -85,10 +120,10 @@ func (uc *CreateEventUseCase) Execute(
 		}
 		t.EventID = &e.ID
 		t.SkipElo = skipElo
-		return uc.tournamentRepo.Save(ctx, t)
+		return uc.tournamentRepo.SaveTx(ctx, tx, t)
 	}
 
-	// Helper to get qualified players for a category
+	// Helper to get qualified players for a category (from cache)
 	getPlayers := func(ids []string, gender string, isDoubles bool) []*playerDomain.Player {
 		var players []*playerDomain.Player
 		for _, idStr := range ids {
@@ -96,11 +131,10 @@ func (uc *CreateEventUseCase) Execute(
 			if err != nil {
 				continue
 			}
-			p, err := uc.playerRepo.GetById(ctx, id)
-			if err != nil {
+			p, ok := playerCache[id]
+			if !ok {
 				continue
 			}
-			// Apply gender and Elo boundary checks
 			if gender != "" && p.Gender != gender {
 				continue
 			}
@@ -155,10 +189,20 @@ func (uc *CreateEventUseCase) Execute(
 		_ = createSubTourney(tName, "doubles", doublesMixed.Format, "open", doublesMixed.GroupPassCount, players)
 	}
 
-	if teams.Auto {
-		players := getPlayers(teams.PlayerIDs, "", false)
-		tName := getNameWithDiv("Teams")
-		_ = createSubTourney(tName, "teams", teams.Format, "open", teams.GroupPassCount, players)
+	if teamsMen.Auto {
+		players := getPlayers(teamsMen.PlayerIDs, "M", false)
+		tName := getNameWithDiv("Men's Teams")
+		_ = createSubTourney(tName, "teams", teamsMen.Format, "men", teamsMen.GroupPassCount, players)
+	}
+
+	if teamsWomen.Auto {
+		players := getPlayers(teamsWomen.PlayerIDs, "F", false)
+		tName := getNameWithDiv("Women's Teams")
+		_ = createSubTourney(tName, "teams", teamsWomen.Format, "women", teamsWomen.GroupPassCount, players)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 
 	// Reload the event with loaded tournaments

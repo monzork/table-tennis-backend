@@ -56,13 +56,15 @@ func loadStageRules(ctx context.Context, db *bun.DB, tournamentID uuid.UUID) []t
 
 // saveStageRules inserts all stage rules inside a transaction.
 func saveStageRules(ctx context.Context, tx bun.IDB, rules []tournament.StageRule) error {
-	for _, r := range rules {
-		m := stageRuleToModel(r)
-		if _, err := tx.NewInsert().Model(m).Exec(ctx); err != nil {
-			return err
-		}
+	if len(rules) == 0 {
+		return nil
 	}
-	return nil
+	models := make([]StageRuleModel, len(rules))
+	for i, r := range rules {
+		models[i] = *stageRuleToModel(r)
+	}
+	_, err := tx.NewInsert().Model(&models).Exec(ctx)
+	return err
 }
 
 // replaceStageRules deletes old rules and re-inserts new ones inside a transaction.

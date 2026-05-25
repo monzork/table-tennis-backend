@@ -83,11 +83,12 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 	doublesMen := parseCategoryConfig("DoublesMen", "elimination")
 	doublesWomen := parseCategoryConfig("DoublesWomen", "elimination")
 	doublesMixed := parseCategoryConfig("DoublesMixed", "elimination")
-	teams := parseCategoryConfig("Teams", "round_robin")
+	teamsMen := parseCategoryConfig("TeamsMen", "round_robin")
+	teamsWomen := parseCategoryConfig("TeamsWomen", "round_robin")
 
 	e, err := h.createUC.Execute(
 		c.Context(), name, divisionID, skipElo, startDate, endDate,
-		singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teams,
+		singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())

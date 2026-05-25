@@ -249,36 +249,75 @@
                         </div>
                     </div>
 
-                    <!-- Teams -->
-                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardTeams">
+                    <!-- Teams Men -->
+                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardTeamsMen">
                         <div class="flex items-center justify-between border-b border-white/5 pb-2">
                             <div class="flex flex-col">
                                 <span class="text-xs font-bold text-white">👥 Teams</span>
-                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Open</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Men</span>
                             </div>
-                            <input type="checkbox" name="autoTeams" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                            <input type="checkbox" name="autoTeamsMen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
-                        
+
                         <div class="grid grid-cols-2 gap-2">
                             <div class="space-y-1">
                                 <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
-                                <select name="formatTeams" onchange="document.getElementById('passCountTeamsContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                <select name="formatTeamsMen" onchange="document.getElementById('passCountTeamsMenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
                                     <option value="round_robin" selected>Round Robin</option>
                                     <option value="groups_elimination">Group + KO</option>
                                     <option value="elimination">Elimination</option>
                                 </select>
                             </div>
-                            <div class="space-y-1" id="passCountTeamsContainer" style="display: none;">
+                            <div class="space-y-1" id="passCountTeamsMenContainer" style="display: none;">
                                 <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
-                                <input type="number" name="groupPassCountTeams" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                                <input type="number" name="groupPassCountTeamsMen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
-                            <select name="participantIdsTeams[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                            <select name="participantIdsTeamsMen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
+                                {{if eq .Gender "M"}}
                                 <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+                                {{end}}
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Teams Women -->
+                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardTeamsWomen">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white">👥 Teams</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Women</span>
+                            </div>
+                            <input type="checkbox" name="autoTeamsWomen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <select name="formatTeamsWomen" onchange="document.getElementById('passCountTeamsWomenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                    <option value="round_robin" selected>Round Robin</option>
+                                    <option value="groups_elimination">Group + KO</option>
+                                    <option value="elimination">Elimination</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1" id="passCountTeamsWomenContainer" style="display: none;">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <input type="number" name="groupPassCountTeamsWomen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <select name="participantIdsTeamsWomen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                                {{range $.Players}}
+                                {{if eq .Gender "F"}}
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+                                {{end}}
                                 {{end}}
                             </select>
                         </div>
