@@ -46,12 +46,20 @@
                 </div>
                 <div class="space-y-2">
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Game Type</label>
-                    <select name="type" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none" required>
+                    <select name="type" onchange="this.value === 'teams' ? document.getElementById('new-team-format-container').classList.remove('hidden') : document.getElementById('new-team-format-container').classList.add('hidden')" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none" required>
                         <option value="singles">Singles</option>
                         <option value="doubles">Doubles</option>
                         <option value="teams">Teams</option>
                     </select>
                 </div>
+            </div>
+
+            <div id="new-team-format-container" class="hidden space-y-2">
+                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Team Match Format</label>
+                <select name="teamFormat" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none">
+                    <option value="olympic">Olympic Format (Corbillon Cup - 1 Doubles, 4 Singles)</option>
+                    <option value="swaythling">World Championship Format (Swaythling Cup - 5 Singles)</option>
+                </select>
             </div>
 
             <div class="space-y-2">

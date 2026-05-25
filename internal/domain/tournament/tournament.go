@@ -51,6 +51,7 @@ type Match struct {
 	Status       string // scheduled, in_progress, finished
 	WinnerTeam   string // 'A', 'B'
 	Sets         []MatchSet
+	TeamMatchID  *uuid.UUID
 }
 
 type MatchSet struct {
@@ -105,6 +106,8 @@ type Tournament struct {
 	RegistrationOpen bool
 	EventID      *uuid.UUID
 	SkipElo      bool
+	Teams        []*Team
+	TeamFormat   string // "olympic", "swaythling", or ""
 }
 
 func NewTournament(name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player) (*Tournament, error) {
@@ -147,6 +150,7 @@ func NewTournament(name string, tournamentType string, format string, category s
 		RegistrationOpen: false,
 		EventID:      nil,
 		SkipElo:      false,
+		Teams:        []*Team{},
 	}
 	t.StageRules = DefaultStageRules(t.ID)
 
@@ -195,7 +199,7 @@ func (t *Tournament) AutoAssignGroups() error {
 
 	// Sort participants by Elo (descending)
 	sort.Slice(t.Participants, func(i, j int) bool {
-		if t.Type == "doubles" {
+		if t.Type == "doubles" || t.Type == "mixed_doubles" {
 			return t.Participants[i].DoublesElo > t.Participants[j].DoublesElo
 		}
 		return t.Participants[i].SinglesElo > t.Participants[j].SinglesElo
@@ -241,6 +245,188 @@ func (t *Tournament) AutoAssignGroups() error {
 			groupIndex = numGroups - 1 - groupIndex
 		}
 		t.Groups[groupIndex].Players = append(t.Groups[groupIndex].Players, p)
+	}
+
+	return nil
+}
+
+type DivisionSeeding struct {
+	Name   string
+	MinElo int16
+	MaxElo *int16
+}
+
+func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
+	if t.Format != "groups_elimination" && t.Format != "round_robin" {
+		t.Groups = []Group{}
+		return nil
+	}
+
+	// 1. Group participants by division
+	type DivGroup struct {
+		Name    string
+		Players []*player.Player
+	}
+
+	var divGroups []DivGroup
+
+	if t.SkipElo || len(divs) == 0 {
+		divGroups = append(divGroups, DivGroup{
+			Name:    "Open Bracket",
+			Players: t.Participants,
+		})
+	} else {
+		assigned := make(map[uuid.UUID]bool)
+		for _, d := range divs {
+			var dPlayers []*player.Player
+			for _, p := range t.Participants {
+				if assigned[p.ID] {
+					continue
+				}
+				elo := p.SinglesElo
+				if t.Type == "doubles" {
+					elo = p.DoublesElo
+				}
+				if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
+					dPlayers = append(dPlayers, p)
+					assigned[p.ID] = true
+				}
+			}
+			if len(dPlayers) > 0 {
+				divGroups = append(divGroups, DivGroup{
+					Name:    d.Name,
+					Players: dPlayers,
+				})
+			}
+		}
+
+		var unassigned []*player.Player
+		for _, p := range t.Participants {
+			if !assigned[p.ID] {
+				unassigned = append(unassigned, p)
+			}
+		}
+		if len(unassigned) > 0 {
+			divGroups = append(divGroups, DivGroup{
+				Name:    "Unclassified",
+				Players: unassigned,
+			})
+		}
+	}
+
+	t.Groups = []Group{}
+
+	for _, dg := range divGroups {
+		n := len(dg.Players)
+		if n == 0 {
+			continue
+		}
+
+		sort.Slice(dg.Players, func(i, j int) bool {
+			if t.Type == "doubles" {
+				return dg.Players[i].DoublesElo > dg.Players[j].DoublesElo
+			}
+			return dg.Players[i].SinglesElo > dg.Players[j].SinglesElo
+		})
+
+		if t.Format == "round_robin" {
+			t.Groups = append(t.Groups, Group{
+				ID:           uuid.New(),
+				TournamentID: t.ID,
+				Name:         fmt.Sprintf("%s - Round Robin", dg.Name),
+				Players:      dg.Players,
+			})
+			continue
+		}
+
+		numGroups := n / 4
+		if n%4 != 0 {
+			numGroups++
+		}
+
+		divGroupsList := make([]Group, numGroups)
+		for i := 0; i < numGroups; i++ {
+			divGroupsList[i] = Group{
+				ID:           uuid.New(),
+				TournamentID: t.ID,
+				Name:         fmt.Sprintf("%s - Group %c", dg.Name, 'A'+i),
+				Players:      []*player.Player{},
+			}
+		}
+
+		for i, p := range dg.Players {
+			groupIndex := i % numGroups
+			row := i / numGroups
+			if row%2 != 0 {
+				groupIndex = numGroups - 1 - groupIndex
+			}
+			divGroupsList[groupIndex].Players = append(divGroupsList[groupIndex].Players, p)
+		}
+
+		t.Groups = append(t.Groups, divGroupsList...)
+	}
+
+	return nil
+}
+
+func (t *Tournament) MovePlayer(playerID uuid.UUID, targetGroupID uuid.UUID, targetIndex int) error {
+	var movingPlayer *player.Player
+	for _, p := range t.Participants {
+		if p.ID == playerID {
+			movingPlayer = p
+			break
+		}
+	}
+	if movingPlayer == nil {
+		return errors.New("player is not registered in this tournament")
+	}
+
+	for _, m := range t.Matches {
+		if m.Status == "in_progress" || m.Status == "finished" {
+			return errors.New("cannot move player: matches have already started for this tournament")
+		}
+	}
+
+	foundSource := false
+	for i := range t.Groups {
+		g := &t.Groups[i]
+		for j, p := range g.Players {
+			if p.ID == playerID {
+				g.Players = append(g.Players[:j], g.Players[j+1:]...)
+				foundSource = true
+				break
+			}
+		}
+		if foundSource {
+			break
+		}
+	}
+
+	foundTarget := false
+	for i := range t.Groups {
+		g := &t.Groups[i]
+		if g.ID == targetGroupID {
+			for _, p := range g.Players {
+				if p.ID == playerID {
+					return errors.New("player is already in the target group")
+				}
+			}
+			
+			// Determine insertion index
+			idx := targetIndex
+			if idx < 0 || idx > len(g.Players) {
+				idx = len(g.Players)
+			}
+			
+			// Insert player at idx
+			g.Players = append(g.Players[:idx], append([]*player.Player{movingPlayer}, g.Players[idx:]...)...)
+			foundTarget = true
+			break
+		}
+	}
+
+	if !foundTarget {
+		return errors.New("target group not found")
 	}
 
 	return nil

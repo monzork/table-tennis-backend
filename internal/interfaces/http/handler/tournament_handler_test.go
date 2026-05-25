@@ -143,4 +143,103 @@ func TestTournamentHandler(t *testing.T) {
 			t.Errorf("expected 200 OK for delete, got %v", resp.StatusCode)
 		}
 	})
+
+	t.Run("Move Player Between Groups", func(t *testing.T) {
+		p2, _ := playerDomain.NewPlayer("Test", "Player2", time.Now(), "M", "")
+		playerRepo.Save(ctx, p2)
+		p3, _ := playerDomain.NewPlayer("Test", "Player3", time.Now(), "M", "")
+		playerRepo.Save(ctx, p3)
+		p4, _ := playerDomain.NewPlayer("Test", "Player4", time.Now(), "M", "")
+		playerRepo.Save(ctx, p4)
+		p5, _ := playerDomain.NewPlayer("Test", "Player5", time.Now(), "M", "")
+		playerRepo.Save(ctx, p5)
+
+		data := url.Values{}
+		data.Set("name", "Move Players Tourney")
+		data.Set("type", "singles")
+		data.Set("format", "groups_elimination")
+		data.Set("startDate", time.Now().Format("2006-01-02"))
+		data.Set("endDate", time.Now().Add(48*time.Hour).Format("2006-01-02"))
+		data.Set("groupPassCount", "2")
+		data.Set("skipElo", "true")
+		data.Add("participant_ids[]", p1.ID.String())
+		data.Add("participant_ids[]", p2.ID.String())
+		data.Add("participant_ids[]", p3.ID.String())
+		data.Add("participant_ids[]", p4.ID.String())
+		data.Add("participant_ids[]", p5.ID.String())
+
+		req := httptest.NewRequest("POST", "/tournaments", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("failed to create tournament: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Fatalf("expected 200 OK, got %v", resp.StatusCode)
+		}
+
+		var tm bunRepo.TournamentModel
+		err = db.NewSelect().Model(&tm).Where("name = ?", "Move Players Tourney").Scan(context.Background())
+		if err != nil {
+			t.Fatalf("failed to find tournament: %v", err)
+		}
+
+		tourney, err := tournamentRepo.GetByID(ctx, tm.ID)
+		if err != nil {
+			t.Fatalf("failed to load tourney domain: %v", err)
+		}
+
+		if len(tourney.Groups) < 2 {
+			t.Fatalf("expected at least 2 groups, got %d", len(tourney.Groups))
+		}
+
+		groupA := tourney.Groups[0]
+		groupB := tourney.Groups[1]
+		if len(groupA.Players) == 0 {
+			t.Fatalf("group A has no players")
+		}
+		movingPlayerID := groupA.Players[0].ID
+
+		moveData := url.Values{}
+		moveData.Set("playerId", movingPlayerID.String())
+		moveData.Set("targetGroupId", groupB.ID.String())
+
+		moveReq := httptest.NewRequest("POST", fmt.Sprintf("/admin/tournaments/%s/move-player", tourney.ID.String()), strings.NewReader(moveData.Encode()))
+		moveReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		moveReq.Header.Set("Cookie", sessionCookie)
+
+		moveResp, err := app.Test(moveReq)
+		if err != nil {
+			t.Fatalf("failed to post move: %v", err)
+		}
+		if moveResp.StatusCode != 200 {
+			t.Fatalf("expected 200 OK for move, got %v", moveResp.StatusCode)
+		}
+
+		tourneyReloaded, err := tournamentRepo.GetByID(ctx, tm.ID)
+		if err != nil {
+			t.Fatalf("failed to reload tourney: %v", err)
+		}
+
+		var foundInA, foundInB bool
+		for _, p := range tourneyReloaded.Groups[0].Players {
+			if p.ID == movingPlayerID {
+				foundInA = true
+			}
+		}
+		for _, p := range tourneyReloaded.Groups[1].Players {
+			if p.ID == movingPlayerID {
+				foundInB = true
+			}
+		}
+
+		if foundInA {
+			t.Errorf("player was not removed from group A")
+		}
+		if !foundInB {
+			t.Errorf("player was not added to group B")
+		}
+	})
 }

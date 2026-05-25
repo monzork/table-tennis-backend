@@ -9,7 +9,7 @@
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Type</label>
-            <select name="type" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+            <select name="type" onchange="this.value === 'teams' ? document.getElementById('edit-team-format-container').classList.remove('hidden') : document.getElementById('edit-team-format-container').classList.add('hidden')" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
                 <option value="singles" {{if eq .Tournament.Type "singles"}}selected{{end}}>Singles</option>
                 <option value="doubles" {{if eq .Tournament.Type "doubles"}}selected{{end}}>Doubles</option>
                 <option value="teams" {{if eq .Tournament.Type "teams"}}selected{{end}}>Teams</option>
@@ -23,6 +23,13 @@
                 <option value="round_robin" {{if eq .Tournament.Format "round_robin"}}selected{{end}}>All Against All</option>
             </select>
         </div>
+    </div>
+    <div id="edit-team-format-container" class="space-y-2 {{if ne .Tournament.Type "teams"}}hidden{{end}}">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Team Match Format</label>
+        <select name="teamFormat" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+            <option value="olympic" {{if eq .Tournament.TeamFormat "olympic"}}selected{{end}}>Olympic Format (Corbillon Cup - 1 Doubles, 4 Singles)</option>
+            <option value="swaythling" {{if eq .Tournament.TeamFormat "swaythling"}}selected{{end}}>World Championship Format (Swaythling Cup - 5 Singles)</option>
+        </select>
     </div>
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">

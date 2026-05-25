@@ -47,15 +47,36 @@ func main() {
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 
 	tournamentRepo := bun.NewTournamentRepository(bun.DB)
-	createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo, playerRepo)
+	createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
 	getTournamentByIDUC := tournament.NewGetTournamentByIDUseCase(tournamentRepo)
-	updateTournamentUC := tournament.NewUpdateTournamentUseCase(tournamentRepo, playerRepo)
+	updateTournamentUC := tournament.NewUpdateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
 	deleteTournamentUC := tournament.NewDeleteTournamentUseCase(tournamentRepo)
 	matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
 	finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
 	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
 	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo)
-	tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC)
+	movePlayerUC := tournament.NewMovePlayerUseCase(tournamentRepo)
+	createTeamUC := tournament.NewCreateTeamUseCase(tournamentRepo)
+	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
+	assignPlayerToTeamUC := tournament.NewAssignPlayerToTeamUseCase(tournamentRepo)
+	removePlayerFromTeamUC := tournament.NewRemovePlayerFromTeamUseCase(tournamentRepo)
+
+	tournamentHandler := handler.NewTournamentHandler(
+		createTournamentUC,
+		getTournamentByIDUC,
+		updateTournamentUC,
+		deleteTournamentUC,
+		leaderboardUC,
+		divisionUC,
+		finishTournamentUC,
+		exportTournamentUC,
+		exportTournamentPdfUC,
+		movePlayerUC,
+		createTeamUC,
+		deleteTeamUC,
+		assignPlayerToTeamUC,
+		removePlayerFromTeamUC,
+	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
 	createEventUC := event.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
 	getEventByIDUC := event.NewGetEventByIDUseCase(eventRepo)
@@ -68,7 +89,7 @@ func main() {
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo)
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, finishTournamentUC)
+	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
@@ -177,7 +198,12 @@ func main() {
 	api.Delete("/tournaments/:id", tournamentHandler.Delete)
 	admin.Post("/tournaments/:id/finish", tournamentHandler.Finish)
 	admin.Get("/tournaments/:id/export", tournamentHandler.Export)
+	admin.Post("/tournaments/:id/teams", tournamentHandler.CreateTeam)
+	admin.Delete("/tournaments/:id/teams/:teamId", tournamentHandler.DeleteTeam)
+	admin.Post("/tournaments/:id/teams/:teamId/players", tournamentHandler.AssignPlayerToTeam)
+	admin.Delete("/tournaments/:id/teams/:teamId/players/:playerId", tournamentHandler.RemovePlayerFromTeam)
 	admin.Get("/tournaments/:id/export/pdf", tournamentHandler.ExportPDF)
+	admin.Post("/tournaments/:id/move-player", tournamentHandler.MovePlayer)
 
 	log.Fatal(app.Listen(":8080"))
 }

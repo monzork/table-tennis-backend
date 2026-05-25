@@ -20,6 +20,11 @@ type TournamentHandler struct {
 	finishUC      *tournament.FinishTournamentUseCase
 	exportUC      *tournament.ExportTournamentReportUseCase
 	exportPdfUC   *tournament.ExportTournamentPdfUseCase
+	movePlayerUC  *tournament.MovePlayerUseCase
+	createTeamUC  *tournament.CreateTeamUseCase
+	deleteTeamUC  *tournament.DeleteTeamUseCase
+	assignPlayerToTeamUC *tournament.AssignPlayerToTeamUseCase
+	removePlayerFromTeamUC *tournament.RemovePlayerFromTeamUseCase
 }
 
 func NewTournamentHandler(
@@ -32,6 +37,11 @@ func NewTournamentHandler(
 	finishUC *tournament.FinishTournamentUseCase,
 	exportUC *tournament.ExportTournamentReportUseCase,
 	exportPdfUC *tournament.ExportTournamentPdfUseCase,
+	movePlayerUC *tournament.MovePlayerUseCase,
+	createTeamUC *tournament.CreateTeamUseCase,
+	deleteTeamUC *tournament.DeleteTeamUseCase,
+	assignPlayerToTeamUC *tournament.AssignPlayerToTeamUseCase,
+	removePlayerFromTeamUC *tournament.RemovePlayerFromTeamUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:      createUC,
@@ -43,6 +53,11 @@ func NewTournamentHandler(
 		finishUC:      finishUC,
 		exportUC:      exportUC,
 		exportPdfUC:   exportPdfUC,
+		movePlayerUC:  movePlayerUC,
+		createTeamUC:  createTeamUC,
+		deleteTeamUC:  deleteTeamUC,
+		assignPlayerToTeamUC: assignPlayerToTeamUC,
+		removePlayerFromTeamUC: removePlayerFromTeamUC,
 	}
 }
 
@@ -55,6 +70,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		StartDate      string `form:"startDate"`
 		EndDate        string `form:"endDate"`
 		GroupPassCount int    `form:"groupPassCount"`
+		TeamFormat     string `form:"teamFormat"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -115,7 +131,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		}
 	}
 
-	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, skipElo, eventID)
+	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, skipElo, eventID, body.TeamFormat)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -167,6 +183,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		EndDate          string `form:"endDate"`
 		GroupPassCount   int    `form:"groupPassCount"`
 		RegistrationOpen bool   `form:"registrationOpen"`
+		TeamFormat       string `form:"teamFormat"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -229,7 +246,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	t, err := h.updateUC.Execute(
 		c.Context(), id, body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
 		body.RegistrationOpen, participantIDs, newPlayers, stageRules, body.GroupPassCount,
-		skipElo, eventID,
+		skipElo, eventID, body.TeamFormat,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -294,4 +311,95 @@ func (h *TournamentHandler) ExportPDF(c *fiber.Ctx) error {
 	c.Set("Content-Type", "application/pdf")
 	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"tournament_report_%s.pdf\"", idStr))
 	return c.Send(pdfBytes)
+}
+
+func (h *TournamentHandler) MovePlayer(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var body struct {
+		PlayerID      string `json:"playerId" form:"playerId"`
+		TargetGroupID string `json:"targetGroupId" form:"targetGroupId"`
+		TargetIndex   *int   `json:"targetIndex" form:"targetIndex"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	targetIndex := -1
+	if body.TargetIndex != nil {
+		targetIndex = *body.TargetIndex
+	}
+
+	if err := h.movePlayerUC.Execute(c.Context(), id, body.PlayerID, body.TargetGroupID, targetIndex); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.SendString("OK")
+}
+
+func (h *TournamentHandler) CreateTeam(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	var body struct {
+		Name string `form:"name"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	if _, err := h.createTeamUC.Execute(c.Context(), tournamentID, body.Name); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/tournaments/%s", tournamentID))
+}
+
+func (h *TournamentHandler) DeleteTeam(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	teamID := c.Params("teamId")
+	if err := h.deleteTeamUC.Execute(c.Context(), teamID); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/tournaments/%s", tournamentID))
+}
+
+func (h *TournamentHandler) AssignPlayerToTeam(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	teamID := c.Params("teamId")
+	var body struct {
+		PlayerID string `form:"playerId"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	if err := h.assignPlayerToTeamUC.Execute(c.Context(), teamID, body.PlayerID); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/tournaments/%s", tournamentID))
+}
+
+func (h *TournamentHandler) RemovePlayerFromTeam(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	teamID := c.Params("teamId")
+	playerID := c.Params("playerId")
+	if err := h.removePlayerFromTeamUC.Execute(c.Context(), teamID, playerID); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/tournaments/%s", tournamentID))
 }

@@ -31,12 +31,13 @@ func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (
 // ─── Update ──────────────────────────────────────────────────────────────────
 
 type UpdateTournamentUseCase struct {
-	repo       *bun.TournamentRepository
-	playerRepo *bun.PlayerRepository
+	repo         *bun.TournamentRepository
+	playerRepo   *bun.PlayerRepository
+	divisionRepo *bun.DivisionRepository
 }
 
-func NewUpdateTournamentUseCase(repo *bun.TournamentRepository, playerRepo *bun.PlayerRepository) *UpdateTournamentUseCase {
-	return &UpdateTournamentUseCase{repo: repo, playerRepo: playerRepo}
+func NewUpdateTournamentUseCase(repo *bun.TournamentRepository, playerRepo *bun.PlayerRepository, divisionRepo *bun.DivisionRepository) *UpdateTournamentUseCase {
+	return &UpdateTournamentUseCase{repo: repo, playerRepo: playerRepo, divisionRepo: divisionRepo}
 }
 
 // StageRuleOverride carries user-submitted rule changes for a single stage.
@@ -53,6 +54,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	participantIDs []string, newPlayers []NewPlayerData,
 	stageRuleOverrides []StageRuleOverride, groupPassCount int,
 	skipElo bool, eventID *uuid.UUID,
+	teamFormat string,
 ) (*tournamentDomain.Tournament, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -101,6 +103,30 @@ func (uc *UpdateTournamentUseCase) Execute(
 	t.RegistrationOpen = registrationOpen
 	t.SkipElo = skipElo
 	t.EventID = eventID
+	t.TeamFormat = teamFormat
+
+	// Fetch divisions list to seed groups per-division
+	var divsList []tournamentDomain.DivisionSeeding
+	if !skipElo {
+		divs, err := uc.divisionRepo.GetAll(ctx)
+		if err == nil {
+			for _, d := range divs {
+				if d.Category == "both" || d.Category == tournamentType {
+					divsList = append(divsList, tournamentDomain.DivisionSeeding{
+						Name:   d.Name,
+						MinElo: d.MinElo,
+						MaxElo: d.MaxElo,
+					})
+				}
+			}
+		}
+	}
+
+	if t.Format == "groups_elimination" || t.Format == "round_robin" {
+		if err := t.AssignGroupsByDivisions(divsList); err != nil {
+			return nil, err
+		}
+	}
 
 	// Apply any stage rule overrides submitted by the admin
 	for i := range t.StageRules {

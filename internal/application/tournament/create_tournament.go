@@ -11,12 +11,13 @@ import (
 )
 
 type CreateTournamentUseCase struct {
-	repo       *bun.TournamentRepository
-	playerRepo *bun.PlayerRepository
+	repo         *bun.TournamentRepository
+	playerRepo   *bun.PlayerRepository
+	divisionRepo *bun.DivisionRepository
 }
 
-func NewCreateTournamentUseCase(repo *bun.TournamentRepository, playerRepo *bun.PlayerRepository) *CreateTournamentUseCase {
-	return &CreateTournamentUseCase{repo: repo, playerRepo: playerRepo}
+func NewCreateTournamentUseCase(repo *bun.TournamentRepository, playerRepo *bun.PlayerRepository, divisionRepo *bun.DivisionRepository) *CreateTournamentUseCase {
+	return &CreateTournamentUseCase{repo: repo, playerRepo: playerRepo, divisionRepo: divisionRepo}
 }
 
 type NewPlayerData struct {
@@ -38,6 +39,7 @@ func (uc *CreateTournamentUseCase) Execute(
 	stageRuleOverrides []StageRuleOverride,
 	skipElo bool,
 	eventID *uuid.UUID,
+	teamFormat string,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -97,6 +99,30 @@ func (uc *CreateTournamentUseCase) Execute(
 	}
 	t.SkipElo = skipElo
 	t.EventID = eventID
+	t.TeamFormat = teamFormat
+
+	// Fetch divisions list to seed groups per-division
+	var divsList []tournamentDomain.DivisionSeeding
+	if !skipElo {
+		divs, err := uc.divisionRepo.GetAll(ctx)
+		if err == nil {
+			for _, d := range divs {
+				if d.Category == "both" || d.Category == tournamentType {
+					divsList = append(divsList, tournamentDomain.DivisionSeeding{
+						Name:   d.Name,
+						MinElo: d.MinElo,
+						MaxElo: d.MaxElo,
+					})
+				}
+			}
+		}
+	}
+
+	if t.Format == "groups_elimination" || t.Format == "round_robin" {
+		if err := t.AssignGroupsByDivisions(divsList); err != nil {
+			return nil, err
+		}
+	}
 
 	// Apply any stage rule overrides submitted by the admin
 	for i := range t.StageRules {
@@ -132,6 +158,9 @@ func (uc *CreateTournamentUseCase) Execute(
 		if err == nil {
 			pairT.SkipElo = skipElo
 			pairT.EventID = eventID
+			if pairT.Format == "groups_elimination" || pairT.Format == "round_robin" {
+				pairT.AssignGroupsByDivisions(divsList)
+			}
 			uc.repo.Save(ctx, pairT)
 		}
 	}

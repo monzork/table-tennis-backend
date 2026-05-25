@@ -17,6 +17,7 @@ type MatchHandler struct {
 	updateScoreUC      *match.UpdateMatchScoreUseCase
 	playerRepo         *bun.PlayerRepository
 	matchRepo          *bun.MatchRepository
+	tournamentRepo     *bun.TournamentRepository
 	finishTournamentUC *appTournament.FinishTournamentUseCase
 }
 
@@ -26,6 +27,7 @@ func NewMatchHandler(
 	updateScoreUC *match.UpdateMatchScoreUseCase,
 	playerRepo *bun.PlayerRepository,
 	matchRepo *bun.MatchRepository,
+	tournamentRepo *bun.TournamentRepository,
 	finishTournamentUC *appTournament.FinishTournamentUseCase,
 ) *MatchHandler {
 	return &MatchHandler{
@@ -34,6 +36,7 @@ func NewMatchHandler(
 		updateScoreUC:      updateScoreUC,
 		playerRepo:         playerRepo,
 		matchRepo:          matchRepo,
+		tournamentRepo:     tournamentRepo,
 		finishTournamentUC: finishTournamentUC,
 	}
 }
@@ -125,6 +128,192 @@ func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
 	p1Id := c.Query("p1Id")
 	p2Id := c.Query("p2Id")
 
+	// Check if tournament is teams
+	var isTeams bool
+	var teamA, teamB *tournament.Team
+	var subMatches []bun.MatchModel
+	var teamFormat string
+	if tID != "" {
+		tUUID, _ := uuid.Parse(tID)
+		if t, err := h.tournamentRepo.GetByID(c.Context(), tUUID); err == nil && t.Type == "teams" {
+			isTeams = true
+			teamFormat = t.TeamFormat
+			if teamFormat == "" {
+				teamFormat = "olympic"
+			}
+			for _, team := range t.Teams {
+				if team.ID.String() == p1Id {
+					teamA = team
+				}
+				if team.ID.String() == p2Id {
+					teamB = team
+				}
+			}
+
+			// If matchID is empty, create parent team match on the fly
+			if matchID == "" && p1Id != "" && p2Id != "" {
+				p1UUID, _ := uuid.Parse(p1Id)
+				p2UUID, _ := uuid.Parse(p2Id)
+				m, err := h.createUC.Execute(c.Context(), tUUID, "teams", []uuid.UUID{p1UUID}, []uuid.UUID{p2UUID})
+				if err == nil {
+					matchID = m.ID.String()
+				}
+			}
+
+			// Pre-generate sub-matches if not present
+			if matchID != "" {
+				parentUUID, _ := uuid.Parse(matchID)
+				_ = h.matchRepo.DB().NewSelect().Model(&subMatches).Where("team_match_id = ?", parentUUID).Order("round_number ASC").Scan(c.Context())
+
+				if len(subMatches) == 0 {
+					for order := 1; order <= 5; order++ {
+						subID := uuid.New()
+						matchType := "singles"
+						if teamFormat == "olympic" && order == 1 {
+							matchType = "doubles"
+						}
+
+						var p1ID, p2ID uuid.UUID
+						if teamA != nil && len(teamA.Players) > 0 {
+							p1ID = teamA.Players[0].ID
+						}
+						if teamB != nil && len(teamB.Players) > 0 {
+							p2ID = teamB.Players[0].ID
+						}
+
+						subModel := &bun.MatchModel{
+							ID:             subID,
+							TournamentID:   tUUID,
+							MatchType:      matchType,
+							TeamAPlayer1ID: p1ID,
+							TeamBPlayer1ID: p2ID,
+							Status:         "scheduled",
+							Stage:          stage,
+							RoundNumber:    order,
+							TeamMatchID:    &parentUUID,
+						}
+						_, _ = h.matchRepo.DB().NewInsert().Model(subModel).Exec(c.Context())
+					}
+					_ = h.matchRepo.DB().NewSelect().Model(&subMatches).Where("team_match_id = ?", parentUUID).Order("round_number ASC").Scan(c.Context())
+				}
+			}
+		}
+	}
+
+	if isTeams {
+		playerNames := make(map[string]string)
+		var playerModels []bun.PlayerModel
+		_ = h.matchRepo.DB().NewSelect().Model(&playerModels).Scan(c.Context())
+		for _, pm := range playerModels {
+			playerNames[pm.ID.String()] = pm.FirstName + " " + pm.LastName
+		}
+
+		var squadAP1, squadAP2, squadAP3 string
+		var squadBP1, squadBP2, squadBP3 string
+		for _, sm := range subMatches {
+			if sm.RoundNumber == 3 {
+				squadAP1 = sm.TeamAPlayer1ID.String()
+				squadBP1 = sm.TeamBPlayer1ID.String()
+			}
+			if sm.RoundNumber == 4 {
+				squadAP2 = sm.TeamAPlayer1ID.String()
+				squadBP2 = sm.TeamBPlayer1ID.String()
+			}
+			if sm.RoundNumber == 2 {
+				squadAP3 = sm.TeamAPlayer1ID.String()
+				squadBP3 = sm.TeamBPlayer1ID.String()
+			}
+		}
+
+		if squadAP1 == "00000000-0000-0000-0000-000000000000" && teamA != nil && len(teamA.Players) > 0 {
+			squadAP1 = teamA.Players[0].ID.String()
+			if len(teamA.Players) > 1 { squadAP2 = teamA.Players[1].ID.String() }
+			if len(teamA.Players) > 2 { squadAP3 = teamA.Players[2].ID.String() }
+		}
+		if squadBP1 == "00000000-0000-0000-0000-000000000000" && teamB != nil && len(teamB.Players) > 0 {
+			squadBP1 = teamB.Players[0].ID.String()
+			if len(teamB.Players) > 1 { squadBP2 = teamB.Players[1].ID.String() }
+			if len(teamB.Players) > 2 { squadBP3 = teamB.Players[2].ID.String() }
+		}
+
+		type SubMatchVM struct {
+			ID             string
+			MatchType      string
+			RoundNumber    int
+			TeamAPlayer1ID string
+			TeamAPlayer2ID string
+			TeamBPlayer1ID string
+			TeamBPlayer2ID string
+			PlayerAName    string
+			PlayerBName    string
+			ScoreA         int
+			ScoreB         int
+			Status         string
+			WinnerTeam     string
+		}
+
+		var subMatchVMs []SubMatchVM
+		for _, sm := range subMatches {
+			var pAName, pBName string
+			if sm.MatchType == "doubles" {
+				pAName = playerNames[sm.TeamAPlayer1ID.String()] + " & " + playerNames[sm.TeamAPlayer2ID.String()]
+				pBName = playerNames[sm.TeamBPlayer1ID.String()] + " & " + playerNames[sm.TeamBPlayer2ID.String()]
+			} else {
+				pAName = playerNames[sm.TeamAPlayer1ID.String()]
+				pBName = playerNames[sm.TeamBPlayer1ID.String()]
+			}
+
+			var setModels []bun.MatchSetModel
+			_ = h.matchRepo.DB().NewSelect().Model(&setModels).Where("match_id = ?", sm.ID).Scan(c.Context())
+
+			winsA, winsB := 0, 0
+			for _, set := range setModels {
+				if set.ScoreA > set.ScoreB {
+					winsA++
+				} else if set.ScoreB > set.ScoreA {
+					winsB++
+				}
+			}
+
+			wt := ""
+			if sm.WinnerTeam != nil {
+				wt = *sm.WinnerTeam
+			}
+
+			subMatchVMs = append(subMatchVMs, SubMatchVM{
+				ID:             sm.ID.String(),
+				MatchType:      sm.MatchType,
+				RoundNumber:    sm.RoundNumber,
+				TeamAPlayer1ID: sm.TeamAPlayer1ID.String(),
+				TeamAPlayer2ID: sm.TeamAPlayer2ID.String(),
+				TeamBPlayer1ID: sm.TeamBPlayer1ID.String(),
+				TeamBPlayer2ID: sm.TeamBPlayer2ID.String(),
+				PlayerAName:    pAName,
+				PlayerBName:    pBName,
+				ScoreA:         winsA,
+				ScoreB:         winsB,
+				Status:         sm.Status,
+				WinnerTeam:     wt,
+			})
+		}
+
+		return c.Render("admin/partials/team-match-score-form", fiber.Map{
+			"MatchID":      matchID,
+			"TournamentID": tID,
+			"Stage":        stage,
+			"TeamA":        teamA,
+			"TeamB":        teamB,
+			"TeamFormat":   teamFormat,
+			"SubMatches":   subMatchVMs,
+			"SquadAP1":     squadAP1,
+			"SquadAP2":     squadAP2,
+			"SquadAP3":     squadAP3,
+			"SquadBP1":     squadBP1,
+			"SquadBP2":     squadBP2,
+			"SquadBP3":     squadBP3,
+		})
+	}
+
 	// We'll need player names for the form
 	playerAName := "Player 1"
 	playerBName := "Player 2"
@@ -183,6 +372,96 @@ func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
 
 // UpdateScore accepts set scores via JSON/form and persists them, auto-resolving winner.
 func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
+	if c.FormValue("action") == "update_squads" {
+		matchID := c.Params("id")
+		if matchID == "" {
+			matchID = c.FormValue("matchId")
+		}
+		parentUUID, _ := uuid.Parse(matchID)
+
+		p1A, _ := uuid.Parse(c.FormValue("squad_a_p1"))
+		p2A, _ := uuid.Parse(c.FormValue("squad_a_p2"))
+		p3A, _ := uuid.Parse(c.FormValue("squad_a_p3"))
+
+		p1B, _ := uuid.Parse(c.FormValue("squad_b_p1"))
+		p2B, _ := uuid.Parse(c.FormValue("squad_b_p2"))
+		p3B, _ := uuid.Parse(c.FormValue("squad_b_p3"))
+
+		parent, err := h.matchRepo.GetByID(c.Context(), parentUUID)
+		if err == nil {
+			t, err := h.tournamentRepo.GetByID(c.Context(), parent.TournamentID)
+			if err == nil {
+				teamFormat := t.TeamFormat
+				if teamFormat == "" {
+					teamFormat = "olympic"
+				}
+
+				var subs []bun.MatchModel
+				_ = h.matchRepo.DB().NewSelect().Model(&subs).Where("team_match_id = ?", parentUUID).Scan(c.Context())
+
+				for _, sub := range subs {
+					var teamAP1, teamAP2, teamBP1, teamBP2 uuid.UUID
+					if teamFormat == "olympic" {
+						switch sub.RoundNumber {
+						case 1:
+							teamAP1, teamAP2 = p1A, p2A
+							teamBP1, teamBP2 = p1B, p2B
+						case 2:
+							teamAP1 = p3A
+							teamBP1 = p3B
+						case 3:
+							teamAP1 = p1A
+							teamBP1 = p1B
+						case 4:
+							teamAP1 = p2A
+							teamBP1 = p3B
+						case 5:
+							teamAP1 = p3A
+							teamBP1 = p1B
+						}
+					} else {
+						switch sub.RoundNumber {
+						case 1:
+							teamAP1 = p1A
+							teamBP1 = p1B
+						case 2:
+							teamAP1 = p2A
+							teamBP1 = p2B
+						case 3:
+							teamAP1 = p3A
+							teamBP1 = p3B
+						case 4:
+							teamAP1 = p1A
+							teamBP1 = p2B
+						case 5:
+							teamAP1 = p2A
+							teamBP1 = p1B
+						}
+					}
+
+					var teamAP2Ptr, teamBP2Ptr *uuid.UUID
+					if teamAP2 != uuid.Nil {
+						teamAP2Ptr = &teamAP2
+					}
+					if teamBP2 != uuid.Nil {
+						teamBP2Ptr = &teamBP2
+					}
+
+					sub.TeamAPlayer1ID = teamAP1
+					sub.TeamAPlayer2ID = teamAP2Ptr
+					sub.TeamBPlayer1ID = teamBP1
+					sub.TeamBPlayer2ID = teamBP2Ptr
+					_, _ = h.matchRepo.DB().NewUpdate().Model(&sub).WherePK().Column("team_a_player_1_id", "team_a_player_2_id", "team_b_player_1_id", "team_b_player_2_id").Exec(c.Context())
+				}
+			}
+		}
+
+		if c.Get("HX-Request") != "" {
+			c.Set("HX-Refresh", "true")
+		}
+		return c.SendStatus(fiber.StatusOK)
+	}
+
 	matchID := c.Params("id")
 	var body struct {
 		TournamentID string   `json:"tournamentId" form:"tournamentId"`

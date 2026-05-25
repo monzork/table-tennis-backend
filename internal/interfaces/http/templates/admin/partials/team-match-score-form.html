@@ -1,0 +1,118 @@
+<h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter text-white">Team <span class="text-blue-500">Matchup</span></h2>
+<p class="text-xs text-gray-400 mb-6 font-mono">{{if .TeamA}}{{.TeamA.Name}}{{else}}Team A{{end}} vs {{if .TeamB}}{{.TeamB.Name}}{{else}}Team B{{end}} · {{.TeamFormat}} Cup</p>
+
+<!-- Squad Selection Form -->
+<form hx-put="/matches/{{.MatchID}}/score" hx-target="#score-modal-content" class="space-y-4 mb-6 border-b border-white/10 pb-6">
+    <input type="hidden" name="action" value="update_squads">
+    <input type="hidden" name="tournamentId" value="{{.TournamentID}}">
+    <input type="hidden" name="matchId" value="{{.MatchID}}">
+
+    <div class="grid grid-cols-2 gap-4">
+        <!-- Team A Squad -->
+        <div class="space-y-2">
+            <h4 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">{{if .TeamA}}{{.TeamA.Name}}{{else}}Team A{{end}} Squad</h4>
+            <div class="space-y-1.5">
+                <select name="squad_a_p1" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    <option value="" disabled {{if not .SquadAP1}}selected{{end}}>Select Player 1...</option>
+                    {{range .TeamA.Players}}
+                    <option value="{{.ID}}" {{if eq .ID.String $.SquadAP1}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    {{end}}
+                </select>
+                <select name="squad_a_p2" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    <option value="" disabled {{if not .SquadAP2}}selected{{end}}>Select Player 2...</option>
+                    {{range .TeamA.Players}}
+                    <option value="{{.ID}}" {{if eq .ID.String $.SquadAP2}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    {{end}}
+                </select>
+                <select name="squad_a_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    <option value="" disabled {{if not .SquadAP3}}selected{{end}}>Select Player 3...</option>
+                    {{range .TeamA.Players}}
+                    <option value="{{.ID}}" {{if eq .ID.String $.SquadAP3}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+
+        <!-- Team B Squad -->
+        <div class="space-y-2">
+            <h4 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">{{if .TeamB}}{{.TeamB.Name}}{{else}}Team B{{end}} Squad</h4>
+            <div class="space-y-1.5">
+                <select name="squad_b_p1" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    <option value="" disabled {{if not .SquadBP1}}selected{{end}}>Select Player 1 (X)...</option>
+                    {{range .TeamB.Players}}
+                    <option value="{{.ID}}" {{if eq .ID.String $.SquadBP1}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    {{end}}
+                </select>
+                <select name="squad_b_p2" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    <option value="" disabled {{if not .SquadBP2}}selected{{end}}>Select Player 2 (Y)...</option>
+                    {{range .TeamB.Players}}
+                    <option value="{{.ID}}" {{if eq .ID.String $.SquadBP2}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    {{end}}
+                </select>
+                <select name="squad_b_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    <option value="" disabled {{if not .SquadBP3}}selected{{end}}>Select Player 3 (Z)...</option>
+                    {{range .TeamB.Players}}
+                    <option value="{{.ID}}" {{if eq .ID.String $.SquadBP3}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-extrabold py-2 rounded-xl transition-all uppercase tracking-widest text-[9px]">
+        Update & Align Squads
+    </button>
+</form>
+
+<!-- Sub-matches List -->
+<div class="space-y-3 mb-6">
+    <h3 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-2">Sub-Matches</h3>
+    {{range .SubMatches}}
+    <div class="flex items-center justify-between bg-black/20 border border-white/5 rounded-xl p-3">
+        <div class="flex-1">
+            <div class="flex items-center gap-1.5">
+                <span class="text-[9px] font-bold uppercase text-gray-500 bg-white/5 px-1.5 py-0.5 rounded font-mono">Match {{.RoundNumber}}</span>
+                <span class="text-[9px] font-extrabold uppercase tracking-wide text-blue-400">{{.MatchType}}</span>
+                {{if eq .Status "finished"}}
+                <span class="text-[8px] font-bold uppercase tracking-wider text-green-500 bg-green-500/10 px-1 rounded">Finished</span>
+                {{end}}
+            </div>
+            
+            <div class="mt-2 space-y-1">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold {{if eq .WinnerTeam "A"}}text-green-400{{else}}text-white/80{{end}}">
+                        {{.PlayerAName}}
+                    </span>
+                    <span class="font-mono text-gray-400 font-bold">
+                        {{.ScoreA}}
+                    </span>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold {{if eq .WinnerTeam "B"}}text-green-400{{else}}text-white/80{{end}}">
+                        {{.PlayerBName}}
+                    </span>
+                    <span class="font-mono text-gray-400 font-bold">
+                        {{.ScoreB}}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ml-4">
+            <button hx-get="/matches/{{.ID}}/score?tournamentId={{$.TournamentID}}&stage={{$.Stage}}&bestOf=5&p1Id={{.TeamAPlayer1ID}}&p2Id={{.TeamBPlayer1ID}}"
+                hx-target="#score-modal-content"
+                class="bg-white hover:bg-gray-200 text-black font-extrabold text-[10px] uppercase tracking-widest px-3 py-2 rounded-xl transition-colors">
+                Score
+            </button>
+        </div>
+    </div>
+    {{end}}
+</div>
+
+<div class="flex gap-3">
+    <button type="button" 
+        onclick="document.getElementById('score-modal').classList.add('hidden')"
+        class="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-bold py-3 rounded-2xl transition-all uppercase tracking-widest text-xs">
+        Close Matchup
+    </button>
+</div>

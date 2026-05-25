@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"net/url"
 	"os"
 
 	"github.com/uptrace/bun"
@@ -21,6 +22,16 @@ func Connect() {
 
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn != "" {
+		// Clean DSN by removing channel_binding parameter
+		if u, err := url.Parse(dsn); err == nil {
+			q := u.Query()
+			if q.Has("channel_binding") {
+				q.Del("channel_binding")
+				u.RawQuery = q.Encode()
+				dsn = u.String()
+			}
+		}
+
 		// Use PostgreSQL if DATABASE_URL is present
 		sqldb = sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
 		bunDB = bun.NewDB(sqldb, pgdialect.New())
@@ -45,6 +56,8 @@ func Connect() {
 	DB.RegisterModel(
 		(*TournamentParticipantModel)(nil),
 		(*GroupParticipantModel)(nil),
+		(*TeamModel)(nil),
+		(*TeamPlayerModel)(nil),
 	)
 
 	// Self-healing seed for No Division fallback to prevent FK violations on Skip-Elo Events

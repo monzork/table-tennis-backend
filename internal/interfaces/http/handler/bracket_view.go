@@ -48,6 +48,7 @@ type PlayerStanding struct {
 }
 
 type GroupView struct {
+	ID        uuid.UUID
 	Name      string
 	Players   []*player.Player
 	Standings []PlayerStanding
@@ -89,14 +90,36 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 		Divisions:  []DivisionView{},
 	}
 
-	participants := make([]*player.Player, len(t.Participants))
-	copy(participants, t.Participants)
+	var participants []*player.Player
+	if t.Type == "teams" {
+		participants = make([]*player.Player, len(t.Teams))
+		for i, team := range t.Teams {
+			avgElo := int16(1000)
+			if len(team.Players) > 0 {
+				sum := int32(0)
+				for _, p := range team.Players {
+					sum += int32(p.SinglesElo)
+				}
+				avgElo = int16(sum / int32(len(team.Players)))
+			}
+			participants[i] = &player.Player{
+				ID:         team.ID,
+				FirstName:  team.Name,
+				LastName:   " (Team)",
+				SinglesElo: avgElo,
+				DoublesElo: avgElo,
+			}
+		}
+	} else {
+		participants = make([]*player.Player, len(t.Participants))
+		copy(participants, t.Participants)
+	}
 
 	// Sort participants by correct Elo
 	sort.Slice(participants, func(i, j int) bool {
 		ei := participants[i].SinglesElo
 		ej := participants[j].SinglesElo
-		if t.Type == "doubles" {
+		if t.Type == "doubles" || t.Type == "mixed_doubles" {
 			ei = participants[i].DoublesElo
 			ej = participants[j].DoublesElo
 		}
@@ -125,7 +148,7 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 				continue
 			}
 			elo := p.SinglesElo
-			if t.Type == "doubles" {
+			if t.Type == "doubles" || t.Type == "mixed_doubles" {
 				elo = p.DoublesElo
 			}
 			if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
@@ -293,6 +316,70 @@ func buildRRMatches(t *tournament.Tournament, players []*player.Player, stage st
 }
 
 func buildGroupEliminationGroups(t *tournament.Tournament, players []*player.Player) ([]GroupView, bool) {
+	// Try to load saved groups containing any players in this division first
+	var divisionGroups []tournament.Group
+	for _, g := range t.Groups {
+		hasPlayer := false
+		for _, gp := range g.Players {
+			for _, dp := range players {
+				if gp.ID == dp.ID {
+					hasPlayer = true
+					break
+				}
+			}
+			if hasPlayer {
+				break
+			}
+		}
+		if hasPlayer {
+			divisionGroups = append(divisionGroups, g)
+		}
+	}
+
+	if len(divisionGroups) > 0 {
+		allFinished := true
+		var views []GroupView
+		for _, g := range divisionGroups {
+			expectedMatches := len(g.Players) * (len(g.Players) - 1) / 2
+			finished := 0
+			for _, m := range t.Matches {
+				if len(m.TeamA) == 0 || len(m.TeamB) == 0 { continue }
+				for _, p1 := range g.Players {
+					for _, p2 := range g.Players {
+						if p1.ID != p2.ID {
+							if (m.TeamA[0].ID == p1.ID && m.TeamB[0].ID == p2.ID) || (m.TeamA[0].ID == p2.ID && m.TeamB[0].ID == p1.ID) {
+								if m.Status == "finished" {
+									finished++
+								}
+							}
+						}
+					}
+				}
+			}
+			finished = finished / 2
+			isFinished := expectedMatches > 0 && finished >= expectedMatches
+			if !isFinished {
+				allFinished = false
+			}
+
+			displayName := g.Name
+			if idx := strings.Index(g.Name, " - "); idx != -1 {
+				displayName = g.Name[idx+3:]
+			}
+
+			views = append(views, GroupView{
+				ID:        g.ID,
+				Name:      displayName,
+				Players:   g.Players,
+				Standings: buildStandings(g.Players, t.Matches),
+				Matches:   buildRRMatches(t, g.Players, "group"),
+				Finished:  isFinished,
+			})
+		}
+		return views, allFinished
+	}
+
+	// Fallback to snake seeding
 	groupSize := 4
 	numGroups := int(math.Ceil(float64(len(players)) / float64(groupSize)))
 	if numGroups == 0 {
@@ -329,7 +416,6 @@ func buildGroupEliminationGroups(t *tournament.Tournament, players []*player.Pla
 				}
 			}
 		}
-		// Since each match is counted twice in the above loop:
 		finished = finished / 2
 		
 		isFinished := expectedMatches > 0 && finished >= expectedMatches
@@ -338,6 +424,7 @@ func buildGroupEliminationGroups(t *tournament.Tournament, players []*player.Pla
 		}
 
 		gv := GroupView{
+			ID:        uuid.New(),
 			Name:      fmt.Sprintf("Group %c", 'A'+i),
 			Players:   gp,
 			Standings: buildStandings(gp, t.Matches),

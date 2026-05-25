@@ -22,6 +22,7 @@ type TournamentModel struct {
 	RegistrationOpen bool       `bun:"registration_open,notnull,default:false"`
 	EventID        *uuid.UUID `bun:"event_id,type:uuid"`
 	SkipElo        bool       `bun:"skip_elo,notnull,default:false"`
+	TeamFormat     string     `bun:"team_format,nullzero"`
 	CreatedAt        time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
 }
@@ -53,6 +54,7 @@ type GroupParticipantModel struct {
 
 	GroupID  uuid.UUID `bun:"group_id,pk,type:uuid"`
 	PlayerID uuid.UUID `bun:"player_id,pk,type:uuid"`
+	Position int       `bun:"position,notnull,default:0"`
 }
 
 // -------------------------
@@ -66,4 +68,19 @@ type RuleModel struct {
 	Description string     `bun:"description"`
 	CreatedAt   time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt   *time.Time `bun:"updated_at,nullzero"`
+}
+
+type TeamModel struct {
+	bun.BaseModel `bun:"table:teams"`
+
+	ID           uuid.UUID `bun:"id,pk,type:uuid"`
+	TournamentID uuid.UUID `bun:"tournament_id,type:uuid"`
+	Name         string    `bun:"name,notnull"`
+}
+
+type TeamPlayerModel struct {
+	bun.BaseModel `bun:"table:team_players"`
+
+	TeamID   uuid.UUID `bun:"team_id,pk,type:uuid"`
+	PlayerID uuid.UUID `bun:"player_id,pk,type:uuid"`
 }

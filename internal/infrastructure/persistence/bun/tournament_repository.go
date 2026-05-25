@@ -3,6 +3,7 @@ package bun
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
 
@@ -40,6 +41,7 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 		RegistrationOpen: t.RegistrationOpen,
 		EventID:   t.EventID,
 		SkipElo:   t.SkipElo,
+		TeamFormat: t.TeamFormat,
 	}
 	_, err = tx.NewInsert().Model(model).Exec(ctx)
 	if err != nil {
@@ -88,6 +90,30 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 	// Save default stage rules
 	if err := saveStageRules(ctx, tx, t.StageRules); err != nil {
 		return err
+	}
+
+	// Save teams
+	for _, team := range t.Teams {
+		tmModel := &TeamModel{
+			ID:           team.ID,
+			TournamentID: t.ID,
+			Name:         team.Name,
+		}
+		_, err = tx.NewInsert().Model(tmModel).Exec(ctx)
+		if err != nil {
+			return err
+		}
+
+		for _, p := range team.Players {
+			tpModel := &TeamPlayerModel{
+				TeamID:   team.ID,
+				PlayerID: p.ID,
+			}
+			_, err = tx.NewInsert().Model(tpModel).Exec(ctx)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return tx.Commit()
@@ -153,7 +179,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 	var groups []tournament.Group
 	for _, gm := range groupModels {
 		var gpModels []GroupParticipantModel
-		_ = r.db.NewSelect().Model(&gpModels).Where("group_id = ?", gm.ID).Scan(ctx)
+		_ = r.db.NewSelect().Model(&gpModels).Where("group_id = ?", gm.ID).Order("position ASC").Scan(ctx)
 
 		var groupPlayers []*player.Player
 		for _, gp := range gpModels {
@@ -201,14 +227,48 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		}
 
 		m := tournament.Match{
-			ID:         mm.ID,
-			Status:     mm.Status,
-			WinnerTeam: wt,
-			TeamA:      []*player.Player{{ID: mm.TeamAPlayer1ID}},
-			TeamB:      []*player.Player{{ID: mm.TeamBPlayer1ID}},
-			Sets:       sets,
+			ID:           mm.ID,
+			TournamentID: mm.TournamentID,
+			MatchType:    mm.MatchType,
+			Status:       mm.Status,
+			WinnerTeam:   wt,
+			TeamA:        []*player.Player{{ID: mm.TeamAPlayer1ID}},
+			TeamB:        []*player.Player{{ID: mm.TeamBPlayer1ID}},
+			Sets:         sets,
+			TeamMatchID:  mm.TeamMatchID,
 		}
 		matches = append(matches, m)
+	}
+
+	// Load teams
+	var teamModels []TeamModel
+	_ = r.db.NewSelect().Model(&teamModels).Where("tournament_id = ?", model.ID).Order("name ASC").Scan(ctx)
+
+	var teams []*tournament.Team
+	for _, tm := range teamModels {
+		var tpModels []TeamPlayerModel
+		_ = r.db.NewSelect().Model(&tpModels).Where("team_id = ?", tm.ID).Scan(ctx)
+
+		var teamPlayers []*player.Player
+		for _, tp := range tpModels {
+			var pm PlayerModel
+			if e := r.db.NewSelect().Model(&pm).Where("id = ?", tp.PlayerID).Scan(ctx); e == nil {
+				teamPlayers = append(teamPlayers, &player.Player{
+					ID:         pm.ID,
+					FirstName:  pm.FirstName,
+					LastName:   pm.LastName,
+					SinglesElo: pm.SinglesElo,
+					DoublesElo: pm.DoublesElo,
+					Country:    pm.Country,
+				})
+			}
+		}
+		teams = append(teams, &tournament.Team{
+			ID:           tm.ID,
+			TournamentID: tm.TournamentID,
+			Name:         tm.Name,
+			Players:      teamPlayers,
+		})
 	}
 
 	return &tournament.Tournament{
@@ -229,6 +289,8 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		Rules:        []tournament.Rule{},
 		StageRules:   loadStageRules(ctx, r.db, model.ID),
 		Matches:      matches,
+		Teams:        teams,
+		TeamFormat:   model.TeamFormat,
 	}, nil
 }
 
@@ -252,17 +314,20 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		RegistrationOpen: t.RegistrationOpen,
 		EventID:   t.EventID,
 		SkipElo:   t.SkipElo,
+		TeamFormat: t.TeamFormat,
 	}
 
-	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo").Exec(ctx)
+	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo", "team_format").Exec(ctx)
 	if err != nil {
 		return err
 	}
 
-	// Scrub existing groups and participants
+	// Scrub existing groups, participants, and teams
 	tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE tournament_id = ?)", t.ID).Exec(ctx)
 	tx.NewDelete().TableExpr("groups").Where("tournament_id = ?", t.ID).Exec(ctx)
 	tx.NewDelete().TableExpr("tournament_participants").Where("tournament_id = ?", t.ID).Exec(ctx)
+	tx.NewDelete().TableExpr("team_players").Where("team_id IN (SELECT id FROM teams WHERE tournament_id = ?)", t.ID).Exec(ctx)
+	tx.NewDelete().TableExpr("teams").Where("tournament_id = ?", t.ID).Exec(ctx)
 
 	// Refresh participants
 	for _, p := range t.Participants {
@@ -278,6 +343,30 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		}
 	}
 
+	// Refresh teams
+	for _, team := range t.Teams {
+		tmModel := &TeamModel{
+			ID:           team.ID,
+			TournamentID: t.ID,
+			Name:         team.Name,
+		}
+		_, err = tx.NewInsert().Model(tmModel).Exec(ctx)
+		if err != nil {
+			return err
+		}
+
+		for _, p := range team.Players {
+			tpModel := &TeamPlayerModel{
+				TeamID:   team.ID,
+				PlayerID: p.ID,
+			}
+			_, err = tx.NewInsert().Model(tpModel).Exec(ctx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	// Refresh groups
 	for _, g := range t.Groups {
 		groupModel := &GroupModel{
@@ -290,10 +379,11 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 			return err
 		}
 
-		for _, p := range g.Players {
+		for idx, p := range g.Players {
 			gpModel := &GroupParticipantModel{
 				GroupID:  g.ID,
 				PlayerID: p.ID,
+				Position: idx,
 			}
 			_, err = tx.NewInsert().Model(gpModel).Exec(ctx)
 			if err != nil {
@@ -336,6 +426,56 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	}
 	tournaments := make([]*tournament.Tournament, len(models))
 	for i, m := range models {
+		// Load participants
+		var partModels []TournamentParticipantModel
+		_ = r.db.NewSelect().Model(&partModels).Where("tournament_id = ?", m.ID).Scan(ctx)
+
+		var participantPlayers []*player.Player
+		for _, pt := range partModels {
+			var pm PlayerModel
+			if e := r.db.NewSelect().Model(&pm).Where("id = ?", pt.PlayerID).Scan(ctx); e == nil {
+				participantPlayers = append(participantPlayers, &player.Player{
+					ID:         pm.ID,
+					FirstName:  pm.FirstName,
+					LastName:   pm.LastName,
+					SinglesElo: pm.SinglesElo,
+					DoublesElo: pm.DoublesElo,
+					Country:    pm.Country,
+				})
+			}
+		}
+
+		// Load teams
+		var teamModels []TeamModel
+		_ = r.db.NewSelect().Model(&teamModels).Where("tournament_id = ?", m.ID).Order("name ASC").Scan(ctx)
+
+		var teams []*tournament.Team
+		for _, tm := range teamModels {
+			var tpModels []TeamPlayerModel
+			_ = r.db.NewSelect().Model(&tpModels).Where("team_id = ?", tm.ID).Scan(ctx)
+
+			var teamPlayers []*player.Player
+			for _, tp := range tpModels {
+				var pm PlayerModel
+				if e := r.db.NewSelect().Model(&pm).Where("id = ?", tp.PlayerID).Scan(ctx); e == nil {
+					teamPlayers = append(teamPlayers, &player.Player{
+						ID:         pm.ID,
+						FirstName:  pm.FirstName,
+						LastName:   pm.LastName,
+						SinglesElo: pm.SinglesElo,
+						DoublesElo: pm.DoublesElo,
+						Country:    pm.Country,
+					})
+				}
+			}
+			teams = append(teams, &tournament.Team{
+				ID:           tm.ID,
+				TournamentID: tm.TournamentID,
+				Name:         tm.Name,
+				Players:      teamPlayers,
+			})
+		}
+
 		tournaments[i] = &tournament.Tournament{
 			ID:        m.ID,
 			Name:      m.Name,
@@ -349,9 +489,83 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 			RegistrationOpen: m.RegistrationOpen,
 			EventID:   m.EventID,
 			SkipElo:   m.SkipElo,
+			Participants: participantPlayers,
 			Rules:     []tournament.Rule{},
 			Matches:   []tournament.Match{},
+			Teams:     teams,
+			TeamFormat: m.TeamFormat,
 		}
 	}
 	return tournaments, nil
 }
+
+func (r *TournamentRepository) SaveTeam(ctx context.Context, team *tournament.Team) error {
+	tmModel := &TeamModel{
+		ID:           team.ID,
+		TournamentID: team.TournamentID,
+		Name:         team.Name,
+	}
+	_, err := r.db.NewInsert().Model(tmModel).Exec(ctx)
+	return err
+}
+
+func (r *TournamentRepository) DeleteTeam(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.NewDelete().Model((*TeamModel)(nil)).Where("id = ?", id).Exec(ctx)
+	return err
+}
+
+func (r *TournamentRepository) AddPlayerToTeam(ctx context.Context, teamID uuid.UUID, playerID uuid.UUID) error {
+	var tm TeamModel
+	if err := r.db.NewSelect().Model(&tm).Where("id = ?", teamID).Scan(ctx); err != nil {
+		return err
+	}
+
+	t, err := r.GetByID(ctx, tm.TournamentID)
+	if err != nil {
+		return err
+	}
+
+	var pm PlayerModel
+	if err := r.db.NewSelect().Model(&pm).Where("id = ?", playerID).Scan(ctx); err != nil {
+		return err
+	}
+
+	if t.EventCategory == "women" && pm.Gender != "F" {
+		return fmt.Errorf("Only female athletes are allowed in women's tournaments")
+	}
+
+	var currentTeam *tournament.Team
+	for _, team := range t.Teams {
+		if team.ID == teamID {
+			currentTeam = team
+			break
+		}
+	}
+
+	if t.Type == "doubles" || t.Type == "mixed_doubles" {
+		if currentTeam != nil && len(currentTeam.Players) >= 2 {
+			return fmt.Errorf("doubles teams can only have a maximum of two players")
+		}
+	}
+
+	if t.Type == "mixed_doubles" {
+		if currentTeam != nil && len(currentTeam.Players) == 1 {
+			if currentTeam.Players[0].Gender == pm.Gender {
+				return fmt.Errorf("mixed doubles teams must consist of one male and one female player")
+			}
+		}
+	}
+
+	tpModel := &TeamPlayerModel{
+		TeamID:   teamID,
+		PlayerID: playerID,
+	}
+	_, err = r.db.NewInsert().Model(tpModel).Exec(ctx)
+	return err
+}
+
+func (r *TournamentRepository) RemovePlayerFromTeam(ctx context.Context, teamID uuid.UUID, playerID uuid.UUID) error {
+	_, err := r.db.NewDelete().Model((*TeamPlayerModel)(nil)).Where("team_id = ? AND player_id = ?", teamID, playerID).Exec(ctx)
+	return err
+}
+

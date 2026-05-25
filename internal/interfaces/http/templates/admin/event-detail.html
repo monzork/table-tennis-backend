@@ -84,7 +84,11 @@
                         <span class="text-[10px] uppercase font-bold text-gray-400 bg-white/5 px-2 py-1 rounded">{{.EventCategory}}</span>
                     </div>
 
+                    {{if or (eq .Type "teams") (eq .Type "doubles") (eq .Type "mixed_doubles")}}
+                    <p class="text-xs text-gray-400 mt-4"><strong class="text-white">{{len .Teams}}</strong> Teams registered in this bracket.</p>
+                    {{else}}
                     <p class="text-xs text-gray-400 mt-4"><strong class="text-white">{{len .Participants}}</strong> Athletes registered in this bracket.</p>
+                    {{end}}
                 </div>
 
                 <div class="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
