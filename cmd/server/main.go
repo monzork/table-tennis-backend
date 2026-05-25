@@ -48,7 +48,7 @@ func main() {
 
 	tournamentRepo := bun.NewTournamentRepository(bun.DB)
 	createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
-	getTournamentByIDUC := tournament.NewGetTournamentByIDUseCase(tournamentRepo)
+	getTournamentByIDUC := tournament.NewGetTournamentByIDUseCase(tournamentRepo, divisionRepo)
 	updateTournamentUC := tournament.NewUpdateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
 	deleteTournamentUC := tournament.NewDeleteTournamentUseCase(tournamentRepo)
 	matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
@@ -118,6 +118,9 @@ func main() {
 	authMiddleware := middleware.Protected(store)
 
 	engine := html.New("./internal/interfaces/http/templates", ".html")
+	engine.AddFunc("add", func(a, b int) int {
+		return a + b
+	})
 	app := fiber.New(fiber.Config{
 		Views: engine,
 	})

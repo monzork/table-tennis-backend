@@ -13,11 +13,12 @@ import (
 // ─── Get By ID ───────────────────────────────────────────────────────────────
 
 type GetTournamentByIDUseCase struct {
-	repo *bun.TournamentRepository
+	repo         *bun.TournamentRepository
+	divisionRepo *bun.DivisionRepository
 }
 
-func NewGetTournamentByIDUseCase(repo *bun.TournamentRepository) *GetTournamentByIDUseCase {
-	return &GetTournamentByIDUseCase{repo: repo}
+func NewGetTournamentByIDUseCase(repo *bun.TournamentRepository, divisionRepo *bun.DivisionRepository) *GetTournamentByIDUseCase {
+	return &GetTournamentByIDUseCase{repo: repo, divisionRepo: divisionRepo}
 }
 
 func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (*tournamentDomain.Tournament, error) {
@@ -25,7 +26,34 @@ func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (
 	if err != nil {
 		return nil, err
 	}
-	return uc.repo.GetByID(ctx, id)
+	t, err := uc.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Self-healing: if an older elimination tournament doesn't have seeding groups, create them on the fly
+	if t.Format == "elimination" && len(t.Groups) == 0 {
+		var divsList []tournamentDomain.DivisionSeeding
+		if !t.SkipElo && uc.divisionRepo != nil {
+			divs, err := uc.divisionRepo.GetAll(ctx)
+			if err == nil {
+				for _, d := range divs {
+					if d.Category == "both" || d.Category == t.Type {
+						divsList = append(divsList, tournamentDomain.DivisionSeeding{
+							Name:   d.Name,
+							MinElo: d.MinElo,
+							MaxElo: d.MaxElo,
+						})
+					}
+				}
+			}
+		}
+		if err := t.AssignGroupsByDivisions(divsList); err == nil {
+			_ = uc.repo.Update(ctx, t)
+		}
+	}
+
+	return t, nil
 }
 
 // ─── Update ──────────────────────────────────────────────────────────────────
@@ -122,7 +150,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 		}
 	}
 
-	if t.Format == "groups_elimination" || t.Format == "round_robin" {
+	if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
 		if err := t.AssignGroupsByDivisions(divsList); err != nil {
 			return nil, err
 		}

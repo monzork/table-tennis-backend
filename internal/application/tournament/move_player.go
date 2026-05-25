@@ -23,9 +23,13 @@ func (uc *MovePlayerUseCase) Execute(ctx context.Context, tournamentIDStr, playe
 	if err != nil {
 		return err
 	}
-	targetGroupID, err := uuid.Parse(targetGroupIDStr)
-	if err != nil {
-		return err
+	var targetGroupID uuid.UUID
+	if targetGroupIDStr != "" {
+		var err error
+		targetGroupID, err = uuid.Parse(targetGroupIDStr)
+		if err != nil {
+			return err
+		}
 	}
 
 	t, err := uc.repo.GetByID(ctx, tID)

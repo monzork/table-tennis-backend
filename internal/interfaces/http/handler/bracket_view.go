@@ -131,7 +131,20 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 	})
 
 	if t.SkipElo {
-		vm.Divisions = append(vm.Divisions, buildDivisionView(t, "Open Bracket", "", 0, nil, false, participants))
+		openPlayers := participants
+		if t.Format == "elimination" {
+			var matchingGroup *tournament.Group
+			for i := range t.Groups {
+				if t.Groups[i].Name == "Open Bracket - Bracket Draw" {
+					matchingGroup = &t.Groups[i]
+					break
+				}
+			}
+			if matchingGroup != nil && len(matchingGroup.Players) > 0 {
+				openPlayers = matchingGroup.Players
+			}
+		}
+		vm.Divisions = append(vm.Divisions, buildDivisionView(t, "Open Bracket", "", 0, nil, false, openPlayers))
 		return vm
 	}
 
@@ -147,25 +160,45 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 
 	for _, d := range validDivs {
 		var dPlayers []*player.Player
-		for _, p := range participants {
-			if assignedMap[p.ID] {
-				continue
+		name := d.Name
+		if strings.HasSuffix(strings.ToLower(name), " division") {
+			name = name[:len(name)-9]
+		}
+
+		if t.Format == "elimination" {
+			var matchingGroup *tournament.Group
+			expectedGroupName := fmt.Sprintf("%s - Bracket Draw", name)
+			for i := range t.Groups {
+				if t.Groups[i].Name == expectedGroupName {
+					matchingGroup = &t.Groups[i]
+					break
+				}
 			}
-			elo := p.SinglesElo
-			if t.Type == "doubles" || t.Type == "mixed_doubles" {
-				elo = p.DoublesElo
+			if matchingGroup != nil && len(matchingGroup.Players) > 0 {
+				dPlayers = matchingGroup.Players
+				for _, p := range dPlayers {
+					assignedMap[p.ID] = true
+				}
 			}
-			if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
-				dPlayers = append(dPlayers, p)
-				assignedMap[p.ID] = true
+		}
+
+		if len(dPlayers) == 0 {
+			for _, p := range participants {
+				if assignedMap[p.ID] {
+					continue
+				}
+				elo := p.SinglesElo
+				if t.Type == "doubles" || t.Type == "mixed_doubles" {
+					elo = p.DoublesElo
+				}
+				if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
+					dPlayers = append(dPlayers, p)
+					assignedMap[p.ID] = true
+				}
 			}
 		}
 
 		if len(dPlayers) > 0 {
-			name := d.Name
-			if strings.HasSuffix(strings.ToLower(name), " division") {
-				name = name[:len(name)-9]
-			}
 			vm.Divisions = append(vm.Divisions, buildDivisionView(t, name, d.Color, d.MinElo, d.MaxElo, false, dPlayers))
 		}
 	}
@@ -474,6 +507,7 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 	if len(players) == 0 {
 		return nil
 	}
+	unresolvedSlot := &MatchSlot{Seed: 0, Player: nil}
 	size := nextPow2(len(players))
 	if size < 2 {
 		size = 2 // Minimum bracket size
@@ -526,12 +560,16 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 			mRight := current[i+1]
 
 			getWinner := func(m Pair) *MatchSlot {
+				if m.P1 == unresolvedSlot || m.P2 == unresolvedSlot {
+					return unresolvedSlot
+				}
+
 				v1 := m.P1 != nil && m.P1.Player != nil
 				v2 := m.P2 != nil && m.P2.Player != nil
 
-				if (!v1 && !v2) { return nil }
-				if (v1 && !v2) { return m.P1 }
-				if (!v1 && v2) { return m.P2 }
+				if !v1 && !v2 { return nil }
+				if v1 && !v2 { return m.P1 }
+				if !v1 && v2 { return m.P2 }
 
 				for k := range t.Matches {
 					tm := t.Matches[k]
@@ -544,7 +582,7 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 						}
 					}
 				}
-				return nil
+				return unresolvedSlot
 			}
 
 			next = append(next, Pair{P1: getWinner(mLeft), P2: getWinner(mRight)})

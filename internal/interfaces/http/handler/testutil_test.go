@@ -93,7 +93,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 
 	tournamentRepo := bunRepo.NewTournamentRepository(db)
 	createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
-	getTournamentByIDUC := tournament.NewGetTournamentByIDUseCase(tournamentRepo)
+	getTournamentByIDUC := tournament.NewGetTournamentByIDUseCase(tournamentRepo, divisionRepo)
 	updateTournamentUC := tournament.NewUpdateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
 	deleteTournamentUC := tournament.NewDeleteTournamentUseCase(tournamentRepo)
 	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
@@ -134,6 +134,9 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	authMiddleware := middleware.Protected(store)
 
 	engine := html.New("../templates", ".html")
+	engine.AddFunc("add", func(a, b int) int {
+		return a + b
+	})
 	app := fiber.New(fiber.Config{Views: engine})
 
 	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)

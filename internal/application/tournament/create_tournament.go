@@ -118,7 +118,7 @@ func (uc *CreateTournamentUseCase) Execute(
 		}
 	}
 
-	if t.Format == "groups_elimination" || t.Format == "round_robin" {
+	if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
 		if err := t.AssignGroupsByDivisions(divsList); err != nil {
 			return nil, err
 		}
@@ -158,7 +158,7 @@ func (uc *CreateTournamentUseCase) Execute(
 		if err == nil {
 			pairT.SkipElo = skipElo
 			pairT.EventID = eventID
-			if pairT.Format == "groups_elimination" || pairT.Format == "round_robin" {
+			if pairT.Format == "groups_elimination" || pairT.Format == "round_robin" || pairT.Format == "elimination" {
 				pairT.AssignGroupsByDivisions(divsList)
 			}
 			uc.repo.Save(ctx, pairT)

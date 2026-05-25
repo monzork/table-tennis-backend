@@ -193,6 +193,37 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 					DoublesElo: pm.DoublesElo,
 					Country:    pm.Country,
 				})
+			} else if model.Type == "doubles" || model.Type == "mixed_doubles" || model.Type == "teams" {
+				// For doubles/teams tournaments, group participants are stored with team IDs
+				// which don't exist in the players table. Look them up in the teams table.
+				var tm TeamModel
+				if te := r.db.NewSelect().Model(&tm).Where("id = ?", gp.PlayerID).Scan(ctx); te == nil {
+					// Build a synthetic player from the team
+					var tpModels []TeamPlayerModel
+					_ = r.db.NewSelect().Model(&tpModels).Where("team_id = ?", tm.ID).Scan(ctx)
+					avgElo := int16(1000)
+					if len(tpModels) > 0 {
+						sum := int32(0)
+						for _, tp := range tpModels {
+							var tpm PlayerModel
+							if pe := r.db.NewSelect().Model(&tpm).Where("id = ?", tp.PlayerID).Scan(ctx); pe == nil {
+								if model.Type == "doubles" || model.Type == "mixed_doubles" {
+									sum += int32(tpm.DoublesElo)
+								} else {
+									sum += int32(tpm.SinglesElo)
+								}
+							}
+						}
+						avgElo = int16(sum / int32(len(tpModels)))
+					}
+					groupPlayers = append(groupPlayers, &player.Player{
+						ID:         tm.ID,
+						FirstName:  tm.Name,
+						LastName:   "",
+						SinglesElo: avgElo,
+						DoublesElo: avgElo,
+					})
+				}
 			}
 		}
 		groups = append(groups, tournament.Group{

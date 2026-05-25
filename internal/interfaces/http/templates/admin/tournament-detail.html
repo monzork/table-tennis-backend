@@ -71,18 +71,28 @@
     <div class="flex flex-wrap gap-2">
       {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}
         {{range .AvailableParticipants}}
+        <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+          <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
+            {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
+          </div>
+          <span class="text-sm font-semibold">{{.FirstName}} {{.LastName}}</span>
+          <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
+        </div>
+        {{else}}
+        <p class="text-sm text-gray-600">No participants available.</p>
+        {{end}}
       {{else}}
         {{range .Tournament.Participants}}
-      {{end}}
-      <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-        <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
-          {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
+        <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+          <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
+            {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
+          </div>
+          <span class="text-sm font-semibold">{{.FirstName}} {{.LastName}}</span>
+          <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
         </div>
-        <span class="text-sm font-semibold">{{.FirstName}} {{.LastName}}</span>
-        <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
-      </div>
-      {{else}}
-      <p class="text-sm text-gray-600">No participants registered.</p>
+        {{else}}
+        <p class="text-sm text-gray-600">No participants registered.</p>
+        {{end}}
       {{end}}
     </div>
   </section>
@@ -131,6 +141,9 @@
         </div>
 
         <!-- Add Player to Team Form -->
+        {{$isDoubles := or (eq $.Tournament.Type "doubles") (eq $.Tournament.Type "mixed_doubles")}}
+        {{$teamFull := and $isDoubles (ge (len .Players) 2)}}
+        {{if not $teamFull}}
         <form hx-post="/admin/tournaments/{{$.Tournament.ID}}/teams/{{.ID}}/players" class="flex gap-2">
           <select name="playerId" required class="flex-1 bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
             <option value="" disabled selected hidden>Assign Player...</option>
@@ -142,6 +155,7 @@
             Add
           </button>
         </form>
+        {{end}}
       </div>
       {{else}}
       <div class="col-span-full bg-black/20 border border-white/5 rounded-2xl p-8 text-center text-gray-500 italic text-sm">

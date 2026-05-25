@@ -286,7 +286,7 @@ type DivisionSeeding struct {
 }
 
 func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
-	if t.Format != "groups_elimination" && t.Format != "round_robin" {
+	if t.Format != "groups_elimination" && t.Format != "round_robin" && t.Format != "elimination" {
 		t.Groups = []Group{}
 		return nil
 	}
@@ -388,11 +388,15 @@ func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
 			return dg.Players[i].SinglesElo > dg.Players[j].SinglesElo
 		})
 
-		if t.Format == "round_robin" {
+		if t.Format == "round_robin" || t.Format == "elimination" {
+			groupName := fmt.Sprintf("%s - Round Robin", dg.Name)
+			if t.Format == "elimination" {
+				groupName = fmt.Sprintf("%s - Bracket Draw", dg.Name)
+			}
 			t.Groups = append(t.Groups, Group{
 				ID:           uuid.New(),
 				TournamentID: t.ID,
-				Name:         fmt.Sprintf("%s - Round Robin", dg.Name),
+				Name:         groupName,
 				Players:      dg.Players,
 			})
 			continue
@@ -430,10 +434,43 @@ func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
 
 func (t *Tournament) MovePlayer(playerID uuid.UUID, targetGroupID uuid.UUID, targetIndex int) error {
 	var movingPlayer *player.Player
-	for _, p := range t.Participants {
-		if p.ID == playerID {
-			movingPlayer = p
-			break
+	if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
+		var foundTeam *Team
+		for _, team := range t.Teams {
+			if team.ID == playerID {
+				foundTeam = team
+				break
+			}
+		}
+		if foundTeam == nil {
+			return errors.New("team is not registered in this tournament")
+		}
+
+		avgElo := int16(1000)
+		if len(foundTeam.Players) > 0 {
+			sum := int32(0)
+			for _, p := range foundTeam.Players {
+				if t.Type == "doubles" || t.Type == "mixed_doubles" {
+					sum += int32(p.DoublesElo)
+				} else {
+					sum += int32(p.SinglesElo)
+				}
+			}
+			avgElo = int16(sum / int32(len(foundTeam.Players)))
+		}
+		movingPlayer = &player.Player{
+			ID:         foundTeam.ID,
+			FirstName:  foundTeam.Name,
+			LastName:   " (Team)",
+			SinglesElo: avgElo,
+			DoublesElo: avgElo,
+		}
+	} else {
+		for _, p := range t.Participants {
+			if p.ID == playerID {
+				movingPlayer = p
+				break
+			}
 		}
 	}
 	if movingPlayer == nil {
@@ -447,18 +484,27 @@ func (t *Tournament) MovePlayer(playerID uuid.UUID, targetGroupID uuid.UUID, tar
 	}
 
 	foundSource := false
+	var sourceGroupID uuid.UUID
 	for i := range t.Groups {
 		g := &t.Groups[i]
 		for j, p := range g.Players {
 			if p.ID == playerID {
-				g.Players = append(g.Players[:j], g.Players[j+1:]...)
+				newPlayers := make([]*player.Player, 0, len(g.Players)-1)
+				newPlayers = append(newPlayers, g.Players[:j]...)
+				newPlayers = append(newPlayers, g.Players[j+1:]...)
+				g.Players = newPlayers
 				foundSource = true
+				sourceGroupID = g.ID
 				break
 			}
 		}
 		if foundSource {
 			break
 		}
+	}
+
+	if targetGroupID == uuid.Nil {
+		targetGroupID = sourceGroupID
 	}
 
 	foundTarget := false
@@ -478,7 +524,11 @@ func (t *Tournament) MovePlayer(playerID uuid.UUID, targetGroupID uuid.UUID, tar
 			}
 			
 			// Insert player at idx
-			g.Players = append(g.Players[:idx], append([]*player.Player{movingPlayer}, g.Players[idx:]...)...)
+			newPlayers := make([]*player.Player, 0, len(g.Players)+1)
+			newPlayers = append(newPlayers, g.Players[:idx]...)
+			newPlayers = append(newPlayers, movingPlayer)
+			newPlayers = append(newPlayers, g.Players[idx:]...)
+			g.Players = newPlayers
 			foundTarget = true
 			break
 		}

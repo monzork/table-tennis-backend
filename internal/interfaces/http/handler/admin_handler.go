@@ -45,8 +45,17 @@ func NewAdminHandler(
 }
 
 func (h *AdminHandler) Dashboard(c *fiber.Ctx) error {
-	// Let's just render the dashboard template
-	return c.Render("admin/dashboard", fiber.Map{}, "layouts/admin")
+	events, _ := h.eventGetAll.Execute(c.Context())
+	tournaments, _ := h.getTournaments.Execute(c.Context())
+	players, _ := h.leaderboard.ExecuteSingles(c.Context())
+	divisions, _ := h.divisionUC.GetAll(c.Context())
+
+	return c.Render("admin/dashboard", fiber.Map{
+		"Events":      events,
+		"Tournaments": tournaments,
+		"Players":     players,
+		"Divisions":   divisions,
+	}, "layouts/admin")
 }
 
 func (h *AdminHandler) Players(c *fiber.Ctx) error {

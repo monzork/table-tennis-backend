@@ -1,28 +1,161 @@
-<div class="space-y-8 animate-fade-in text-white/90">
+<div class="space-y-10 animate-fade-in text-white/90">
+    <!-- Header -->
     <header class="flex justify-between items-center">
         <div>
-            <h1 class="text-4xl font-extrabold tracking-tight uppercase">Dashboard</h1>
+            <h1 class="text-4xl font-extrabold tracking-tight uppercase">Dashboard <span class="text-red-500">.</span></h1>
+            <p class="text-gray-400 mt-1">Real-time Club Management Overview</p>
         </div>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Players Stat -->
+        <div class="glass p-6 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col justify-between hover:border-white/10 transition-all duration-300">
+            <div class="space-y-1">
+                <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Total Players</span>
+                <h3 class="text-4xl font-black text-white tracking-tighter">{{len .Players}}</h3>
+            </div>
+            <div class="absolute -right-2 -bottom-2 opacity-5 text-8xl font-black uppercase tracking-tighter select-none">ATH</div>
+        </div>
+
+        <!-- Tournaments Stat -->
+        <div class="glass p-6 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col justify-between hover:border-white/10 transition-all duration-300">
+            <div class="space-y-1">
+                <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Tournaments</span>
+                <h3 class="text-4xl font-black text-white tracking-tighter">{{len .Tournaments}}</h3>
+            </div>
+            <div class="absolute -right-2 -bottom-2 opacity-5 text-8xl font-black uppercase tracking-tighter select-none">TRN</div>
+        </div>
+
+        <!-- Events Stat -->
+        <div class="glass p-6 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col justify-between hover:border-white/10 transition-all duration-300">
+            <div class="space-y-1">
+                <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Grand Events</span>
+                <h3 class="text-4xl font-black text-white tracking-tighter">{{len .Events}}</h3>
+            </div>
+            <div class="absolute -right-2 -bottom-2 opacity-5 text-8xl font-black uppercase tracking-tighter select-none">EVT</div>
+        </div>
+
+        <!-- Divisions Stat -->
+        <div class="glass p-6 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col justify-between hover:border-white/10 transition-all duration-300">
+            <div class="space-y-1">
+                <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Divisions</span>
+                <h3 class="text-4xl font-black text-white tracking-tighter">{{len .Divisions}}</h3>
+            </div>
+            <div class="absolute -right-2 -bottom-2 opacity-5 text-8xl font-black uppercase tracking-tighter select-none">DIV</div>
+        </div>
+    </div>
+
+    <!-- Quick Actions / Navigation Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Players Link -->
         <a href="/admin/players"
-            class="glass p-8 rounded-2xl hover:border-white/30 hover:-translate-y-1 transition-all group">
-            <h2 class="text-2xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Players</h2>
-            <p class="text-gray-400 mt-2">Manage athletes and global profiles.</p>
+            class="glass p-6 rounded-2xl border border-white/5 hover:border-red-500/30 hover:-translate-y-1 transition-all group flex flex-col justify-between gap-4">
+            <div class="space-y-1.5">
+                <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 group-hover:text-white transition-colors">
+                    👥
+                </div>
+                <h2 class="text-xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Players</h2>
+                <p class="text-gray-400 text-xs">Manage athlete profiles, Elo scores, and global stats.</p>
+            </div>
+            <span class="text-[10px] uppercase tracking-widest text-red-500 font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Manage Players →</span>
         </a>
+
+        <!-- Tournaments Link -->
         <a href="/admin/tournaments"
-            class="glass p-8 rounded-2xl hover:border-white/30 hover:-translate-y-1 transition-all group">
-            <h2 class="text-2xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Tournaments
-            </h2>
-            <p class="text-gray-400 mt-2">Create and organize series events.</p>
+            class="glass p-6 rounded-2xl border border-white/5 hover:border-red-500/30 hover:-translate-y-1 transition-all group flex flex-col justify-between gap-4">
+            <div class="space-y-1.5">
+                <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 group-hover:text-white transition-colors">
+                    🏆
+                </div>
+                <h2 class="text-xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Tournaments</h2>
+                <p class="text-gray-400 text-xs">Configure tournament structures, round robins, and brackets.</p>
+            </div>
+            <span class="text-[10px] uppercase tracking-widest text-red-500 font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Configure Tourneys →</span>
         </a>
+
+        <!-- Grand Events Link -->
+        <a href="/admin/events"
+            class="glass p-6 rounded-2xl border border-white/5 hover:border-red-500/30 hover:-translate-y-1 transition-all group flex flex-col justify-between gap-4">
+            <div class="space-y-1.5">
+                <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 group-hover:text-white transition-colors">
+                    ✨
+                </div>
+                <h2 class="text-xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Grand Events</h2>
+                <p class="text-gray-400 text-xs">Initialize multi-bracket league events and auto-provisions.</p>
+            </div>
+            <span class="text-[10px] uppercase tracking-widest text-red-500 font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Manage Events →</span>
+        </a>
+
+        <!-- Divisions Link -->
         <a href="/admin/divisions"
-            class="glass p-8 rounded-2xl hover:border-white/30 hover:-translate-y-1 transition-all group">
-            <h2 class="text-2xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Divisions
-            </h2>
-            <p class="text-gray-400 mt-2">Manage ranked divisions and leagues.</p>
+            class="glass p-6 rounded-2xl border border-white/5 hover:border-red-500/30 hover:-translate-y-1 transition-all group flex flex-col justify-between gap-4">
+            <div class="space-y-1.5">
+                <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 group-hover:text-white transition-colors">
+                    📊
+                </div>
+                <h2 class="text-xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Divisions</h2>
+                <p class="text-gray-400 text-xs">Define Elo ranking boundaries and color-coded tiers.</p>
+            </div>
+            <span class="text-[10px] uppercase tracking-widest text-red-500 font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">View Divisions →</span>
         </a>
     </div>
 
+    <!-- Active Grand Events Segment -->
+    <div class="glass p-8 rounded-3xl border border-white/5 space-y-6">
+        <div class="flex justify-between items-center border-b border-white/5 pb-4">
+            <div>
+                <h2 class="text-2xl font-black uppercase tracking-tight text-white">Grand Events Overview</h2>
+                <p class="text-xs text-gray-500">Overview of recent and ongoing club grand events</p>
+            </div>
+            <a href="/admin/events" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-white font-extrabold text-[10px] uppercase tracking-widest transition-all">View All Events</a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[11px] font-bold tracking-tight">
+                <thead>
+                    <tr class="bg-white/5 text-gray-500 uppercase tracking-[0.2em] text-[9px] border-b border-white/10">
+                        <th class="p-4">Event Name</th>
+                        <th class="p-4">Division Tier</th>
+                        <th class="p-4 text-center">Auto-Elo</th>
+                        <th class="p-4 text-center">Active Tournaments</th>
+                        <th class="p-4">Duration</th>
+                        <th class="p-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {{range .Events}}
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="p-4 text-white uppercase text-xs font-black">{{.Name}}</td>
+                        <td class="p-4 text-gray-400">
+                            {{if .DivisionID}}
+                                <span class="bg-white/5 px-2.5 py-1 rounded-full text-[10px] border border-white/10 text-white">{{.DivisionID}}</span>
+                            {{else}}
+                                <span class="text-gray-600 italic">No restrictions</span>
+                            {{end}}
+                        </td>
+                        <td class="p-4 text-center">
+                            {{if .SkipElo}}
+                                <span class="text-red-500 text-[10px] font-extrabold uppercase bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded">Bypassed</span>
+                            {{else}}
+                                <span class="text-green-400 text-[10px] font-extrabold uppercase bg-green-400/10 border border-green-400/20 px-2 py-0.5 rounded">Enabled</span>
+                            {{end}}
+                        </td>
+                        <td class="p-4 text-center text-white tabular-nums">{{len .Tournaments}}</td>
+                        <td class="p-4 text-gray-400 font-medium font-mono">
+                            {{.StartDate.Format "Jan 02, 2006"}} - {{.EndDate.Format "Jan 02, 2006"}}
+                        </td>
+                        <td class="p-4 text-right">
+                            <a href="/admin/events/{{.ID}}" class="text-red-500 hover:text-red-400 font-extrabold uppercase tracking-widest text-[10px]">Open Details →</a>
+                        </td>
+                    </tr>
+                    {{else}}
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-gray-500 italic">No Grand Events scheduled. Initialize one under the Grand Events section!</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>

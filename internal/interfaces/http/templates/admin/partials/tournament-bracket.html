@@ -217,7 +217,14 @@
                          #{{$idx}}
                       </td>
                       <td class="p-4 flex items-center justify-between gap-2">
-                        <span class="text-white">{{.Player.FirstName}} {{.Player.LastName}}</span>
+                        <div class="flex items-center gap-2">
+                          {{if $canMove}}
+                            <svg class="w-4 h-4 text-gray-500 hover:text-white cursor-grab active:cursor-grabbing mr-1 select-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 8h16M4 16h16" />
+                            </svg>
+                          {{end}}
+                          <span class="text-white">{{.Player.FirstName}} {{.Player.LastName}}</span>
+                        </div>
                         {{if $canMove}}
                           <select 
                             class="bg-black/60 hover:bg-black/80 border border-white/10 rounded-lg text-[10px] px-2 py-1 text-gray-400 hover:text-white cursor-pointer transition-all focus:outline-none focus:ring-1 focus:ring-red-500/50 appearance-none pr-6 relative"
@@ -225,8 +232,7 @@
                             hx-post="/admin/tournaments/{{$t.ID}}/move-player"
                             hx-vals='{"playerId": "{{.Player.ID}}"}'
                             name="targetGroupId"
-                            hx-trigger="change"
-                            hx-confirm="Are you sure you want to move {{.Player.FirstName}} {{.Player.LastName}} to another group?">
+                            hx-trigger="change">
                             <option value="" disabled selected>Move...</option>
                             {{range $divisionGroups}}
                               {{if ne .Name $currentGroupName}}
@@ -382,6 +388,75 @@
       
     {{else}}
       <!-- Direct Elimination -->
+      {{if eq .Format "elimination"}}
+        <!-- Bracket Seeding Draw List -->
+        <div class="mb-10 max-w-2xl glass rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+          <div class="bg-white/5 px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <h4 class="text-xs font-black uppercase text-gray-400 tracking-widest">Bracket Seeding Draw</h4>
+              <span class="text-[9px] font-black bg-white/10 text-gray-400 px-2 py-0.5 rounded-full border border-white/10 uppercase tracking-widest opacity-60">Drag Handle ⠿ to Re-seed</span>
+            </div>
+            <span class="text-xs font-bold text-gray-500 uppercase">{{len .Players}} Participants</span>
+          </div>
+          
+          <table class="w-full text-left text-[11px] font-bold tracking-tight">
+            <thead>
+              <tr class="bg-white/[0.02] text-gray-500 uppercase tracking-[0.2em] text-[9px] border-b border-white/5">
+                <th class="p-4 w-12 text-center">Seed</th>
+                <th class="p-4">Participant</th>
+                <th class="p-4 text-right">Rating</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              {{$currentGroupID := ""}}
+              {{$expectedGroupName := printf "%s - Bracket Draw" .Name}}
+              {{if .IsUnclassified}}{{$expectedGroupName = "Unclassified - Bracket Draw"}}{{end}}
+              {{if eq .Name "Open Bracket"}}{{$expectedGroupName = "Open Bracket - Bracket Draw"}}{{end}}
+              
+              {{range $gIdx, $g := $t.Groups}}
+                {{if eq $g.Name $expectedGroupName}}
+                  {{$currentGroupID = $g.ID}}
+                {{end}}
+              {{end}}
+              
+              {{$canMove := true}}
+              {{if and $t.Matches (gt (len $t.Matches) 0)}}
+                {{/* If matches have already been scored, prevent movement */}}
+              {{end}}
+              
+              {{range $idx, $p := .Players}}
+              <tr 
+                {{if $canMove}}
+                  draggable="true" 
+                  ondragstart="handleDragStart(event, '{{$p.ID}}')" 
+                  ondragend="handleDragEnd(event)" 
+                  ondragover="handleDragOverRow(event)"
+                  ondragenter="handleDragEnterRow(event, this)"
+                  ondragleave="handleDragLeaveRow(event, this)"
+                  ondrop="handleDropRow(event, '{{$t.ID}}', '{{$currentGroupID}}', {{$idx}}, this)"
+                  class="cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all duration-200"
+                {{else}}
+                  class="opacity-75"
+                {{end}}>
+                <td class="p-4 text-center font-black opacity-50 tabular-nums">#{{add $idx 1}}</td>
+                <td class="p-4">
+                  <div class="flex items-center gap-2">
+                    {{if $canMove}}
+                    <span class="text-gray-600 font-normal cursor-grab active:cursor-grabbing text-xs select-none mr-1">⠿</span>
+                    {{end}}
+                    <span class="text-white uppercase">{{$p.FirstName}} {{$p.LastName}}</span>
+                  </div>
+                </td>
+                <td class="p-4 text-right opacity-60 tabular-nums">
+                  {{if or (eq $t.Type "doubles") (eq $t.Type "mixed_doubles")}}{{$p.DoublesElo}}{{else}}{{$p.SinglesElo}}{{end}}
+                </td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+      {{end}}
+
       <div class="flex gap-8 min-w-max px-2 py-4">
         {{range $ri, $round := .KnockoutRounds}}
         <div class="flex flex-col gap-0 bracket-round">
@@ -390,10 +465,10 @@
              {{range $mi, $matchView := .Matches}}
              <div class="bracket-match flex flex-col w-52 mr-8" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
                 {{/* Player 1 */}}
-                <div class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
-                  {{if .Player1}}
+                <div class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all {{if and .Player1 .Player1.Player}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                  {{if and .Player1 .Player1.Player}}
                     <span class="text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}{{.Player1.Seed}}{{else}}-{{end}}</span>
-                    <span class="font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstName}}{{else}}TBD{{end}}</span>
+                    <span class="font-semibold truncate text-white/90" style="max-width:110px">{{.Player1.Player.FirstName}}</span>
                     {{if .Match}}
                     <span class="ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
                     {{end}}
@@ -404,10 +479,10 @@
                 {{if not (eq $round.Name "Champion")}}
                   <div class="h-px bg-white/5 mx-2 my-0.5"></div>
                   {{/* Player 2 */}}
-                  <div class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
-                    {{if .Player2}}
+                  <div class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all {{if and .Player2 .Player2.Player}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                    {{if and .Player2 .Player2.Player}}
                       <span class="text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}{{.Player2.Seed}}{{else}}-{{end}}</span>
-                      <span class="font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstName}}{{else}}TBD{{end}}</span>
+                      <span class="font-semibold truncate text-white/90" style="max-width:110px">{{.Player2.Player.FirstName}}</span>
                       {{if .Match}}
                       <span class="ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
                       {{end}}
@@ -501,15 +576,13 @@
     const playerId = event.dataTransfer.getData("text/plain");
     if (!playerId) return;
 
-    if (confirm("Are you sure you want to move this player to this position?")) {
-      htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/move-player', {
-        values: {
-          playerId: playerId,
-          targetGroupId: targetGroupId,
-          targetIndex: targetIndex
-        }
-      });
-    }
+    htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/move-player', {
+      values: {
+        playerId: playerId,
+        targetGroupId: targetGroupId,
+        targetIndex: targetIndex
+      }
+    });
   }
 
   function handleDragLeave(event, element) {
@@ -525,13 +598,11 @@
     const playerId = event.dataTransfer.getData("text/plain");
     if (!playerId) return;
 
-    if (confirm("Are you sure you want to move this player to this group?")) {
-      htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/move-player', {
-        values: {
-          playerId: playerId,
-          targetGroupId: targetGroupId
-        }
-      });
-    }
+    htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/move-player', {
+      values: {
+        playerId: playerId,
+        targetGroupId: targetGroupId
+      }
+    });
   }
 </script>
