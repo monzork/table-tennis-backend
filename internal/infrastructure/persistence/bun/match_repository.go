@@ -54,6 +54,10 @@ func NewMatchRepository(db *bun.DB, playerRepo *PlayerRepository) *MatchReposito
 func (r *MatchRepository) DB() *bun.DB { return r.db }
 
 func (r *MatchRepository) Save(ctx context.Context, m *tournament.Match) error {
+	stage := m.Stage
+	if stage == "" {
+		stage = "group"
+	}
 	model := &MatchModel{
 		ID:             m.ID,
 		TournamentID:   m.TournamentID,
@@ -61,7 +65,7 @@ func (r *MatchRepository) Save(ctx context.Context, m *tournament.Match) error {
 		TeamAPlayer1ID: m.TeamA[0].ID,
 		TeamBPlayer1ID: m.TeamB[0].ID,
 		Status:         m.Status,
-		Stage:          "group",
+		Stage:          stage,
 		RoundNumber:    1,
 		TeamMatchID:    m.TeamMatchID,
 	}
@@ -182,10 +186,31 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, id uuid.UUID, sets []
 
 		subWinsA, subWinsB := 0, 0
 		for _, sm := range siblingMatches {
+			if sm.ID == m.ID {
+				// Always use in-memory state for current match (transaction may not reflect update yet)
+				if m.Status == "finished" && m.WinnerTeam != nil {
+					if *m.WinnerTeam == "A" {
+						subWinsA++
+					} else if *m.WinnerTeam == "B" {
+						subWinsB++
+					}
+				}
+				continue
+			}
 			if sm.Status == "finished" && sm.WinnerTeam != nil {
 				if *sm.WinnerTeam == "A" {
 					subWinsA++
 				} else if *sm.WinnerTeam == "B" {
+					subWinsB++
+				}
+			}
+		}
+		// If current match wasn't in sibling list at all, count it
+		if len(siblingMatches) == 0 || !containsMatch(siblingMatches, m.ID) {
+			if m.Status == "finished" && m.WinnerTeam != nil {
+				if *m.WinnerTeam == "A" {
+					subWinsA++
+				} else if *m.WinnerTeam == "B" {
 					subWinsB++
 				}
 			}
@@ -225,4 +250,13 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, id uuid.UUID, sets []
 	}
 
 	return tx.Commit()
+}
+
+func containsMatch(matches []MatchModel, id uuid.UUID) bool {
+	for _, m := range matches {
+		if m.ID == id {
+			return true
+		}
+	}
+	return false
 }

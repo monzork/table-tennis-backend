@@ -160,13 +160,53 @@ func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
 					}
 				}
 
-				// If matchID is empty, create parent team match on the fly
+				// If matchID is empty, look for an existing parent team match first
 				if matchID == "" && p1Id != "" && p2Id != "" {
 					p1UUID, _ := uuid.Parse(p1Id)
 					p2UUID, _ := uuid.Parse(p2Id)
-					m, err := h.createUC.Execute(c.Context(), tUUID, "teams", []uuid.UUID{p1UUID}, []uuid.UUID{p2UUID})
+
+					// Find existing parent match for these teams
+					var existing bun.MatchModel
+					err := h.matchRepo.DB().NewSelect().Model(&existing).
+						Where("tournament_id = ?", tUUID).
+						Where("match_type = 'teams'").
+						Where("team_match_id IS NULL").
+						Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
+							p1UUID, p2UUID, p2UUID, p1UUID).
+						Scan(c.Context())
 					if err == nil {
-						matchID = m.ID.String()
+						matchID = existing.ID.String()
+					}
+
+					// Also check by looking up first player of each team
+					if matchID == "" {
+						var teamAFirstPlayer, teamBFirstPlayer uuid.UUID
+						if teamA != nil && len(teamA.Players) > 0 {
+							teamAFirstPlayer = teamA.Players[0].ID
+						}
+						if teamB != nil && len(teamB.Players) > 0 {
+							teamBFirstPlayer = teamB.Players[0].ID
+						}
+						if teamAFirstPlayer != uuid.Nil && teamBFirstPlayer != uuid.Nil {
+							err = h.matchRepo.DB().NewSelect().Model(&existing).
+								Where("tournament_id = ?", tUUID).
+								Where("match_type = 'teams'").
+								Where("team_match_id IS NULL").
+								Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
+									teamAFirstPlayer, teamBFirstPlayer, teamBFirstPlayer, teamAFirstPlayer).
+								Scan(c.Context())
+							if err == nil {
+								matchID = existing.ID.String()
+							}
+						}
+					}
+
+					// Create new match only if no existing one found
+					if matchID == "" {
+						m, err := h.createUC.Execute(c.Context(), tUUID, "teams", []uuid.UUID{p1UUID}, []uuid.UUID{p2UUID}, stage)
+						if err == nil {
+							matchID = m.ID.String()
+						}
 					}
 				}
 
@@ -218,17 +258,30 @@ func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
 		var squadAP1, squadAP2, squadAP3 string
 		var squadBP1, squadBP2, squadBP3 string
 		for _, sm := range subMatches {
-			if sm.RoundNumber == 3 {
-				squadAP1 = sm.TeamAPlayer1ID.String()
-				squadBP1 = sm.TeamBPlayer1ID.String()
-			}
-			if sm.RoundNumber == 4 {
-				squadAP2 = sm.TeamAPlayer1ID.String()
-				squadBP2 = sm.TeamBPlayer1ID.String()
-			}
-			if sm.RoundNumber == 2 {
-				squadAP3 = sm.TeamAPlayer1ID.String()
-				squadBP3 = sm.TeamBPlayer1ID.String()
+			if teamFormat == "olympic" {
+				switch sm.RoundNumber {
+				case 3:
+					squadAP1 = sm.TeamAPlayer1ID.String()
+					squadBP1 = sm.TeamBPlayer1ID.String()
+				case 4:
+					squadAP2 = sm.TeamAPlayer1ID.String()
+					squadBP2 = sm.TeamBPlayer1ID.String()
+				case 2:
+					squadAP3 = sm.TeamAPlayer1ID.String()
+					squadBP3 = sm.TeamBPlayer1ID.String()
+				}
+			} else {
+				switch sm.RoundNumber {
+				case 1:
+					squadAP1 = sm.TeamAPlayer1ID.String()
+					squadBP1 = sm.TeamBPlayer1ID.String()
+				case 2:
+					squadAP2 = sm.TeamAPlayer1ID.String()
+					squadBP2 = sm.TeamBPlayer1ID.String()
+				case 3:
+					squadAP3 = sm.TeamAPlayer1ID.String()
+					squadBP3 = sm.TeamBPlayer1ID.String()
+				}
 			}
 		}
 
@@ -323,6 +376,7 @@ func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
 			"MatchID":      matchID,
 			"TournamentID": tID,
 			"Stage":        stage,
+			"BestOf":       bestOf,
 			"TeamA":        teamA,
 			"TeamB":        teamB,
 			"TeamFormat":   teamFormat,
@@ -474,7 +528,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 					teamBP1 = p1B
 				case 4:
 					teamAP1 = p2A
-					teamBP1 = p3B
+					teamBP1 = p2B
 				case 5:
 					teamAP1 = p3A
 					teamBP1 = p1B
@@ -537,27 +591,41 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		matchID = body.MatchID
 	}
 
-	// If still no matchID, create it on the fly if we have players
+	// If still no matchID, look for existing match first, then create on the fly
 	if matchID == "" && body.P1Id != "" && body.P2Id != "" {
 		tUUID, _ := uuid.Parse(body.TournamentID)
 		p1UUID, _ := uuid.Parse(body.P1Id)
 		p2UUID, _ := uuid.Parse(body.P2Id)
 
-		matchType := "singles"
-		if t, err := h.tournamentRepo.GetByID(c.Context(), tUUID); err == nil {
-			switch t.Type {
-			case "doubles", "mixed_doubles":
-				matchType = "doubles"
-			case "teams":
-				matchType = "teams"
-			}
+		// Try to find existing match for these players
+		var existing bun.MatchModel
+		err := h.matchRepo.DB().NewSelect().Model(&existing).
+			Where("tournament_id = ?", tUUID).
+			Where("team_match_id IS NULL").
+			Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
+				p1UUID, p2UUID, p2UUID, p1UUID).
+			Scan(c.Context())
+		if err == nil {
+			matchID = existing.ID.String()
 		}
 
-		m, err := h.createUC.Execute(c.Context(), tUUID, matchType, []uuid.UUID{p1UUID}, []uuid.UUID{p2UUID})
-		if err == nil {
-			matchID = m.ID.String()
-		} else {
-			return fiber.NewError(fiber.StatusInternalServerError, "Failed to create match: "+err.Error())
+		if matchID == "" {
+			matchType := "singles"
+			if t, err := h.tournamentRepo.GetByID(c.Context(), tUUID); err == nil {
+				switch t.Type {
+				case "doubles", "mixed_doubles":
+					matchType = "doubles"
+				case "teams":
+					matchType = "teams"
+				}
+			}
+
+			m, err := h.createUC.Execute(c.Context(), tUUID, matchType, []uuid.UUID{p1UUID}, []uuid.UUID{p2UUID}, body.Stage)
+			if err == nil {
+				matchID = m.ID.String()
+			} else {
+				return fiber.NewError(fiber.StatusInternalServerError, "Failed to create match: "+err.Error())
+			}
 		}
 	}
 	// Also accept form multi-values
@@ -613,6 +681,11 @@ func (h *MatchHandler) renderTeamMatchForm(c *fiber.Ctx, matchID, tournamentID, 
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 
+	bestOf := 5
+	if stageRule, err := bun.GetStageRule(c.Context(), h.matchRepo.DB(), tUUID, stage); err == nil {
+		bestOf = stageRule.BestOf
+	}
+
 	teamFormat := t.TeamFormat
 	if teamFormat == "" {
 		teamFormat = "olympic"
@@ -621,12 +694,24 @@ func (h *MatchHandler) renderTeamMatchForm(c *fiber.Ctx, matchID, tournamentID, 
 	// Find teams by looking up which team contains the parent match players
 	var teamA, teamB *tournament.Team
 	for _, team := range t.Teams {
-		for _, p := range team.Players {
-			if p.ID == parent.TeamAPlayer1ID {
-				teamA = team
+		if team.ID == parent.TeamAPlayer1ID {
+			teamA = team
+		} else {
+			for _, p := range team.Players {
+				if p.ID == parent.TeamAPlayer1ID {
+					teamA = team
+					break
+				}
 			}
-			if p.ID == parent.TeamBPlayer1ID {
-				teamB = team
+		}
+		if team.ID == parent.TeamBPlayer1ID {
+			teamB = team
+		} else {
+			for _, p := range team.Players {
+				if p.ID == parent.TeamBPlayer1ID {
+					teamB = team
+					break
+				}
 			}
 		}
 	}
@@ -646,17 +731,30 @@ func (h *MatchHandler) renderTeamMatchForm(c *fiber.Ctx, matchID, tournamentID, 
 	var squadAP1, squadAP2, squadAP3 string
 	var squadBP1, squadBP2, squadBP3 string
 	for _, sm := range subMatches {
-		if sm.RoundNumber == 3 {
-			squadAP1 = sm.TeamAPlayer1ID.String()
-			squadBP1 = sm.TeamBPlayer1ID.String()
-		}
-		if sm.RoundNumber == 4 {
-			squadAP2 = sm.TeamAPlayer1ID.String()
-			squadBP2 = sm.TeamBPlayer1ID.String()
-		}
-		if sm.RoundNumber == 2 {
-			squadAP3 = sm.TeamAPlayer1ID.String()
-			squadBP3 = sm.TeamBPlayer1ID.String()
+		if teamFormat == "olympic" {
+			switch sm.RoundNumber {
+			case 3:
+				squadAP1 = sm.TeamAPlayer1ID.String()
+				squadBP1 = sm.TeamBPlayer1ID.String()
+			case 4:
+				squadAP2 = sm.TeamAPlayer1ID.String()
+				squadBP2 = sm.TeamBPlayer1ID.String()
+			case 2:
+				squadAP3 = sm.TeamAPlayer1ID.String()
+				squadBP3 = sm.TeamBPlayer1ID.String()
+			}
+		} else {
+			switch sm.RoundNumber {
+			case 1:
+				squadAP1 = sm.TeamAPlayer1ID.String()
+				squadBP1 = sm.TeamBPlayer1ID.String()
+			case 2:
+				squadAP2 = sm.TeamAPlayer1ID.String()
+				squadBP2 = sm.TeamBPlayer1ID.String()
+			case 3:
+				squadAP3 = sm.TeamAPlayer1ID.String()
+				squadBP3 = sm.TeamBPlayer1ID.String()
+			}
 		}
 	}
 
@@ -751,6 +849,7 @@ func (h *MatchHandler) renderTeamMatchForm(c *fiber.Ctx, matchID, tournamentID, 
 		"MatchID":      matchID,
 		"TournamentID": tournamentID,
 		"Stage":        stage,
+		"BestOf":       bestOf,
 		"TeamA":        teamA,
 		"TeamB":        teamB,
 		"TeamFormat":   teamFormat,

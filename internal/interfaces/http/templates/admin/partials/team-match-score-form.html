@@ -14,21 +14,21 @@
             <div class="space-y-1.5">
                 <select name="squad_a_p1" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadAP1}}selected{{end}}>Select Player 1...</option>
-                    {{range .TeamA.Players}}
+                    {{if .TeamA}}{{range .TeamA.Players}}
                     <option value="{{.ID}}" {{if eq .ID.String $.SquadAP1}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
-                    {{end}}
+                    {{end}}{{end}}
                 </select>
                 <select name="squad_a_p2" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadAP2}}selected{{end}}>Select Player 2...</option>
-                    {{range .TeamA.Players}}
+                    {{if .TeamA}}{{range .TeamA.Players}}
                     <option value="{{.ID}}" {{if eq .ID.String $.SquadAP2}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
-                    {{end}}
+                    {{end}}{{end}}
                 </select>
                 <select name="squad_a_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadAP3}}selected{{end}}>Select Player 3...</option>
-                    {{range .TeamA.Players}}
+                    {{if .TeamA}}{{range .TeamA.Players}}
                     <option value="{{.ID}}" {{if eq .ID.String $.SquadAP3}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
-                    {{end}}
+                    {{end}}{{end}}
                 </select>
             </div>
         </div>
@@ -39,21 +39,21 @@
             <div class="space-y-1.5">
                 <select name="squad_b_p1" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadBP1}}selected{{end}}>Select Player 1 (X)...</option>
-                    {{range .TeamB.Players}}
+                    {{if .TeamB}}{{range .TeamB.Players}}
                     <option value="{{.ID}}" {{if eq .ID.String $.SquadBP1}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
-                    {{end}}
+                    {{end}}{{end}}
                 </select>
                 <select name="squad_b_p2" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadBP2}}selected{{end}}>Select Player 2 (Y)...</option>
-                    {{range .TeamB.Players}}
+                    {{if .TeamB}}{{range .TeamB.Players}}
                     <option value="{{.ID}}" {{if eq .ID.String $.SquadBP2}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
-                    {{end}}
+                    {{end}}{{end}}
                 </select>
                 <select name="squad_b_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadBP3}}selected{{end}}>Select Player 3 (Z)...</option>
-                    {{range .TeamB.Players}}
+                    {{if .TeamB}}{{range .TeamB.Players}}
                     <option value="{{.ID}}" {{if eq .ID.String $.SquadBP3}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
-                    {{end}}
+                    {{end}}{{end}}
                 </select>
             </div>
         </div>
@@ -99,7 +99,7 @@
         </div>
 
         <div class="ml-4">
-            <button hx-get="/admin/matches/score/form?tournamentId={{$.TournamentID}}&matchId={{.ID}}&stage={{$.Stage}}&bestOf=5&p1Id={{.TeamAPlayer1ID}}&p2Id={{.TeamBPlayer1ID}}"
+            <button hx-get="/admin/matches/score/form?tournamentId={{$.TournamentID}}&matchId={{.ID}}&stage={{$.Stage}}&bestOf={{$.BestOf}}&p1Id={{.TeamAPlayer1ID}}&p2Id={{.TeamBPlayer1ID}}"
                 hx-target="#score-modal-content"
                 class="bg-white hover:bg-gray-200 text-black font-extrabold text-[10px] uppercase tracking-widest px-3 py-2 rounded-xl transition-colors">
                 Score
