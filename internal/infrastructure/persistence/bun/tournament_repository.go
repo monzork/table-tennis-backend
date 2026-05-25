@@ -38,6 +38,8 @@ func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournamen
 		EndDate:   t.EndDate,
 		GroupPassCount: t.GroupPassCount,
 		RegistrationOpen: t.RegistrationOpen,
+		EventID:   t.EventID,
+		SkipElo:   t.SkipElo,
 	}
 	_, err = tx.NewInsert().Model(model).Exec(ctx)
 	if err != nil {
@@ -109,6 +111,8 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			EndDate:   m.EndDate,
 			GroupPassCount: m.GroupPassCount,
 			RegistrationOpen: m.RegistrationOpen,
+			EventID:   m.EventID,
+			SkipElo:   m.SkipElo,
 			Rules:     []tournament.Rule{},
 			Matches:   []tournament.Match{},
 		}
@@ -218,6 +222,8 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		EndDate:      model.EndDate,
 		GroupPassCount: model.GroupPassCount,
 		RegistrationOpen: model.RegistrationOpen,
+		EventID:      model.EventID,
+		SkipElo:      model.SkipElo,
 		Participants: participantPlayers,
 		Groups:       groups,
 		Rules:        []tournament.Rule{},
@@ -244,9 +250,11 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		EndDate:   t.EndDate,
 		GroupPassCount: t.GroupPassCount,
 		RegistrationOpen: t.RegistrationOpen,
+		EventID:   t.EventID,
+		SkipElo:   t.SkipElo,
 	}
 
-	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open").Exec(ctx)
+	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo").Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -319,4 +327,31 @@ func (r *TournamentRepository) Delete(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UUID) ([]*tournament.Tournament, error) {
+	var models []TournamentModel
+	if err := r.db.NewSelect().Model(&models).Where("event_id = ?", eventID).Scan(ctx); err != nil {
+		return nil, err
+	}
+	tournaments := make([]*tournament.Tournament, len(models))
+	for i, m := range models {
+		tournaments[i] = &tournament.Tournament{
+			ID:        m.ID,
+			Name:      m.Name,
+			Type:      m.Type,
+			Format:    m.Format,
+			Status:    m.Status,
+			EventCategory: m.EventCategory,
+			StartDate: m.StartDate,
+			EndDate:   m.EndDate,
+			GroupPassCount: m.GroupPassCount,
+			RegistrationOpen: m.RegistrationOpen,
+			EventID:   m.EventID,
+			SkipElo:   m.SkipElo,
+			Rules:     []tournament.Rule{},
+			Matches:   []tournament.Match{},
+		}
+	}
+	return tournaments, nil
 }

@@ -8,6 +8,8 @@ import (
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
 
+	"strings"
+
 	"github.com/google/uuid"
 )
 
@@ -101,6 +103,11 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 		return ei > ej
 	})
 
+	if t.SkipElo {
+		vm.Divisions = append(vm.Divisions, buildDivisionView(t, "Open Bracket", "", 0, nil, false, participants))
+		return vm
+	}
+
 	assignedMap := make(map[uuid.UUID]bool)
 
 	// Valid divisions for tournament type
@@ -128,7 +135,11 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 		}
 
 		if len(dPlayers) > 0 {
-			vm.Divisions = append(vm.Divisions, buildDivisionView(t, d.Name, d.Color, d.MinElo, d.MaxElo, false, dPlayers))
+			name := d.Name
+			if strings.HasSuffix(strings.ToLower(name), " division") {
+				name = name[:len(name)-9]
+			}
+			vm.Divisions = append(vm.Divisions, buildDivisionView(t, name, d.Color, d.MinElo, d.MaxElo, false, dPlayers))
 		}
 	}
 

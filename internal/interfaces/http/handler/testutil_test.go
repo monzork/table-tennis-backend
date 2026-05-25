@@ -11,12 +11,13 @@ import (
 	"github.com/uptrace/bun/dialect/sqlitedialect"
 	_ "modernc.org/sqlite"
 
-	adminDomain "table-tennis-backend/internal/domain/admin"
+	"table-tennis-backend/internal/application/division"
+	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/application/player"
 	"table-tennis-backend/internal/application/tournament"
-	"table-tennis-backend/internal/application/division"
+	adminDomain "table-tennis-backend/internal/domain/admin"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
 	"table-tennis-backend/internal/interfaces/http/handler"
 	"table-tennis-backend/internal/interfaces/http/middleware"
@@ -43,6 +44,7 @@ func SetupTestDB() (*bun.DB, error) {
 	models := []interface{}{
 		(*bunRepo.AdminModel)(nil),
 		(*bunRepo.DivisionModel)(nil),
+		(*bunRepo.EventModel)(nil),
 		(*bunRepo.MatchModel)(nil),
 		(*bunRepo.MatchSetModel)(nil),
 		(*bunRepo.PlayerModel)(nil),
@@ -99,6 +101,13 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
 	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo)
 	tournamentHandler := handler.NewTournamentHandler(createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC, leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC)
+
+	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)
+	createEventUC := event.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
+	getEventByIDUC := event.NewGetEventByIDUseCase(eventRepo)
+	getAllEventsUC := event.NewGetAllEventsUseCase(eventRepo)
+	deleteEventUC := event.NewDeleteEventUseCase(eventRepo)
+	eventHandler := handler.NewEventHandler(createEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC)
 	GetMatchesUC := match.NewGetMatchesUseCase(*db, *playerRepo)
 
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
@@ -119,7 +128,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	app := fiber.New(fiber.Config{Views: engine})
 
 	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
-	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC)
+	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 
 	app.Get("/rankings/singles", leaderboardHandler.GetSingles)
 	app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)
@@ -134,15 +143,20 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Get("/", adminHandler.Dashboard)
 	admin.Get("/players", adminHandler.Players)
 	admin.Get("/tournaments", adminHandler.Tournaments)
+	admin.Get("/events", adminHandler.Events)
+	admin.Get("/events/:id", eventHandler.Detail)
 	admin.Get("/divisions", adminHandler.Divisions)
 
 	api := app.Group("/")
 	api.Use(authMiddleware)
 	api.Post("/players", playerHandler.Register)
+	api.Get("/players/search/cards", playerHandler.SearchSelectionCards)
 	api.Put("/players/:id", playerHandler.Update)
 	api.Delete("/players/:id", playerHandler.Delete)
 	api.Post("/players/import", playerHandler.Import)
 	api.Post("/tournaments", tournamentHandler.Create)
+	api.Post("/events", eventHandler.Create)
+	api.Delete("/events/:id", eventHandler.Delete)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)
 	api.Put("/matches/:id/score", matchHandler.UpdateScore)

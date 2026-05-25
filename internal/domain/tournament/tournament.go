@@ -103,6 +103,8 @@ type Tournament struct {
 	Groups         []Group
 	GroupPassCount int
 	RegistrationOpen bool
+	EventID      *uuid.UUID
+	SkipElo      bool
 }
 
 func NewTournament(name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player) (*Tournament, error) {
@@ -143,6 +145,8 @@ func NewTournament(name string, tournamentType string, format string, category s
 		Groups:         []Group{},
 		GroupPassCount: groupPassCount,
 		RegistrationOpen: false,
+		EventID:      nil,
+		SkipElo:      false,
 	}
 	t.StageRules = DefaultStageRules(t.ID)
 

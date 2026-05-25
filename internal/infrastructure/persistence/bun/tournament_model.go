@@ -20,6 +20,8 @@ type TournamentModel struct {
 	EndDate        time.Time  `bun:"end_date,notnull"`
 	GroupPassCount   int        `bun:"group_pass_count,notnull,default:2"`
 	RegistrationOpen bool       `bun:"registration_open,notnull,default:false"`
+	EventID        *uuid.UUID `bun:"event_id,type:uuid"`
+	SkipElo        bool       `bun:"skip_elo,notnull,default:false"`
 	CreatedAt        time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
 }

@@ -1,0 +1,386 @@
+<div class="space-y-8 animate-fade-in text-white/90">
+    <header class="flex justify-between items-center">
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tight uppercase">Grand Events <span class="text-white">.</span></h1>
+            <p class="text-gray-400 mt-1">Manage Multi-Bracket Division Tournaments</p>
+        </div>
+        <button hx-on:click="document.getElementById('add-event-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Grand Event</button>
+    </header>
+
+    <div class="glass rounded-2xl overflow-hidden border border-white/10">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-black/40 border-b border-white/10">
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Name</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Division</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Categories</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Start Date</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">End Date</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="event-list" class="divide-y divide-white/10">
+                {{range .Events}}
+                {{template "admin/partials/event-row" .}}
+                {{else}}
+                 <tr id="empty-state"><td colspan="6" class="p-4 text-center text-gray-500">No Grand Events yet. Click Add to create one.</td></tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div id="add-event-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] transition-all duration-300">
+    <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-2xl w-full relative shadow-2xl overflow-y-auto max-h-[90vh]">
+        <button hx-on:click="document.getElementById('add-event-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        
+        <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">Grand Event</span>.</h2>
+        
+        <form hx-post="/events" hx-target="#event-list" hx-swap="beforeend" class="space-y-6">
+            <div class="grid grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
+                    <input type="text" name="name" placeholder="e.g., Spring Championship 2026" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                </div>
+                <div class="space-y-2" id="division-select-container">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Division (Elo restrictions)</label>
+                    <select name="divisionId" id="divisionIdSelect" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none" required>
+                        {{range .Divisions}}
+                        <option value="{{.ID}}">{{.Name}} ({{.MinElo}}{{if .MaxElo}} - {{.MaxElo}}{{else}}+{{end}} Elo)</option>
+                        {{end}}
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 bg-black/20 p-4 rounded-xl border border-white/5">
+                <input type="checkbox" id="skipElo" name="skipElo" onchange="toggleDivisionContainer(this.checked); document.getElementById('elo-filter-help').classList.toggle('hidden', !this.checked); document.getElementById('elo-filter-standard-help').classList.toggle('hidden', this.checked);" class="w-5 h-5 rounded border-white/10 bg-black/40 checked:bg-white text-black focus:ring-0 cursor-pointer">
+                <div>
+                    <label for="skipElo" class="text-sm font-bold uppercase tracking-wider text-white/90 cursor-pointer">Skip Elo Calculations</label>
+                    <p class="text-[10px] text-gray-500">If checked, no Elo updates will occur for any category, and player Elo boundaries will be bypassed.</p>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Auto-Provision Categories & Setup</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Men's Singles -->
+                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardSinglesMen">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white">♂ Singles</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Men</span>
+                            </div>
+                            <input type="checkbox" name="autoSinglesMen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <select name="formatSinglesMen" onchange="document.getElementById('passCountSinglesMenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                    <option value="groups_elimination" selected>Group + KO</option>
+                                    <option value="elimination">Elimination</option>
+                                    <option value="round_robin">Round Robin</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1" id="passCountSinglesMenContainer">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <input type="number" name="groupPassCountSinglesMen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <select name="participantIdsSinglesMen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                                {{range $.Players}}
+                                {{if eq .Gender "M"}}
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+                                {{end}}
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Women's Singles -->
+                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardSinglesWomen">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white">♀ Singles</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Women</span>
+                            </div>
+                            <input type="checkbox" name="autoSinglesWomen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <select name="formatSinglesWomen" onchange="document.getElementById('passCountSinglesWomenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                    <option value="groups_elimination" selected>Group + KO</option>
+                                    <option value="elimination">Elimination</option>
+                                    <option value="round_robin">Round Robin</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1" id="passCountSinglesWomenContainer">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <input type="number" name="groupPassCountSinglesWomen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <select name="participantIdsSinglesWomen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                                {{range $.Players}}
+                                {{if eq .Gender "F"}}
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+                                {{end}}
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Men's Doubles -->
+                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardDoublesMen">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white">♂ Doubles</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Men</span>
+                            </div>
+                            <input type="checkbox" name="autoDoublesMen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <select name="formatDoublesMen" onchange="document.getElementById('passCountDoublesMenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                    <option value="elimination" selected>Elimination</option>
+                                    <option value="groups_elimination">Group + KO</option>
+                                    <option value="round_robin">Round Robin</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1" id="passCountDoublesMenContainer" style="display: none;">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <input type="number" name="groupPassCountDoublesMen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <select name="participantIdsDoublesMen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                                {{range $.Players}}
+                                {{if eq .Gender "M"}}
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.DoublesElo}})</option>
+                                {{end}}
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Women's Doubles -->
+                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardDoublesWomen">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white">♀ Doubles</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Women</span>
+                            </div>
+                            <input type="checkbox" name="autoDoublesWomen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <select name="formatDoublesWomen" onchange="document.getElementById('passCountDoublesWomenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                    <option value="elimination" selected>Elimination</option>
+                                    <option value="groups_elimination">Group + KO</option>
+                                    <option value="round_robin">Round Robin</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1" id="passCountDoublesWomenContainer" style="display: none;">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <input type="number" name="groupPassCountDoublesWomen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <select name="participantIdsDoublesWomen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                                {{range $.Players}}
+                                {{if eq .Gender "F"}}
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.DoublesElo}})</option>
+                                {{end}}
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Mixed Doubles -->
+                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardDoublesMixed">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white">⚤ Doubles</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Mixed</span>
+                            </div>
+                            <input type="checkbox" name="autoDoublesMixed" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <select name="formatDoublesMixed" onchange="document.getElementById('passCountDoublesMixedContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                    <option value="elimination" selected>Elimination</option>
+                                    <option value="groups_elimination">Group + KO</option>
+                                    <option value="round_robin">Round Robin</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1" id="passCountDoublesMixedContainer" style="display: none;">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <input type="number" name="groupPassCountDoublesMixed" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <select name="participantIdsDoublesMixed[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                                {{range $.Players}}
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.DoublesElo}})</option>
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Teams -->
+                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardTeams">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white">👥 Teams</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Open</span>
+                            </div>
+                            <input type="checkbox" name="autoTeams" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <select name="formatTeams" onchange="document.getElementById('passCountTeamsContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                    <option value="round_robin" selected>Round Robin</option>
+                                    <option value="groups_elimination">Group + KO</option>
+                                    <option value="elimination">Elimination</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1" id="passCountTeamsContainer" style="display: none;">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <input type="number" name="groupPassCountTeams" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <select name="participantIdsTeams[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                                {{range $.Players}}
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Start Date</label>
+                    <input type="date" name="startDate" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all [color-scheme:dark]">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">End Date</label>
+                    <input type="date" name="endDate" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all [color-scheme:dark]">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-5 rounded-2xl transition-all uppercase tracking-widest shadow-lg transform hover:-translate-y-0.5 mt-6">Initialize Grand Event</button>
+        </form>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" class="fixed top-6 right-6 z-[250] space-y-3 pointer-events-none"></div>
+
+<script>
+    function toggleDivisionContainer(checked) {
+        const divContainer = document.getElementById('division-select-container');
+        const divSelect = document.getElementById('divisionIdSelect');
+        if (checked) {
+            divContainer.classList.add('hidden');
+            divSelect.removeAttribute('required');
+            divSelect.value = "";
+        } else {
+            divContainer.classList.remove('hidden');
+            divSelect.setAttribute('required', 'true');
+            if (divSelect.options.length > 0) {
+                divSelect.selectedIndex = 0;
+            }
+        }
+    }
+
+    document.body.addEventListener('eventCreated', function() {
+        // Close modal cleanly
+        document.getElementById('add-event-modal').classList.add('hidden');
+        
+        // Remove empty state if present
+        const emptyState = document.getElementById('empty-state');
+        if (emptyState) emptyState.remove();
+
+        // Reset the form
+        const form = document.querySelector('#add-event-modal form');
+        if (form) form.reset();
+
+        // Show a premium success toast
+        showToast("Grand Event initialized successfully!", "success");
+    });
+
+    // Also listen via htmx:afterRequest as a fallback
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.xhr && evt.detail.xhr.status === 200 && evt.detail.elt.closest('#add-event-modal')) {
+            document.getElementById('add-event-modal').classList.add('hidden');
+            
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) emptyState.remove();
+
+            const form = document.querySelector('#add-event-modal form');
+            if (form) form.reset();
+
+            showToast("Grand Event initialized successfully!", "success");
+        }
+    });
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border border-white/10 shadow-2xl transition-all duration-500 transform translate-x-full opacity-0 pointer-events-auto max-w-sm`;
+        
+        // Success icon
+        const icon = `<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+
+        toast.innerHTML = `
+            ${icon}
+            <span class="text-xs font-bold uppercase tracking-wider text-white/90">${message}</span>
+        `;
+
+        container.appendChild(toast);
+
+        // Slide and fade in
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+        });
+
+        // Slide out and remove after 4 seconds
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => {
+                toast.remove();
+            }, 500);
+        }, 4000);
+    }
+</script>

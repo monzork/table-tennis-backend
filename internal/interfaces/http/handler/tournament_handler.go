@@ -107,7 +107,15 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		}
 	}
 
-	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules)
+	skipElo := c.FormValue("skipElo") == "on"
+	var eventID *uuid.UUID
+	if eIDStr := c.FormValue("eventId"); eIDStr != "" {
+		if parsed, err := uuid.Parse(eIDStr); err == nil {
+			eventID = &parsed
+		}
+	}
+
+	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, skipElo, eventID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -210,9 +218,18 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		}
 	}
 
+	skipElo := c.FormValue("skipElo") == "on"
+	var eventID *uuid.UUID
+	if eIDStr := c.FormValue("eventId"); eIDStr != "" {
+		if parsed, err := uuid.Parse(eIDStr); err == nil {
+			eventID = &parsed
+		}
+	}
+
 	t, err := h.updateUC.Execute(
 		c.Context(), id, body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
 		body.RegistrationOpen, participantIDs, newPlayers, stageRules, body.GroupPassCount,
+		skipElo, eventID,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())

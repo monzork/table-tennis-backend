@@ -8,6 +8,7 @@ import (
 	"table-tennis-backend/internal/application/division"
 
 	"github.com/gofiber/fiber/v2"
+	eventUC "table-tennis-backend/internal/application/event"
 )
 
 type AdminHandler struct {
@@ -18,6 +19,7 @@ type AdminHandler struct {
 	leaderboard    *leaderboard.GetLeaderboardUseCase
 	getTournaments *tournament.GetTournamentsUseCase
 	divisionUC     *division.DivisionUseCase
+	eventGetAll    *eventUC.GetAllEventsUseCase
 }
 
 func NewAdminHandler(
@@ -28,6 +30,7 @@ func NewAdminHandler(
 	l *leaderboard.GetLeaderboardUseCase,
 	gt *tournament.GetTournamentsUseCase,
 	duc *division.DivisionUseCase,
+	ega *eventUC.GetAllEventsUseCase,
 ) *AdminHandler {
 	return &AdminHandler{
 		playerUC:       p,
@@ -37,6 +40,7 @@ func NewAdminHandler(
 		leaderboard:    l,
 		getTournaments: gt,
 		divisionUC:     duc,
+		eventGetAll:    ega,
 	}
 }
 
@@ -59,9 +63,22 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 	players, _ := h.leaderboard.ExecuteSingles(c.Context())
 	tourneys, _ := h.getTournaments.Execute(c.Context())
+	divisions, _ := h.divisionUC.GetAll(c.Context())
 	return c.Render("admin/tournaments", fiber.Map{
 		"Players":     players,
 		"Tournaments": tourneys,
+		"Divisions":   divisions,
+	}, "layouts/admin")
+}
+
+func (h *AdminHandler) Events(c *fiber.Ctx) error {
+	events, _ := h.eventGetAll.Execute(c.Context())
+	divisions, _ := h.divisionUC.GetAll(c.Context())
+	players, _ := h.leaderboard.ExecuteSingles(c.Context())
+	return c.Render("admin/events", fiber.Map{
+		"Events":    events,
+		"Divisions": divisions,
+		"Players":   players,
 	}, "layouts/admin")
 }
 func (h *AdminHandler) Divisions(c *fiber.Ctx) error {

@@ -36,6 +36,8 @@ func (uc *CreateTournamentUseCase) Execute(
 	newPlayers []NewPlayerData,
 	groupPassCount int,
 	stageRuleOverrides []StageRuleOverride,
+	skipElo bool,
+	eventID *uuid.UUID,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -93,6 +95,8 @@ func (uc *CreateTournamentUseCase) Execute(
 	if err != nil {
 		return nil, err
 	}
+	t.SkipElo = skipElo
+	t.EventID = eventID
 
 	// Apply any stage rule overrides submitted by the admin
 	for i := range t.StageRules {
@@ -126,6 +130,8 @@ func (uc *CreateTournamentUseCase) Execute(
 		pairName := pairSuffix + " " + name
 		pairT, err := tournamentDomain.NewTournament(pairName, tournamentType, format, pairCategory, start, end, []tournamentDomain.Rule{}, groupPassCount, pairParticipants)
 		if err == nil {
+			pairT.SkipElo = skipElo
+			pairT.EventID = eventID
 			uc.repo.Save(ctx, pairT)
 		}
 	}

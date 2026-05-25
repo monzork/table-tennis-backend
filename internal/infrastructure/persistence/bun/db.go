@@ -1,6 +1,7 @@
 package bun
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"os"
@@ -45,4 +46,7 @@ func Connect() {
 		(*TournamentParticipantModel)(nil),
 		(*GroupParticipantModel)(nil),
 	)
+
+	// Self-healing seed for No Division fallback to prevent FK violations on Skip-Elo Events
+	_, _ = DB.NewRaw("INSERT INTO divisions (id, name, display_order, min_elo, max_elo, category, color) VALUES ('none', 'No Division', 99, 0, 9999, 'both', '#7B8794') ON CONFLICT (id) DO NOTHING").Exec(context.Background())
 }

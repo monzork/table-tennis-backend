@@ -52,6 +52,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	registrationOpen bool,
 	participantIDs []string, newPlayers []NewPlayerData,
 	stageRuleOverrides []StageRuleOverride, groupPassCount int,
+	skipElo bool, eventID *uuid.UUID,
 ) (*tournamentDomain.Tournament, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -98,6 +99,8 @@ func (uc *UpdateTournamentUseCase) Execute(
 	}
 	t.ID = id
 	t.RegistrationOpen = registrationOpen
+	t.SkipElo = skipElo
+	t.EventID = eventID
 
 	// Apply any stage rule overrides submitted by the admin
 	for i := range t.StageRules {

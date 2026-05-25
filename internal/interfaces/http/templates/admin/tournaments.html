@@ -58,28 +58,28 @@
                 <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Category</label>
                 <div class="grid grid-cols-4 gap-2">
                     <label class="cursor-pointer group">
-                        <input type="radio" name="eventCategory" value="open" checked class="hidden peer">
+                        <input type="radio" name="eventCategory" value="open" checked onchange="filterPlayersByGender(this.value, 'player-selection-grid')" class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">⚐ Open</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">All genders</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
-                        <input type="radio" name="eventCategory" value="men" class="hidden peer">
+                        <input type="radio" name="eventCategory" value="men" onchange="filterPlayersByGender(this.value, 'player-selection-grid')" class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">♂ Men's</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">Male only</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
-                        <input type="radio" name="eventCategory" value="women" class="hidden peer">
+                        <input type="radio" name="eventCategory" value="women" onchange="filterPlayersByGender(this.value, 'player-selection-grid')" class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">♀ Women's</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">Female only</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
-                        <input type="radio" name="eventCategory" value="mixed" class="hidden peer">
+                        <input type="radio" name="eventCategory" value="mixed" onchange="filterPlayersByGender(this.value, 'player-selection-grid')" class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">⚤ Mixed</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">M+F doubles</span>
@@ -123,6 +123,14 @@
                 <div class="space-y-2">
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">End Date</label>
                     <input type="date" name="endDate" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all [color-scheme:dark]">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 bg-black/20 p-4 rounded-xl border border-white/5">
+                <input type="checkbox" id="skipElo" name="skipElo" class="w-5 h-5 rounded border-white/10 bg-black/40 checked:bg-white text-black focus:ring-0 cursor-pointer">
+                <div>
+                    <label for="skipElo" class="text-sm font-bold uppercase tracking-wider text-white/90 cursor-pointer">Skip Elo Calculations</label>
+                    <p class="text-[10px] text-gray-500">If checked, matches in this tournament will not update player rankings.</p>
                 </div>
             </div>
 
@@ -336,5 +344,49 @@
         </form>
     </div>
 </div>
+
+<script>
+    function filterPlayersByGender(categoryValue, selectionGridId) {
+        const cards = document.querySelectorAll('#' + selectionGridId + ' .player-card');
+        cards.forEach(card => {
+            const gender = card.getAttribute('data-gender');
+            if (categoryValue === 'men' && gender !== 'M') {
+                card.classList.add('hidden');
+                const input = card.querySelector('input[type="checkbox"]');
+                if (input) input.checked = false;
+            } else if (categoryValue === 'women' && gender !== 'F') {
+                card.classList.add('hidden');
+                const input = card.querySelector('input[type="checkbox"]');
+                if (input) input.checked = false;
+            } else {
+                card.classList.remove('hidden');
+            }
+        });
+    }
+
+    // Attach listeners on page load
+    (function() {
+        const radios = document.querySelectorAll('input[name="eventCategory"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                filterPlayersByGender(this.value, 'player-selection-grid');
+            });
+            // Initial filter run for the currently checked radio
+            if (radio.checked) {
+                filterPlayersByGender(radio.value, 'player-selection-grid');
+            }
+        });
+
+        // HTMX integration to maintain filters after dynamic swaps / searches
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.target.id === 'player-selection-grid') {
+                const activeRadio = document.querySelector('input[name="eventCategory"]:checked');
+                if (activeRadio) {
+                    filterPlayersByGender(activeRadio.value, 'player-selection-grid');
+                }
+            }
+        });
+    })();
+</script>
 
 

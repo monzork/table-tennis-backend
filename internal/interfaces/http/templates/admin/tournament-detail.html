@@ -116,6 +116,122 @@
     {{end}}
   </section>
 
+  {{/* ── Matches Log & Custom Scheduling ────────────────────────── */}}
+  <section class="space-y-4 pt-6 border-t border-white/10">
+    <div class="flex justify-between items-center">
+      <div>
+        <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Encounter Match List</h2>
+        <p class="text-[10px] text-gray-500 mt-1">Schedule and score custom individual match-ups (e.g. Swaythling / Davis Cup: A vs X, B vs Y)</p>
+      </div>
+      <button onclick="document.getElementById('custom-match-modal').classList.remove('hidden')" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-1.5 px-4 rounded-full transition-all uppercase tracking-wider text-[10px]">
+        + Schedule custom match
+      </button>
+    </div>
+
+    <div class="glass rounded-2xl overflow-hidden border border-white/10">
+      <table class="w-full text-left border-collapse text-xs font-medium">
+        <thead>
+          <tr class="bg-black/40 border-b border-white/10 text-gray-400 uppercase text-[9px] tracking-wider">
+            <th class="p-4">Match ID</th>
+            <th class="p-4">Type</th>
+            <th class="p-4">Player(s) A</th>
+            <th class="p-4">Player(s) B</th>
+            <th class="p-4">Status</th>
+            <th class="p-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="custom-matches-list" class="divide-y divide-white/10">
+          {{range .Tournament.Matches}}
+            {{template "admin/partials/match-row" .}}
+          {{else}}
+            <tr id="no-custom-matches"><td colspan="6" class="p-4 text-center text-gray-500 italic text-[10px] uppercase tracking-widest">No individual matches added yet.</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+{{/* ── Custom Match Scheduler Modal ── */}}
+<div id="custom-match-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[150]">
+  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-md w-full relative shadow-2xl">
+    <button onclick="document.getElementById('custom-match-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    
+    <h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Schedule <span class="text-white">Match-up</span>.</h2>
+    
+    <form hx-post="/matches/create" hx-target="#custom-matches-list" hx-swap="beforeend" class="space-y-4" hx-on::after-request="if(event.detail.successful) { document.getElementById('custom-match-modal').classList.add('hidden'); document.getElementById('no-custom-matches')?.remove(); }">
+      <input type="hidden" name="tournamentId" value="{{.Tournament.ID}}">
+      
+      <div class="space-y-2">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Match Type</label>
+        <select name="matchType" id="match-type-selector" onchange="toggleDoublesSelectors(this.value)" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer" required>
+          <option value="singles" selected>Singles</option>
+          <option value="doubles">Doubles</option>
+        </select>
+      </div>
+      
+      <div class="space-y-3">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest block">Side A Player(s)</label>
+        <div class="grid grid-cols-1 gap-2">
+          <select name="teamAPlayerIds[]" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all cursor-pointer" required>
+            <option value="" disabled selected>Select Player 1</option>
+            {{range .Tournament.Participants}}
+            <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+            {{end}}
+          </select>
+          <select name="teamAPlayerIds[]" id="teamA-player2" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all cursor-pointer hidden">
+            <option value="" selected>Select Player 2 (Optional/Doubles)</option>
+            {{range .Tournament.Participants}}
+            <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+            {{end}}
+          </select>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest block">Side B Player(s)</label>
+        <div class="grid grid-cols-1 gap-2">
+          <select name="teamBPlayerIds[]" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all cursor-pointer" required>
+            <option value="" disabled selected>Select Player 1</option>
+            {{range .Tournament.Participants}}
+            <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+            {{end}}
+          </select>
+          <select name="teamBPlayerIds[]" id="teamB-player2" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all cursor-pointer hidden">
+            <option value="" selected>Select Player 2 (Optional/Doubles)</option>
+            {{range .Tournament.Participants}}
+            <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+            {{end}}
+          </select>
+        </div>
+      </div>
+
+      <script>
+        function toggleDoublesSelectors(val) {
+          const p2A = document.getElementById('teamA-player2');
+          const p2B = document.getElementById('teamB-player2');
+          if (val === 'doubles') {
+            p2A.classList.remove('hidden');
+            p2A.setAttribute('required', 'true');
+            p2B.classList.remove('hidden');
+            p2B.setAttribute('required', 'true');
+          } else {
+            p2A.classList.add('hidden');
+            p2A.removeAttribute('required');
+            p2A.value = "";
+            p2B.classList.add('hidden');
+            p2B.removeAttribute('required');
+            p2B.value = "";
+          }
+        }
+      </script>
+      
+      <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-xl transition-all uppercase tracking-widest text-xs shadow-lg mt-4">Add Match to Encounter</button>
+    </form>
+  </div>
 </div>
 
 {{/* ── Score Entry Modal ── */}}
@@ -132,7 +248,7 @@
 
 {{/* ── Edit Modal ── */}}
 <div id="edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100]">
-  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-lg w-full relative shadow-2xl overflow-y-auto max-h-[90vh]" id="edit-modal-content">
+  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-2xl w-full relative shadow-2xl overflow-y-auto max-h-[90vh]" id="edit-modal-content">
     <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
@@ -148,5 +264,52 @@
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,51,51,0.5); }
 </style>
+
+<!-- Toast Container -->
+<div id="toast-container" class="fixed top-6 right-6 z-[250] space-y-3 pointer-events-none"></div>
+
+<script>
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border border-white/10 shadow-2xl transition-all duration-500 transform translate-x-full opacity-0 pointer-events-auto max-w-sm`;
+        
+        const icon = `<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+
+        toast.innerHTML = `
+            ${icon}
+            <span class="text-xs font-bold uppercase tracking-wider text-white/90">${message}</span>
+        `;
+
+        container.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+        });
+
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => {
+                toast.remove();
+            }, 500);
+        }, 4000);
+    }
+
+    // Check for pending success toasts on page load
+    (function() {
+        const pending = sessionStorage.getItem('pending_toast');
+        if (pending) {
+            showToast(pending, 'success');
+            sessionStorage.removeItem('pending_toast');
+        }
+    })();
+
+    // Clear pending toast if HTMX returns a response error
+    document.body.addEventListener('htmx:responseError', function() {
+        sessionStorage.removeItem('pending_toast');
+    });
+</script>
 
 

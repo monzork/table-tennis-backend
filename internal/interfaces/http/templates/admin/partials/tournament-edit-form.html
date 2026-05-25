@@ -1,5 +1,7 @@
 <h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Edit <span class="text-white">Event</span></h2>
-<form hx-put="/tournaments/{{.Tournament.ID}}" hx-target="#score-error" class="space-y-5">
+<form hx-put="/tournaments/{{.Tournament.ID}}" hx-target="#edit-modal-content" hx-on:htmx:before-request="sessionStorage.setItem('pending_toast', 'Tournament updated successfully!')" class="space-y-5">
+    {{if .Tournament.SkipElo}}<input type="hidden" name="skipElo" value="on">{{end}}
+    {{if .Tournament.EventID}}<input type="hidden" name="eventId" value="{{.Tournament.EventID}}">{{end}}
     <div class="space-y-2">
         <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
         <input type="text" name="name" value="{{.Tournament.Name}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
@@ -24,6 +26,19 @@
     </div>
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Category</label>
+            <select name="eventCategory" id="edit-category-select" onchange="renderDualLists()" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                <option value="open" {{if eq .Tournament.EventCategory "open"}}selected{{end}}>Open (All Genders)</option>
+                <option value="men" {{if eq .Tournament.EventCategory "men"}}selected{{end}}>Men's (Male Only)</option>
+                <option value="women" {{if eq .Tournament.EventCategory "women"}}selected{{end}}>Women's (Female Only)</option>
+                <option value="mixed" {{if eq .Tournament.EventCategory "mixed"}}selected{{end}}>Mixed (Doubles)</option>
+            </select>
+        </div>
+        <div class="space-y-2">
+        </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-2">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Start Date</label>
             <input type="date" name="startDate" value="{{.Tournament.StartDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
         </div>
@@ -39,19 +54,43 @@
     </div>
     
     <div class="space-y-2">
-        <div class="flex items-center justify-between">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Manage Participants</label>
-            <span class="text-[10px] text-gray-500 font-mono">Hold Ctrl/Cmd to select multiple</span>
-        </div>
-        <select id="edit-participants" name="participant_ids[]" multiple class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white custom-scrollbar h-48 focus:outline-none focus:ring-1 focus:ring-white">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Manage Participants</label>
+        
+        <!-- Hidden select for full backend compatibility -->
+        <select id="edit-participants" name="participant_ids[]" multiple class="hidden">
             {{$selectedPlayers := .Tournament.Participants}}
             {{range .Players}}
             {{$isTagged := false}}
             {{$pid := .ID}}
             {{range $selectedPlayers}}{{if eq .ID $pid}}{{$isTagged = true}}{{end}}{{end}}
-            <option value="{{.ID}}" {{if $isTagged}}selected{{end}}>{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+            <option value="{{.ID}}" data-gender="{{.Gender}}" data-name="{{.FirstName}} {{.LastName}}" data-elo="{{.SinglesElo}}" {{if $isTagged}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
             {{end}}
         </select>
+
+        <!-- Premium Dual Listbox View -->
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Available Column -->
+            <div class="bg-black/40 border border-white/5 rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
+                    <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider">Available Players</span>
+                    <input type="text" id="available-search" oninput="renderDualLists()" placeholder="Search..." class="bg-black/50 border border-white/10 rounded-lg py-1.5 px-3 text-[10px] text-white focus:outline-none focus:ring-1 focus:ring-white w-24 placeholder:text-gray-600">
+                </div>
+                <div id="available-list" class="overflow-y-auto space-y-1.5 custom-scrollbar pr-1 max-h-48">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+
+            <!-- Selected Column -->
+            <div class="bg-black/40 border border-white/5 rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
+                    <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider">Selected (<span id="selected-count" class="text-white font-bold">0</span>)</span>
+                    <button type="button" onclick="clearAllSelections()" class="text-[9px] font-black uppercase tracking-wider text-gray-500 hover:text-white transition-colors">Clear All</button>
+                </div>
+                <div id="selected-list" class="overflow-y-auto space-y-1.5 custom-scrollbar pr-1 max-h-48">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="space-y-2">
@@ -190,3 +229,129 @@
         <button type="submit" class="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest">Save Changes</button>
     </div>
 </form>
+
+<script>
+    // Store master copy of original options
+    let originalParticipantsOptions = [];
+
+    function initParticipantsOptions() {
+        const select = document.getElementById('edit-participants');
+        if (!select) return;
+        
+        originalParticipantsOptions = [];
+        const options = select.querySelectorAll('option');
+        options.forEach(opt => {
+            originalParticipantsOptions.push({
+                value: opt.value,
+                text: opt.getAttribute('data-name') || opt.text,
+                gender: opt.getAttribute('data-gender'),
+                elo: opt.getAttribute('data-elo') || '1000',
+                selected: opt.selected
+            });
+        });
+    }
+
+    function toggleSelection(value) {
+        const player = originalParticipantsOptions.find(p => p.value === value);
+        if (!player) return;
+
+        player.selected = !player.selected;
+
+        // Sync to hidden select
+        const hiddenSelect = document.getElementById('edit-participants');
+        if (hiddenSelect) {
+            const opt = hiddenSelect.querySelector(`option[value="${value}"]`);
+            if (opt) opt.selected = player.selected;
+        }
+
+        renderDualLists();
+    }
+
+    function clearAllSelections() {
+        const hiddenSelect = document.getElementById('edit-participants');
+        originalParticipantsOptions.forEach(player => {
+            player.selected = false;
+            if (hiddenSelect) {
+                const opt = hiddenSelect.querySelector(`option[value="${player.value}"]`);
+                if (opt) opt.selected = false;
+            }
+        });
+        renderDualLists();
+    }
+
+    function renderDualLists() {
+        const availableContainer = document.getElementById('available-list');
+        const selectedContainer = document.getElementById('selected-list');
+        const searchVal = (document.getElementById('available-search')?.value || '').toLowerCase();
+        const categoryVal = document.getElementById('edit-category-select')?.value || 'open';
+        const hiddenSelect = document.getElementById('edit-participants');
+
+        if (!availableContainer || !selectedContainer || !hiddenSelect) return;
+
+        availableContainer.innerHTML = '';
+        selectedContainer.innerHTML = '';
+
+        let selectedCount = 0;
+
+        originalParticipantsOptions.forEach(player => {
+            // Apply category filter (skip if doesn't match gender)
+            if (categoryVal === 'men' && player.gender !== 'M') {
+                // Force deselect if it was somehow selected but category changed to Men
+                if (player.selected) {
+                    player.selected = false;
+                    const opt = hiddenSelect.querySelector(`option[value="${player.value}"]`);
+                    if (opt) opt.selected = false;
+                }
+                return;
+            }
+            if (categoryVal === 'women' && player.gender !== 'F') {
+                if (player.selected) {
+                    player.selected = false;
+                    const opt = hiddenSelect.querySelector(`option[value="${player.value}"]`);
+                    if (opt) opt.selected = false;
+                }
+                return;
+            }
+
+            // Create card HTML element
+            const card = document.createElement('div');
+            card.className = `flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer select-none bg-white/[0.02] border-white/5 hover:bg-white/5 hover:border-white/10`;
+            card.onclick = () => toggleSelection(player.value);
+
+            // Gender icon and badge
+            const genderTag = player.gender === 'M' ? '♂ Men' : '♀ Women';
+
+            card.innerHTML = `
+                <div class="min-w-0 pr-2">
+                    <p class="text-[10px] font-extrabold text-white truncate uppercase tracking-tight">${player.text}</p>
+                    <p class="text-[8px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">${player.elo} ELO • ${genderTag}</p>
+                </div>
+                <div class="shrink-0 flex items-center justify-center w-6 h-6 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-xs font-black">
+                    ${player.selected ? '✕' : '+'}
+                </div>
+            `;
+
+            if (player.selected) {
+                selectedCount++;
+                selectedContainer.appendChild(card);
+            } else {
+                // Apply search filter on Available List only
+                if (searchVal === '' || player.text.toLowerCase().includes(searchVal)) {
+                    availableContainer.appendChild(card);
+                }
+            }
+        });
+
+        // Update selected count badge
+        const countSpan = document.getElementById('selected-count');
+        if (countSpan) {
+            countSpan.textContent = selectedCount;
+        }
+    }
+
+    // Trigger initial filter immediately on form load
+    (function() {
+        initParticipantsOptions();
+        renderDualLists();
+    })();
+</script>
