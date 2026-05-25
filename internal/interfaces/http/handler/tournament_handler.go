@@ -5,6 +5,7 @@ import (
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/tournament"
+	"table-tennis-backend/internal/domain/player"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
