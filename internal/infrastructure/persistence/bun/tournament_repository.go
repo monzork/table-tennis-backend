@@ -538,7 +538,12 @@ func (r *TournamentRepository) AddPlayerToTeam(ctx context.Context, teamID uuid.
 	for _, team := range t.Teams {
 		if team.ID == teamID {
 			currentTeam = team
-			break
+		}
+		// Check if player is already in ANY team in this tournament
+		for _, p := range team.Players {
+			if p.ID == playerID {
+				return fmt.Errorf("player is already registered in another team for this tournament")
+			}
 		}
 	}
 

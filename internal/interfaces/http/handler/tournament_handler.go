@@ -151,11 +151,26 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	// Build the view model for the bracket rendering
 	vm := BuildTournamentViewModel(t, divisions)
 
+	// Calculate available participants (those not in any team)
+	var availableParticipants []*player.Player
+	assignedMap := make(map[uuid.UUID]bool)
+	for _, team := range t.Teams {
+		for _, p := range team.Players {
+			assignedMap[p.ID] = true
+		}
+	}
+	for _, p := range t.Participants {
+		if !assignedMap[p.ID] {
+			availableParticipants = append(availableParticipants, p)
+		}
+	}
+
 	return c.Render("admin/tournament-detail", fiber.Map{
 		"Tournament":       t,
 		"Players":          players,
 		"Divisions":        divisions,
 		"BracketViewModel": vm,
+		"AvailableParticipants": availableParticipants,
 	}, "layouts/admin")
 }
 

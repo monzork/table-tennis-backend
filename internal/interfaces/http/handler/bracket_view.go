@@ -91,14 +91,18 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 	}
 
 	var participants []*player.Player
-	if t.Type == "teams" {
+	if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
 		participants = make([]*player.Player, len(t.Teams))
 		for i, team := range t.Teams {
 			avgElo := int16(1000)
 			if len(team.Players) > 0 {
 				sum := int32(0)
 				for _, p := range team.Players {
-					sum += int32(p.SinglesElo)
+					if t.Type == "doubles" || t.Type == "mixed_doubles" {
+						sum += int32(p.DoublesElo)
+					} else {
+						sum += int32(p.SinglesElo)
+					}
 				}
 				avgElo = int16(sum / int32(len(team.Players)))
 			}

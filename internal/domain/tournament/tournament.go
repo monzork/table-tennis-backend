@@ -191,18 +191,47 @@ func (t *Tournament) AutoAssignGroups() error {
 	if t.Format != "groups_elimination" && t.Format != "round_robin" {
 		return nil
 	}
-	// Number of participants
-	n := len(t.Participants)
+	// Determine units to group (players or teams)
+	var units []*player.Player
+	if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
+		units = make([]*player.Player, len(t.Teams))
+		for i, team := range t.Teams {
+			avgElo := int16(1000)
+			if len(team.Players) > 0 {
+				sum := int32(0)
+				for _, p := range team.Players {
+					if t.Type == "doubles" || t.Type == "mixed_doubles" {
+						sum += int32(p.DoublesElo)
+					} else {
+						sum += int32(p.SinglesElo)
+					}
+				}
+				avgElo = int16(sum / int32(len(team.Players)))
+			}
+			units[i] = &player.Player{
+				ID:         team.ID,
+				FirstName:  team.Name,
+				LastName:   " (Team)",
+				SinglesElo: avgElo,
+				DoublesElo: avgElo,
+			}
+		}
+	} else {
+		units = make([]*player.Player, len(t.Participants))
+		copy(units, t.Participants)
+	}
+
+	n := len(units)
 	if n == 0 {
 		return nil
 	}
 
-	// Sort participants by Elo (descending)
-	sort.Slice(t.Participants, func(i, j int) bool {
+	// Sort participants/teams by Elo (descending)
+	sort.Slice(units, func(i, j int) bool {
 		if t.Type == "doubles" || t.Type == "mixed_doubles" {
-			return t.Participants[i].DoublesElo > t.Participants[j].DoublesElo
+			return units[i].DoublesElo > units[j].DoublesElo
 		}
-		return t.Participants[i].SinglesElo > t.Participants[j].SinglesElo
+		return units[i].SinglesElo > units[j].SinglesElo
 	})
 
 	if t.Format == "round_robin" {
@@ -211,7 +240,7 @@ func (t *Tournament) AutoAssignGroups() error {
 				ID:           uuid.New(),
 				TournamentID: t.ID,
 				Name:         "All Against All",
-				Players:      t.Participants, // Everyone in one single group
+				Players:      units, // Everyone in one single group
 			},
 		}
 		return nil
@@ -235,7 +264,7 @@ func (t *Tournament) AutoAssignGroups() error {
 	}
 
 	// Snake seeding
-	for i, p := range t.Participants {
+	for i, p := range units {
 		groupIndex := i % numGroups
 		// In snake seeding:
 		// Row 0: 0, 1, 2, 3
@@ -270,16 +299,46 @@ func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
 
 	var divGroups []DivGroup
 
+	// Determine units to group (players or teams)
+	var units []*player.Player
+	if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
+		units = make([]*player.Player, len(t.Teams))
+		for i, team := range t.Teams {
+			avgElo := int16(1000)
+			if len(team.Players) > 0 {
+				sum := int32(0)
+				for _, p := range team.Players {
+					if t.Type == "doubles" || t.Type == "mixed_doubles" {
+						sum += int32(p.DoublesElo)
+					} else {
+						sum += int32(p.SinglesElo)
+					}
+				}
+				avgElo = int16(sum / int32(len(team.Players)))
+			}
+			units[i] = &player.Player{
+				ID:         team.ID,
+				FirstName:  team.Name,
+				LastName:   " (Team)",
+				SinglesElo: avgElo,
+				DoublesElo: avgElo,
+			}
+		}
+	} else {
+		units = make([]*player.Player, len(t.Participants))
+		copy(units, t.Participants)
+	}
+
 	if t.SkipElo || len(divs) == 0 {
 		divGroups = append(divGroups, DivGroup{
 			Name:    "Open Bracket",
-			Players: t.Participants,
+			Players: units,
 		})
 	} else {
 		assigned := make(map[uuid.UUID]bool)
 		for _, d := range divs {
 			var dPlayers []*player.Player
-			for _, p := range t.Participants {
+			for _, p := range units {
 				if assigned[p.ID] {
 					continue
 				}
@@ -301,7 +360,7 @@ func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
 		}
 
 		var unassigned []*player.Player
-		for _, p := range t.Participants {
+		for _, p := range units {
 			if !assigned[p.ID] {
 				unassigned = append(unassigned, p)
 			}
