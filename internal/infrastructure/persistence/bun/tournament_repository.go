@@ -385,16 +385,43 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 			}
 		}
 
+		teamAPlayer := &player.Player{ID: teamAID}
+		teamBPlayer := &player.Player{ID: teamBID}
+		if isTeamType {
+			if tm, ok := teamMap[teamAID]; ok {
+				teamAPlayer.FirstName = tm.Name
+			} else if pm, ok := playerCache[teamAID]; ok {
+				teamAPlayer.FirstName = pm.FirstName
+				teamAPlayer.LastName = pm.LastName
+			}
+			if tm, ok := teamMap[teamBID]; ok {
+				teamBPlayer.FirstName = tm.Name
+			} else if pm, ok := playerCache[teamBID]; ok {
+				teamBPlayer.FirstName = pm.FirstName
+				teamBPlayer.LastName = pm.LastName
+			}
+		} else {
+			if pm, ok := playerCache[teamAID]; ok {
+				teamAPlayer.FirstName = pm.FirstName
+				teamAPlayer.LastName = pm.LastName
+			}
+			if pm, ok := playerCache[teamBID]; ok {
+				teamBPlayer.FirstName = pm.FirstName
+				teamBPlayer.LastName = pm.LastName
+			}
+		}
+
 		m := tournament.Match{
 			ID:           mm.ID,
 			TournamentID: mm.TournamentID,
 			MatchType:    mm.MatchType,
 			Status:       mm.Status,
 			WinnerTeam:   wt,
-			TeamA:        []*player.Player{{ID: teamAID}},
-			TeamB:        []*player.Player{{ID: teamBID}},
+			TeamA:        []*player.Player{teamAPlayer},
+			TeamB:        []*player.Player{teamBPlayer},
 			Sets:         sets,
 			TeamMatchID:  mm.TeamMatchID,
+			Stage:        mm.Stage,
 		}
 		matches = append(matches, m)
 	}

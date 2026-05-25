@@ -33,12 +33,13 @@ func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (
 
 	// Self-healing: regenerate seeding groups when they are missing or stale.
 	needsGroupRegen := false
-	if t.Format == "elimination" && len(t.Groups) == 0 {
+	needsGroups := t.Format == "elimination" || t.Format == "groups_elimination" || t.Format == "round_robin"
+	if needsGroups && len(t.Groups) == 0 {
 		needsGroupRegen = true
 	}
 	// For doubles/teams tournaments, also regenerate if the group participant count
 	// doesn't match the number of teams (teams were added/removed after initial seeding).
-	if !needsGroupRegen && t.Format == "elimination" && (t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams") && len(t.Teams) > 0 {
+	if !needsGroupRegen && needsGroups && (t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams") && len(t.Teams) > 0 {
 		totalGroupParticipants := 0
 		for _, g := range t.Groups {
 			totalGroupParticipants += len(g.Players)

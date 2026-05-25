@@ -208,14 +208,15 @@
     </div>
 
     {{$count := len $participants}}
-    {{if gt $count 1}}
+    {{$teamCount := len .Tournament.Teams}}
+    {{if or (gt $count 1) (gt $teamCount 1)}}
     <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar">
       {{template "admin/partials/tournament-bracket" .BracketViewModel}}
     </div>
     {{else}}
     <div class="glass rounded-2xl border border-white/10 p-8 text-center text-gray-600">
       <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
-      <p class="text-sm">At least 2 participants needed to generate brackets.</p>
+      <p class="text-sm">At least 2 participants or teams needed to generate brackets.</p>
     </div>
     {{end}}
   </section>

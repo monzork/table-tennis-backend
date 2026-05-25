@@ -1,13 +1,18 @@
 <h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter">Enter <span class="text-white">Scores</span></h2>
 <p class="text-xs text-gray-500 mb-6 font-mono">{{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}</p>
 
-<form 
+<form
     {{if .MatchID}}
     hx-put="/matches/{{.MatchID}}/score"
     {{else}}
     hx-post="/admin/matches/score/update"
     {{end}}
-    hx-target="#score-error" 
+    {{if .IsSubMatch}}
+    hx-target="#score-modal-content"
+    hx-swap="innerHTML"
+    {{else}}
+    hx-target="#score-error"
+    {{end}}
     class="space-y-3 mb-6">
     
     <input type="hidden" name="tournamentId" value="{{.TournamentID}}">
