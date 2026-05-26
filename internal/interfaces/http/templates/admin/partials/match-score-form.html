@@ -1,5 +1,13 @@
 <h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter">Enter <span class="text-white">Scores</span></h2>
-<p class="text-xs text-gray-500 mb-6 font-mono">{{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}</p>
+<p class="text-xs text-gray-500 mb-6 font-mono">
+    {{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}
+    {{if .IsDoubles}}
+    <br/>
+    <span class="text-gray-400 font-sans mt-1.5 block leading-relaxed">
+        <span class="text-white/60">Players:</span> {{.PlayerANames}} <span class="text-white/30">vs</span> {{.PlayerBNames}}
+    </span>
+    {{end}}
+</p>
 
 <form
     {{if .MatchID}}
