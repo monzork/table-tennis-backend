@@ -390,20 +390,167 @@ func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
 		})
 	}
 
-	// We'll need player names for the form
-	playerAName := "Player 1"
-	playerBName := "Player 2"
-
-	if p1Id != "" {
-		p1UUID, _ := uuid.Parse(p1Id)
-		if p, err := h.playerRepo.GetById(c.Context(), p1UUID); err == nil {
-			playerAName = p.FirstName + " " + p.LastName
+	// Fetch tournament if tournamentId is provided
+	var tourney *tournament.Tournament
+	if tID != "" {
+		tUUID, _ := uuid.Parse(tID)
+		if t, err := h.tournamentRepo.GetByID(c.Context(), tUUID); err == nil {
+			tourney = t
 		}
 	}
-	if p2Id != "" {
-		p2UUID, _ := uuid.Parse(p2Id)
-		if p, err := h.playerRepo.GetById(c.Context(), p2UUID); err == nil {
-			playerBName = p.FirstName + " " + p.LastName
+
+	// Fetch existing match if matchID is provided
+	var existingMatch *bun.MatchModel
+	if matchID != "" {
+		mUUID, _ := uuid.Parse(matchID)
+		if em, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil {
+			existingMatch = em
+		}
+	}
+
+	// Determine match type / doubles status
+	isDoubles := false
+	if tourney != nil && (tourney.Type == "doubles" || tourney.Type == "mixed_doubles") {
+		isDoubles = true
+	} else if existingMatch != nil && existingMatch.MatchType == "doubles" {
+		isDoubles = true
+	}
+
+	playerAName := "Player 1"
+	playerBName := "Player 2"
+	var playerANames, playerBNames string
+
+	if isDoubles {
+		var p1A, p2A, p1B, p2B *player.Player
+
+		if existingMatch != nil {
+			p1UUID := existingMatch.TeamAPlayer1ID
+			p1B_UUID := existingMatch.TeamBPlayer1ID
+			var p2UUID, p2B_UUID *uuid.UUID
+			if existingMatch.TeamAPlayer2ID != nil {
+				p2UUID = existingMatch.TeamAPlayer2ID
+			}
+			if existingMatch.TeamBPlayer2ID != nil {
+				p2B_UUID = existingMatch.TeamBPlayer2ID
+			}
+
+			if p, err := h.playerRepo.GetById(c.Context(), p1UUID); err == nil {
+				p1A = p
+			}
+			if p2UUID != nil {
+				if p, err := h.playerRepo.GetById(c.Context(), *p2UUID); err == nil {
+					p2A = p
+				}
+			}
+			if p, err := h.playerRepo.GetById(c.Context(), p1B_UUID); err == nil {
+				p1B = p
+			}
+			if p2B_UUID != nil {
+				if p, err := h.playerRepo.GetById(c.Context(), *p2B_UUID); err == nil {
+					p2B = p
+				}
+			}
+		} else {
+			if tourney != nil {
+				for _, team := range tourney.Teams {
+					if team.ID.String() == p1Id {
+						if len(team.Players) > 0 {
+							p1A = team.Players[0]
+						}
+						if len(team.Players) > 1 {
+							p2A = team.Players[1]
+						}
+					}
+					if team.ID.String() == p2Id {
+						if len(team.Players) > 0 {
+							p1B = team.Players[0]
+						}
+						if len(team.Players) > 1 {
+							p2B = team.Players[1]
+						}
+					}
+				}
+			}
+		}
+
+		// Look up team names
+		var teamAName, teamBName string
+		if tourney != nil {
+			if p1A != nil {
+				for _, team := range tourney.Teams {
+					for _, tp := range team.Players {
+						if tp.ID == p1A.ID {
+							teamAName = team.Name
+							break
+						}
+					}
+					if teamAName != "" {
+						break
+					}
+				}
+			}
+			if p1B != nil {
+				for _, team := range tourney.Teams {
+					for _, tp := range team.Players {
+						if tp.ID == p1B.ID {
+							teamBName = team.Name
+							break
+						}
+					}
+					if teamBName != "" {
+						break
+					}
+				}
+			}
+		}
+
+		// Fallbacks & combining player names
+		if p1A != nil {
+			playerANames = p1A.FirstName + " " + p1A.LastName
+			if p2A != nil {
+				playerANames += " & " + p2A.FirstName + " " + p2A.LastName
+			}
+		}
+		if p1B != nil {
+			playerBNames = p1B.FirstName + " " + p1B.LastName
+			if p2B != nil {
+				playerBNames += " & " + p2B.FirstName + " " + p2B.LastName
+			}
+		}
+
+		if teamAName != "" {
+			playerAName = teamAName
+		} else if playerANames != "" {
+			playerAName = playerANames
+		}
+
+		if teamBName != "" {
+			playerBName = teamBName
+		} else if playerBNames != "" {
+			playerBName = playerBNames
+		}
+	} else {
+		// Singles flow
+		if p1Id != "" {
+			p1UUID, _ := uuid.Parse(p1Id)
+			if p, err := h.playerRepo.GetById(c.Context(), p1UUID); err == nil {
+				playerAName = p.FirstName + " " + p.LastName
+			}
+		} else if existingMatch != nil {
+			if p, err := h.playerRepo.GetById(c.Context(), existingMatch.TeamAPlayer1ID); err == nil {
+				playerAName = p.FirstName + " " + p.LastName
+			}
+		}
+
+		if p2Id != "" {
+			p2UUID, _ := uuid.Parse(p2Id)
+			if p, err := h.playerRepo.GetById(c.Context(), p2UUID); err == nil {
+				playerBName = p.FirstName + " " + p.LastName
+			}
+		} else if existingMatch != nil {
+			if p, err := h.playerRepo.GetById(c.Context(), existingMatch.TeamBPlayer1ID); err == nil {
+				playerBName = p.FirstName + " " + p.LastName
+			}
 		}
 	}
 
@@ -444,6 +591,9 @@ func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
 		"P1Id":         p1Id,
 		"P2Id":         p2Id,
 		"IsSubMatch":   isSubMatch,
+		"IsDoubles":    isDoubles,
+		"PlayerANames": playerANames,
+		"PlayerBNames": playerBNames,
 	})
 }
 
