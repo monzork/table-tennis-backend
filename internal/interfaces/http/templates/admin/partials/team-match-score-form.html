@@ -59,10 +59,63 @@
         </div>
     </div>
 
-    <button type="submit" class="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-extrabold py-2 rounded-xl transition-all uppercase tracking-widest text-[9px]">
-        Update & Align Squads
-    </button>
+    <div class="flex gap-2">
+        <button type="submit" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-extrabold py-2 rounded-xl transition-all uppercase tracking-widest text-[9px]">
+            Update &amp; Align Squads
+        </button>
+        <button type="button" onclick="swapTeamSquads()" class="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-extrabold py-2 px-3 rounded-xl transition-all text-[9px] uppercase tracking-widest" title="Swap Team A ⇄ Team B">
+            ⇄ Swap
+        </button>
+    </div>
 </form>
+
+<script>
+function swapTeamSquads() {
+    const selects = ['squad_a_p1', 'squad_a_p2', 'squad_a_p3', 'squad_b_p1', 'squad_b_p2', 'squad_b_p3'];
+    const form = document.querySelector('form[hx-put]');
+    if (!form) return;
+    
+    const aP1 = form.querySelector('[name="squad_a_p1"]');
+    const aP2 = form.querySelector('[name="squad_a_p2"]');
+    const aP3 = form.querySelector('[name="squad_a_p3"]');
+    const bP1 = form.querySelector('[name="squad_b_p1"]');
+    const bP2 = form.querySelector('[name="squad_b_p2"]');
+    const bP3 = form.querySelector('[name="squad_b_p3"]');
+    
+    if (!aP1 || !bP1) return;
+    
+    // Swap the options content between A and B selects
+    function swapSelectOptions(sel1, sel2) {
+        const tempOpts1 = Array.from(sel1.options).map(o => ({value: o.value, text: o.text}));
+        const tempOpts2 = Array.from(sel2.options).map(o => ({value: o.value, text: o.text}));
+        const val1 = sel1.value;
+        const val2 = sel2.value;
+        
+        // Replace options in sel1 with sel2's and vice versa
+        sel1.innerHTML = '';
+        sel2.innerHTML = '';
+        tempOpts2.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.value;
+            opt.text = o.text;
+            sel1.appendChild(opt);
+        });
+        tempOpts1.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.value;
+            opt.text = o.text;
+            sel2.appendChild(opt);
+        });
+        // Now set selected value (cross-swapped)
+        sel1.value = val2;
+        sel2.value = val1;
+    }
+    
+    swapSelectOptions(aP1, bP1);
+    swapSelectOptions(aP2, bP2);
+    swapSelectOptions(aP3, bP3);
+}
+</script>
 
 <!-- Sub-matches List -->
 <div class="space-y-3 mb-6">

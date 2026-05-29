@@ -21,6 +21,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
+	fiberws "github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 )
 
@@ -207,6 +208,16 @@ func main() {
 	admin.Delete("/tournaments/:id/teams/:teamId/players/:playerId", tournamentHandler.RemovePlayerFromTeam)
 	admin.Get("/tournaments/:id/export/pdf", tournamentHandler.ExportPDF)
 	admin.Post("/tournaments/:id/move-player", tournamentHandler.MovePlayer)
+
+	// WebSocket route for real-time bracket updates
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		if fiberws.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
+	app.Get("/ws/brackets/:tournamentId", fiberws.New(handler.WsBracketHandler))
 
 	log.Fatal(app.Listen(":8080"))
 }

@@ -423,6 +423,26 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 			TeamMatchID:  mm.TeamMatchID,
 			Stage:        mm.Stage,
 		}
+
+		// For parent team matches (MatchType=teams, no TeamMatchID), compute sub-match wins
+		// and store them as a single virtual set so ScoreA()/ScoreB() reflect team scores correctly.
+		if mm.MatchType == "teams" && mm.TeamMatchID == nil {
+			subWinsA, subWinsB := 0, 0
+			for _, other := range matchModels {
+				if other.TeamMatchID == nil || *other.TeamMatchID != mm.ID {
+					continue
+				}
+				if other.Status == "finished" && other.WinnerTeam != nil {
+					if *other.WinnerTeam == "A" {
+						subWinsA++
+					} else if *other.WinnerTeam == "B" {
+						subWinsB++
+					}
+				}
+			}
+			// Inject a virtual set that encodes sub-match wins so ScoreA/B work in templates
+			m.Sets = []tournament.MatchSet{{Number: 1, ScoreA: subWinsA, ScoreB: subWinsB}}
+		}
 		matches = append(matches, m)
 	}
 
