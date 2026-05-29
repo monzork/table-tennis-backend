@@ -56,6 +56,7 @@ func main() {
 	finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
 	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
 	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo)
+	exportAllTournamentsPdfUC := tournament.NewExportAllTournamentsPdfUseCase(tournamentRepo)
 	movePlayerUC := tournament.NewMovePlayerUseCase(tournamentRepo)
 	createTeamUC := tournament.NewCreateTeamUseCase(tournamentRepo)
 	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
@@ -72,6 +73,7 @@ func main() {
 		finishTournamentUC,
 		exportTournamentUC,
 		exportTournamentPdfUC,
+		exportAllTournamentsPdfUC,
 		movePlayerUC,
 		createTeamUC,
 		deleteTeamUC,
@@ -207,6 +209,7 @@ func main() {
 	admin.Post("/tournaments/:id/teams/:teamId/players", tournamentHandler.AssignPlayerToTeam)
 	admin.Delete("/tournaments/:id/teams/:teamId/players/:playerId", tournamentHandler.RemovePlayerFromTeam)
 	admin.Get("/tournaments/:id/export/pdf", tournamentHandler.ExportPDF)
+	admin.Get("/reports/all-tournaments/pdf", tournamentHandler.ExportAllPDF)
 	admin.Post("/tournaments/:id/move-player", tournamentHandler.MovePlayer)
 
 	// WebSocket route for real-time bracket updates
