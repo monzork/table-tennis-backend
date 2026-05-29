@@ -10,22 +10,24 @@
     <div class="grid grid-cols-2 gap-4">
         <!-- Team A Squad -->
         <div class="space-y-2">
-            <h4 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">{{if .TeamA}}{{.TeamA.Name}}{{else}}Team A{{end}} Squad</h4>
+            <h4 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">
+                <span id="team-a-name-label">{{if .TeamA}}{{.TeamA.Name}}{{else}}Team A{{end}}</span> Squad (A, B, C)
+            </h4>
             <div class="space-y-1.5">
                 <select name="squad_a_p1" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <option value="" disabled {{if not .SquadAP1}}selected{{end}}>Select Player 1...</option>
+                    <option value="" disabled {{if not .SquadAP1}}selected{{end}}>Select Player 1 (A)...</option>
                     {{if .TeamA}}{{range .TeamA.Players}}
                     <option value="{{.ID}}" {{if eq .ID.String $.SquadAP1}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
                     {{end}}{{end}}
                 </select>
                 <select name="squad_a_p2" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <option value="" disabled {{if not .SquadAP2}}selected{{end}}>Select Player 2...</option>
+                    <option value="" disabled {{if not .SquadAP2}}selected{{end}}>Select Player 2 (B)...</option>
                     {{if .TeamA}}{{range .TeamA.Players}}
                     <option value="{{.ID}}" {{if eq .ID.String $.SquadAP2}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
                     {{end}}{{end}}
                 </select>
                 <select name="squad_a_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <option value="" disabled {{if not .SquadAP3}}selected{{end}}>Select Player 3...</option>
+                    <option value="" disabled {{if not .SquadAP3}}selected{{end}}>Select Player 3 (C)...</option>
                     {{if .TeamA}}{{range .TeamA.Players}}
                     <option value="{{.ID}}" {{if eq .ID.String $.SquadAP3}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
                     {{end}}{{end}}
@@ -35,7 +37,9 @@
 
         <!-- Team B Squad -->
         <div class="space-y-2">
-            <h4 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">{{if .TeamB}}{{.TeamB.Name}}{{else}}Team B{{end}} Squad</h4>
+            <h4 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">
+                <span id="team-b-name-label">{{if .TeamB}}{{.TeamB.Name}}{{else}}Team B{{end}}</span> Squad (X, Y, Z)
+            </h4>
             <div class="space-y-1.5">
                 <select name="squad_b_p1" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadBP1}}selected{{end}}>Select Player 1 (X)...</option>
@@ -114,6 +118,15 @@ function swapTeamSquads() {
     swapSelectOptions(aP1, bP1);
     swapSelectOptions(aP2, bP2);
     swapSelectOptions(aP3, bP3);
+
+    // Also swap the visual Team headers
+    const labelA = document.getElementById('team-a-name-label');
+    const labelB = document.getElementById('team-b-name-label');
+    if (labelA && labelB) {
+        const temp = labelA.textContent;
+        labelA.textContent = labelB.textContent;
+        labelB.textContent = temp;
+    }
 }
 </script>
 
@@ -152,11 +165,15 @@ function swapTeamSquads() {
         </div>
 
         <div class="ml-4">
+            {{if or (not $.Finished) (eq .Status "finished")}}
             <button hx-get="/admin/matches/score/form?tournamentId={{$.TournamentID}}&matchId={{.ID}}&stage={{$.Stage}}&bestOf={{$.BestOf}}&p1Id={{.TeamAPlayer1ID}}&p2Id={{.TeamBPlayer1ID}}"
                 hx-target="#score-modal-content"
                 class="bg-white hover:bg-gray-200 text-black font-extrabold text-[10px] uppercase tracking-widest px-3 py-2 rounded-xl transition-colors">
                 Score
             </button>
+            {{else}}
+            <span class="text-[9px] font-bold uppercase tracking-wider text-gray-500 bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">Unplayed</span>
+            {{end}}
         </div>
     </div>
     {{end}}

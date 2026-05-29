@@ -3,7 +3,16 @@
     <td class="p-4">
         <div class="flex flex-col">
             <span class="font-bold uppercase text-white tracking-widest">{{.Name}}</span>
-            {{if .RegistrationOpen}}
+            {{if eq .Status "finished"}}
+            <div class="flex gap-1.5 items-center mt-1">
+                <span class="text-[8px] font-black uppercase tracking-tighter text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Finished</span>
+                {{if .WinnerName}}
+                <span class="text-[8px] font-black uppercase tracking-tighter text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-400/30 flex items-center gap-1">
+                    🏆 {{.WinnerName}}
+                </span>
+                {{end}}
+            </div>
+            {{else if .RegistrationOpen}}
             <span class="text-[8px] font-black uppercase tracking-tighter text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded w-fit mt-1 border border-green-500/20">Registration Open</span>
             {{else}}
             <span class="text-[8px] font-black uppercase tracking-tighter text-gray-500 bg-white/5 px-1.5 py-0.5 rounded w-fit mt-1 border border-white/5">Registration Closed</span>

@@ -26,8 +26,8 @@
           {{len .Tournament.Participants}} players
         </span>
         {{if eq .Tournament.Status "finished"}}
-        <span class="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-[11px] uppercase tracking-widest text-green-400 font-bold">
-          Finished
+        <span class="px-3 py-1 bg-amber-500/20 border border-amber-500/30 rounded-full text-[11px] uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5 shadow-lg shadow-amber-500/5">
+          🏆 Champion: {{.Tournament.WinnerName}}
         </span>
         {{end}}
       </div>

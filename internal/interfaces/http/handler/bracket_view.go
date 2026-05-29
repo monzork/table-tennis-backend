@@ -416,6 +416,190 @@ func ittfLess(si, sj PlayerStanding, allMatches []tournament.Match) bool {
 	}
 	return iPtRatio > jPtRatio
 }
+// resolveITTFTies recursively resolves ties among players who are currently equal.
+// It returns a sorted slice of *PlayerStanding.
+func resolveITTFTies(tied []*PlayerStanding, allMatches []tournament.Match, depth int) []*PlayerStanding {
+	if len(tied) <= 1 {
+		return tied
+	}
+
+	// 1. Isolate players
+	var players []*player.Player
+	for _, ts := range tied {
+		players = append(players, ts.Player)
+	}
+
+	// 2. Find matches played ONLY between these tied players
+	h2hMatches := matchesBetween(players, allMatches)
+
+	// Compute H2H subset statistics for each player in the tied slice
+	type h2hStats struct {
+		wins     int
+		setsWon  int
+		setsLost int
+		ptsWon   int
+		ptsLost  int
+	}
+	statsMap := make(map[interface{}]h2hStats)
+	for _, ts := range tied {
+		w, _, sw, sl, pw, pl := buildMatchStats(ts.Player, h2hMatches)
+		statsMap[ts.Player.ID] = h2hStats{
+			wins:     w,
+			setsWon:  sw,
+			setsLost: sl,
+			ptsWon:   pw,
+			ptsLost:  pl,
+		}
+	}
+
+	// Criterion 1: Match Wins in H2H subset
+	hasWinsDiff := false
+	firstWins := statsMap[tied[0].Player.ID].wins
+	for _, ts := range tied {
+		if statsMap[ts.Player.ID].wins != firstWins {
+			hasWinsDiff = true
+			break
+		}
+	}
+
+	if hasWinsDiff {
+		// Group players by H2H wins descending
+		groups := make(map[int][]*PlayerStanding)
+		var uniqueWins []int
+		for _, ts := range tied {
+			w := statsMap[ts.Player.ID].wins
+			if _, exists := groups[w]; !exists {
+				uniqueWins = append(uniqueWins, w)
+			}
+			groups[w] = append(groups[w], ts)
+		}
+		sort.Slice(uniqueWins, func(i, j int) bool {
+			return uniqueWins[i] > uniqueWins[j]
+		})
+
+		var result []*PlayerStanding
+		for _, w := range uniqueWins {
+			resolvedGroup := resolveITTFTies(groups[w], allMatches, depth+1)
+			result = append(result, resolvedGroup...)
+		}
+		return result
+	}
+
+	// Criterion 2: Set Ratio in H2H subset
+	getSetRatio := func(pID interface{}) float64 {
+		s := statsMap[pID]
+		if s.setsLost == 0 {
+			if s.setsWon > 0 {
+				return float64(s.setsWon) + 1000.0
+			}
+			return 0.0
+		}
+		return float64(s.setsWon) / float64(s.setsLost)
+	}
+
+	hasSetRatioDiff := false
+	firstSetRatio := getSetRatio(tied[0].Player.ID)
+	for _, ts := range tied {
+		if math.Abs(getSetRatio(ts.Player.ID)-firstSetRatio) > 1e-9 {
+			hasSetRatioDiff = true
+			break
+		}
+	}
+
+	if hasSetRatioDiff {
+		// Group players by Set Ratio descending
+		type ratioGroup struct {
+			ratio float64
+			items []*PlayerStanding
+		}
+		var rGroups []ratioGroup
+		for _, ts := range tied {
+			r := getSetRatio(ts.Player.ID)
+			found := false
+			for idx := range rGroups {
+				if math.Abs(rGroups[idx].ratio-r) < 1e-9 {
+					rGroups[idx].items = append(rGroups[idx].items, ts)
+					found = true
+					break
+				}
+			}
+			if !found {
+				rGroups = append(rGroups, ratioGroup{ratio: r, items: []*PlayerStanding{ts}})
+			}
+		}
+		sort.Slice(rGroups, func(i, j int) bool {
+			return rGroups[i].ratio > rGroups[j].ratio
+		})
+
+		var result []*PlayerStanding
+		for _, rg := range rGroups {
+			resolvedGroup := resolveITTFTies(rg.items, allMatches, depth+1)
+			result = append(result, resolvedGroup...)
+		}
+		return result
+	}
+
+	// Criterion 3: Point Ratio in H2H subset
+	getPtRatio := func(pID interface{}) float64 {
+		s := statsMap[pID]
+		if s.ptsLost == 0 {
+			if s.ptsWon > 0 {
+				return float64(s.ptsWon) + 1000.0
+			}
+			return 0.0
+		}
+		return float64(s.ptsWon) / float64(s.ptsLost)
+	}
+
+	hasPtRatioDiff := false
+	firstPtRatio := getPtRatio(tied[0].Player.ID)
+	for _, ts := range tied {
+		if math.Abs(getPtRatio(ts.Player.ID)-firstPtRatio) > 1e-9 {
+			hasPtRatioDiff = true
+			break
+		}
+	}
+
+	if hasPtRatioDiff {
+		// Group players by Point Ratio descending
+		type ratioGroup struct {
+			ratio float64
+			items []*PlayerStanding
+		}
+		var rGroups []ratioGroup
+		for _, ts := range tied {
+			r := getPtRatio(ts.Player.ID)
+			found := false
+			for idx := range rGroups {
+				if math.Abs(rGroups[idx].ratio-r) < 1e-9 {
+					rGroups[idx].items = append(rGroups[idx].items, ts)
+					found = true
+					break
+				}
+			}
+			if !found {
+				rGroups = append(rGroups, ratioGroup{ratio: r, items: []*PlayerStanding{ts}})
+			}
+		}
+		sort.Slice(rGroups, func(i, j int) bool {
+			return rGroups[i].ratio > rGroups[j].ratio
+		})
+
+		var result []*PlayerStanding
+		for _, rg := range rGroups {
+			resolvedGroup := resolveITTFTies(rg.items, allMatches, depth+1)
+			result = append(result, resolvedGroup...)
+		}
+		return result
+	}
+
+	// If completely tied across everything, resolve stably by original Elo
+	sort.SliceStable(tied, func(i, j int) bool {
+		return tied[i].Player.SinglesElo > tied[j].Player.SinglesElo
+	})
+
+	return tied
+}
 
 func buildStandings(players []*player.Player, matches []tournament.Match) []PlayerStanding {
 	stats := make([]PlayerStanding, len(players))
@@ -442,20 +626,30 @@ func buildStandings(players []*player.Player, matches []tournament.Match) []Play
 		}
 	}
 
-	// ITTF tiebreaker sort:
-	// 1. Primary: total wins descending
-	// 2. Among tied: head-to-head wins → set ratio → point ratio
-	sort.SliceStable(stats, func(i, j int) bool {
-		if stats[i].Wins != stats[j].Wins {
-			return stats[i].Wins > stats[j].Wins
+	// Group players by overall Wins count
+	groups := make(map[int][]*PlayerStanding)
+	var uniqueWins []int
+	for idx := range stats {
+		w := stats[idx].Wins
+		if _, exists := groups[w]; !exists {
+			uniqueWins = append(uniqueWins, w)
 		}
-		// Find all players tied at this win count to compute head-to-head subset
-		return ittfLess(stats[i], stats[j], matches)
+		groups[w] = append(groups[w], &stats[idx])
+	}
+	sort.Slice(uniqueWins, func(i, j int) bool {
+		return uniqueWins[i] > uniqueWins[j]
 	})
 
-	return stats
-}
+	var sortedStandings []PlayerStanding
+	for _, w := range uniqueWins {
+		resolvedGroup := resolveITTFTies(groups[w], matches, 0)
+		for _, ps := range resolvedGroup {
+			sortedStandings = append(sortedStandings, *ps)
+		}
+	}
 
+	return sortedStandings
+}
 func buildRRMatches(t *tournament.Tournament, players []*player.Player, stage string) []MatchView {
 	var results []MatchView
 	bestOf := getBestOfForStage(t, stage)
