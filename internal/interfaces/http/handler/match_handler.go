@@ -804,6 +804,13 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
+	// Broadcast real-time update to all bracket viewers for this tournament
+	GlobalBracketHub.Broadcast(body.TournamentID, map[string]string{
+		"event":        "score_updated",
+		"tournamentId": body.TournamentID,
+		"matchId":      matchID,
+	})
+
 	// If this was a sub-match, return to the team matchup form instead of refreshing
 	mUUID, _ := uuid.Parse(matchID)
 	if scored, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil && scored.TeamMatchID != nil {

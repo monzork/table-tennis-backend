@@ -205,6 +205,7 @@
   <section class="space-y-6">
     <div class="flex items-center justify-between">
       <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Tournament Draw</h2>
+      <span id="ws-status" class="text-[9px] font-bold uppercase tracking-widest text-yellow-400">⏳ Connecting…</span>
     </div>
 
     {{$count := len $participants}}
@@ -415,6 +416,59 @@
     document.body.addEventListener('htmx:responseError', function() {
         sessionStorage.removeItem('pending_toast');
     });
+
+    // ── Real-time Bracket WebSocket ──────────────────────────────────────────
+    (function() {
+        const tournamentId = '{{.Tournament.ID}}';
+        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+        const wsUrl = `${proto}://${location.host}/ws/brackets/${tournamentId}`;
+
+        let ws;
+        let reconnectDelay = 2000;
+        const MAX_DELAY = 30000;
+
+        function connect() {
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                reconnectDelay = 2000; // reset on success
+                showWsStatus('🟢 Live', 'text-green-400');
+            };
+
+            ws.onmessage = function(evt) {
+                try {
+                    const data = JSON.parse(evt.data);
+                    if (data.event === 'score_updated') {
+                        // Re-load just the bracket container via HTMX
+                        const bc = document.getElementById('bracket-container');
+                        if (bc) {
+                            htmx.ajax('GET', location.pathname, {target: '#bracket-container', swap: 'innerHTML'});
+                        }
+                        showToast('📡 Score updated in real-time', 'success');
+                    }
+                } catch(e) {}
+            };
+
+            ws.onclose = function() {
+                showWsStatus('🔴 Reconnecting…', 'text-red-400');
+                setTimeout(connect, reconnectDelay);
+                reconnectDelay = Math.min(reconnectDelay * 1.5, MAX_DELAY);
+            };
+
+            ws.onerror = function() {
+                ws.close();
+            };
+        }
+
+        function showWsStatus(text, colorClass) {
+            let el = document.getElementById('ws-status');
+            if (!el) return;
+            el.textContent = text;
+            el.className = `text-[9px] font-bold uppercase tracking-widest ${colorClass}`;
+        }
+
+        connect();
+    })();
 </script>
 
 

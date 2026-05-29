@@ -45,6 +45,10 @@ type PlayerStanding struct {
 	Losses        int
 	WinRate       float64
 	WinPercentage string
+	SetsWon       int
+	SetsLost      int
+	PointsWon     int
+	PointsLost    int
 }
 
 type GroupView struct {
@@ -275,25 +279,149 @@ func buildDivisionView(t *tournament.Tournament, name, color string, minElo int1
 	return dv
 }
 
+// buildMatchStats computes wins, sets won/lost, and points won/lost for a player
+// across only the provided matches (used for both full-group and head-to-head tiebreakers).
+func buildMatchStats(p *player.Player, matches []tournament.Match) (wins, losses, setsWon, setsLost, ptsWon, ptsLost int) {
+	for _, m := range matches {
+		if m.Status != "finished" {
+			continue
+		}
+		var isA, isB bool
+		if len(m.TeamA) > 0 {
+			isA = m.TeamA[0].ID == p.ID
+		}
+		if len(m.TeamB) > 0 {
+			isB = m.TeamB[0].ID == p.ID
+		}
+		if !isA && !isB {
+			continue
+		}
+		if (isA && m.WinnerTeam == "A") || (isB && m.WinnerTeam == "B") {
+			wins++
+		} else {
+			losses++
+		}
+		for _, s := range m.Sets {
+			if isA {
+				setsWon += s.ScoreA
+				setsLost += s.ScoreB
+				ptsWon += s.ScoreA
+				ptsLost += s.ScoreB
+			} else {
+				setsWon += s.ScoreB
+				setsLost += s.ScoreA
+				ptsWon += s.ScoreB
+				ptsLost += s.ScoreA
+			}
+		}
+	}
+	return
+}
+
+// matchesBetween returns matches that involve only players from the given set.
+func matchesBetween(players []*player.Player, matches []tournament.Match) []tournament.Match {
+	idSet := make(map[interface{}]bool)
+	for _, p := range players {
+		idSet[p.ID] = true
+	}
+	var result []tournament.Match
+	for _, m := range matches {
+		if m.Status != "finished" {
+			continue
+		}
+		if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
+			continue
+		}
+		if idSet[m.TeamA[0].ID] && idSet[m.TeamB[0].ID] {
+			result = append(result, m)
+		}
+	}
+	return result
+}
+
+// ittfLess returns true if standing i ranks ABOVE standing j using ITTF tiebreaker criteria.
+// Criteria applied in order among tied players (already filtered to head-to-head matches):
+// 1. More wins
+// 2. Better set ratio (won/lost)
+// 3. Better point ratio (won/lost)
+func ittfLess(si, sj PlayerStanding, allMatches []tournament.Match) bool {
+	// Step 1: Match wins
+	if si.Wins != sj.Wins {
+		return si.Wins > sj.Wins
+	}
+
+	// Steps 2-3 require head-to-head matches between these two players
+	h2hMatches := matchesBetween([]*player.Player{si.Player, sj.Player}, allMatches)
+
+	var iWins, jWins int
+	var iSetsWon, iSetsLost, jSetsWon, jSetsLost int
+	var iPtsWon, iPtsLost, jPtsWon, jPtsLost int
+
+	for _, m := range h2hMatches {
+		iIsA := len(m.TeamA) > 0 && m.TeamA[0].ID == si.Player.ID
+		if (iIsA && m.WinnerTeam == "A") || (!iIsA && m.WinnerTeam == "B") {
+			iWins++
+		} else {
+			jWins++
+		}
+		for _, s := range m.Sets {
+			if iIsA {
+				iSetsWon += s.ScoreA; iSetsLost += s.ScoreB
+				jSetsWon += s.ScoreB; jSetsLost += s.ScoreA
+				iPtsWon += s.ScoreA; iPtsLost += s.ScoreB
+				jPtsWon += s.ScoreB; jPtsLost += s.ScoreA
+			} else {
+				iSetsWon += s.ScoreB; iSetsLost += s.ScoreA
+				jSetsWon += s.ScoreA; jSetsLost += s.ScoreB
+				iPtsWon += s.ScoreB; iPtsLost += s.ScoreA
+				jPtsWon += s.ScoreA; jPtsLost += s.ScoreB
+			}
+		}
+	}
+
+	// Step 2: H2H wins
+	if iWins != jWins {
+		return iWins > jWins
+	}
+
+	// Step 3: Set ratio
+	iSetRatio := 0.0
+	jSetRatio := 0.0
+	if iSetsLost > 0 {
+		iSetRatio = float64(iSetsWon) / float64(iSetsLost)
+	} else if iSetsWon > 0 {
+		iSetRatio = float64(iSetsWon) + 1.0
+	}
+	if jSetsLost > 0 {
+		jSetRatio = float64(jSetsWon) / float64(jSetsLost)
+	} else if jSetsWon > 0 {
+		jSetRatio = float64(jSetsWon) + 1.0
+	}
+	if iSetRatio != jSetRatio {
+		return iSetRatio > jSetRatio
+	}
+
+	// Step 4: Point ratio
+	iPtRatio := 0.0
+	jPtRatio := 0.0
+	if iPtsLost > 0 {
+		iPtRatio = float64(iPtsWon) / float64(iPtsLost)
+	} else if iPtsWon > 0 {
+		iPtRatio = float64(iPtsWon) + 1.0
+	}
+	if jPtsLost > 0 {
+		jPtRatio = float64(jPtsWon) / float64(jPtsLost)
+	} else if jPtsWon > 0 {
+		jPtRatio = float64(jPtsWon) + 1.0
+	}
+	return iPtRatio > jPtRatio
+}
+
 func buildStandings(players []*player.Player, matches []tournament.Match) []PlayerStanding {
 	stats := make([]PlayerStanding, len(players))
 	for i, p := range players {
-		wins := 0
-		played := 0
-		for _, m := range matches {
-			if m.Status != "finished" {
-				continue
-			}
-			var isA, isB bool
-			if len(m.TeamA) > 0 { isA = m.TeamA[0].ID == p.ID }
-			if len(m.TeamB) > 0 { isB = m.TeamB[0].ID == p.ID }
-			if isA || isB {
-				played++
-				if (isA && m.WinnerTeam == "A") || (isB && m.WinnerTeam == "B") {
-					wins++
-				}
-			}
-		}
+		wins, losses, setsWon, setsLost, ptsWon, ptsLost := buildMatchStats(p, matches)
+		played := wins + losses
 		winRate := 0.0
 		winPercentage := "0"
 		if played > 0 {
@@ -304,20 +432,25 @@ func buildStandings(players []*player.Player, matches []tournament.Match) []Play
 			Player:        p,
 			Played:        played,
 			Wins:          wins,
-			Losses:        played - wins,
+			Losses:        losses,
 			WinRate:       winRate,
 			WinPercentage: winPercentage,
+			SetsWon:       setsWon,
+			SetsLost:      setsLost,
+			PointsWon:     ptsWon,
+			PointsLost:    ptsLost,
 		}
 	}
 
-	sort.Slice(stats, func(i, j int) bool {
+	// ITTF tiebreaker sort:
+	// 1. Primary: total wins descending
+	// 2. Among tied: head-to-head wins → set ratio → point ratio
+	sort.SliceStable(stats, func(i, j int) bool {
 		if stats[i].Wins != stats[j].Wins {
 			return stats[i].Wins > stats[j].Wins
 		}
-		if stats[i].WinRate != stats[j].WinRate {
-			return stats[i].WinRate > stats[j].WinRate
-		}
-		return stats[i].Losses < stats[j].Losses
+		// Find all players tied at this win count to compute head-to-head subset
+		return ittfLess(stats[i], stats[j], matches)
 	})
 
 	return stats

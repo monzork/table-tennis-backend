@@ -233,6 +233,15 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, id uuid.UUID, sets []
 			parentMatch.UpdatedAt = &pNow
 			_, _ = tx.NewUpdate().Model(parentMatch).WherePK().Column("status", "winner_team", "updated_at").Exec(ctx)
 
+			// When the team match is decided, reset remaining unplayed sub-matches to 'scheduled'
+			// so they don't appear as "in_progress" in the bracket
+			if parentMatch.Status == "finished" {
+				_, _ = tx.NewUpdate().TableExpr("matches").
+					Set("status = 'scheduled'").
+					Where("team_match_id = ? AND status = 'in_progress' AND id != ?", m.TeamMatchID, m.ID).
+					Exec(ctx)
+			}
+
 			// Advance winner of the team matchup
 			if parentMatch.Status == "finished" && parentMatch.NextMatchID != nil {
 				nextID, _ := uuid.Parse(*parentMatch.NextMatchID)
