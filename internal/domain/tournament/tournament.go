@@ -96,6 +96,7 @@ type Tournament struct {
 	EventCategory string // "men", "women", "mixed", "open"
 	Format       string // "elimination", "groups_elimination", "round_robin"
 	Status       string // "in_progress", "finished"
+	WinnerName   string // Name of the winner (player or team)
 	Participants []*player.Player
 	StartDate    time.Time
 	EndDate      time.Time

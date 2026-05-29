@@ -5,30 +5,131 @@
     <title>Club Admin Portal</title>
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Outfit', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
                     colors: {
-                        club: {
-                            red: '#ffffff',
-                            dark: '#0a0a0a',
-                            panel: '#111111',
-                            gold: '#e0e0e0'
-                        }
-
+                        club: { red: '#ffffff', dark: '#0a0a0a', panel: '#111111', gold: '#e0e0e0' }
                     }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #0a0a0a; color: #fff; }
-        .glass { background: rgba(18, 18, 18, 0.80); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.07); }
+        /* ── Base (Admin / Dark) Theme ───────────────────────────── */
+        body { background-color: #0a0a0a; color: #fff; transition: background .25s, color .25s; }
+        .glass { background: rgba(18,18,18,.80); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.07); }
+
+        /* ── Projector Theme ─────────────────────────────────────── */
+        body.proj { background-color: #ffffff !important; color: #000 !important; }
+        body.proj .glass {
+            background: #f5f5f5 !important;
+            backdrop-filter: none !important;
+            border: 2px solid #ccc !important;
+        }
+        /* Nav stays dark so the logo stays readable */
+        body.proj nav { background: #111 !important; border-bottom: 3px solid #333 !important; }
+        body.proj nav, body.proj nav * { color: #ffffff !important; }
+
+        /* Hide admin-only controls */
+        body.proj .proj-hide { display: none !important; }
+
+        /* ---- Typography ---- */
+        body.proj .text-white,
+        body.proj .text-white\/90 { color: #111 !important; }
+        body.proj .text-gray-400,
+        body.proj .text-gray-500,
+        body.proj .text-gray-600 { color: #555 !important; }
+        body.proj .opacity-40 { opacity: .65 !important; }
+        body.proj .opacity-60 { opacity: .75 !important; }
+
+        /* ---- Borders & Backgrounds ---- */
+        body.proj .border-white\/10,
+        body.proj .border-white\/5 { border-color: #ccc !important; }
+        body.proj .bg-black\/20,
+        body.proj .bg-black\/40 { background: #f5f5f5 !important; }
+        body.proj .bg-white\/5,
+        body.proj .bg-white\/\[0\.03\] { background: #fafafa !important; }
+        body.proj .divide-y > * { border-color: #ddd !important; }
+
+        /* ---- Match cards ---- */
+        body.proj .proj-match-card {
+            border: 3px solid #222 !important;
+            border-radius: 14px !important;
+            background: #fff !important;
+        }
+        /* Player slot rows inside match cards */
+        body.proj .proj-player-slot {
+            border: 2px solid #bbb !important;
+            border-radius: 10px !important;
+            background: #f8f8f8 !important;
+            padding: 10px 14px !important;
+        }
+        body.proj .proj-player-slot.proj-winner-slot {
+            background: #f0fdf4 !important;
+            border-color: #16a34a !important;
+        }
+        /* Name text */
+        body.proj .proj-player-name {
+            font-size: 1.25rem !important;
+            font-weight: 900 !important;
+            color: #000 !important;
+            letter-spacing: -.01em !important;
+        }
+        /* Score digit */
+        body.proj .proj-score {
+            font-size: 2.5rem !important;
+            font-weight: 900 !important;
+            line-height: 1 !important;
+            color: #000 !important;
+            min-width: 2ch !important;
+            text-align: right !important;
+        }
+        body.proj .proj-score.proj-winner-score { color: #15803d !important; }
+        /* Elo is noise on projector */
+        body.proj .proj-elo { display: none !important; }
+
+        /* ---- Standings table ---- */
+        body.proj .proj-table th {
+            font-size: .95rem !important;
+            background: #eee !important;
+            color: #333 !important;
+            padding: 14px 18px !important;
+        }
+        body.proj .proj-table td {
+            font-size: 1.2rem !important;
+            font-weight: 700 !important;
+            color: #000 !important;
+            padding: 12px 18px !important;
+        }
+        body.proj .proj-table tbody tr:nth-child(odd) { background: #fafafa !important; }
+
+        /* ---- Section / round labels ---- */
+        body.proj .proj-section-title {
+            font-size: 1.5rem !important;
+            font-weight: 900 !important;
+            color: #000 !important;
+        }
+        body.proj .proj-round-label {
+            font-size: 1rem !important;
+            font-weight: 900 !important;
+            color: #333 !important;
+        }
+
+        /* ---- Winner chip ---- */
+        body.proj .text-green-400 { color: #15803d !important; }
+        body.proj .bg-green-400\/10 { background: #dcfce7 !important; }
+        body.proj .border-green-400\/20 { border-color: #86efac !important; }
+
+        /* ---- Bracket box wider for big text ---- */
+        body.proj .bracket-match { width: 17rem !important; }
+
+        /* ---- Group cards ---- */
+        body.proj [class*="group-card"],
+        body.proj [class*="bg-black"] { background: #fff !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -38,22 +139,63 @@
                 <div class="w-12 h-8 bg-white rounded flex items-center justify-center font-bold text-black tracking-tighter text-xs">CLUB</div>
                 <span class="text-xl font-extrabold uppercase tracking-widest text-white/90">Admin</span>
             </div>
-            <div class="flex gap-6 font-semibold text-sm tracking-wider uppercase text-gray-400">
-                <a href="/admin" class="hover:text-white transition-colors">Dashboard</a>
-                <a href="/admin/players" class="hover:text-white transition-colors">Players</a>
-                <a href="/admin/events" class="hover:text-white transition-colors">Events</a>
-                <a href="/admin/tournaments" class="hover:text-white transition-colors">Tournaments</a>
-                <a href="/admin/divisions" class="hover:text-white transition-colors">Divisions</a>
-                <span class="w-px h-6 bg-white/20 mx-2"></span>
-                <a href="/rankings/singles" class="hover:text-white transition-colors text-gray-300" target="_blank">Public Rankings</a>
-                <form method="POST" action="/admin/logout" class="ml-2">
+            <div class="flex gap-6 font-semibold text-sm tracking-wider uppercase text-gray-400 items-center">
+                <a href="/admin" class="hover:text-white transition-colors proj-hide">Dashboard</a>
+                <a href="/admin/players" class="hover:text-white transition-colors proj-hide">Players</a>
+                <a href="/admin/events" class="hover:text-white transition-colors proj-hide">Events</a>
+                <a href="/admin/tournaments" class="hover:text-white transition-colors proj-hide">Tournaments</a>
+                <a href="/admin/divisions" class="hover:text-white transition-colors proj-hide">Divisions</a>
+                <span class="w-px h-6 bg-white/20 mx-2 proj-hide"></span>
+                <a href="/rankings/singles" class="hover:text-white transition-colors text-gray-300 proj-hide" target="_blank">Public Rankings</a>
+                <form method="POST" action="/admin/logout" class="ml-2 proj-hide">
                     <button type="submit" class="hover:text-white transition-colors uppercase tracking-wider font-semibold text-gray-400 text-sm">Logout</button>
                 </form>
+
+                <!-- ── Theme Switcher ── -->
+                <button id="theme-toggle"
+                    onclick="toggleTheme()"
+                    class="ml-4 flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 text-white/80 hover:text-white hover:border-white/60 text-[11px] font-bold uppercase tracking-widest transition-all select-none"
+                    title="Toggle Projector Mode">
+                    <!-- Projector icon (shown when in projector mode) -->
+                    <svg id="theme-icon-proj" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <!-- Moon icon (shown in dark/admin mode) -->
+                    <svg id="theme-icon-dark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                    <span id="theme-label">Projector</span>
+                </button>
             </div>
         </div>
     </nav>
+
     <main class="flex-grow container mx-auto px-6 py-10">
         {{embed}}
     </main>
+
+    <script>
+        // ── Theme Switcher ────────────────────────────────────────────────────
+        const THEME_KEY = 'club-theme';
+
+        function applyTheme(theme) {
+            const isProj = (theme === 'proj');
+            document.body.classList.toggle('proj', isProj);
+            document.getElementById('theme-label').textContent   = isProj ? '← Admin Mode' : 'Projector';
+            document.getElementById('theme-icon-proj').classList.toggle('hidden', !isProj);
+            document.getElementById('theme-icon-dark').classList.toggle('hidden',  isProj);
+        }
+
+        function toggleTheme() {
+            const next = document.body.classList.contains('proj') ? 'dark' : 'proj';
+            localStorage.setItem(THEME_KEY, next);
+            applyTheme(next);
+        }
+
+        // Restore saved preference immediately (before first paint)
+        applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+    </script>
 </body>
 </html>

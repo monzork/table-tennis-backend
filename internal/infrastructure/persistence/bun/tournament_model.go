@@ -23,6 +23,7 @@ type TournamentModel struct {
 	EventID        *uuid.UUID `bun:"event_id,type:uuid"`
 	SkipElo        bool       `bun:"skip_elo,notnull,default:false"`
 	TeamFormat     string     `bun:"team_format,nullzero"`
+	WinnerName     string     `bun:"winner_name,nullzero"`
 	CreatedAt        time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
 }

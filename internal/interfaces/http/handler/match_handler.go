@@ -915,6 +915,20 @@ func (h *MatchHandler) renderTeamMatchForm(c *fiber.Ctx, matchID, tournamentID, 
 		}
 	}
 
+	// Check if squads are swapped (Team B is playing as ABC, Team A as XYZ)
+	if squadAP1 != "" && squadAP1 != "00000000-0000-0000-0000-000000000000" && teamB != nil {
+		isSwapped := false
+		for _, p := range teamB.Players {
+			if p.ID.String() == squadAP1 {
+				isSwapped = true
+				break
+			}
+		}
+		if isSwapped {
+			teamA, teamB = teamB, teamA
+		}
+	}
+
 	if squadAP1 == "00000000-0000-0000-0000-000000000000" && teamA != nil && len(teamA.Players) > 0 {
 		squadAP1 = teamA.Players[0].ID.String()
 		if len(teamA.Players) > 1 { squadAP2 = teamA.Players[1].ID.String() }
@@ -1017,5 +1031,6 @@ func (h *MatchHandler) renderTeamMatchForm(c *fiber.Ctx, matchID, tournamentID, 
 		"SquadBP1":     squadBP1,
 		"SquadBP2":     squadBP2,
 		"SquadBP3":     squadBP3,
+		"Finished":     parent.Status == "finished",
 	})
 }

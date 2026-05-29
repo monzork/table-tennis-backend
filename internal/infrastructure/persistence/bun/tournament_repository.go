@@ -53,6 +53,7 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *tourna
 		EventID:   t.EventID,
 		SkipElo:   t.SkipElo,
 		TeamFormat: t.TeamFormat,
+		WinnerName: t.WinnerName,
 	}
 	if _, err := tx.NewInsert().Model(model).Exec(ctx); err != nil {
 		return err
@@ -156,6 +157,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			RegistrationOpen: m.RegistrationOpen,
 			EventID:   m.EventID,
 			SkipElo:   m.SkipElo,
+			WinnerName: m.WinnerName,
 			Rules:     []tournament.Rule{},
 			Matches:   []tournament.Match{},
 		}
@@ -459,6 +461,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		RegistrationOpen: model.RegistrationOpen,
 		EventID:      model.EventID,
 		SkipElo:      model.SkipElo,
+		WinnerName:   model.WinnerName,
 		Participants: participantPlayers,
 		Groups:       groups,
 		Rules:        []tournament.Rule{},
@@ -490,9 +493,10 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		EventID:   t.EventID,
 		SkipElo:   t.SkipElo,
 		TeamFormat: t.TeamFormat,
+		WinnerName: t.WinnerName,
 	}
 
-	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo", "team_format").Exec(ctx)
+	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo", "team_format", "winner_name").Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -726,6 +730,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 			RegistrationOpen: m.RegistrationOpen,
 			EventID:   m.EventID,
 			SkipElo:   m.SkipElo,
+			WinnerName: m.WinnerName,
 			Participants: participantPlayers,
 			Rules:     []tournament.Rule{},
 			Matches:   []tournament.Match{},
