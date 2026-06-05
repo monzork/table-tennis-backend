@@ -100,6 +100,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
 	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
 	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo)
+	exportAllTournamentsPdfUC := tournament.NewExportAllTournamentsPdfUseCase(tournamentRepo)
 	movePlayerUC := tournament.NewMovePlayerUseCase(tournamentRepo)
 	createTeamUC := tournament.NewCreateTeamUseCase(tournamentRepo)
 	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
@@ -108,6 +109,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	tournamentHandler := handler.NewTournamentHandler(
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,
 		leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC,
+		exportAllTournamentsPdfUC,
 		movePlayerUC, createTeamUC, deleteTeamUC, assignPlayerToTeamUC, removePlayerFromTeamUC,
 	)
 
@@ -119,7 +121,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	eventHandler := handler.NewEventHandler(createEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC)
 	GetMatchesUC := match.NewGetMatchesUseCase(*db, *playerRepo)
 
-	createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
+	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo)
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC)

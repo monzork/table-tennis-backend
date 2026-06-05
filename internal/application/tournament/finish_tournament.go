@@ -4,24 +4,24 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"time"
 
 	"github.com/google/uuid"
 	"table-tennis-backend/internal/domain/match"
 	"table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
 type FinishTournamentUseCase struct {
-	tournamentRepo *bun.TournamentRepository
-	matchRepo      *bun.MatchRepository
-	playerRepo     *bun.PlayerRepository
+	tournamentRepo tournamentDomain.Repository
+	matchRepo      tournamentDomain.MatchRepository
+	playerRepo     player.Repository
 }
 
 func NewFinishTournamentUseCase(
-	tournamentRepo *bun.TournamentRepository,
-	matchRepo *bun.MatchRepository,
-	playerRepo *bun.PlayerRepository,
+	tournamentRepo tournamentDomain.Repository,
+	matchRepo tournamentDomain.MatchRepository,
+	playerRepo player.Repository,
 ) *FinishTournamentUseCase {
 	return &FinishTournamentUseCase{
 		tournamentRepo: tournamentRepo,
@@ -40,24 +40,19 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID uui
 	}
 
 	// Check if all matches are finished
-	unfinishedCount, _ := uc.matchRepo.DB().NewSelect().
-		Model((*bun.MatchModel)(nil)).
-		Where("tournament_id = ?", tournamentID).
-		Where("status != ?", "finished").
-		Where("team_match_id IS NULL").
-		Count(ctx)
-
+	unfinishedCount, err := uc.matchRepo.CountUnfinishedMatches(ctx, tournamentID)
+	if err != nil {
+		return err
+	}
 	if unfinishedCount > 0 {
 		return errors.New("cannot finish tournament: there are still matches in progress or scheduled")
 	}
 
 	// Verify enough matches have been played for the format
-	finishedCount, _ := uc.matchRepo.DB().NewSelect().
-		Model((*bun.MatchModel)(nil)).
-		Where("tournament_id = ?", tournamentID).
-		Where("status = ?", "finished").
-		Where("team_match_id IS NULL").
-		Count(ctx)
+	finishedCount, err := uc.matchRepo.CountFinishedMatches(ctx, tournamentID)
+	if err != nil {
+		return err
+	}
 
 	participantCount := len(t.Participants)
 	if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
@@ -68,68 +63,42 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID uui
 		return errors.New("cannot finish tournament: not all rounds have been played")
 	}
 
-	// Fetch all matches for the tournament in chronological order
-	var matchModels []bun.MatchModel
-	err = uc.matchRepo.DB().NewSelect().
-		Model(&matchModels).
-		Where("tournament_id = ?", tournamentID).
-		Order("updated_at ASC").
-		Scan(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Apply Elo changes match by match in order if NOT skip_elo
+	// Apply Elo changes match by match in order of UpdatedAt if NOT skip_elo
 	if !t.SkipElo {
-		for _, m := range matchModels {
-			if m.WinnerTeam == nil || *m.WinnerTeam == "" {
+		// Sort the tournament matches in-memory by UpdatedAt
+		sort.SliceStable(t.Matches, func(i, j int) bool {
+			tI := time.Time{}
+			if t.Matches[i].UpdatedAt != nil {
+				tI = *t.Matches[i].UpdatedAt
+			}
+			tJ := time.Time{}
+			if t.Matches[j].UpdatedAt != nil {
+				tJ = *t.Matches[j].UpdatedAt
+			}
+			return tI.Before(tJ)
+		})
+
+		for _, m := range t.Matches {
+			if m.WinnerTeam == "" {
 				continue
 			}
 
-			var teamA, teamB []*player.Player
-			
-			p1a, err1 := uc.playerRepo.GetById(ctx, m.TeamAPlayer1ID)
-			if err1 == nil && p1a != nil {
-				teamA = append(teamA, p1a)
-			}
-			if m.TeamAPlayer2ID != nil {
-				p2a, err2 := uc.playerRepo.GetById(ctx, *m.TeamAPlayer2ID)
-				if err2 == nil && p2a != nil {
-					teamA = append(teamA, p2a)
-				}
-			}
-
-			p1b, err3 := uc.playerRepo.GetById(ctx, m.TeamBPlayer1ID)
-			if err3 == nil && p1b != nil {
-				teamB = append(teamB, p1b)
-			}
-			if m.TeamBPlayer2ID != nil {
-				p2b, err4 := uc.playerRepo.GetById(ctx, *m.TeamBPlayer2ID)
-				if err4 == nil && p2b != nil {
-					teamB = append(teamB, p2b)
-				}
-			}
-
-			if len(teamA) > 0 && len(teamB) > 0 {
-				match.CalculateAndApplyElo(m.MatchType, teamA, teamB, *m.WinnerTeam)
-				for _, p := range teamA {
+			if len(m.TeamA) > 0 && len(m.TeamB) > 0 {
+				match.CalculateAndApplyElo(m.MatchType, m.TeamA, m.TeamB, m.WinnerTeam)
+				for _, p := range m.TeamA {
 					_ = uc.playerRepo.Save(ctx, p)
 				}
-				for _, p := range teamB {
+				for _, p := range m.TeamB {
 					_ = uc.playerRepo.Save(ctx, p)
 				}
 			}
 		}
 	}
 
-	// Finalize EloAfter snapshots
+	// Finalize EloAfter snapshots using domain repository method
 	for _, p := range t.Participants {
 		if updatedPlayer, err := uc.playerRepo.GetById(ctx, p.ID); err == nil {
-			_, _ = uc.matchRepo.DB().NewUpdate().
-				TableExpr("tournament_participants").
-				Set("elo_after_singles = ?, elo_after_doubles = ?", updatedPlayer.SinglesElo, updatedPlayer.DoublesElo).
-				Where("tournament_id = ? AND player_id = ?", tournamentID, p.ID).
-				Exec(ctx)
+			_ = uc.tournamentRepo.UpdateParticipantElo(ctx, tournamentID, p.ID, updatedPlayer.SinglesElo, updatedPlayer.DoublesElo)
 		}
 	}
 
@@ -160,18 +129,7 @@ func (uc *FinishTournamentUseCase) determineWinner(t *tournamentDomain.Tournamen
 			}
 		}
 	} else if t.Format == "round_robin" {
-		// Calculate round robin standings
-		type standing struct {
-			id         uuid.UUID
-			name       string
-			wins       int
-			played     int
-			setsWon    int
-			setsLost   int
-			pointsWon  int
-			pointsLost int
-		}
-
+		// Calculate round robin standings with ITTF-compliant domain logic
 		var participants []*player.Player
 		if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
 			participants = make([]*player.Player, len(t.Teams))
@@ -190,127 +148,14 @@ func (uc *FinishTournamentUseCase) determineWinner(t *tournamentDomain.Tournamen
 			return ""
 		}
 
-		standings := make([]standing, len(participants))
-		standingsMap := make(map[uuid.UUID]int)
-		for i, p := range participants {
-			standings[i] = standing{
-				id:   p.ID,
-				name: getPlayerName(p, t.Type),
-			}
-			standingsMap[p.ID] = i
+		standings := tournamentDomain.BuildStandings(participants, t.Matches)
+		if len(standings) == 0 {
+			return ""
 		}
-
-		for _, m := range t.Matches {
-			if m.Status != "finished" || m.TeamMatchID != nil {
-				continue
-			}
-			if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
-				continue
-			}
-			idA := m.TeamA[0].ID
-			idB := m.TeamB[0].ID
-
-			idxA, okA := standingsMap[idA]
-			idxB, okB := standingsMap[idB]
-			if !okA || !okB {
-				continue
-			}
-
-			standings[idxA].played++
-			standings[idxB].played++
-
-			scoreA := m.ScoreA()
-			scoreB := m.ScoreB()
-
-			standings[idxA].setsWon += scoreA
-			standings[idxA].setsLost += scoreB
-			standings[idxB].setsWon += scoreB
-			standings[idxB].setsLost += scoreA
-
-			for _, s := range m.Sets {
-				standings[idxA].pointsWon += s.ScoreA
-				standings[idxA].pointsLost += s.ScoreB
-				standings[idxB].pointsWon += s.ScoreB
-				standings[idxB].pointsLost += s.ScoreA
-			}
-
-			if m.WinnerTeam == "A" {
-				standings[idxA].wins++
-			} else if m.WinnerTeam == "B" {
-				standings[idxB].wins++
-			}
-		}
-
-		sort.Slice(standings, func(i, j int) bool {
-			si, sj := standings[i], standings[j]
-			if si.wins != sj.wins {
-				return si.wins > sj.wins
-			}
-
-			// Tiebreaker: Head-to-head
-			for _, m := range t.Matches {
-				if m.Status != "finished" || m.TeamMatchID != nil {
-					continue
-				}
-				if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
-					continue
-				}
-				idA := m.TeamA[0].ID
-				idB := m.TeamB[0].ID
-				if (idA == si.id && idB == sj.id) || (idA == sj.id && idB == si.id) {
-					if m.WinnerTeam == "A" {
-						if idA == si.id {
-							return true
-						}
-						return false
-					} else if m.WinnerTeam == "B" {
-						if idB == si.id {
-							return true
-						}
-						return false
-					}
-				}
-			}
-
-			// Set ratio
-			ratioI := float64(si.setsWon)
-			if si.setsLost > 0 {
-				ratioI = float64(si.setsWon) / float64(si.setsLost)
-			}
-			ratioJ := float64(sj.setsWon)
-			if sj.setsLost > 0 {
-				ratioJ = float64(sj.setsWon) / float64(sj.setsLost)
-			}
-			if ratioI != ratioJ {
-				return ratioI > ratioJ
-			}
-
-			// Point ratio
-			ptRatioI := float64(si.pointsWon)
-			if si.pointsLost > 0 {
-				ptRatioI = float64(si.pointsWon) / float64(si.pointsLost)
-			}
-			ptRatioJ := float64(sj.pointsWon)
-			if sj.pointsLost > 0 {
-				ptRatioJ = float64(sj.pointsWon) / float64(sj.pointsLost)
-			}
-			return ptRatioI > ptRatioJ
-		})
-
-		return standings[0].name
+		return getTeamDisplayName([]*player.Player{standings[0].Player}, t.Type)
 	}
 
 	return ""
-}
-
-func getPlayerName(p *player.Player, tournamentType string) string {
-	if tournamentType == "teams" {
-		return p.FirstName
-	}
-	if p.LastName == "" {
-		return p.FirstName
-	}
-	return p.FirstName + " " + p.LastName
 }
 
 func getTeamDisplayName(team []*player.Player, tournamentType string) string {

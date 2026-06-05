@@ -89,7 +89,7 @@ func main() {
 
 	GetMatchesUC := match.NewGetMatchesUseCase(*bun.DB, *playerRepo)
 
-	createMatchUC := match.NewCreateMatchUseCase(matchRepo, *playerRepo, *tournamentRepo)
+	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo)
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC)

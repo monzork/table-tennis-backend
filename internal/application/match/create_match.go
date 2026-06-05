@@ -5,25 +5,20 @@ import (
 	"errors"
 	"table-tennis-backend/internal/domain/player"
 	tournament "table-tennis-backend/internal/domain/tournament"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 
 	"github.com/google/uuid"
 )
 
-type MatchRepository interface {
-	Save(ctx context.Context, m *tournament.Match) error
-}
-
 type CreateMatchUseCase struct {
-	matchRepo      MatchRepository
-	playerRepo     bun.PlayerRepository
-	tournamentRepo bun.TournamentRepository
+	matchRepo      tournament.MatchRepository
+	playerRepo     player.Repository
+	tournamentRepo tournament.Repository
 }
 
 func NewCreateMatchUseCase(
-	matchRepo MatchRepository,
-	players bun.PlayerRepository,
-	tournaments bun.TournamentRepository,
+	matchRepo tournament.MatchRepository,
+	players player.Repository,
+	tournaments tournament.Repository,
 ) *CreateMatchUseCase {
 	return &CreateMatchUseCase{
 		matchRepo:      matchRepo,

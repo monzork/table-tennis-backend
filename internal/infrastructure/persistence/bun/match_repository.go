@@ -269,3 +269,21 @@ func containsMatch(matches []MatchModel, id uuid.UUID) bool {
 	}
 	return false
 }
+
+func (r *MatchRepository) CountUnfinishedMatches(ctx context.Context, tournamentID uuid.UUID) (int, error) {
+	return r.db.NewSelect().
+		Model((*MatchModel)(nil)).
+		Where("tournament_id = ?", tournamentID).
+		Where("status != ?", "finished").
+		Where("team_match_id IS NULL").
+		Count(ctx)
+}
+
+func (r *MatchRepository) CountFinishedMatches(ctx context.Context, tournamentID uuid.UUID) (int, error) {
+	return r.db.NewSelect().
+		Model((*MatchModel)(nil)).
+		Where("tournament_id = ?", tournamentID).
+		Where("status = ?", "finished").
+		Where("team_match_id IS NULL").
+		Count(ctx)
+}

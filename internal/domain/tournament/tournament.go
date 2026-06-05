@@ -1,6 +1,7 @@
 package tournament
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -53,6 +54,7 @@ type Match struct {
 	Sets         []MatchSet
 	TeamMatchID  *uuid.UUID
 	Stage        string
+	UpdatedAt    *time.Time
 }
 
 type MatchSet struct {
@@ -541,4 +543,16 @@ func (t *Tournament) MovePlayer(playerID uuid.UUID, targetGroupID uuid.UUID, tar
 	}
 
 	return nil
+}
+
+type Repository interface {
+	GetByID(ctx context.Context, id uuid.UUID) (*Tournament, error)
+	Update(ctx context.Context, t *Tournament) error
+	UpdateParticipantElo(ctx context.Context, tournamentID uuid.UUID, playerID uuid.UUID, singlesElo, doublesElo int16) error
+}
+
+type MatchRepository interface {
+	Save(ctx context.Context, m *Match) error
+	CountUnfinishedMatches(ctx context.Context, tournamentID uuid.UUID) (int, error)
+	CountFinishedMatches(ctx context.Context, tournamentID uuid.UUID) (int, error)
 }
