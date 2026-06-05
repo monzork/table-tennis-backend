@@ -84,7 +84,7 @@ func (h *PublicHandler) ShowSignup(c *fiber.Ctx) error {
 	lang := getLang(c)
 	return c.Render("register", merge(tMap(lang), fiber.Map{
 		"Title": i18n.T(lang, "register.title"),
-	}))
+	}), "layouts/public")
 }
 
 func (h *PublicHandler) Register(c *fiber.Ctx) error {
@@ -107,7 +107,7 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 	if body.Honeypot != "" {
 		return c.Render("register-success", merge(tMap(lang), fiber.Map{
 			"Message": i18n.T(lang, "register.btn"),
-		}))
+		}), "layouts/public")
 	}
 
 	_, err := h.registerPlayerUC.Execute(
@@ -129,7 +129,7 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 	return c.Render("register-success", merge(tMap(lang), fiber.Map{
 		"Title":   "Success",
 		"Message": body.FirstName + ", you are registered! Go to the rankings to see your profile.",
-	}))
+	}), "layouts/public")
 }
 
 // ── Tournament self-registration ──────────────────────────────────────────────
@@ -144,7 +144,7 @@ func (h *PublicHandler) ShowTournamentRegistration(c *fiber.Ctx) error {
 	return c.Render("tournament-register", merge(tMap(lang), fiber.Map{
 		"Title":       i18n.T(lang, "tourney_reg.title"),
 		"Tournaments": tournaments,
-	}))
+	}), "layouts/public")
 }
 
 // ShowTournamentRegisterForm renders the form for a specific tournament.
@@ -168,14 +168,14 @@ func (h *PublicHandler) ShowTournamentRegisterForm(c *fiber.Ctx) error {
 			"Title":       i18n.T(lang, "tourney_reg.title"),
 			"Tournaments": tournaments,
 			"Error":       i18n.T(lang, "tourney_reg.not_found"),
-		}))
+		}), "layouts/public")
 	}
 	return c.Render("tournament-register", merge(tMap(lang), fiber.Map{
 		"Title":              i18n.T(lang, "tourney_reg.title"),
 		"Tournaments":        tournaments,
 		"SelectedTournament": target,
 		"TournamentID":       tid,
-	}))
+	}), "layouts/public")
 }
 
 // RegisterToTournament handles the form submission for tournament self-registration.
@@ -196,7 +196,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 		return c.Render("tournament-register-success", merge(tMap(lang), fiber.Map{
 			"Title":   i18n.T(lang, "tourney_reg.success_title"),
 			"Message": "Thank you!",
-		}))
+		}), "layouts/public")
 	}
 
 	t, playerName, err := h.selfRegisterUC.Execute(
@@ -214,7 +214,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 			"Tournaments":  tournaments,
 			"TournamentID": body.TournamentID,
 			"Error":        err.Error(),
-		}))
+		}), "layouts/public")
 	}
 
 	return c.Render("tournament-register-success", merge(tMap(lang), fiber.Map{
@@ -222,5 +222,5 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 		"Message":        i18n.T(lang, "tourney_reg.success_msg"),
 		"TournamentName": t.Name,
 		"PlayerName":     playerName,
-	}))
+	}), "layouts/public")
 }
