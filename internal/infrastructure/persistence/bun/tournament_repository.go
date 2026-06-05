@@ -424,6 +424,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 			Sets:         sets,
 			TeamMatchID:  mm.TeamMatchID,
 			Stage:        mm.Stage,
+			UpdatedAt:    mm.UpdatedAt,
 		}
 
 		// For parent team matches (MatchType=teams, no TeamMatchID), compute sub-match wins
@@ -816,6 +817,15 @@ func (r *TournamentRepository) AddPlayerToTeam(ctx context.Context, teamID uuid.
 
 func (r *TournamentRepository) RemovePlayerFromTeam(ctx context.Context, teamID uuid.UUID, playerID uuid.UUID) error {
 	_, err := r.db.NewDelete().Model((*TeamPlayerModel)(nil)).Where("team_id = ? AND player_id = ?", teamID, playerID).Exec(ctx)
+	return err
+}
+
+func (r *TournamentRepository) UpdateParticipantElo(ctx context.Context, tournamentID uuid.UUID, playerID uuid.UUID, singlesElo, doublesElo int16) error {
+	_, err := r.db.NewUpdate().
+		TableExpr("tournament_participants").
+		Set("elo_after_singles = ?, elo_after_doubles = ?", singlesElo, doublesElo).
+		Where("tournament_id = ? AND player_id = ?", tournamentID, playerID).
+		Exec(ctx)
 	return err
 }
 

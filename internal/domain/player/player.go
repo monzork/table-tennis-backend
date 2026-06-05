@@ -1,11 +1,17 @@
 package player
 
 import (
+	"context"
 	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type Repository interface {
+	GetById(ctx context.Context, id uuid.UUID) (*Player, error)
+	Save(ctx context.Context, p *Player) error
+}
 
 var ErrInvalidName = errors.New("first and last name required")
 

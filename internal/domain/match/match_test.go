@@ -47,13 +47,13 @@ func TestCalculateAndApplyEloSingles(t *testing.T) {
 
 	matchDomain.CalculateAndApplyElo("singles", []*player.Player{pA}, []*player.Player{pB}, "A")
 
-	// A gains 2 points (normal win, gap 200-299)
-	if pA.SinglesElo != 1002 {
-		t.Errorf("expected A to have 1002, got %d", pA.SinglesElo)
+	// A gains 8 points under standard Elo (K=32)
+	if pA.SinglesElo != 1008 {
+		t.Errorf("expected A to have 1008, got %d", pA.SinglesElo)
 	}
-	// B loses 1 point (normal loss, gap 200-299)
-	if pB.SinglesElo != 799 {
-		t.Errorf("expected B to have 799, got %d", pB.SinglesElo)
+	// B loses 8 points under standard Elo (K=32)
+	if pB.SinglesElo != 792 {
+		t.Errorf("expected B to have 792, got %d", pB.SinglesElo)
 	}
 }
 
@@ -64,12 +64,12 @@ func TestCalculateAndApplyEloUpset(t *testing.T) {
 
 	matchDomain.CalculateAndApplyElo("singles", []*player.Player{pA}, []*player.Player{pB}, "A")
 
-	// A gains 17 points (upset win)
-	if pA.SinglesElo != 817 {
-		t.Errorf("expected A to have 817, got %d", pA.SinglesElo)
+	// A gains 24 points under standard Elo (K=32)
+	if pA.SinglesElo != 824 {
+		t.Errorf("expected A to have 824, got %d", pA.SinglesElo)
 	}
-	// B loses 12.5 -> rounds to -12 or -13
-	if pB.SinglesElo != 988 && pB.SinglesElo != 987 {
-		t.Errorf("expected B to have ~988, got %d", pB.SinglesElo)
+	// B loses 24 points under standard Elo (K=32)
+	if pB.SinglesElo != 976 {
+		t.Errorf("expected B to have 976, got %d", pB.SinglesElo)
 	}
 }
