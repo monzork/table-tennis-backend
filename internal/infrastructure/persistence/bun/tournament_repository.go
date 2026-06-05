@@ -829,3 +829,24 @@ func (r *TournamentRepository) UpdateParticipantElo(ctx context.Context, tournam
 	return err
 }
 
+// GetByIDStr parses a string UUID then delegates to GetByID.
+func (r *TournamentRepository) GetByIDStr(ctx context.Context, idStr string) (*tournament.Tournament, error) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, err
+	}
+	return r.GetByID(ctx, id)
+}
+
+// AddParticipant inserts a single player into tournament_participants.
+func (r *TournamentRepository) AddParticipant(ctx context.Context, tournamentID uuid.UUID, playerID uuid.UUID, singlesElo, doublesElo int16) error {
+	model := &TournamentParticipantModel{
+		TournamentID:     tournamentID,
+		PlayerID:         playerID,
+		EloBeforeSingles: &singlesElo,
+		EloBeforeDoubles: &doublesElo,
+	}
+	_, err := r.db.NewInsert().Model(model).Ignore().Exec(ctx)
+	return err
+}
+

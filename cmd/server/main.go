@@ -96,7 +96,8 @@ func main() {
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
-	publicHandler := handler.NewPublicHandler(playerUC)
+	selfRegisterUC := tournament.NewSelfRegisterUseCase(tournamentRepo, playerRepo)
+	publicHandler := handler.NewPublicHandler(playerUC, selfRegisterUC)
 
 	adminRepo := bun.NewAdminRepository(bun.DB)
 
@@ -154,6 +155,13 @@ func main() {
 	})
 	app.Get("/register", publicHandler.ShowSignup)
 	app.Post("/register", signupLimiter, publicHandler.Register)
+
+	// Public tournament self-registration
+	app.Get("/tournaments/register", publicHandler.ShowTournamentRegistration)
+	app.Post("/tournaments/register", signupLimiter, publicHandler.RegisterToTournament)
+
+	// Language switcher — sets cookie and redirects back to the referring page
+	app.Get("/lang/:locale", publicHandler.SetLang)
 
 	// Auth endpoints
 	app.Get("/admin/login", authHandler.ShowLogin)

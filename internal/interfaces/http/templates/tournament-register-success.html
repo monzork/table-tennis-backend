@@ -1,0 +1,49 @@
+<div class="max-w-xl mx-auto animate-fade-in">
+    <div class="glass p-12 rounded-3xl shadow-2xl text-center border-white/20 relative overflow-hidden">
+        <div class="absolute -top-16 -left-16 w-48 h-48 bg-white/3 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-16 -right-16 w-48 h-48 bg-white/3 rounded-full blur-3xl"></div>
+
+        <div class="relative z-10">
+            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce-slow shadow-xl">
+                <svg class="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+
+            <h1 class="text-4xl font-extrabold uppercase tracking-tighter mb-2">{{.Title}}</h1>
+            <p class="text-gray-400 text-base mb-2">
+                {{.Message}}
+                {{if .TournamentName}}
+                <span class="text-white font-bold">{{.TournamentName}}</span>
+                {{end}}
+            </p>
+            {{if .PlayerName}}
+            <p class="text-gray-500 text-sm mb-8">— {{.PlayerName}}</p>
+            {{end}}
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+                <a href="/rankings/singles"
+                   class="inline-block bg-white hover:bg-gray-200 text-black font-black py-4 px-8 rounded-2xl transition-all uppercase tracking-widest text-sm transform hover:-translate-y-1 active:scale-95 shadow-lg">
+                    {{index .T "tourney_reg.view_bracket"}}
+                </a>
+                <a href="/tournaments/register"
+                   class="inline-block bg-transparent border border-white/20 hover:border-white/60 text-white font-black py-4 px-8 rounded-2xl transition-all uppercase tracking-widest text-sm transform hover:-translate-y-1 active:scale-95">
+                    {{index .T "tourney_reg.subtitle"}}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes bounceSlow {
+        0%, 100% { transform: translateY(0); }
+        50%       { transform: translateY(-10px); }
+    }
+    .animate-fade-in   { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-bounce-slow { animation: bounceSlow 3s infinite ease-in-out; }
+</style>
