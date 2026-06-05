@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{.Lang}}">
 <head>
     <meta charset="UTF-8">
-    <title>Club Rankings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} — Table Tennis Club</title>
+    <meta name="description" content="Official Table Tennis Club rankings, athlete registration, and tournament management.">
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
@@ -30,6 +32,10 @@
         .glass { background: rgba(18, 18, 18, 0.80); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.07); }
         .ranking-row:hover { background-color: rgba(255,255,255,0.04); transform: translateX(4px); transition: all 0.3s ease; box-shadow: -4px 0 0 rgba(255,255,255,0.6); }
         .rank-number::before { counter-increment: rank; content: counter(rank); }
+
+        /* Language switcher */
+        .lang-btn { transition: all 0.2s ease; }
+        .lang-btn.active { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.6); color: #fff; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col font-sans antialiased text-gray-200">
@@ -42,9 +48,34 @@
                     <span class="text-xs text-gray-400 font-bold uppercase tracking-widest">Global Rankings</span>
                 </div>
             </div>
-            <div class="flex gap-6 font-bold text-sm tracking-widest uppercase text-gray-400">
-                <a href="/rankings/singles" class="hover:text-white transition-colors pb-1 {{if eq .Type "Singles"}}text-white border-b-2 border-white{{end}}">Singles</a>
-                <a href="/rankings/doubles" class="hover:text-white transition-colors pb-1 {{if eq .Type "Doubles"}}text-white border-b-2 border-white{{end}}">Doubles</a>
+            <div class="flex items-center gap-6">
+                <!-- Main nav -->
+                <div class="hidden sm:flex gap-6 font-bold text-sm tracking-widest uppercase text-gray-400">
+                    <a href="/rankings/singles" class="hover:text-white transition-colors pb-1 {{if eq .Type "Singles"}}text-white border-b-2 border-white{{end}}">
+                        {{index .T "nav.singles"}}
+                    </a>
+                    <a href="/rankings/doubles" class="hover:text-white transition-colors pb-1 {{if eq .Type "Doubles"}}text-white border-b-2 border-white{{end}}">
+                        {{index .T "nav.doubles"}}
+                    </a>
+                    <a href="/tournaments/register" class="hover:text-white transition-colors pb-1 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                        {{index .T "nav.register"}}
+                    </a>
+                </div>
+
+                <!-- Language switcher -->
+                <div class="flex items-center gap-1 bg-white/5 rounded-full border border-white/10 p-1">
+                    <a href="/lang/en"
+                       class="lang-btn px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "en"}}active{{end}}"
+                       title="English">
+                        EN
+                    </a>
+                    <a href="/lang/es"
+                       class="lang-btn px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "es"}}active{{end}}"
+                       title="Español">
+                        ES
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
@@ -52,7 +83,7 @@
         {{embed}}
     </main>
     <footer class="border-t border-white/10 py-8 text-center text-gray-600 text-xs font-bold tracking-widest uppercase mt-12 bg-black/40">
-        &copy; 2026 Club Rankings System
+        {{index .T "footer.copy"}}
     </footer>
 </body>
 </html>

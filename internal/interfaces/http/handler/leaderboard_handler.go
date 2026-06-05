@@ -7,6 +7,7 @@ import (
 	"table-tennis-backend/internal/application/leaderboard"
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/player"
+	"table-tennis-backend/internal/interfaces/http/i18n"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -217,6 +218,12 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 		}}
 	}
 
+	lang := getLang(c)
+	tMap := make(map[string]string)
+	for k := range i18n.Translations["en"] {
+		tMap[k] = i18n.T(lang, k)
+	}
+
 	data := fiber.Map{
 		"Groups":        groups,
 		"Type":          title,
@@ -229,6 +236,9 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 		"IsDivisional":  isDivisional,
 		"Divisions":     divisions,
 		"CurrentPath":   c.Path(),
+		"T":             tMap,
+		"Lang":          lang,
+		"Title":         title,
 	}
 
 	if c.Get("HX-Request") == "true" {
