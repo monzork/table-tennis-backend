@@ -2,6 +2,7 @@ package handler
 
 import (
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
+	"table-tennis-backend/internal/interfaces/http/i18n"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 )
@@ -25,7 +26,10 @@ func (h *AuthHandler) ShowLogin(c *fiber.Ctx) error {
 		}
 	}
 	// Note: We use the public layout because we don't want the admin nav menu on login
-	return c.Render("admin/login", fiber.Map{}, "layouts/public")
+	lang := getLang(c)
+	return c.Render("admin/login", merge(tMap(lang), fiber.Map{
+		"Title": i18n.T(lang, "nav.singles"),
+	}), "layouts/public")
 }
 
 // Login validates credentials and establishes session
@@ -36,26 +40,31 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&body); err != nil {
-		return c.Render("admin/login", fiber.Map{"Error": "Invalid form submission"}, "layouts/public")
+		lang := getLang(c)
+		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid form submission"}), "layouts/public")
 	}
 
 	admin, err := h.adminRepo.GetByUsername(c.Context(), body.Username)
 	if err != nil || admin == nil {
-		return c.Render("admin/login", fiber.Map{"Error": "Invalid Username or Password"}, "layouts/public")
+		lang := getLang(c)
+		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid Username or Password"}), "layouts/public")
 	}
 
 	if !admin.CheckPassword(body.Password) {
-		return c.Render("admin/login", fiber.Map{"Error": "Invalid Username or Password"}, "layouts/public")
+		lang := getLang(c)
+		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid Username or Password"}), "layouts/public")
 	}
 
 	sess, err := h.store.Get(c)
 	if err != nil {
-		return c.Render("admin/login", fiber.Map{"Error": "Session error"}, "layouts/public")
+		lang := getLang(c)
+		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Session error"}), "layouts/public")
 	}
 
 	sess.Set("authenticated", true)
 	if err := sess.Save(); err != nil {
-		return c.Render("admin/login", fiber.Map{"Error": "Failed to save session"}, "layouts/public")
+		lang := getLang(c)
+		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Failed to save session"}), "layouts/public")
 	}
 
 	// Use HTMX redirect header if it's an HTMX request, otherwise normal redirect
