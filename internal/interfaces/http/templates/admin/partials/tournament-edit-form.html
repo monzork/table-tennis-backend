@@ -101,6 +101,14 @@
     </div>
 
     <div class="space-y-2">
+        <label class="flex items-center gap-3 cursor-pointer group">
+            <input type="checkbox" name="registrationOpen" value="true" {{if .Tournament.RegistrationOpen}}checked{{end}} class="w-5 h-5 rounded bg-black/40 border border-white/10 text-white accent-white cursor-pointer">
+            <span class="text-xs font-bold uppercase text-gray-400 tracking-widest group-hover:text-white transition-colors">Open Public Registration</span>
+        </label>
+        <p class="text-[10px] text-gray-600 ml-8">When enabled, players can self-register at /tournaments/register</p>
+    </div>
+
+    <div class="space-y-2">
         <div class="flex items-center justify-between cursor-pointer" onclick="document.getElementById('edit-rules-panel').classList.toggle('hidden'); this.querySelector('span.toggle-arrow').textContent = document.getElementById('edit-rules-panel').classList.contains('hidden') ? 'Expand ▾' : 'Collapse ▴'">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">Match Rules per Stage</label>
             <span class="toggle-arrow text-[10px] text-gray-400 uppercase tracking-widest">Expand ▾</span>
