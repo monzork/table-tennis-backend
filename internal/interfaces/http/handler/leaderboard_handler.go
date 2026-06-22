@@ -120,14 +120,15 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	// 1. Filter by Search Query (Name or Country)
+	// 1. Filter by Search Query (Name, Country, or Department)
 	var filteredPlayers []*player.Player
 	if query != "" {
 		qUpper := strings.ToUpper(query)
 		for _, p := range players {
 			fullName := strings.ToUpper(p.FirstName + " " + p.LastName)
 			country := strings.ToUpper(p.Country)
-			if strings.Contains(fullName, qUpper) || strings.Contains(country, qUpper) {
+			dept := strings.ToUpper(p.Department)
+			if strings.Contains(fullName, qUpper) || strings.Contains(country, qUpper) || strings.Contains(dept, qUpper) {
 				filteredPlayers = append(filteredPlayers, p)
 			}
 		}

@@ -66,7 +66,7 @@ func (uc *CreateTournamentUseCase) Execute(
 
 	// Handle new players
 	for _, np := range newPlayers {
-		p, err := playerDomain.NewPlayer(np.FirstName, np.LastName, time.Now(), np.Gender, "")
+		p, err := playerDomain.NewPlayer(np.FirstName, np.LastName, time.Now(), np.Gender, "", "")
 		if err != nil {
 			return nil, err
 		}

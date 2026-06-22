@@ -1,7 +1,7 @@
-<div class="space-y-10 animate-fade-in text-white/90 max-w-5xl mx-auto">
-    <header class="text-center space-y-4">
-        <h1 class="text-6xl font-black tracking-tight uppercase italic"><span class="text-white">{{.Type}}</span> {{index .T "rankings.title"}}</h1>
-        <p class="text-xl text-gray-400 font-light tracking-wide">{{index .T "rankings.subtitle"}}</p>
+<div class="space-y-6 sm:space-y-10 animate-fade-in text-white/90 max-w-5xl mx-auto px-2 sm:px-4">
+    <header class="text-center space-y-2 sm:space-y-4">
+        <h1 class="text-4xl sm:text-6xl font-black tracking-tight uppercase italic"><span class="text-white">{{.Type}}</span> {{index .T "rankings.title"}}</h1>
+        <p class="text-base sm:text-xl text-gray-400 font-light tracking-wide">{{index .T "rankings.subtitle"}}</p>
     </header>
 
     <!-- Gender / Format Navigation Tabs -->
@@ -13,14 +13,14 @@
         <a href="/rankings/mixed/doubles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mixed_doubles"}}</a>
     </div>
 
-    <div class="glass p-6 rounded-3xl border border-white/10 flex flex-col md:flex-row gap-4 items-end relative z-20">
+    <div class="glass p-4 sm:p-6 rounded-3xl border border-white/10 flex flex-col md:flex-row gap-4 items-end relative z-20">
         <div class="flex-1 min-w-[200px] w-full">
             <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">{{index .T "rankings.search_label"}}</label>
             <input type="text"
                    name="q"
                    value="{{.Query}}"
                    placeholder="{{index .T "rankings.search_ph"}}"
-                   class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors placeholder:text-gray-600"
+                   class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors placeholder:text-gray-600 text-base sm:text-sm"
                    hx-get="{{.CurrentPath}}"
                    hx-trigger="keyup changed delay:300ms"
                    hx-target="#rankings-tbody"
@@ -29,9 +29,9 @@
         </div>
         <div class="w-full md:w-48">
             <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">{{index .T "rankings.filter_label"}}</label>
-            <select id="division-filter"
-                    name="division"
-                    class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer"
+            <select id="division-filter" 
+                    name="division" 
+                    class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
                     hx-get="{{.CurrentPath}}"
                     hx-target="#rankings-tbody"
                     hx-include="[name='q'], #sort-order"
@@ -44,9 +44,9 @@
         </div>
         <div class="w-full md:w-48">
             <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">{{index .T "rankings.sort_label"}}</label>
-            <select id="sort-order"
-                    name="sort"
-                    class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer"
+            <select id="sort-order" 
+                    name="sort" 
+                    class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
                     hx-get="{{.CurrentPath}}"
                     hx-target="#rankings-tbody"
                     hx-include="[name='q'], #division-filter"
@@ -63,10 +63,10 @@
         <table class="w-full text-left border-collapse relative z-10">
             <thead>
                 <tr class="bg-black/60 border-b border-white/15">
-                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest w-24 text-center">{{index .T "rankings.col_rank"}}</th>
-                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest">{{index .T "rankings.col_player"}}</th>
-                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-center">{{index .T "rankings.col_assoc"}}</th>
-                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-right">{{index .T "rankings.col_points"}}</th>
+                    <th class="py-3 px-2 sm:py-6 sm:px-4 font-bold text-gray-300 uppercase text-[10px] sm:text-xs tracking-widest w-16 sm:w-24 text-center">{{index .T "rankings.col_rank"}}</th>
+                    <th class="py-3 px-2 sm:py-6 sm:px-4 font-bold text-gray-300 uppercase text-[10px] sm:text-xs tracking-widest">{{index .T "rankings.col_player"}}</th>
+                    <th class="py-3 px-2 sm:py-6 sm:px-4 font-bold text-gray-300 uppercase text-[10px] sm:text-xs tracking-widest text-center">{{index .T "rankings.col_assoc"}}</th>
+                    <th class="py-3 px-2 sm:py-6 sm:px-4 font-bold text-gray-300 uppercase text-[10px] sm:text-xs tracking-widest text-right pr-4 sm:pr-8">{{index .T "rankings.col_points"}}</th>
                 </tr>
             </thead>
             <tbody id="rankings-tbody" class="divide-y divide-white/5">

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"strings"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
@@ -94,8 +95,21 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	c.Set("HX-Trigger", "eventCreated")
-	return c.Render("admin/partials/event-row", e)
+	var rowBuf strings.Builder
+	if err := c.App().Config().Views.Render(&rowBuf, "admin/partials/event-row", e); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	toastHTML := fmt.Sprintf(`
+<div id="toast-container" hx-swap-oob="beforeend">
+	<div class="flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border border-white/10 shadow-2xl transition-all duration-500 max-w-sm toast-slide-in pointer-events-auto">
+		<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+		<span class="text-xs font-bold uppercase tracking-wider text-white/90">Grand Event "%s" initialized successfully!</span>
+	</div>
+</div>`, e.Name)
+
+	c.Set("Content-Type", "text/html")
+	return c.SendString(rowBuf.String() + toastHTML)
 }
 
 func (h *EventHandler) Detail(c *fiber.Ctx) error {
@@ -126,4 +140,40 @@ func (h *EventHandler) Delete(c *fiber.Ctx) error {
 		return c.SendString("")
 	}
 	return c.SendString("")
+}
+
+func (h *EventHandler) DeleteBulk(c *fiber.Ctx) error {
+	var body struct {
+		IDs []string `json:"ids" form:"ids"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	if len(body.IDs) > 0 {
+		if err := h.deleteUC.ExecuteBulk(c.Context(), body.IDs); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+	}
+
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Redirect", "/admin/events")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect("/admin/events")
+}
+
+func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
+	id := c.Params("id")
+	e, err := h.getByID.Execute(c.Context(), id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
+	divisions, _ := h.divisionUC.GetAll(c.Context())
+
+	return c.Render("public/event-detail", fiber.Map{
+		"Event":     e,
+		"Divisions": divisions,
+		"Type":      "Tournaments", // highlight tournaments tab in layout
+	}, "layouts/public")
 }

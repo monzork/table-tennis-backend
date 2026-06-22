@@ -3,6 +3,8 @@ package handler_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
@@ -106,11 +108,13 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
 	assignPlayerToTeamUC := tournament.NewAssignPlayerToTeamUseCase(tournamentRepo)
 	removePlayerFromTeamUC := tournament.NewRemovePlayerFromTeamUseCase(tournamentRepo)
+	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
 	tournamentHandler := handler.NewTournamentHandler(
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,
 		leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC,
 		exportAllTournamentsPdfUC,
 		movePlayerUC, createTeamUC, deleteTeamUC, assignPlayerToTeamUC, removePlayerFromTeamUC,
+		getTournamentsUC,
 	)
 
 	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)
@@ -128,6 +132,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
+	selfRegisterUC := tournament.NewSelfRegisterUseCase(tournamentRepo, playerRepo)
+	publicHandler := handler.NewPublicHandler(playerUC, selfRegisterUC)
 
 	adminRepo := bunRepo.NewAdminRepository(db)
 
@@ -139,13 +145,34 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	engine.AddFunc("add", func(a, b int) int {
 		return a + b
 	})
+	engine.AddFunc("dict", func(values ...interface{}) (map[string]interface{}, error) {
+		if len(values)%2 != 0 {
+			return nil, fmt.Errorf("invalid dict call, must have even number of arguments")
+		}
+		dict := make(map[string]interface{}, len(values)/2)
+		for i := 0; i < len(values); i += 2 {
+			key, ok := values[i].(string)
+			if !ok {
+				return nil, fmt.Errorf("dict keys must be strings")
+			}
+			dict[key] = values[i+1]
+		}
+		return dict, nil
+	})
+	engine.AddFunc("isNicaragua", func(country string) bool {
+		c := strings.TrimSpace(strings.ToUpper(country))
+		return c == "NIC" || c == "NICARAGUA" || c == "NI"
+	})
+	engine.AddFunc("nicaraguaDepartments", func() []string {
+		return handler.NicaraguaDepartments
+	})
 	app := fiber.New(fiber.Config{Views: engine})
 
-	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
 	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 
 	app.Get("/rankings/singles", leaderboardHandler.GetSingles)
 	app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)
+	app.Get("/players/department-input", publicHandler.DepartmentInput)
 
 	// Auth endpoints
 	app.Get("/admin/login", authHandler.ShowLogin)
@@ -158,6 +185,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Get("/players", adminHandler.Players)
 	admin.Get("/tournaments", adminHandler.Tournaments)
 	admin.Get("/events", adminHandler.Events)
+	admin.Get("/events/division-select", adminHandler.DivisionSelect)
 	admin.Get("/events/:id", eventHandler.Detail)
 	admin.Get("/divisions", adminHandler.Divisions)
 
@@ -171,6 +199,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	api.Post("/tournaments", tournamentHandler.Create)
 	api.Post("/events", eventHandler.Create)
 	api.Delete("/events/:id", eventHandler.Delete)
+	api.Post("/events/bulk-delete", eventHandler.DeleteBulk)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)
 	api.Put("/matches/:id/score", matchHandler.UpdateScore)

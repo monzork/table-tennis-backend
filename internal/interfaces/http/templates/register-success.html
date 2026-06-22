@@ -1,15 +1,15 @@
-<div class="max-w-xl mx-auto animate-fade-in">
-    <div class="glass p-12 rounded-3xl shadow-2xl text-center border-white/20">
-        <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce-slow shadow-xl">
-            <svg class="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div class="max-w-xl mx-auto animate-fade-in px-4">
+    <div class="glass p-6 sm:p-12 rounded-3xl shadow-2xl text-center border-white/20">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8 animate-bounce-slow shadow-xl">
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
             </svg>
         </div>
 
-        <h1 class="text-4xl font-extrabold uppercase tracking-tighter mb-4">{{.Title}}</h1>
-        <p class="text-gray-400 text-lg mb-10">{{.Message}}</p>
+        <h1 class="text-3xl sm:text-4xl font-extrabold uppercase tracking-tighter mb-4">{{.Title}}</h1>
+        <p class="text-gray-400 text-base sm:text-lg mb-8 sm:mb-10">{{.Message}}</p>
 
-        <a href="/rankings/singles" class="inline-block bg-white hover:bg-gray-200 text-black font-black py-4 px-10 rounded-2xl transition-all uppercase tracking-widest text-sm transform hover:-translate-y-1 active:scale-95 shadow-lg">
+        <a href="/rankings/singles" class="inline-block bg-white hover:bg-gray-200 text-black font-black py-4 px-8 sm:px-10 rounded-2xl transition-all uppercase tracking-widest text-xs sm:text-sm transform hover:-translate-y-1 active:scale-95 shadow-lg">
             {{index .T "register_success.view_rankings"}}
         </a>
     </div>

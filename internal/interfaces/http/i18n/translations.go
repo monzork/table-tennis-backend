@@ -4,9 +4,10 @@ package i18n
 var Translations = map[string]map[string]string{
 	"en": {
 		// Nav
-		"nav.singles":  "Singles",
-		"nav.doubles":  "Doubles",
-		"nav.register": "Register",
+		"nav.singles":     "Singles",
+		"nav.doubles":     "Doubles",
+		"nav.tournaments": "Tournaments",
+		"nav.register":    "Register",
 
 		// Rankings page
 		"rankings.title":            "Rankings",
@@ -17,7 +18,7 @@ var Translations = map[string]map[string]string{
 		"rankings.womens_doubles":   "♀ Women's Doubles",
 		"rankings.mixed_doubles":    "⚤ Mixed Doubles",
 		"rankings.search_label":     "Search Player",
-		"rankings.search_ph":        "Name or Country...",
+		"rankings.search_ph":        "Name, Country, or Dept...",
 		"rankings.filter_label":     "Filter Division",
 		"rankings.all_divisions":    "All Divisions",
 		"rankings.sort_label":       "Sort Order",
@@ -80,9 +81,10 @@ var Translations = map[string]map[string]string{
 	},
 	"es": {
 		// Nav
-		"nav.singles":  "Individuales",
-		"nav.doubles":  "Dobles",
-		"nav.register": "Registro",
+		"nav.singles":     "Individuales",
+		"nav.doubles":     "Dobles",
+		"nav.tournaments": "Torneos",
+		"nav.register":    "Registro",
 
 		// Rankings page
 		"rankings.title":            "Clasificación",
@@ -93,7 +95,7 @@ var Translations = map[string]map[string]string{
 		"rankings.womens_doubles":   "♀ Dobles Femenil",
 		"rankings.mixed_doubles":    "⚤ Dobles Mixtos",
 		"rankings.search_label":     "Buscar Jugador",
-		"rankings.search_ph":        "Nombre o País...",
+		"rankings.search_ph":        "Nombre, País, o Depto...",
 		"rankings.filter_label":     "Filtrar División",
 		"rankings.all_divisions":    "Todas las Divisiones",
 		"rankings.sort_label":       "Orden",

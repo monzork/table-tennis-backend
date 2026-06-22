@@ -1,0 +1,23 @@
+{{define "partials/department-input"}}
+{{$isNic := false}}
+{{if .IsNicaragua}}
+    {{$isNic = true}}
+{{else if .Country}}
+    {{if isNicaragua .Country}}
+        {{$isNic = true}}
+    {{end}}
+{{end}}
+<label class="{{if eq .Theme "admin-add"}}text-[9px] font-bold uppercase text-gray-500 mb-1 block{{else if eq .Theme "admin-edit"}}text-[10px] font-bold uppercase text-gray-500 tracking-widest{{else}}text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1{{end}}">
+    Department{{if $isNic}} <span class="text-red-400">*</span>{{else}} (Optional){{end}}
+</label>
+{{if $isNic}}
+    <select name="department" required class="{{if eq .Theme "admin-add"}}w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none{{else if eq .Theme "admin-edit"}}w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none{{else}}w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all appearance-none text-base sm:text-sm{{end}}">
+        <option value="" disabled {{if not .Department}}selected{{end}} hidden>Select Department...</option>
+        {{range nicaraguaDepartments}}
+            <option value="{{.}}" {{if eq $.Department .}}selected{{end}}>{{.}}</option>
+        {{end}}
+    </select>
+{{else}}
+    <input type="text" name="department" value="{{.Department}}" placeholder="Department" class="{{if eq .Theme "admin-add"}}w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors{{else if eq .Theme "admin-edit"}}w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white{{else}}w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm{{end}}">
+{{end}}
+{{end}}

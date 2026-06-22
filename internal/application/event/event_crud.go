@@ -63,23 +63,6 @@ func (uc *CreateEventUseCase) Execute(
 		return nil, err
 	}
 
-	tx, err := uc.eventRepo.DB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.NewInsert().Model(&bun.EventModel{
-		ID:         e.ID,
-		Name:       e.Name,
-		DivisionID: e.DivisionID,
-		SkipElo:    e.SkipElo,
-		StartDate:  e.StartDate,
-		EndDate:    e.EndDate,
-	}).Exec(ctx); err != nil {
-		return nil, err
-	}
-
 	var div *divisionDomain.Division
 	if !skipElo && divisionID != "" {
 		var err error
@@ -110,6 +93,23 @@ func (uc *CreateEventUseCase) Execute(
 				playerCache[p.ID] = p
 			}
 		}
+	}
+
+	tx, err := uc.eventRepo.DB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.NewInsert().Model(&bun.EventModel{
+		ID:         e.ID,
+		Name:       e.Name,
+		DivisionID: e.DivisionID,
+		SkipElo:    e.SkipElo,
+		StartDate:  e.StartDate,
+		EndDate:    e.EndDate,
+	}).Exec(ctx); err != nil {
+		return nil, err
 	}
 
 	// Helper to create a tournament under this event (within the shared transaction)
@@ -251,4 +251,16 @@ func (uc *DeleteEventUseCase) Execute(ctx context.Context, idStr string) error {
 		return err
 	}
 	return uc.eventRepo.Delete(ctx, id)
+}
+
+func (uc *DeleteEventUseCase) ExecuteBulk(ctx context.Context, idStrs []string) error {
+	var ids []uuid.UUID
+	for _, idStr := range idStrs {
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			return err
+		}
+		ids = append(ids, id)
+	}
+	return uc.eventRepo.DeleteEvents(ctx, ids)
 }

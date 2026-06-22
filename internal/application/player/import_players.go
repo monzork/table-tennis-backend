@@ -152,6 +152,7 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 	birthStr := cell(row, colIdx, "birthdate")
 	gender := strings.ToUpper(cell(row, colIdx, "gender"))
 	country := strings.ToUpper(cell(row, colIdx, "country"))
+	department := cell(row, colIdx, "department")
 	singlesEloStr := cell(row, colIdx, "singles_elo")
 	doublesEloStr := cell(row, colIdx, "doubles_elo")
 
@@ -178,7 +179,7 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 		birthdate = time.Now()
 	}
 
-	p, err := playerDomain.NewPlayer(firstName, lastName, birthdate, gender, country)
+	p, err := playerDomain.NewPlayer(firstName, lastName, birthdate, gender, country, department)
 	if err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("row %d: %v", rowNum, err))
 		result.Skipped++

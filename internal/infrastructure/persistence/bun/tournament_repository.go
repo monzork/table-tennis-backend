@@ -246,6 +246,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 			SinglesElo: pm.SinglesElo,
 			DoublesElo: pm.DoublesElo,
 			Country:    pm.Country,
+			Department: pm.Department,
 		}
 	}
 

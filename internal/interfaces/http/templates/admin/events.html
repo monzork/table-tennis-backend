@@ -4,13 +4,24 @@
             <h1 class="text-4xl font-extrabold tracking-tight uppercase">Grand Events <span class="text-white">.</span></h1>
             <p class="text-gray-400 mt-1">Manage Multi-Bracket Division Tournaments</p>
         </div>
-        <button hx-on:click="document.getElementById('add-event-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Grand Event</button>
+        <div class="flex gap-3 items-center">
+            <button id="bulk-delete-btn" 
+                    hx-post="/events/bulk-delete" 
+                    hx-include=".event-checkbox" 
+                    hx-confirm="Are you sure you want to delete all selected events? Child tournaments will NOT be deleted, but they will be unlinked."
+                    class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Delete Selected
+            </button>
+            <button hx-on:click="document.getElementById('add-event-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Grand Event</button>
+        </div>
     </header>
 
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-black/40 border-b border-white/10">
+                    <th class="p-4 w-12"><input type="checkbox" id="select-all-events" hx-on:change="document.querySelectorAll('.event-checkbox').forEach(cb => cb.checked = this.checked)" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer"></th>
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Name</th>
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Division</th>
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Categories</th>
@@ -39,24 +50,26 @@
         
         <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">Grand Event</span>.</h2>
         
-        <form hx-post="/events" hx-target="#event-list" hx-swap="beforeend" class="space-y-6">
+        <form hx-post="/events" hx-target="#event-list" hx-swap="beforeend" 
+              hx-on::after-request="if(event.detail.successful) { document.getElementById('add-event-modal').classList.add('hidden'); this.reset(); document.getElementById('empty-state')?.remove(); }"
+              class="space-y-6">
             <div class="grid grid-cols-2 gap-6">
                 <div class="space-y-2">
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
                     <input type="text" name="name" placeholder="e.g., Spring Championship 2026" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
                 </div>
                 <div class="space-y-2" id="division-select-container">
-                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Division (Elo restrictions)</label>
-                    <select name="divisionId" id="divisionIdSelect" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none" required>
-                        {{range .Divisions}}
-                        <option value="{{.ID}}">{{.Name}} ({{.MinElo}}{{if .MaxElo}} - {{.MaxElo}}{{else}}+{{end}} Elo)</option>
-                        {{end}}
-                    </select>
+                    {{template "admin/partials/division-select-options" dict "Divisions" .Divisions}}
                 </div>
             </div>
 
             <div class="flex items-center gap-3 bg-black/20 p-4 rounded-xl border border-white/5">
-                <input type="checkbox" id="skipElo" name="skipElo" onchange="toggleDivisionContainer(this.checked); document.getElementById('elo-filter-help').classList.toggle('hidden', !this.checked); document.getElementById('elo-filter-standard-help').classList.toggle('hidden', this.checked);" class="w-5 h-5 rounded border-white/10 bg-black/40 checked:bg-white text-black focus:ring-0 cursor-pointer">
+                <input type="checkbox" id="skipElo" name="skipElo" value="true"
+                       hx-get="/admin/events/division-select"
+                       hx-trigger="change"
+                       hx-target="#division-select-container"
+                       hx-swap="innerHTML"
+                       class="w-5 h-5 rounded border-white/10 bg-black/40 checked:bg-white text-black focus:ring-0 cursor-pointer">
                 <div>
                     <label for="skipElo" class="text-sm font-bold uppercase tracking-wider text-white/90 cursor-pointer">Skip Elo Calculations</label>
                     <p class="text-[10px] text-gray-500">If checked, no Elo updates will occur for any category, and player Elo boundaries will be bypassed.</p>
@@ -343,83 +356,3 @@
 
 <!-- Toast Container -->
 <div id="toast-container" class="fixed top-6 right-6 z-[250] space-y-3 pointer-events-none"></div>
-
-<script>
-    function toggleDivisionContainer(checked) {
-        const divContainer = document.getElementById('division-select-container');
-        const divSelect = document.getElementById('divisionIdSelect');
-        if (checked) {
-            divContainer.classList.add('hidden');
-            divSelect.removeAttribute('required');
-            divSelect.value = "";
-        } else {
-            divContainer.classList.remove('hidden');
-            divSelect.setAttribute('required', 'true');
-            if (divSelect.options.length > 0) {
-                divSelect.selectedIndex = 0;
-            }
-        }
-    }
-
-    document.body.addEventListener('eventCreated', function() {
-        // Close modal cleanly
-        document.getElementById('add-event-modal').classList.add('hidden');
-        
-        // Remove empty state if present
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) emptyState.remove();
-
-        // Reset the form
-        const form = document.querySelector('#add-event-modal form');
-        if (form) form.reset();
-
-        // Show a premium success toast
-        showToast("Grand Event initialized successfully!", "success");
-    });
-
-    // Also listen via htmx:afterRequest as a fallback
-    document.body.addEventListener('htmx:afterRequest', function(evt) {
-        if (evt.detail.xhr && evt.detail.xhr.status === 200 && evt.detail.elt.closest('#add-event-modal')) {
-            document.getElementById('add-event-modal').classList.add('hidden');
-            
-            const emptyState = document.getElementById('empty-state');
-            if (emptyState) emptyState.remove();
-
-            const form = document.querySelector('#add-event-modal form');
-            if (form) form.reset();
-
-            showToast("Grand Event initialized successfully!", "success");
-        }
-    });
-
-    function showToast(message, type = 'success') {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-
-        const toast = document.createElement('div');
-        toast.className = `flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border border-white/10 shadow-2xl transition-all duration-500 transform translate-x-full opacity-0 pointer-events-auto max-w-sm`;
-        
-        // Success icon
-        const icon = `<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-
-        toast.innerHTML = `
-            ${icon}
-            <span class="text-xs font-bold uppercase tracking-wider text-white/90">${message}</span>
-        `;
-
-        container.appendChild(toast);
-
-        // Slide and fade in
-        requestAnimationFrame(() => {
-            toast.classList.remove('translate-x-full', 'opacity-0');
-        });
-
-        // Slide out and remove after 4 seconds
-        setTimeout(() => {
-            toast.classList.add('translate-x-full', 'opacity-0');
-            setTimeout(() => {
-                toast.remove();
-            }, 500);
-        }, 4000);
-    }
-</script>

@@ -24,10 +24,11 @@ type Player struct {
 	SinglesElo     int16
 	DoublesElo     int16
 	Country        string
+	Department     string
 	WhatsAppNumber string
 }
 
-func NewPlayer(firstName, lastName string, birthdate time.Time, gender, country string) (*Player, error) {
+func NewPlayer(firstName, lastName string, birthdate time.Time, gender, country, department string) (*Player, error) {
 	if firstName == "" || lastName == "" {
 		return nil, ErrInvalidName
 	}
@@ -43,6 +44,7 @@ func NewPlayer(firstName, lastName string, birthdate time.Time, gender, country 
 		SinglesElo:     1000,
 		DoublesElo:     1000,
 		Country:        country,
+		Department:     department,
 		WhatsAppNumber: "",
 	}, nil
 }

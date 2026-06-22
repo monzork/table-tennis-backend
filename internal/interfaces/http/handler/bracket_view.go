@@ -18,6 +18,7 @@ type TournamentViewModel struct {
 	Type       string
 	Format     string
 	Divisions  []DivisionView
+	IsPublic   bool
 }
 
 type DivisionView struct {

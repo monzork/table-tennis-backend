@@ -129,7 +129,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 
 	// Handle newly created players ad-hoc
 	for _, np := range newPlayers {
-		p, err := playerDomain.NewPlayer(np.FirstName, np.LastName, time.Now(), np.Gender, "")
+		p, err := playerDomain.NewPlayer(np.FirstName, np.LastName, time.Now(), np.Gender, "", "")
 		if err != nil {
 			return nil, err
 		}

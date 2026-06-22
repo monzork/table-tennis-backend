@@ -109,3 +109,17 @@ func (h *AdminHandler) NewPlayerField(c *fiber.Ctx) error {
 func (h *AdminHandler) CloseModal(c *fiber.Ctx) error {
 	return c.SendString("")
 }
+
+func (h *AdminHandler) DivisionSelect(c *fiber.Ctx) error {
+	skipElo := c.Query("skipElo") == "true"
+	if skipElo {
+		return c.SendString("")
+	}
+	divisions, err := h.divisionUC.GetAll(c.Context())
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+	return c.Render("admin/partials/division-select-options", fiber.Map{
+		"Divisions": divisions,
+	})
+}

@@ -35,7 +35,7 @@ func TestTournamentHandler(t *testing.T) {
 	playerRepo := bunRepo.NewPlayerRepository(db)
 	tournamentRepo := bunRepo.NewTournamentRepository(db)
 	
-	p1, _ := playerDomain.NewPlayer("Test", "Player1", time.Now(), "M", "")
+	p1, _ := playerDomain.NewPlayer("Test", "Player1", time.Now(), "M", "", "")
 	playerRepo.Save(ctx, p1)
 
 	var createdTournamentID string
@@ -145,13 +145,13 @@ func TestTournamentHandler(t *testing.T) {
 	})
 
 	t.Run("Move Player Between Groups", func(t *testing.T) {
-		p2, _ := playerDomain.NewPlayer("Test", "Player2", time.Now(), "M", "")
+		p2, _ := playerDomain.NewPlayer("Test", "Player2", time.Now(), "M", "", "")
 		playerRepo.Save(ctx, p2)
-		p3, _ := playerDomain.NewPlayer("Test", "Player3", time.Now(), "M", "")
+		p3, _ := playerDomain.NewPlayer("Test", "Player3", time.Now(), "M", "", "")
 		playerRepo.Save(ctx, p3)
-		p4, _ := playerDomain.NewPlayer("Test", "Player4", time.Now(), "M", "")
+		p4, _ := playerDomain.NewPlayer("Test", "Player4", time.Now(), "M", "", "")
 		playerRepo.Save(ctx, p4)
-		p5, _ := playerDomain.NewPlayer("Test", "Player5", time.Now(), "M", "")
+		p5, _ := playerDomain.NewPlayer("Test", "Player5", time.Now(), "M", "", "")
 		playerRepo.Save(ctx, p5)
 
 		data := url.Values{}

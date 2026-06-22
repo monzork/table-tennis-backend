@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"strings"
 	"table-tennis-backend/internal/application/player"
 	appTournament "table-tennis-backend/internal/application/tournament"
 	"table-tennis-backend/internal/interfaces/http/i18n"
@@ -80,6 +81,27 @@ func merge(base fiber.Map, extra fiber.Map) fiber.Map {
 
 // ── Player self-signup ────────────────────────────────────────────────────────
 
+var NicaraguaDepartments = []string{
+	"Boaco", "Carazo", "Chinandega", "Chontales", "Estelí",
+	"Granada", "Jinotega", "León", "Madriz", "Managua",
+	"Masaya", "Matagalpa", "Nueva Segovia", "Rivas", "Río San Juan",
+	"RACCN", "RACCS",
+}
+
+func (h *PublicHandler) DepartmentInput(c *fiber.Ctx) error {
+	country := strings.TrimSpace(strings.ToUpper(c.Query("country")))
+	currentDept := c.Query("currentDepartment")
+	theme := c.Query("theme") // "register", "admin-add", "admin-edit"
+
+	isNicaragua := country == "NIC" || country == "NICARAGUA" || country == "NI"
+
+	return c.Render("partials/department-input", fiber.Map{
+		"IsNicaragua":          isNicaragua,
+		"NicaraguaDepartments": NicaraguaDepartments,
+		"Department":           currentDept,
+		"Theme":                theme,
+	})
+}
 func (h *PublicHandler) ShowSignup(c *fiber.Ctx) error {
 	lang := getLang(c)
 	return c.Render("register", merge(tMap(lang), fiber.Map{
@@ -94,6 +116,7 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 		LastName       string `form:"lastName"`
 		Birthdate      string `form:"birthdate"`
 		Country        string `form:"country"`
+		Department     string `form:"department"`
 		Gender         string `form:"gender"`
 		WhatsAppNumber string `form:"whatsAppNumber"`
 		Honeypot       string `form:"website"` // Honeypot field
@@ -117,6 +140,7 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 		body.Birthdate,
 		body.Gender,
 		body.Country,
+		body.Department,
 		body.WhatsAppNumber,
 		500, // Default starting elo
 		500,

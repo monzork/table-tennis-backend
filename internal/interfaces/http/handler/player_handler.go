@@ -44,6 +44,7 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 		LastName       string `json:"lastName" form:"lastName"`
 		Birthdate      string `json:"birthdate" form:"birthdate"`
 		Country        string `json:"country" form:"country"`
+		Department     string `json:"department" form:"department"`
 		Gender         string `json:"gender" form:"gender"`
 		WhatsAppNumber string `json:"whatsAppNumber" form:"whatsAppNumber"`
 		SinglesElo     int16  `json:"singlesElo" form:"singlesElo"`
@@ -54,7 +55,7 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	player, err := h.registerPlayerUC.Execute(context.Background(), body.FirstName, body.LastName, body.Birthdate, body.Gender, body.Country, body.WhatsAppNumber, body.SinglesElo, body.DoublesElo)
+	player, err := h.registerPlayerUC.Execute(context.Background(), body.FirstName, body.LastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.SinglesElo, body.DoublesElo)
 
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -70,6 +71,7 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 		LastName       string `json:"lastName" form:"lastName"`
 		Birthdate      string `json:"birthdate" form:"birthdate"`
 		Country        string `json:"country" form:"country"`
+		Department     string `json:"department" form:"department"`
 		Gender         string `json:"gender" form:"gender"`
 		WhatsAppNumber string `json:"whatsAppNumber" form:"whatsAppNumber"`
 		SinglesElo     int16  `json:"singlesElo" form:"singlesElo"`
@@ -80,7 +82,7 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	player, err := h.updatePlayerUC.Execute(c.Context(), id, body.FirstName, body.LastName, body.Birthdate, body.Gender, body.Country, body.WhatsAppNumber, body.SinglesElo, body.DoublesElo)
+	player, err := h.updatePlayerUC.Execute(c.Context(), id, body.FirstName, body.LastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.SinglesElo, body.DoublesElo)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -119,6 +121,12 @@ func (h *PlayerHandler) Search(c *fiber.Ctx) error {
 func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
 	query := c.Query("q")
 	gender := c.Query("gender")        // optional: "M" or "F"
+	category := c.Query("eventCategory")
+	if category == "men" {
+		gender = "M"
+	} else if category == "women" {
+		gender = "F"
+	}
 	selectAll := c.Query("selectAll") == "true" // if true, mark all returned players as checked
 
 	players, err := h.searchPlayerUC.Execute(c.Context(), query)
@@ -163,9 +171,9 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 		c.Set("Content-Type", "text/csv")
 		c.Set("Content-Disposition", `attachment; filename="players_template.csv"`)
 		return c.SendString(
-			"first_name,last_name,birthdate,gender,country,singles_elo,doubles_elo\n" +
-				"John,Doe,1995-06-15,M,MEX,1200,1150\n" +
-				"Jane,Smith,1998-03-22,F,USA,1350,1300\n",
+			"first_name,last_name,birthdate,gender,country,department,singles_elo,doubles_elo\n" +
+				"John,Doe,1995-06-15,M,MEX,IT,1200,1150\n" +
+				"Jane,Smith,1998-03-22,F,USA,HR,1350,1300\n",
 		)
 	}
 
@@ -218,6 +226,7 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 		{"birthdate", 14, false, "YYYY-MM-DD"},
 		{"gender", 10, false, "M or F"},
 		{"country", 10, false, "3-letter code"},
+		{"department", 16, true, "e.g. IT, HR, Sales"},
 		{"singles_elo", 14, true, "Default: 500"},
 		{"doubles_elo", 14, true, "Default: 500"},
 	}
@@ -255,8 +264,8 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 
 	// Example data rows (4 and 5)
 	examples := [][]interface{}{
-		{"John", "Doe", "1995-06-15", "M", "MEX", 1200, 1150},
-		{"Jane", "Smith", "1998-03-22", "F", "USA", 1350, 1300},
+		{"John", "Doe", "1995-06-15", "M", "MEX", "IT", 1200, 1150},
+		{"Jane", "Smith", "1998-03-22", "F", "USA", "HR", 1350, 1300},
 	}
 	for r, row := range examples {
 		for c, val := range row {
@@ -295,8 +304,9 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 	f.SetCellValue(legendSheet, "A4", "🔵 Blue = Optional (defaults to 500 if blank)")
 	f.SetCellValue(legendSheet, "A6", "gender: M = Male, F = Female")
 	f.SetCellValue(legendSheet, "A7", "country: use 3-letter ISO code (MEX, USA, CHN...)")
-	f.SetCellValue(legendSheet, "A8", "birthdate: YYYY-MM-DD or DD/MM/YYYY")
-	f.SetCellValue(legendSheet, "A9", "singles_elo / doubles_elo: FFTT starting points (default 500)")
+	f.SetCellValue(legendSheet, "A8", "department: player department (e.g. IT, HR, Sales, etc.)")
+	f.SetCellValue(legendSheet, "A9", "birthdate: YYYY-MM-DD or DD/MM/YYYY")
+	f.SetCellValue(legendSheet, "A10", "singles_elo / doubles_elo: FFTT starting points (default 500)")
 	f.SetColWidth(legendSheet, "A", "A", 55)
 
 	var buf bytes.Buffer

@@ -1,10 +1,10 @@
-<div class="max-w-xl mx-auto animate-fade-in">
+<div class="max-w-xl mx-auto animate-fade-in px-4">
     <div class="mb-10 text-center">
-        <h1 class="text-5xl font-extrabold uppercase tracking-tighter mb-2">{{index .T "register.title"}}</h1>
-        <p class="text-gray-400 font-bold uppercase tracking-widest text-xs">{{index .T "register.subtitle"}}</p>
+        <h1 class="text-4xl sm:text-5xl font-extrabold uppercase tracking-tighter mb-2">{{index .T "register.title"}}</h1>
+        <p class="text-gray-400 font-bold uppercase tracking-widest text-[10px] sm:text-xs">{{index .T "register.subtitle"}}</p>
     </div>
 
-    <div class="glass p-10 rounded-3xl shadow-2xl relative overflow-hidden">
+    <div class="glass p-6 sm:p-10 rounded-3xl shadow-2xl relative overflow-hidden">
         <!-- Decoration -->
         <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
         <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
@@ -13,43 +13,53 @@
             <!-- Honeypot -->
             <input type="text" name="website" class="hidden" tabindex="-1" autocomplete="off">
 
-            <div class="grid grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div class="space-y-2">
                     <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "register.first_name"}}</label>
-                    <input type="text" name="firstName" required placeholder="John" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all">
+                    <input type="text" name="firstName" required placeholder="John" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
                 </div>
                 <div class="space-y-2">
                     <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "register.last_name"}}</label>
-                    <input type="text" name="lastName" required placeholder="Doe" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all">
+                    <input type="text" name="lastName" required placeholder="Doe" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div class="space-y-2">
                     <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "register.birthdate"}}</label>
-                    <input type="date" name="birthdate" required class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all [color-scheme:dark]">
+                    <input type="date" name="birthdate" required class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all [color-scheme:dark] text-base sm:text-sm">
                 </div>
                 <div class="space-y-2">
                     <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "register.gender"}}</label>
-                    <select name="gender" required class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all appearance-none">
+                    <select name="gender" required class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all appearance-none text-base sm:text-sm">
                         <option value="M">{{index .T "register.gender_male"}}</option>
                         <option value="F">{{index .T "register.gender_female"}}</option>
                     </select>
                 </div>
             </div>
 
-            <div class="space-y-2">
-                <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "register.country"}}</label>
-                <input type="text" name="country" required placeholder="{{index .T "register.country_ph"}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all uppercase">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "register.country"}}</label>
+                    <input type="text" id="reg-country" name="country" required placeholder="{{index .T "register.country_ph"}}"
+                           hx-get="/players/department-input?theme=register"
+                           hx-trigger="keyup changed delay:300ms, change"
+                           hx-target="#department-container"
+                           hx-swap="innerHTML"
+                           class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all uppercase text-base sm:text-sm">
+                </div>
+                <div class="space-y-2" id="department-container">
+                    {{template "partials/department-input" .}}
+                </div>
             </div>
 
             <div class="space-y-2">
                 <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "register.whatsapp"}}</label>
-                <input type="text" name="whatsAppNumber" placeholder="{{index .T "register.whatsapp_ph"}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all">
+                <input type="text" name="whatsAppNumber" placeholder="{{index .T "register.whatsapp_ph"}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
                 <p class="text-[9px] text-gray-500 uppercase tracking-tight italic">{{index .T "register.whatsapp_hint"}}</p>
             </div>
 
-            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-black py-5 rounded-2xl transition-all uppercase tracking-[0.2em] shadow-lg transform hover:-translate-y-1 active:scale-95 mt-4">
+            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-black py-4 sm:py-5 rounded-2xl transition-all uppercase tracking-[0.2em] text-xs sm:text-sm shadow-lg transform hover:-translate-y-1 active:scale-95 mt-4">
                 {{index .T "register.btn"}}
             </button>
         </form>

@@ -34,7 +34,12 @@
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Category</label>
-            <select name="eventCategory" id="edit-category-select" onchange="renderDualLists()" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+            <select name="eventCategory" id="edit-category-select" 
+                    hx-get="/players/search/cards"
+                    hx-target="#edit-player-selection-grid"
+                    hx-include="[name='participant_ids[]'], #edit-player-search"
+                    hx-trigger="change"
+                    class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
                 <option value="open" {{if eq .Tournament.EventCategory "open"}}selected{{end}}>Open (All Genders)</option>
                 <option value="men" {{if eq .Tournament.EventCategory "men"}}selected{{end}}>Men's (Male Only)</option>
                 <option value="women" {{if eq .Tournament.EventCategory "women"}}selected{{end}}>Women's (Female Only)</option>
@@ -62,41 +67,38 @@
     
     <div class="space-y-2">
         <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Manage Participants</label>
-        
-        <!-- Hidden select for full backend compatibility -->
-        <select id="edit-participants" name="participant_ids[]" multiple class="hidden">
+        <div class="relative">
+            <input type="text" id="edit-player-search" 
+                name="q"
+                hx-get="/players/search/cards" 
+                hx-trigger="keyup changed delay:300ms" 
+                hx-target="#edit-player-selection-grid"
+                hx-include="[name='participant_ids[]'], [name='eventCategory']"
+                placeholder="Search athletes by name..." 
+                class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-white transition-all pl-10">
+            <svg class="w-4 h-4 absolute left-3 top-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+        <div id="edit-player-selection-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto p-2 bg-black/20 rounded-xl border border-white/5 scrollbar-thin">
             {{$selectedPlayers := .Tournament.Participants}}
             {{range .Players}}
             {{$isTagged := false}}
             {{$pid := .ID}}
             {{range $selectedPlayers}}{{if eq .ID $pid}}{{$isTagged = true}}{{end}}{{end}}
-            <option value="{{.ID}}" data-gender="{{.Gender}}" data-name="{{.FirstName}} {{.LastName}}" data-elo="{{.SinglesElo}}" {{if $isTagged}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+            <label class="player-card relative cursor-pointer group" data-gender="{{.Gender}}">
+                <input type="checkbox" name="participant_ids[]" value="{{.ID}}" class="hidden peer" {{if $isTagged}}checked{{end}}>
+                <div class="p-3 rounded-lg border border-white/5 bg-white/[0.02] peer-checked:border-white/40 peer-checked:bg-white/10 group-hover:bg-white/5 transition-all">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-bold text-gray-300 truncate">{{.FirstName}} <span class="uppercase">{{.LastName}}</span></p>
+                            <p class="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">{{.SinglesElo}} ELO • {{.Gender}}</p>
+                        </div>
+                        <div class="w-4 h-4 rounded border border-white/10 flex items-center justify-center peer-checked:bg-white">
+                            <svg class="w-3 h-3 text-black opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+            </label>
             {{end}}
-        </select>
-
-        <!-- Premium Dual Listbox View -->
-        <div class="grid grid-cols-2 gap-4">
-            <!-- Available Column -->
-            <div class="bg-black/40 border border-white/5 rounded-2xl p-4">
-                <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
-                    <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider">Available Players</span>
-                    <input type="text" id="available-search" oninput="renderDualLists()" placeholder="Search..." class="bg-black/50 border border-white/10 rounded-lg py-1.5 px-3 text-[10px] text-white focus:outline-none focus:ring-1 focus:ring-white w-24 placeholder:text-gray-600">
-                </div>
-                <div id="available-list" class="overflow-y-auto space-y-1.5 custom-scrollbar pr-1 max-h-48">
-                    <!-- Dynamic -->
-                </div>
-            </div>
-
-            <!-- Selected Column -->
-            <div class="bg-black/40 border border-white/5 rounded-2xl p-4">
-                <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
-                    <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider">Selected (<span id="selected-count" class="text-white font-bold">0</span>)</span>
-                    <button type="button" onclick="clearAllSelections()" class="text-[9px] font-black uppercase tracking-wider text-gray-500 hover:text-white transition-colors">Clear All</button>
-                </div>
-                <div id="selected-list" class="overflow-y-auto space-y-1.5 custom-scrollbar pr-1 max-h-48">
-                    <!-- Dynamic -->
-                </div>
-            </div>
         </div>
     </div>
 
@@ -244,129 +246,3 @@
         <button type="submit" class="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest">Save Changes</button>
     </div>
 </form>
-
-<script>
-    // Store master copy of original options
-    let originalParticipantsOptions = [];
-
-    function initParticipantsOptions() {
-        const select = document.getElementById('edit-participants');
-        if (!select) return;
-        
-        originalParticipantsOptions = [];
-        const options = select.querySelectorAll('option');
-        options.forEach(opt => {
-            originalParticipantsOptions.push({
-                value: opt.value,
-                text: opt.getAttribute('data-name') || opt.text,
-                gender: opt.getAttribute('data-gender'),
-                elo: opt.getAttribute('data-elo') || '1000',
-                selected: opt.selected
-            });
-        });
-    }
-
-    function toggleSelection(value) {
-        const player = originalParticipantsOptions.find(p => p.value === value);
-        if (!player) return;
-
-        player.selected = !player.selected;
-
-        // Sync to hidden select
-        const hiddenSelect = document.getElementById('edit-participants');
-        if (hiddenSelect) {
-            const opt = hiddenSelect.querySelector(`option[value="${value}"]`);
-            if (opt) opt.selected = player.selected;
-        }
-
-        renderDualLists();
-    }
-
-    function clearAllSelections() {
-        const hiddenSelect = document.getElementById('edit-participants');
-        originalParticipantsOptions.forEach(player => {
-            player.selected = false;
-            if (hiddenSelect) {
-                const opt = hiddenSelect.querySelector(`option[value="${player.value}"]`);
-                if (opt) opt.selected = false;
-            }
-        });
-        renderDualLists();
-    }
-
-    function renderDualLists() {
-        const availableContainer = document.getElementById('available-list');
-        const selectedContainer = document.getElementById('selected-list');
-        const searchVal = (document.getElementById('available-search')?.value || '').toLowerCase();
-        const categoryVal = document.getElementById('edit-category-select')?.value || 'open';
-        const hiddenSelect = document.getElementById('edit-participants');
-
-        if (!availableContainer || !selectedContainer || !hiddenSelect) return;
-
-        availableContainer.innerHTML = '';
-        selectedContainer.innerHTML = '';
-
-        let selectedCount = 0;
-
-        originalParticipantsOptions.forEach(player => {
-            // Apply category filter (skip if doesn't match gender)
-            if (categoryVal === 'men' && player.gender !== 'M') {
-                // Force deselect if it was somehow selected but category changed to Men
-                if (player.selected) {
-                    player.selected = false;
-                    const opt = hiddenSelect.querySelector(`option[value="${player.value}"]`);
-                    if (opt) opt.selected = false;
-                }
-                return;
-            }
-            if (categoryVal === 'women' && player.gender !== 'F') {
-                if (player.selected) {
-                    player.selected = false;
-                    const opt = hiddenSelect.querySelector(`option[value="${player.value}"]`);
-                    if (opt) opt.selected = false;
-                }
-                return;
-            }
-
-            // Create card HTML element
-            const card = document.createElement('div');
-            card.className = `flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer select-none bg-white/[0.02] border-white/5 hover:bg-white/5 hover:border-white/10`;
-            card.onclick = () => toggleSelection(player.value);
-
-            // Gender icon and badge
-            const genderTag = player.gender === 'M' ? '♂ Men' : '♀ Women';
-
-            card.innerHTML = `
-                <div class="min-w-0 pr-2">
-                    <p class="text-[10px] font-extrabold text-white truncate uppercase tracking-tight">${player.text}</p>
-                    <p class="text-[8px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">${player.elo} ELO • ${genderTag}</p>
-                </div>
-                <div class="shrink-0 flex items-center justify-center w-6 h-6 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-xs font-black">
-                    ${player.selected ? '✕' : '+'}
-                </div>
-            `;
-
-            if (player.selected) {
-                selectedCount++;
-                selectedContainer.appendChild(card);
-            } else {
-                // Apply search filter on Available List only
-                if (searchVal === '' || player.text.toLowerCase().includes(searchVal)) {
-                    availableContainer.appendChild(card);
-                }
-            }
-        });
-
-        // Update selected count badge
-        const countSpan = document.getElementById('selected-count');
-        if (countSpan) {
-            countSpan.textContent = selectedCount;
-        }
-    }
-
-    // Trigger initial filter immediately on form load
-    (function() {
-        initParticipantsOptions();
-        renderDualLists();
-    })();
-</script>

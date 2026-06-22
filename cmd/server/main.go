@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"table-tennis-backend/internal/application/division"
@@ -50,6 +52,7 @@ func main() {
 	tournamentRepo := bun.NewTournamentRepository(bun.DB)
 	createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
 	getTournamentByIDUC := tournament.NewGetTournamentByIDUseCase(tournamentRepo, divisionRepo)
+	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
 	updateTournamentUC := tournament.NewUpdateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
 	deleteTournamentUC := tournament.NewDeleteTournamentUseCase(tournamentRepo)
 	matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
@@ -79,6 +82,7 @@ func main() {
 		deleteTeamUC,
 		assignPlayerToTeamUC,
 		removePlayerFromTeamUC,
+		getTournamentsUC,
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
 	createEventUC := event.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
@@ -125,11 +129,31 @@ func main() {
 	engine.AddFunc("add", func(a, b int) int {
 		return a + b
 	})
+	engine.AddFunc("dict", func(values ...interface{}) (map[string]interface{}, error) {
+		if len(values)%2 != 0 {
+			return nil, fmt.Errorf("invalid dict call, must have even number of arguments")
+		}
+		dict := make(map[string]interface{}, len(values)/2)
+		for i := 0; i < len(values); i += 2 {
+			key, ok := values[i].(string)
+			if !ok {
+				return nil, fmt.Errorf("dict keys must be strings")
+			}
+			dict[key] = values[i+1]
+		}
+		return dict, nil
+	})
+	engine.AddFunc("isNicaragua", func(country string) bool {
+		c := strings.TrimSpace(strings.ToUpper(country))
+		return c == "NIC" || c == "NICARAGUA" || c == "NI"
+	})
+	engine.AddFunc("nicaraguaDepartments", func() []string {
+		return handler.NicaraguaDepartments
+	})
 	app := fiber.New(fiber.Config{
 		Views: engine,
 	})
 
-	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
 	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 
 	app.Get("/rankings/singles", leaderboardHandler.GetSingles)
@@ -139,6 +163,11 @@ func main() {
 	app.Get("/rankings/mens/doubles", leaderboardHandler.GetMensDoubles)
 	app.Get("/rankings/womens/doubles", leaderboardHandler.GetWomensDoubles)
 	app.Get("/rankings/mixed/doubles", leaderboardHandler.GetMixedDoubles)
+
+	// Public read-only tournament/event details
+	app.Get("/tournaments", tournamentHandler.PublicList)
+	app.Get("/tournaments/:id", tournamentHandler.PublicDetail)
+	app.Get("/events/:id", eventHandler.PublicDetail)
 
 	// Redirect Root to Public Rankings
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -155,6 +184,7 @@ func main() {
 	})
 	app.Get("/register", publicHandler.ShowSignup)
 	app.Post("/register", signupLimiter, publicHandler.Register)
+	app.Get("/players/department-input", publicHandler.DepartmentInput)
 
 	// Public tournament self-registration
 	app.Get("/tournaments/register", publicHandler.ShowTournamentRegistration)
@@ -175,6 +205,7 @@ func main() {
 	admin.Get("/players", adminHandler.Players)
 	admin.Get("/tournaments", adminHandler.Tournaments)
 	admin.Get("/events", adminHandler.Events)
+	admin.Get("/events/division-select", adminHandler.DivisionSelect)
 	admin.Get("/events/:id", eventHandler.Detail)
 	admin.Get("/divisions", adminHandler.Divisions)
 	admin.Get("/player-field", adminHandler.NewPlayerField)
@@ -196,6 +227,7 @@ func main() {
 	api.Post("/tournaments", tournamentHandler.Create)
 	api.Post("/events", eventHandler.Create)
 	api.Delete("/events/:id", eventHandler.Delete)
+	api.Post("/events/bulk-delete", eventHandler.DeleteBulk)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)
 	api.Get("/matches/:id/score-form", matchHandler.ShowScoreForm)

@@ -273,7 +273,7 @@
       
       <div class="space-y-2">
         <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Match Type</label>
-        <select name="matchType" id="match-type-selector" onchange="toggleDoublesSelectors(this.value)" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer" required>
+        <select name="matchType" id="match-type-selector" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer" required>
           <option value="singles" selected>Singles</option>
           <option value="doubles">Doubles</option>
         </select>
@@ -315,25 +315,7 @@
         </div>
       </div>
 
-      <script>
-        function toggleDoublesSelectors(val) {
-          const p2A = document.getElementById('teamA-player2');
-          const p2B = document.getElementById('teamB-player2');
-          if (val === 'doubles') {
-            p2A.classList.remove('hidden');
-            p2A.setAttribute('required', 'true');
-            p2B.classList.remove('hidden');
-            p2B.setAttribute('required', 'true');
-          } else {
-            p2A.classList.add('hidden');
-            p2A.removeAttribute('required');
-            p2A.value = "";
-            p2B.classList.add('hidden');
-            p2B.removeAttribute('required');
-            p2B.value = "";
-          }
-        }
-      </script>
+
       
       <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-xl transition-all uppercase tracking-widest text-xs shadow-lg mt-4">Add Match to Encounter</button>
     </form>

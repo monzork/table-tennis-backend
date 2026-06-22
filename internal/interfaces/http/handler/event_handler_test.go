@@ -39,12 +39,12 @@ func TestEventHandler(t *testing.T) {
 
 	// Seed players
 	playRepo := bunRepo.NewPlayerRepository(db)
-	p1, _ := player.NewPlayer("John", "Doe", time.Now(), "M", "USA")
+	p1, _ := player.NewPlayer("John", "Doe", time.Now(), "M", "USA", "")
 	p1.SinglesElo = 2100
 	p1.DoublesElo = 2100
 	_ = playRepo.Save(ctx, p1)
 
-	p2, _ := player.NewPlayer("Jane", "Smith", time.Now(), "F", "CAN")
+	p2, _ := player.NewPlayer("Jane", "Smith", time.Now(), "F", "CAN", "")
 	p2.SinglesElo = 2200
 	p2.DoublesElo = 2200
 	_ = playRepo.Save(ctx, p2)

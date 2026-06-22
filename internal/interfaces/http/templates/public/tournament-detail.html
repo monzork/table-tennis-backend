@@ -1,0 +1,112 @@
+<div class="space-y-10 text-white/90 animate-fade-in max-w-5xl mx-auto px-4">
+  {{/* Header */}}
+  <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4">
+    <div>
+      <a href="/tournaments" class="text-xs text-gray-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1 mb-2">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        All Tournaments
+      </a>
+      <h1 class="text-4xl font-extrabold tracking-tighter uppercase">{{.Tournament.Name}}<span class="text-white">.</span></h1>
+      <div class="flex gap-3 mt-2 flex-wrap">
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Tournament.Type}}</span>
+        <span class="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[11px] uppercase tracking-widest text-white">{{.Tournament.Format}}</span>
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
+          {{.Tournament.StartDate.Format "Jan 02"}} – {{.Tournament.EndDate.Format "Jan 02, 2006"}}
+        </span>
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
+          {{len .Tournament.Participants}} players
+        </span>
+        {{if eq .Tournament.Status "finished"}}
+        <span class="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-[11px] uppercase tracking-widest text-green-400 font-bold">
+          Finished
+        </span>
+        {{end}}
+      </div>
+    </div>
+  </header>
+
+  {{/* Participants */}}
+  <section class="space-y-3">
+    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">
+      {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}Player Pool{{else}}Participants{{end}}
+    </h2>
+    <div class="flex flex-wrap gap-2">
+      {{range .Tournament.Participants}}
+      <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+        <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
+          {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
+        </div>
+        <span class="text-sm font-semibold">{{.FirstName}} {{.LastName}}</span>
+        <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
+      </div>
+      {{else}}
+      <p class="text-sm text-gray-600">No participants registered.</p>
+      {{end}}
+    </div>
+  </section>
+
+  {{/* Bracket/Groups Draw Area */}}
+  <section class="space-y-6">
+    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Tournament Draw</h2>
+    {{$count := len .Tournament.Participants}}
+    {{$teamCount := len .Tournament.Teams}}
+    {{if or (gt $count 1) (gt $teamCount 1)}}
+    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar">
+      {{template "admin/partials/tournament-bracket" .BracketViewModel}}
+    </div>
+    {{else}}
+    <div class="glass rounded-2xl border border-white/10 p-8 text-center text-gray-600">
+      <p class="text-sm">Bracket will generate after participants are added.</p>
+    </div>
+    {{end}}
+  </section>
+
+  {{/* Encounter Match List */}}
+  <section class="space-y-4 pt-6 border-t border-white/10">
+    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Encounter Match List</h2>
+    <div class="glass rounded-2xl overflow-hidden border border-white/10">
+      <table class="w-full text-left border-collapse text-xs font-medium">
+        <thead>
+          <tr class="bg-black/40 border-b border-white/10 text-gray-400 uppercase text-[9px] tracking-wider">
+            <th class="p-4">Type</th>
+            <th class="p-4">Player(s) A</th>
+            <th class="p-4">Player(s) B</th>
+            <th class="p-4">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/10">
+          {{range .Tournament.Matches}}
+          <tr class="hover:bg-white/5 transition-colors">
+            <td class="p-4 text-gray-300 capitalize">{{.MatchType}}</td>
+            <td class="p-4">
+                {{range .TeamA}}
+                    <div class="{{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                        {{.FirstName}} <span class="uppercase font-bold">{{.LastName}}</span>
+                    </div>
+                {{end}}
+            </td>
+            <td class="p-4">
+                {{range .TeamB}}
+                    <div class="{{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                        {{.FirstName}} <span class="uppercase font-bold">{{.LastName}}</span>
+                    </div>
+                {{end}}
+            </td>
+            <td class="p-4">
+                {{if eq .Status "finished"}}
+                    <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">Finished</span>
+                {{else}}
+                    <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">Scheduled</span>
+                {{end}}
+            </td>
+          </tr>
+          {{else}}
+          <tr>
+            <td colspan="4" class="p-8 text-center text-gray-500">No matches scheduled yet.</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

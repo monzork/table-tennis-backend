@@ -72,28 +72,48 @@
                 <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Category</label>
                 <div class="grid grid-cols-4 gap-2">
                     <label class="cursor-pointer group">
-                        <input type="radio" name="eventCategory" value="open" checked onchange="filterPlayersByGender(this.value, 'player-selection-grid')" class="hidden peer">
+                        <input type="radio" id="category-open" name="eventCategory" value="open" checked 
+                               hx-get="/players/search/cards"
+                               hx-target="#player-selection-grid"
+                               hx-include="[name='participant_ids[]'], #player-search"
+                               hx-trigger="change"
+                               class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">⚐ Open</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">All genders</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
-                        <input type="radio" name="eventCategory" value="men" onchange="filterPlayersByGender(this.value, 'player-selection-grid')" class="hidden peer">
+                        <input type="radio" id="category-men" name="eventCategory" value="men" 
+                               hx-get="/players/search/cards"
+                               hx-target="#player-selection-grid"
+                               hx-include="[name='participant_ids[]'], #player-search"
+                               hx-trigger="change"
+                               class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">♂ Men's</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">Male only</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
-                        <input type="radio" name="eventCategory" value="women" onchange="filterPlayersByGender(this.value, 'player-selection-grid')" class="hidden peer">
+                        <input type="radio" id="category-women" name="eventCategory" value="women" 
+                               hx-get="/players/search/cards"
+                               hx-target="#player-selection-grid"
+                               hx-include="[name='participant_ids[]'], #player-search"
+                               hx-trigger="change"
+                               class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">♀ Women's</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">Female only</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
-                        <input type="radio" name="eventCategory" value="mixed" onchange="filterPlayersByGender(this.value, 'player-selection-grid')" class="hidden peer">
+                        <input type="radio" id="category-mixed" name="eventCategory" value="mixed" 
+                               hx-get="/players/search/cards"
+                               hx-target="#player-selection-grid"
+                               hx-include="[name='participant_ids[]'], #player-search"
+                               hx-trigger="change"
+                               class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">⚤ Mixed</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">M+F doubles</span>
@@ -304,14 +324,17 @@
                                 <button type="button"
                                     hx-get="/players/search/cards?gender=M&selectAll=true"
                                     hx-target="#player-selection-grid"
+                                    hx-include="[name='eventCategory'], #player-search"
                                     class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 transition-all">All Male</button>
                                 <button type="button"
                                     hx-get="/players/search/cards?gender=F&selectAll=true"
                                     hx-target="#player-selection-grid"
+                                    hx-include="[name='eventCategory'], #player-search"
                                     class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 text-pink-400 transition-all">All Female</button>
                                 <button type="button"
                                     hx-get="/players/search/cards"
                                     hx-target="#player-selection-grid"
+                                    hx-include="[name='eventCategory'], #player-search"
                                     class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 transition-all">Clear</button>
                             </div>
                         </div>
@@ -322,7 +345,7 @@
                                 hx-get="/players/search/cards" 
                                 hx-trigger="keyup changed delay:300ms" 
                                 hx-target="#player-selection-grid"
-                                hx-include="[name='participant_ids[]']"
+                                hx-include="[name='participant_ids[]'], [name='eventCategory']"
                                 placeholder="Search athletes by name..." 
                                 class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-white transition-all pl-10">
                             <svg class="w-4 h-4 absolute left-3 top-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -359,48 +382,6 @@
     </div>
 </div>
 
-<script>
-    function filterPlayersByGender(categoryValue, selectionGridId) {
-        const cards = document.querySelectorAll('#' + selectionGridId + ' .player-card');
-        cards.forEach(card => {
-            const gender = card.getAttribute('data-gender');
-            if (categoryValue === 'men' && gender !== 'M') {
-                card.classList.add('hidden');
-                const input = card.querySelector('input[type="checkbox"]');
-                if (input) input.checked = false;
-            } else if (categoryValue === 'women' && gender !== 'F') {
-                card.classList.add('hidden');
-                const input = card.querySelector('input[type="checkbox"]');
-                if (input) input.checked = false;
-            } else {
-                card.classList.remove('hidden');
-            }
-        });
-    }
 
-    // Attach listeners on page load
-    (function() {
-        const radios = document.querySelectorAll('input[name="eventCategory"]');
-        radios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                filterPlayersByGender(this.value, 'player-selection-grid');
-            });
-            // Initial filter run for the currently checked radio
-            if (radio.checked) {
-                filterPlayersByGender(radio.value, 'player-selection-grid');
-            }
-        });
-
-        // HTMX integration to maintain filters after dynamic swaps / searches
-        document.body.addEventListener('htmx:afterSwap', function(evt) {
-            if (evt.target.id === 'player-selection-grid') {
-                const activeRadio = document.querySelector('input[name="eventCategory"]:checked');
-                if (activeRadio) {
-                    filterPlayersByGender(activeRadio.value, 'player-selection-grid');
-                }
-            }
-        });
-    })();
-</script>
 
 

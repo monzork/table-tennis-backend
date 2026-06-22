@@ -27,6 +27,7 @@
                 <tr class="bg-black/40 border-b border-white/10">
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Name</th>
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Nationality</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Department</th>
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Gender</th>
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Singles Elo</th>
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Doubles Elo</th>
@@ -95,8 +96,22 @@
                 </div>
             </div>
             <div class="flex gap-4">
-                <input type="text" name="country" placeholder="Country" required class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
-                <input type="text" name="whatsAppNumber" placeholder="WhatsApp (e.g. +521...)" class="flex-1 bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
+                <div class="flex-1">
+                    <label class="text-[9px] font-bold uppercase text-gray-500 mb-1 block">Country</label>
+                    <input type="text" id="add-country" name="country" placeholder="Country" required
+                           hx-get="/players/department-input?theme=admin-add"
+                           hx-trigger="change, keyup changed delay:300ms"
+                           hx-target="#add-department-container"
+                           hx-swap="innerHTML"
+                           class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors uppercase">
+                </div>
+                <div class="flex-1" id="add-department-container">
+                    {{template "partials/department-input" dict "Theme" "admin-add" "Country" "" "Department" ""}}
+                </div>
+            </div>
+            <div>
+                <label class="text-[9px] font-bold uppercase text-gray-500 mb-1 block">WhatsApp Number (Optional)</label>
+                <input type="text" name="whatsAppNumber" placeholder="WhatsApp (e.g. +521...)" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
             </div>
             <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-bold py-3 rounded-xl transition-all uppercase tracking-wider mt-4">Register</button>
         </form>
@@ -112,4 +127,5 @@
         </div>
     </div>
 </div>
+
 

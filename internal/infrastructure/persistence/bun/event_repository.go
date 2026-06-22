@@ -136,6 +136,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 			SinglesElo: pm.SinglesElo,
 			DoublesElo: pm.DoublesElo,
 			Country:    pm.Country,
+			Department: pm.Department,
 		}
 	}
 
@@ -280,3 +281,51 @@ func (r *EventRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 	return tx.Commit()
 }
+
+func (r *EventRepository) DeleteEvents(ctx context.Context, ids []uuid.UUID) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var tournamentIDs []uuid.UUID
+	err = tx.NewSelect().
+		Model((*TournamentModel)(nil)).
+		Column("id").
+		Where("event_id IN (?)", bun.In(ids)).
+		Scan(ctx, &tournamentIDs)
+	if err != nil {
+		return err
+	}
+
+	if len(tournamentIDs) > 0 {
+		tx.NewDelete().TableExpr("match_sets").Where("match_id IN (SELECT id FROM matches WHERE tournament_id IN (?))", bun.In(tournamentIDs)).Exec(ctx)
+		tx.NewUpdate().TableExpr("matches").Set("next_match_id = NULL, team_match_id = NULL").Where("tournament_id IN (?)", bun.In(tournamentIDs)).Exec(ctx)
+		tx.NewDelete().TableExpr("matches").Where("tournament_id IN (?)", bun.In(tournamentIDs)).Exec(ctx)
+		tx.NewDelete().TableExpr("tournament_stage_rules").Where("tournament_id IN (?)", bun.In(tournamentIDs)).Exec(ctx)
+		tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE tournament_id IN (?))", bun.In(tournamentIDs)).Exec(ctx)
+		tx.NewDelete().TableExpr("groups").Where("tournament_id IN (?)", bun.In(tournamentIDs)).Exec(ctx)
+		tx.NewDelete().TableExpr("tournament_participants").Where("tournament_id IN (?)", bun.In(tournamentIDs)).Exec(ctx)
+		tx.NewDelete().TableExpr("team_players").Where("team_id IN (SELECT id FROM teams WHERE tournament_id IN (?))", bun.In(tournamentIDs)).Exec(ctx)
+		tx.NewDelete().TableExpr("teams").Where("tournament_id IN (?)", bun.In(tournamentIDs)).Exec(ctx)
+	}
+
+	if len(tournamentIDs) > 0 {
+		_, err = tx.NewDelete().Model((*TournamentModel)(nil)).Where("event_id IN (?)", bun.In(ids)).Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = tx.NewDelete().Model(&EventModel{}).Where("id IN (?)", bun.In(ids)).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+

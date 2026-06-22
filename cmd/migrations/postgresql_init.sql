@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS players (
     singles_elo INTEGER NOT NULL DEFAULT 1000,
     doubles_elo INTEGER NOT NULL DEFAULT 1000,
     country TEXT NOT NULL,
+    department TEXT NOT NULL DEFAULT '',
     whatsapp_number TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP

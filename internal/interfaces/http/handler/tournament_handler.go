@@ -27,6 +27,7 @@ type TournamentHandler struct {
 	deleteTeamUC  *tournament.DeleteTeamUseCase
 	assignPlayerToTeamUC *tournament.AssignPlayerToTeamUseCase
 	removePlayerFromTeamUC *tournament.RemovePlayerFromTeamUseCase
+	getTournamentsUC *tournament.GetTournamentsUseCase
 }
 
 func NewTournamentHandler(
@@ -45,6 +46,7 @@ func NewTournamentHandler(
 	deleteTeamUC *tournament.DeleteTeamUseCase,
 	assignPlayerToTeamUC *tournament.AssignPlayerToTeamUseCase,
 	removePlayerFromTeamUC *tournament.RemovePlayerFromTeamUseCase,
+	getTournamentsUC *tournament.GetTournamentsUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:      createUC,
@@ -62,6 +64,7 @@ func NewTournamentHandler(
 		deleteTeamUC:  deleteTeamUC,
 		assignPlayerToTeamUC: assignPlayerToTeamUC,
 		removePlayerFromTeamUC: removePlayerFromTeamUC,
+		getTournamentsUC: getTournamentsUC,
 	}
 }
 
@@ -432,4 +435,34 @@ func (h *TournamentHandler) RemovePlayerFromTeam(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
 	}
 	return c.Redirect(fmt.Sprintf("/admin/tournaments/%s", tournamentID))
+}
+
+func (h *TournamentHandler) PublicList(c *fiber.Ctx) error {
+	tournaments, err := h.getTournamentsUC.Execute(c.Context())
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.Render("public/tournaments", fiber.Map{
+		"Tournaments": tournaments,
+		"Type":        "Tournaments",
+	}, "layouts/public")
+}
+
+func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
+	id := c.Params("id")
+	t, err := h.getByID.Execute(c.Context(), id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
+	divisions, _ := h.divisionUC.GetAll(c.Context())
+
+	vm := BuildTournamentViewModel(t, divisions)
+	vm.IsPublic = true
+
+	return c.Render("public/tournament-detail", fiber.Map{
+		"Tournament":       t,
+		"Divisions":        divisions,
+		"BracketViewModel": vm,
+		"Type":             "Tournaments",
+	}, "layouts/public")
 }

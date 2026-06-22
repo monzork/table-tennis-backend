@@ -26,15 +26,23 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-4">
+    <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Nationality (ISO)</label>
-            <input type="text" name="country" value="{{.Country}}" required maxlength="3" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white uppercase">
+            <input type="text" id="edit-country" name="country" value="{{.Country}}" required
+                   hx-get="/players/department-input?theme=admin-edit"
+                   hx-trigger="change, keyup changed delay:300ms"
+                   hx-target="#edit-department-container"
+                   hx-swap="innerHTML"
+                   class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white uppercase">
         </div>
-        <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">WhatsApp Number</label>
-            <input type="text" name="whatsAppNumber" value="{{.WhatsAppNumber}}" placeholder="+52..." class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+        <div class="space-y-1" id="edit-department-container">
+            {{template "partials/department-input" dict "Theme" "admin-edit" "Country" .Country "Department" .Department}}
         </div>
+    </div>
+    <div class="space-y-1">
+        <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">WhatsApp Number</label>
+        <input type="text" name="whatsAppNumber" value="{{.WhatsAppNumber}}" placeholder="+52..." class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
     </div>
 
     <div class="grid grid-cols-2 gap-4 pt-2 border-t border-white/5 mt-4">

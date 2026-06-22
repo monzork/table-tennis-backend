@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS players (
     birthdate TEXT NOT NULL,
     elo INTEGER NOT NULL DEFAULT 1000,
     country TEXT NOT NULL,
+    department TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT
 );

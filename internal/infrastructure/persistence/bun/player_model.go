@@ -18,6 +18,7 @@ type PlayerModel struct {
 	SinglesElo     int16      `bun:"singles_elo,notnull,default:1000"`
 	DoublesElo     int16      `bun:"doubles_elo,notnull,default:1000"`
 	Country        string     `bun:"country,notnull"`
+	Department     string     `bun:"department,notnull,default:''"`
 	WhatsAppNumber string     `bun:"whatsapp_number,nullzero"`
 	CreatedAt      time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`

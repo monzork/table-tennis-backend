@@ -40,22 +40,25 @@
 </head>
 <body class="min-h-screen flex flex-col font-sans antialiased text-gray-200">
     <nav class="border-b border-white/10 sticky top-0 z-50 bg-black/80 backdrop-blur-md">
-        <div class="container mx-auto px-6 h-20 flex items-center justify-between">
+        <div class="container mx-auto px-4 sm:px-6 py-4 sm:py-0 h-auto sm:h-20 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-10 bg-white rounded flex items-center justify-center font-bold text-black text-xs tracking-tighter">CLUB</div>
+                <div class="w-10 h-8 sm:w-12 sm:h-10 bg-white rounded flex items-center justify-center font-bold text-black text-[10px] sm:text-xs tracking-tighter">CLUB</div>
                 <div class="flex flex-col">
-                    <span class="text-xl font-extrabold uppercase tracking-widest text-white leading-tight">Table Tennis Club</span>
-                    <span class="text-xs text-gray-400 font-bold uppercase tracking-widest">Global Rankings</span>
+                    <span class="text-lg sm:text-xl font-extrabold uppercase tracking-widest text-white leading-tight">Table Tennis Club</span>
+                    <span class="text-[9px] sm:text-xs text-gray-400 font-bold uppercase tracking-widest">Global Rankings</span>
                 </div>
             </div>
-            <div class="flex items-center gap-6">
+            <div class="flex flex-wrap items-center justify-center sm:justify-end gap-4 sm:gap-6">
                 <!-- Main nav -->
-                <div class="hidden sm:flex gap-6 font-bold text-sm tracking-widest uppercase text-gray-400">
+                <div class="flex gap-4 sm:gap-6 font-bold text-[11px] sm:text-sm tracking-widest uppercase text-gray-400">
                     <a href="/rankings/singles" class="hover:text-white transition-colors pb-1 {{if eq .Type "Singles"}}text-white border-b-2 border-white{{end}}">
                         {{index .T "nav.singles"}}
                     </a>
                     <a href="/rankings/doubles" class="hover:text-white transition-colors pb-1 {{if eq .Type "Doubles"}}text-white border-b-2 border-white{{end}}">
                         {{index .T "nav.doubles"}}
+                    </a>
+                    <a href="/tournaments" class="hover:text-white transition-colors pb-1 {{if eq .Type "Tournaments"}}text-white border-b-2 border-white{{end}}">
+                        {{index .T "nav.tournaments"}}
                     </a>
                     <a href="/tournaments/register" class="hover:text-white transition-colors pb-1 flex items-center gap-1.5">
                         <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
@@ -66,12 +69,12 @@
                 <!-- Language switcher -->
                 <div class="flex items-center gap-1 bg-white/5 rounded-full border border-white/10 p-1">
                     <a href="/lang/en"
-                       class="lang-btn px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "en"}}active{{end}}"
+                       class="lang-btn px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "en"}}active{{end}}"
                        title="English">
                         EN
                     </a>
                     <a href="/lang/es"
-                       class="lang-btn px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "es"}}active{{end}}"
+                       class="lang-btn px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "es"}}active{{end}}"
                        title="Español">
                         ES
                     </a>
