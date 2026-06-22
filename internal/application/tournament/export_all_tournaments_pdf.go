@@ -121,14 +121,31 @@ func (uc *ExportAllTournamentsPdfUseCase) Execute(ctx context.Context) ([]byte, 
 
 		pdf.Ln(4)
 
-		// Highlight Winner/Champion if finished
-		if t.Status == "finished" && t.WinnerName != "" {
-			pdf.SetFillColor(254, 243, 199) // subtle gold highlight
-			pdf.SetTextColor(146, 64, 14)  // amber dark text
-			pdf.SetFont("Arial", "B", 11)
-			pdf.CellFormat(0, 10, fmt.Sprintf("  🏆 CHAMPION: %s", strings.ToUpper(t.WinnerName)), "1", 1, "L", true, 0, "")
-			pdf.SetTextColor(0, 0, 0)
-			pdf.Ln(4)
+		// Display Final Places/Standings if finished
+		if t.Status == "finished" {
+			first, second, third := getTournamentPlaces(t)
+			if first != "" || second != "" || third != "" {
+				pdf.SetFillColor(245, 247, 250) // clean light grey background
+				pdf.SetFont("Arial", "B", 10)
+				pdf.CellFormat(0, 8, "  FINAL STANDINGS / PLACINGS", "1", 1, "L", true, 0, "")
+
+				pdf.SetFont("Arial", "", 9)
+				if first != "" {
+					pdf.CellFormat(40, 7, "  1st Place (Champion):", "1", 0, "L", false, 0, "")
+					pdf.SetFont("Arial", "B", 9)
+					pdf.CellFormat(0, 7, "  " + strings.ToUpper(first), "1", 1, "L", false, 0, "")
+					pdf.SetFont("Arial", "", 9)
+				}
+				if second != "" {
+					pdf.CellFormat(40, 7, "  2nd Place:", "1", 0, "L", false, 0, "")
+					pdf.CellFormat(0, 7, "  " + strings.ToUpper(second), "1", 1, "L", false, 0, "")
+				}
+				if third != "" {
+					pdf.CellFormat(40, 7, "  3rd Place:", "1", 0, "L", false, 0, "")
+					pdf.CellFormat(0, 7, "  " + strings.ToUpper(third), "1", 1, "L", false, 0, "")
+				}
+				pdf.Ln(4)
+			}
 		}
 
 		// Players / Teams Section
@@ -190,7 +207,13 @@ func (uc *ExportAllTournamentsPdfUseCase) Execute(ctx context.Context) ([]byte, 
 				}
 
 				nameA := getTeamDisplayName(m.TeamA, t.Type)
+				if (t.Type == "doubles" || t.Type == "mixed_doubles") && len(m.TeamA) >= 2 {
+					nameA = m.TeamA[0].LastName + "/" + m.TeamA[1].LastName
+				}
 				nameB := getTeamDisplayName(m.TeamB, t.Type)
+				if (t.Type == "doubles" || t.Type == "mixed_doubles") && len(m.TeamB) >= 2 {
+					nameB = m.TeamB[0].LastName + "/" + m.TeamB[1].LastName
+				}
 				
 				scoreStr := fmt.Sprintf("%d - %d", m.ScoreA(), m.ScoreB())
 				var setsList []string

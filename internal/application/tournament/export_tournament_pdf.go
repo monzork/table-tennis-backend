@@ -50,6 +50,32 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 	pdf.CellFormat(0, 10, t.Name, "", 1, "C", false, 0, "")
 	pdf.Ln(5)
 
+	if t.Status == "finished" {
+		first, second, third := getTournamentPlaces(t)
+		if first != "" || second != "" || third != "" {
+			pdf.SetFillColor(245, 247, 250) // clean light grey background
+			pdf.SetFont("Arial", "B", 10)
+			pdf.CellFormat(0, 8, "  FINAL STANDINGS / PLACINGS", "1", 1, "L", true, 0, "")
+
+			pdf.SetFont("Arial", "", 9)
+			if first != "" {
+				pdf.CellFormat(45, 7, "  1st Place (Champion):", "1", 0, "L", false, 0, "")
+				pdf.SetFont("Arial", "B", 9)
+				pdf.CellFormat(0, 7, "  " + strings.ToUpper(first), "1", 1, "L", false, 0, "")
+				pdf.SetFont("Arial", "", 9)
+			}
+			if second != "" {
+				pdf.CellFormat(45, 7, "  2nd Place:", "1", 0, "L", false, 0, "")
+				pdf.CellFormat(0, 7, "  " + strings.ToUpper(second), "1", 1, "L", false, 0, "")
+			}
+			if third != "" {
+				pdf.CellFormat(45, 7, "  3rd Place:", "1", 0, "L", false, 0, "")
+				pdf.CellFormat(0, 7, "  " + strings.ToUpper(third), "1", 1, "L", false, 0, "")
+			}
+			pdf.Ln(10)
+		}
+	}
+
 	assocMap := make(map[string]bool)
 	var assocs []string
 	for _, p := range t.Participants {

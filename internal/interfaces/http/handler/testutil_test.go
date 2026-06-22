@@ -173,6 +173,10 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	app.Get("/rankings/singles", leaderboardHandler.GetSingles)
 	app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)
 	app.Get("/players/department-input", publicHandler.DepartmentInput)
+	app.Get("/register", publicHandler.ShowSignup)
+	app.Post("/register", publicHandler.Register)
+	app.Get("/tournaments/register", publicHandler.ShowTournamentRegistration)
+	app.Post("/tournaments/register", publicHandler.RegisterToTournament)
 
 	// Auth endpoints
 	app.Get("/admin/login", authHandler.ShowLogin)

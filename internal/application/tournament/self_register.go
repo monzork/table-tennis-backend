@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
+
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
@@ -77,7 +79,24 @@ func (uc *SelfRegisterUseCase) Execute(
 		}
 	}
 	if matched == nil {
-		return nil, "", fmt.Errorf("no player found matching '%s' from '%s'", fullName, country)
+		parts := strings.Fields(fullName)
+		if len(parts) < 2 {
+			return nil, "", errors.New("first and last name are required for registration")
+		}
+		firstName := parts[0]
+		lastName := strings.Join(parts[1:], " ")
+
+		newPlayer, err := playerDomain.NewPlayer(firstName, lastName, time.Now(), "M", countryUpper, "")
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to create new player: %w", err)
+		}
+		newPlayer.UpdateSinglesElo(500)
+		newPlayer.UpdateDoublesElo(500)
+
+		if err := uc.playerRepo.Save(ctx, newPlayer); err != nil {
+			return nil, "", fmt.Errorf("failed to save new player: %w", err)
+		}
+		matched = newPlayer
 	}
 
 	// Check if already a participant
