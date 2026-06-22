@@ -28,11 +28,12 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 		Country:        p.Country,
 		Department:     p.Department,
 		WhatsAppNumber: p.WhatsAppNumber,
+		Pin:            p.Pin,
 	}
 
 	_, err := r.db.NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department").
+		Set("first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, pin = EXCLUDED.pin").
 		Exec(ctx)
 
 	return err
@@ -103,6 +104,7 @@ func (r *PlayerRepository) mapModelsToDomain(models []PlayerModel) []*player.Pla
 			Country:        m.Country,
 			Department:     m.Department,
 			WhatsAppNumber: m.WhatsAppNumber,
+			Pin:            m.Pin,
 		}
 	}
 	return players
@@ -127,6 +129,7 @@ func (r *PlayerRepository) GetById(ctx context.Context, id uuid.UUID) (*player.P
 		Country:        model.Country,
 		Department:     model.Department,
 		WhatsAppNumber: model.WhatsAppNumber,
+		Pin:            model.Pin,
 	}, nil
 }
 

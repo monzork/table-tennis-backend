@@ -1,4 +1,4 @@
-<h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter">Enter <span class="text-white">Scores</span></h2>
+<h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter">Report <span class="text-white">Score</span></h2>
 <p class="text-xs text-gray-500 mb-6 font-mono">
     {{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}
     {{if .IsDoubles}}
@@ -10,18 +10,9 @@
 </p>
 
 <form
-    {{if .MatchID}}
-    hx-put="/matches/{{.MatchID}}/score"
-    {{else}}
-    hx-post="/admin/matches/score/update"
-    {{end}}
-    {{if .IsSubMatch}}
-    hx-target="#score-modal-content"
-    hx-swap="innerHTML"
-    {{else}}
-    hx-target="#score-error"
-    {{end}}
-    class="space-y-3 mb-6">
+    hx-post="/public/matches/score/update"
+    hx-target="#public-score-error"
+    class="space-y-4 mb-6">
     
     <input type="hidden" name="tournamentId" value="{{.TournamentID}}">
     <input type="hidden" name="stage" value="{{.Stage}}">
@@ -29,6 +20,7 @@
     <input type="hidden" name="p1Id" value="{{.P1Id}}">
     <input type="hidden" name="p2Id" value="{{.P2Id}}">
 
+    <!-- Sets Scores -->
     <div class="space-y-3 mb-6">
         {{range .Sets}}
         <div class="flex items-center gap-3">
@@ -42,7 +34,7 @@
 
     <!-- Referee (Optional) -->
     <div class="space-y-1">
-        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block font-mono">Referee (Optional)</label>
+        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block">Referee (Optional)</label>
         <select name="refereeId" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
             <option value="">No Referee (Self-Managed)</option>
             {{range .Participants}}
@@ -55,29 +47,30 @@
 
     <!-- Table Number -->
     <div class="space-y-1">
-        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block font-mono">Table Number</label>
+        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block">Table Number</label>
         <input name="tableNumber" type="number" min="1" max="50" placeholder="e.g. 1" value="{{if .TableNumber}}{{.TableNumber}}{{end}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
     </div>
 
-    {{if .Pin}}
-    <!-- Match PIN Info (For player self-report) -->
-    <div class="bg-white/5 border border-white/5 rounded-xl p-3 flex justify-between items-center text-xs">
-        <span class="text-gray-500 font-mono">MATCH PIN:</span>
-        <span class="text-yellow-400 font-bold font-mono tracking-widest text-lg">{{.Pin}}</span>
+    <!-- Authentication PIN -->
+    <div class="space-y-1">
+        <label class="text-[10px] font-bold uppercase tracking-widest text-yellow-500 block">Verification PIN</label>
+        <input name="pin" type="text" maxlength="8" placeholder="Enter Match PIN or Referee PIN" class="w-full bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-500 font-mono tracking-widest text-center" required>
+        <span class="text-[9px] text-gray-500 block">
+            If referee is selected, enter Referee PIN (default is 1234). Otherwise, enter the Match PIN.
+        </span>
     </div>
-    {{end}}
 
-    <div id="score-error" class="hidden text-sm text-red-400 mb-4 font-mono"></div>
+    <div id="public-score-error" class="hidden text-sm text-red-400 mb-4 font-mono"></div>
 
-    <div class="flex gap-3">
+    <div class="flex gap-3 pt-2">
         <button type="button" 
-            onclick="document.getElementById('score-modal').classList.add('hidden')"
+            onclick="document.getElementById('public-score-modal').classList.add('hidden')"
             class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-bold py-4 rounded-2xl transition-all uppercase tracking-widest text-sm">
             Cancel
         </button>
         <button type="submit" 
             class="flex-[2] bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg">
-            Save Scores
+            Submit
         </button>
     </div>
 </form>

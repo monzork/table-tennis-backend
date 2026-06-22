@@ -16,6 +16,7 @@ type EventModel struct {
 	SkipElo    bool       `bun:"skip_elo,notnull,default:false"`
 	StartDate  time.Time  `bun:"start_date,notnull"`
 	EndDate    time.Time  `bun:"end_date,notnull"`
+	NumTables  int        `bun:"num_tables,notnull,default:4"`
 	CreatedAt  time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt  *time.Time `bun:"updated_at,nullzero"`
 }

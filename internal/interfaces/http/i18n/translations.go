@@ -87,6 +87,12 @@ var Translations = map[string]map[string]string{
 		"tourney_reg.success_msg":     "You have been successfully registered for",
 		"tourney_reg.view_bracket":    "View Rankings",
 
+		// Status
+		"status.all":         "All Matches",
+		"status.scheduled":   "Waiting",
+		"status.in_progress": "In Progress",
+		"status.finished":    "Finished",
+
 		// Footer
 		"footer.copy": "© 2026 Club Rankings System",
 	},
@@ -174,6 +180,12 @@ var Translations = map[string]map[string]string{
 		"tourney_reg.success_title":   "¡Estás Inscrito!",
 		"tourney_reg.success_msg":     "Fuiste registrado exitosamente en",
 		"tourney_reg.view_bracket":    "Ver Ranking",
+
+		// Status
+		"status.all":         "Todos los Partidos",
+		"status.scheduled":   "En Espera",
+		"status.in_progress": "En Progreso",
+		"status.finished":    "Finalizado",
 
 		// Footer
 		"footer.copy": "© 2026 Sistema de Rankings del Club",

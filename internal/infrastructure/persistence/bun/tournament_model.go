@@ -24,6 +24,7 @@ type TournamentModel struct {
 	SkipElo        bool       `bun:"skip_elo,notnull,default:false"`
 	TeamFormat     string     `bun:"team_format,nullzero"`
 	WinnerName     string     `bun:"winner_name,nullzero"`
+	NumTables      int        `bun:"num_tables,notnull,default:0"`
 	CreatedAt        time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
 }

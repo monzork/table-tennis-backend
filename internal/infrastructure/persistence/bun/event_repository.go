@@ -32,6 +32,7 @@ func (r *EventRepository) Save(ctx context.Context, e *event.Event) error {
 		SkipElo:    e.SkipElo,
 		StartDate:  e.StartDate,
 		EndDate:    e.EndDate,
+		NumTables:  e.NumTables,
 	}
 	_, err := r.db.NewInsert().Model(model).Exec(ctx)
 	return err
@@ -53,6 +54,7 @@ func (r *EventRepository) GetByID(ctx context.Context, id uuid.UUID) (*event.Eve
 		SkipElo:     model.SkipElo,
 		StartDate:   model.StartDate,
 		EndDate:     model.EndDate,
+		NumTables:   model.NumTables,
 		Tournaments: tourneys,
 	}, nil
 }
@@ -214,6 +216,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 			SkipElo:     m.SkipElo,
 			StartDate:   m.StartDate,
 			EndDate:     m.EndDate,
+			NumTables:   m.NumTables,
 			Tournaments: tournamentsByEvent[m.ID],
 		}
 	}
@@ -228,8 +231,9 @@ func (r *EventRepository) Update(ctx context.Context, e *event.Event) error {
 		SkipElo:    e.SkipElo,
 		StartDate:  e.StartDate,
 		EndDate:    e.EndDate,
+		NumTables:  e.NumTables,
 	}
-	_, err := r.db.NewUpdate().Model(model).WherePK().Column("name", "division_id", "skip_elo", "start_date", "end_date").Exec(ctx)
+	_, err := r.db.NewUpdate().Model(model).WherePK().Column("name", "division_id", "skip_elo", "start_date", "end_date", "num_tables").Exec(ctx)
 	return err
 }
 

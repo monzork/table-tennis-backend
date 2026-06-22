@@ -156,6 +156,11 @@ func main() {
 
 	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 
+	// ==========================================
+	// PUBLIC ROUTES
+	// ==========================================
+	
+	// Rankings
 	app.Get("/rankings/singles", leaderboardHandler.GetSingles)
 	app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)
 	app.Get("/rankings/mens/singles", leaderboardHandler.GetMensSingles)
@@ -164,11 +169,15 @@ func main() {
 	app.Get("/rankings/womens/doubles", leaderboardHandler.GetWomensDoubles)
 	app.Get("/rankings/mixed/doubles", leaderboardHandler.GetMixedDoubles)
 
-	// Public read-only tournament/event details
+	// Redirect Root to Public Rankings
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.Redirect("/rankings/singles")
+	})
+
+	// Public Tournaments List
 	app.Get("/tournaments", tournamentHandler.PublicList)
 
-	// Public tournament self-registration (must be before /tournaments/:id)
-	// Public Signup with Rate Limiting (5 requests per min)
+	// Public Tournament Self-Registration (must be before /tournaments/:id)
 	signupLimiter := limiter.New(limiter.Config{
 		Max:        5,
 		Expiration: 1 * time.Minute,
@@ -179,44 +188,58 @@ func main() {
 	app.Get("/tournaments/register", publicHandler.ShowTournamentRegistration)
 	app.Post("/tournaments/register", signupLimiter, publicHandler.RegisterToTournament)
 
+	// Public Detail Views
 	app.Get("/tournaments/:id", tournamentHandler.PublicDetail)
 	app.Get("/events/:id", eventHandler.PublicDetail)
 
-	// Redirect Root to Public Rankings
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Redirect("/rankings/singles")
-	})
-
+	// User Registration
 	app.Get("/register", publicHandler.ShowSignup)
 	app.Post("/register", signupLimiter, publicHandler.Register)
 	app.Get("/players/department-input", publicHandler.DepartmentInput)
 
-	// Language switcher — sets cookie and redirects back to the referring page
+	// Language Switcher
 	app.Get("/lang/:locale", publicHandler.SetLang)
 
-	// Auth endpoints
+	// Public Score Entry & Match Starting Endpoints
+	app.Get("/public/matches/score/form", matchHandler.ShowPublicScoreForm)
+	app.Post("/public/matches/score/form", matchHandler.ShowPublicScoreForm)
+	app.Post("/public/matches/score/update", matchHandler.UpdatePublicScore)
+	app.Post("/public/matches/start", matchHandler.Start)
+	app.Post("/public/matches/:id/start", matchHandler.Start)
+
+
+	// ==========================================
+	// AUTHENTICATION ROUTES
+	// ==========================================
+	
 	app.Get("/admin/login", authHandler.ShowLogin)
 	app.Post("/admin/login", authHandler.Login)
 	app.Post("/admin/logout", authHandler.Logout)
 
-	// Admin functionality protected by session auth
+
+	// ==========================================
+	// PROTECTED ADMIN DASHBOARD / VIEW GROUPS
+	// ==========================================
+	
 	admin := app.Group("/admin")
 	admin.Use(authMiddleware)
+
 	admin.Get("/", adminHandler.Dashboard)
 	admin.Get("/players", adminHandler.Players)
 	admin.Get("/tournaments", adminHandler.Tournaments)
 	admin.Get("/events", adminHandler.Events)
-	admin.Get("/events/division-select", adminHandler.DivisionSelect)
-	admin.Get("/events/:id", eventHandler.Detail)
 	admin.Get("/divisions", adminHandler.Divisions)
 	admin.Get("/player-field", adminHandler.NewPlayerField)
-	admin.Get("/matches/score/form", matchHandler.ShowScoreForm)
-	admin.Post("/matches/score/update", matchHandler.UpdateScore)
-	admin.Post("/tournaments/:id/finish", tournamentHandler.Finish)
 
-	// Existing Form Post Endpoints mapped internally, protected
+
+	// ==========================================
+	// PROTECTED API / FORM ENDPOINTS
+	// ==========================================
+	
 	api := app.Group("/")
 	api.Use(authMiddleware)
+
+	// Players API
 	api.Post("/players", playerHandler.Register)
 	api.Get("/players/search", playerHandler.Search)
 	api.Get("/players/search/cards", playerHandler.SearchSelectionCards)
@@ -224,37 +247,54 @@ func main() {
 	api.Put("/players/:id", playerHandler.Update)
 	api.Delete("/players/:id", playerHandler.Delete)
 	api.Post("/players/import", playerHandler.Import)
-	app.Get("/players/import/template", playerHandler.ImportTemplate)
-	api.Post("/tournaments", tournamentHandler.Create)
-	api.Post("/events", eventHandler.Create)
-	api.Delete("/events/:id", eventHandler.Delete)
-	api.Post("/events/bulk-delete", eventHandler.DeleteBulk)
-	api.Post("/matches/create", matchHandler.Create)
-	api.Post("/matches/finish", matchHandler.Finish)
-	api.Post("/matches/:id/start", matchHandler.Start)
-	api.Get("/matches/:id/score-form", matchHandler.ShowScoreForm)
-	api.Put("/matches/:id/score", matchHandler.UpdateScore)
-	api.Get("/divisions", divisionHandler.ShowEditForm) // for new
-	api.Get("/divisions/:id/edit", divisionHandler.ShowEditForm)
-	api.Post("/divisions", divisionHandler.CreateOrUpdate)
-	api.Delete("/divisions/:id", divisionHandler.Delete)
+	app.Get("/players/import/template", playerHandler.ImportTemplate) // public template download
 
-	// Tournament CRUD routes (admin protected)
+	// Tournaments API
 	admin.Get("/tournaments/:id", tournamentHandler.Detail)
+	api.Post("/tournaments", tournamentHandler.Create)
 	api.Get("/tournaments/:id/edit", tournamentHandler.ShowEditForm)
 	api.Put("/tournaments/:id", tournamentHandler.Update)
 	api.Delete("/tournaments/:id", tournamentHandler.Delete)
 	admin.Post("/tournaments/:id/finish", tournamentHandler.Finish)
 	admin.Get("/tournaments/:id/export", tournamentHandler.Export)
+	admin.Get("/tournaments/:id/export/pdf", tournamentHandler.ExportPDF)
 	admin.Post("/tournaments/:id/teams", tournamentHandler.CreateTeam)
 	admin.Delete("/tournaments/:id/teams/:teamId", tournamentHandler.DeleteTeam)
 	admin.Post("/tournaments/:id/teams/:teamId/players", tournamentHandler.AssignPlayerToTeam)
 	admin.Delete("/tournaments/:id/teams/:teamId/players/:playerId", tournamentHandler.RemovePlayerFromTeam)
-	admin.Get("/tournaments/:id/export/pdf", tournamentHandler.ExportPDF)
-	admin.Get("/reports/all-tournaments/pdf", tournamentHandler.ExportAllPDF)
 	admin.Post("/tournaments/:id/move-player", tournamentHandler.MovePlayer)
 
-	// WebSocket route for real-time bracket updates
+	// Events API
+	admin.Get("/events/division-select", adminHandler.DivisionSelect)
+	admin.Get("/events/:id", eventHandler.Detail)
+	api.Post("/events", eventHandler.Create)
+	api.Delete("/events/:id", eventHandler.Delete)
+	api.Post("/events/bulk-delete", eventHandler.DeleteBulk)
+
+	// Matches API
+	admin.Get("/matches/score/form", matchHandler.ShowScoreForm)
+	admin.Post("/matches/score/form", matchHandler.ShowScoreForm)
+	admin.Post("/matches/score/update", matchHandler.UpdateScore)
+	api.Post("/matches/create", matchHandler.Create)
+	api.Post("/matches/finish", matchHandler.Finish)
+	api.Post("/matches/:id/start", matchHandler.Start)
+	api.Get("/matches/:id/score-form", matchHandler.ShowScoreForm)
+	api.Put("/matches/:id/score", matchHandler.UpdateScore)
+
+	// Divisions API
+	api.Get("/divisions", divisionHandler.ShowEditForm)
+	api.Get("/divisions/:id/edit", divisionHandler.ShowEditForm)
+	api.Post("/divisions", divisionHandler.CreateOrUpdate)
+	api.Delete("/divisions/:id", divisionHandler.Delete)
+
+	// Reports API
+	admin.Get("/reports/all-tournaments/pdf", tournamentHandler.ExportAllPDF)
+
+
+	// ==========================================
+	// WEBSOCKET ROUTES
+	// ==========================================
+	
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		if fiberws.IsWebSocketUpgrade(c) {
 			c.Locals("allowed", true)

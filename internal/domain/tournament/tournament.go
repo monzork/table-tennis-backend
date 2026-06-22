@@ -55,6 +55,9 @@ type Match struct {
 	TeamMatchID  *uuid.UUID
 	Stage        string
 	UpdatedAt    *time.Time
+	RefereeID    *uuid.UUID
+	TableNumber  *int
+	Pin          string
 }
 
 type MatchSet struct {
@@ -112,6 +115,7 @@ type Tournament struct {
 	SkipElo      bool
 	Teams        []*Team
 	TeamFormat   string // "olympic", "swaythling", or ""
+	NumTables    int
 }
 
 func NewTournament(name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player) (*Tournament, error) {
@@ -155,6 +159,7 @@ func NewTournament(name string, tournamentType string, format string, category s
 		EventID:      nil,
 		SkipElo:      false,
 		Teams:        []*Team{},
+		NumTables:    0,
 	}
 	t.StageRules = DefaultStageRules(t.ID)
 

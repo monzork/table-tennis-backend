@@ -171,9 +171,9 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 		c.Set("Content-Type", "text/csv")
 		c.Set("Content-Disposition", `attachment; filename="players_template.csv"`)
 		return c.SendString(
-			"first_name,last_name,birthdate,gender,country,department,singles_elo,doubles_elo\n" +
-				"John,Doe,1995-06-15,M,MEX,IT,1200,1150\n" +
-				"Jane,Smith,1998-03-22,F,USA,HR,1350,1300\n",
+			"first_name,last_name,birthdate,gender,country,department,singles_elo,doubles_elo,whatsapp_number,pin\n" +
+				"John,Doe,1995-06-15,M,MEX,IT,1200,1150,+5212345678,1234\n" +
+				"Jane,Smith,1998-03-22,F,USA,HR,1350,1300,+11234567890,4321\n",
 		)
 	}
 
@@ -229,6 +229,8 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 		{"department", 16, true, "e.g. IT, HR, Sales"},
 		{"singles_elo", 14, true, "Default: 500"},
 		{"doubles_elo", 14, true, "Default: 500"},
+		{"whatsapp_number", 18, true, "e.g. +50588888888"},
+		{"pin", 10, true, "e.g. 1234"},
 	}
 
 	// Write header row (row 1)
@@ -264,8 +266,8 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 
 	// Example data rows (4 and 5)
 	examples := [][]interface{}{
-		{"John", "Doe", "1995-06-15", "M", "MEX", "IT", 1200, 1150},
-		{"Jane", "Smith", "1998-03-22", "F", "USA", "HR", 1350, 1300},
+		{"John", "Doe", "1995-06-15", "M", "MEX", "IT", 1200, 1150, "+5212345678", "1234"},
+		{"Jane", "Smith", "1998-03-22", "F", "USA", "HR", 1350, 1300, "+11234567890", "4321"},
 	}
 	for r, row := range examples {
 		for c, val := range row {
@@ -307,6 +309,8 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 	f.SetCellValue(legendSheet, "A8", "department: player department (e.g. IT, HR, Sales, etc.)")
 	f.SetCellValue(legendSheet, "A9", "birthdate: YYYY-MM-DD or DD/MM/YYYY")
 	f.SetCellValue(legendSheet, "A10", "singles_elo / doubles_elo: FFTT starting points (default 500)")
+	f.SetCellValue(legendSheet, "A11", "whatsapp_number: WhatsApp phone number (optional)")
+	f.SetCellValue(legendSheet, "A12", "pin: 4-digit verification PIN (optional, default 1234)")
 	f.SetColWidth(legendSheet, "A", "A", 55)
 
 	var buf bytes.Buffer

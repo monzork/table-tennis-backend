@@ -21,6 +21,7 @@ type Event struct {
 	SkipElo     bool
 	StartDate   time.Time
 	EndDate     time.Time
+	NumTables   int
 	Tournaments []*tournament.Tournament
 }
 
@@ -42,6 +43,7 @@ func NewEvent(name string, divisionID string, skipElo bool, start, end time.Time
 		SkipElo:     skipElo,
 		StartDate:   start,
 		EndDate:     end,
+		NumTables:   4,
 		Tournaments: []*tournament.Tournament{},
 	}, nil
 }

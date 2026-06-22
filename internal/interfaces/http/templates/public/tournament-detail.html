@@ -1,5 +1,8 @@
 <div class="space-y-10 text-white/90 animate-fade-in max-w-5xl mx-auto px-4"
      hx-ext="ws" ws-connect="/ws/brackets/{{.Tournament.ID}}"
+     hx-on::ws-open="document.getElementById('public-ws-status').textContent = '🟢 Live'; document.getElementById('public-ws-status').className = 'px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-[11px] uppercase tracking-widest text-green-400 font-bold';"
+     hx-on::ws-close="document.getElementById('public-ws-status').textContent = '🔴 Reconnecting…'; document.getElementById('public-ws-status').className = 'px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[11px] uppercase tracking-widest text-red-400 font-bold';"
+     hx-on::ws-error="document.getElementById('public-ws-status').textContent = '🔴 Reconnecting…'; document.getElementById('public-ws-status').className = 'px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[11px] uppercase tracking-widest text-red-400 font-bold';"
      hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); htmx.trigger('#match-list-container', 'reload-matches'); }">
   {{/* Header */}}
   <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4">
@@ -10,6 +13,9 @@
       </a>
       <h1 class="text-4xl font-extrabold tracking-tighter uppercase">{{.Tournament.Name}}<span class="text-white">.</span></h1>
       <div class="flex gap-3 mt-2 flex-wrap">
+        <span id="public-ws-status" class="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-[11px] uppercase tracking-widest text-yellow-400 font-bold">
+          ⏳ Connecting…
+        </span>
         <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Tournament.Type}}</span>
         <span class="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[11px] uppercase tracking-widest text-white">{{.Tournament.Format}}</span>
         <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
@@ -83,26 +89,32 @@
               hx-select="#public-matches-tbody"
               hx-trigger="change"
               class="bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-300 hover:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-white">
-        <option value="all" {{if eq .StatusFilter "all"}}selected{{end}}>All Matches</option>
-        <option value="scheduled" {{if eq .StatusFilter "scheduled"}}selected{{end}}>Waiting / Scheduled</option>
-        <option value="in_progress" {{if eq .StatusFilter "in_progress"}}selected{{end}}>In Progress</option>
-        <option value="finished" {{if eq .StatusFilter "finished"}}selected{{end}}>Finished</option>
+        <option value="all" {{if eq .StatusFilter "all"}}selected{{end}}>{{index .T "status.all"}}</option>
+        <option value="scheduled" {{if eq .StatusFilter "scheduled"}}selected{{end}}>{{index .T "status.scheduled"}}</option>
+        <option value="in_progress" {{if eq .StatusFilter "in_progress"}}selected{{end}}>{{index .T "status.in_progress"}}</option>
+        <option value="finished" {{if eq .StatusFilter "finished"}}selected{{end}}>{{index .T "status.finished"}}</option>
       </select>
     </div>
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
       <table class="w-full text-left border-collapse text-xs font-medium">
         <thead>
           <tr class="bg-black/40 border-b border-white/10 text-gray-400 uppercase text-[9px] tracking-wider">
-            <th class="p-4">Type</th>
-            <th class="p-4">Player(s) A</th>
-            <th class="p-4">Player(s) B</th>
-            <th class="p-4">Status</th>
+            <th class="p-4 text-left">Type</th>
+            <th class="p-4 text-left">Player(s) A</th>
+            <th class="p-4 text-left">Player(s) B</th>
+            <th class="p-4 text-left">Status</th>
+            <th class="p-4 text-right">Actions</th>
           </tr>
         </thead>
         <tbody id="public-matches-tbody" class="divide-y divide-white/10">
           {{range .Tournament.Matches}}
           <tr class="hover:bg-white/5 transition-colors">
-            <td class="p-4 text-gray-300 capitalize">{{.MatchType}}</td>
+            <td class="p-4 text-gray-300 capitalize">
+              {{.MatchType}}
+              {{if .TableNumber}}
+              <div class="text-[9px] text-yellow-400 font-bold font-mono mt-1">TABLE {{.TableNumber}}</div>
+              {{end}}
+            </td>
             <td class="p-4">
                 {{range .TeamA}}
                     <div class="{{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
@@ -119,21 +131,49 @@
             </td>
             <td class="p-4">
                 {{if eq .Status "finished"}}
-                    <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">Finished</span>
+                    <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">{{index $.T "status.finished"}}</span>
                 {{else if eq .Status "in_progress"}}
-                    <span class="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">In Progress</span>
+                    <span class="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">{{index $.T "status.in_progress"}}</span>
                 {{else}}
-                    <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">Waiting</span>
+                    <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">{{index $.T "status.scheduled"}}</span>
                 {{end}}
+            </td>
+            <td class="p-4 text-right">
+              {{if eq .Status "scheduled"}}
+                <button hx-post="/public/matches/{{.ID}}/start?tournamentId={{$.Tournament.ID}}"
+                        hx-swap="none"
+                        class="bg-white hover:bg-gray-200 text-black text-[10px] font-bold py-1.5 px-3 rounded-full transition-all uppercase tracking-wider">
+                  Start
+                </button>
+              {{else if eq .Status "in_progress"}}
+                <button hx-get="/public/matches/score/form?matchId={{.ID}}&tournamentId={{$.Tournament.ID}}&stage={{.Stage}}&bestOf=5"
+                        hx-target="#public-score-modal-content"
+                        hx-on:click="document.getElementById('public-score-modal').classList.remove('hidden')"
+                        class="bg-yellow-500 hover:bg-yellow-400 text-black text-[10px] font-bold py-1.5 px-3 rounded-full transition-all uppercase tracking-wider">
+                  Score
+                </button>
+              {{end}}
             </td>
           </tr>
           {{else}}
           <tr>
-            <td colspan="4" class="p-8 text-center text-gray-500">No matches scheduled yet.</td>
+            <td colspan="5" class="p-8 text-center text-gray-500">No matches scheduled yet.</td>
           </tr>
           {{end}}
         </tbody>
       </table>
     </div>
   </section>
+</div>
+
+{{/* ── Public Score Entry Modal ── */}}
+<div id="public-score-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
+  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-md w-full relative shadow-2xl" id="public-score-modal-content">
+    <button onclick="document.getElementById('public-score-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <div class="flex justify-center p-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+    </div>
+  </div>
 </div>

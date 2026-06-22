@@ -54,6 +54,7 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *tourna
 		SkipElo:   t.SkipElo,
 		TeamFormat: t.TeamFormat,
 		WinnerName: t.WinnerName,
+		NumTables:  t.NumTables,
 	}
 	if _, err := tx.NewInsert().Model(model).Exec(ctx); err != nil {
 		return err
@@ -186,6 +187,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			Participants: participants,
 			Rules:     []tournament.Rule{},
 			Matches:   []tournament.Match{},
+			NumTables:  m.NumTables,
 		}
 	}
 	return tournaments, nil
@@ -452,6 +454,9 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 			TeamMatchID:  mm.TeamMatchID,
 			Stage:        mm.Stage,
 			UpdatedAt:    mm.UpdatedAt,
+			RefereeID:    mm.RefereeID,
+			TableNumber:  mm.TableNumber,
+			Pin:          mm.Pin,
 		}
 
 		// For parent team matches (MatchType=teams, no TeamMatchID), compute sub-match wins
@@ -497,6 +502,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, id uuid.UUID) (*tour
 		Matches:      matches,
 		Teams:        teams,
 		TeamFormat:   model.TeamFormat,
+		NumTables:    model.NumTables,
 	}, nil
 }
 
@@ -522,9 +528,10 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		SkipElo:   t.SkipElo,
 		TeamFormat: t.TeamFormat,
 		WinnerName: t.WinnerName,
+		NumTables:  t.NumTables,
 	}
 
-	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo", "team_format", "winner_name").Exec(ctx)
+	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo", "team_format", "winner_name", "num_tables").Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -764,6 +771,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 			Matches:   []tournament.Match{},
 			Teams:     teams,
 			TeamFormat: m.TeamFormat,
+			NumTables:  m.NumTables,
 		}
 	}
 	return tournaments, nil
@@ -875,5 +883,18 @@ func (r *TournamentRepository) AddParticipant(ctx context.Context, tournamentID 
 	}
 	_, err := r.db.NewInsert().Model(model).Ignore().Exec(ctx)
 	return err
+}
+
+func (r *TournamentRepository) GetEventNumTables(ctx context.Context, eventID uuid.UUID) (int, error) {
+	var eventModel EventModel
+	err := r.db.NewSelect().
+		Model(&eventModel).
+		Column("num_tables").
+		Where("id = ?", eventID).
+		Scan(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return eventModel.NumTables, nil
 }
 

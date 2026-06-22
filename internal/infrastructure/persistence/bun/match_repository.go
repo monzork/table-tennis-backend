@@ -2,6 +2,8 @@ package bun
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 
 	"table-tennis-backend/internal/domain/tournament"
 	"time"
@@ -28,6 +30,9 @@ type MatchModel struct {
 	NextMatchID    *string    `bun:"next_match_id"`
 	NextMatchSlot  string     `bun:"next_match_slot,default:'A'"`
 	TeamMatchID    *uuid.UUID `bun:"team_match_id,type:uuid"`
+	RefereeID      *uuid.UUID `bun:"referee_id,type:uuid"`
+	TableNumber    *int       `bun:"table_number"`
+	Pin            string     `bun:"pin,nullzero"`
 	CreatedAt      time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
 }
@@ -53,10 +58,28 @@ func NewMatchRepository(db *bun.DB, playerRepo *PlayerRepository) *MatchReposito
 
 func (r *MatchRepository) DB() *bun.DB { return r.db }
 
+func (r *MatchRepository) GenerateUniquePin(ctx context.Context) string {
+	for {
+		pinVal := rand.Intn(9000) + 1000
+		pinStr := fmt.Sprintf("%d", pinVal)
+		count, err := r.db.NewSelect().
+			Model((*MatchModel)(nil)).
+			Where("pin = ?", pinStr).
+			Where("status != 'finished'").
+			Count(ctx)
+		if err == nil && count == 0 {
+			return pinStr
+		}
+	}
+}
+
 func (r *MatchRepository) Save(ctx context.Context, m *tournament.Match) error {
 	stage := m.Stage
 	if stage == "" {
 		stage = "group"
+	}
+	if m.Pin == "" {
+		m.Pin = r.GenerateUniquePin(ctx)
 	}
 	model := &MatchModel{
 		ID:             m.ID,
@@ -68,6 +91,9 @@ func (r *MatchRepository) Save(ctx context.Context, m *tournament.Match) error {
 		Stage:          stage,
 		RoundNumber:    1,
 		TeamMatchID:    m.TeamMatchID,
+		RefereeID:      m.RefereeID,
+		TableNumber:    m.TableNumber,
+		Pin:            m.Pin,
 	}
 
 	if len(m.TeamA) == 2 {
@@ -83,7 +109,10 @@ func (r *MatchRepository) Save(ctx context.Context, m *tournament.Match) error {
 		model.WinnerTeam = &m.WinnerTeam
 	}
 
-	_, err := r.db.NewInsert().Model(model).On("CONFLICT (id) DO UPDATE").Exec(ctx)
+	_, err := r.db.NewInsert().Model(model).
+		On("CONFLICT (id) DO UPDATE").
+		Set("status = EXCLUDED.status, winner_team = EXCLUDED.winner_team, referee_id = EXCLUDED.referee_id, table_number = EXCLUDED.table_number, pin = EXCLUDED.pin, team_a_player_1_id = EXCLUDED.team_a_player_1_id, team_b_player_1_id = EXCLUDED.team_b_player_1_id, team_a_player_2_id = EXCLUDED.team_a_player_2_id, team_b_player_2_id = EXCLUDED.team_b_player_2_id").
+		Exec(ctx)
 	return err
 }
 
@@ -286,4 +315,54 @@ func (r *MatchRepository) CountFinishedMatches(ctx context.Context, tournamentID
 		Where("status = ?", "finished").
 		Where("team_match_id IS NULL").
 		Count(ctx)
+}
+
+func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID uuid.UUID) ([]int, error) {
+	var tids []uuid.UUID
+	err := r.db.NewSelect().
+		Model((*TournamentModel)(nil)).
+		Column("id").
+		Where("event_id = ?", eventID).
+		Scan(ctx, &tids)
+	if err != nil || len(tids) == 0 {
+		return nil, err
+	}
+
+	var activeMatches []MatchModel
+	err = r.db.NewSelect().
+		Model(&activeMatches).
+		Where("status = 'in_progress' AND table_number IS NOT NULL").
+		Where("tournament_id IN (?)", bun.In(tids)).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	occupied := make([]int, 0, len(activeMatches))
+	for _, am := range activeMatches {
+		if am.TableNumber != nil {
+			occupied = append(occupied, *am.TableNumber)
+		}
+	}
+	return occupied, nil
+}
+
+func (r *MatchRepository) GetOccupiedTablesByTournament(ctx context.Context, tournamentID uuid.UUID) ([]int, error) {
+	var activeMatches []MatchModel
+	err := r.db.NewSelect().
+		Model(&activeMatches).
+		Where("status = 'in_progress' AND table_number IS NOT NULL").
+		Where("tournament_id = ?", tournamentID).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	occupied := make([]int, 0, len(activeMatches))
+	for _, am := range activeMatches {
+		if am.TableNumber != nil {
+			occupied = append(occupied, *am.TableNumber)
+		}
+	}
+	return occupied, nil
 }

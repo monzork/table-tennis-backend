@@ -102,4 +102,61 @@ func TestMatchHandler(t *testing.T) {
 			t.Errorf("expected error code for missing match, got 200")
 		}
 	})
+
+	t.Run("Public Score Update - Invalid PIN", func(t *testing.T) {
+		mModel, err := matchRepo.GetByID(ctx, m.ID)
+		if err != nil {
+			t.Fatalf("failed to get match: %v", err)
+		}
+		mModel.Pin = "5555"
+		_, err = matchRepo.DB().NewUpdate().Model(mModel).WherePK().Column("pin").Exec(ctx)
+		if err != nil {
+			t.Fatalf("failed to update match pin: %v", err)
+		}
+
+		data := url.Values{}
+		data.Set("matchId", m.ID.String())
+		data.Set("tournamentId", tourney.ID.String())
+		data.Set("stage", "final")
+		data.Set("pin", "9999") // Invalid PIN
+		data.Add("scores[]_a", "11")
+		data.Add("scores[]_b", "7")
+
+		req := httptest.NewRequest("POST", "/public/matches/score/update", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(resp.Body)
+		bodyStr := buf.String()
+		if !strings.Contains(bodyStr, "Invalid Verification PIN") {
+			t.Errorf("expected PIN error message, got: %s", bodyStr)
+		}
+	})
+
+	t.Run("Public Score Update - Valid Match PIN", func(t *testing.T) {
+		data := url.Values{}
+		data.Set("matchId", m.ID.String())
+		data.Set("tournamentId", tourney.ID.String())
+		data.Set("stage", "final")
+		data.Set("pin", "5555") // Valid match PIN
+		data.Add("scores[]_a", "11")
+		data.Add("scores[]_b", "7")
+
+		req := httptest.NewRequest("POST", "/public/matches/score/update", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+	})
 }

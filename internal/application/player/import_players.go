@@ -155,6 +155,8 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 	department := cell(row, colIdx, "department")
 	singlesEloStr := cell(row, colIdx, "singles_elo")
 	doublesEloStr := cell(row, colIdx, "doubles_elo")
+	whatsappNumber := cell(row, colIdx, "whatsapp_number")
+	pin := cell(row, colIdx, "pin")
 
 	if firstName == "" || lastName == "" {
 		result.Errors = append(result.Errors, fmt.Sprintf("row %d: missing first_name or last_name — skipped", rowNum))
@@ -192,6 +194,11 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 	}
 	if v, err := strconv.Atoi(doublesEloStr); err == nil && v > 0 {
 		p.UpdateDoublesElo(int16(v))
+	}
+
+	p.WhatsAppNumber = whatsappNumber
+	if pin != "" {
+		p.Pin = pin
 	}
 
 	if err := uc.playerRepo.Save(ctx, p); err != nil {

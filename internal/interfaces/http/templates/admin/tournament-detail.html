@@ -8,6 +8,9 @@
 
 <div class="space-y-10 text-white/90 animate-fade-in">
 
+  {{/* ── Referee Alerts Container ── */}}
+  <div id="referee-alerts-container" class="space-y-2"></div>
+
   {{/* ── Header ──────────────────────────────────────────────── */}}
   <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <div>
@@ -206,7 +209,7 @@
            hx-on::ws-open="document.getElementById('ws-status').textContent = '🟢 Live'; document.getElementById('ws-status').className = 'text-[9px] font-bold uppercase tracking-widest text-green-400';"
            hx-on::ws-close="document.getElementById('ws-status').textContent = '🔴 Reconnecting…'; document.getElementById('ws-status').className = 'text-[9px] font-bold uppercase tracking-widest text-red-400';"
            hx-on::ws-error="document.getElementById('ws-status').textContent = '🔴 Reconnecting…'; document.getElementById('ws-status').className = 'text-[9px] font-bold uppercase tracking-widest text-red-400';"
-           hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); if (typeof showToast === 'function') { showToast('📡 Score updated in real-time', 'success'); } }">
+           hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); htmx.trigger('#custom-matches-list', 'reload-matches'); if (typeof showToast === 'function') { showToast('📡 Score updated in real-time', 'success'); } } else if(data.event === 'referee_notification') { const container = document.getElementById('referee-alerts-container'); if (container) { const alertId = 'alert-' + Math.random().toString(36).substr(2, 9); const alertHtml = `<div id='${alertId}' class='flex items-center justify-between p-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded-2xl shadow-xl backdrop-blur-md animate-fade-in'><div class='flex items-center gap-3'><span class='text-xl'>🔔</span><div class='flex flex-col'><span class='text-xs font-bold uppercase tracking-widest text-yellow-500 font-mono'>Referee Alert</span><span class='text-sm font-semibold text-white/90'>${data.message}</span></div></div><button onclick='document.getElementById(\"${alertId}\").remove()' class='text-gray-400 hover:text-white transition-colors p-1'><svg class='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg></button></div>`; container.insertAdjacentHTML('beforeend', alertHtml); } }">
     <div class="flex items-center justify-between">
       <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Tournament Draw</h2>
       <span id="ws-status" class="text-[9px] font-bold uppercase tracking-widest text-yellow-400">⏳ Connecting…</span>
@@ -268,7 +271,11 @@
             <th class="p-4">Actions</th>
           </tr>
         </thead>
-        <tbody id="custom-matches-list" class="divide-y divide-white/10">
+        <tbody id="custom-matches-list" class="divide-y divide-white/10"
+               hx-get="/admin/tournaments/{{.Tournament.ID}}?status={{.StatusFilter}}"
+               hx-select="#custom-matches-list"
+               hx-trigger="reload-matches"
+               hx-swap="outerHTML">
           {{range .Tournament.Matches}}
             {{template "admin/partials/match-row" .}}
           {{else}}
@@ -422,7 +429,82 @@
         sessionStorage.removeItem('pending_toast');
     });
 
-    // WebSocket replaced by HTMX ws extension
+    // Drag and Drop handlers for bracket seeding / group moves
+    function handleDragStart(event, playerId) {
+        event.dataTransfer.setData("text/plain", playerId);
+        event.dataTransfer.effectAllowed = "move";
+        event.currentTarget.classList.add('opacity-40');
+    }
+
+    function handleDragEnd(event) {
+        event.currentTarget.classList.remove('opacity-40');
+    }
+
+    function handleDragOver(event) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+    }
+
+    function handleDragEnter(event, element) {
+        event.preventDefault();
+        element.classList.remove('border-white/5');
+        element.classList.add('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
+    }
+
+    function handleDragOverRow(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = "move";
+    }
+
+    function handleDragEnterRow(event, element) {
+        event.preventDefault();
+        event.stopPropagation();
+        element.classList.add('border-t-2', 'border-red-500/70', 'bg-red-500/5');
+    }
+
+    function handleDragLeaveRow(event, element) {
+        event.stopPropagation();
+        element.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
+    }
+
+    function handleDropRow(event, tournamentId, targetGroupId, targetIndex, element) {
+        event.preventDefault();
+        event.stopPropagation();
+        element.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
+
+        const playerId = event.dataTransfer.getData("text/plain");
+        if (!playerId) return;
+
+        htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/move-player', {
+            values: {
+                playerId: playerId,
+                targetGroupId: targetGroupId,
+                targetIndex: targetIndex
+            }
+        });
+    }
+
+    function handleDragLeave(event, element) {
+        element.classList.add('border-white/5');
+        element.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
+    }
+
+    function handleDrop(event, tournamentId, targetGroupId, element) {
+        event.preventDefault();
+        element.classList.add('border-white/5');
+        element.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
+
+        const playerId = event.dataTransfer.getData("text/plain");
+        if (!playerId) return;
+
+        htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/move-player', {
+            values: {
+                playerId: playerId,
+                targetGroupId: targetGroupId
+            }
+        });
+    }
 </script>
 
 
