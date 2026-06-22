@@ -206,10 +206,15 @@ func (h *PublicHandler) ShowTournamentRegisterForm(c *fiber.Ctx) error {
 func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 	lang := getLang(c)
 	var body struct {
-		TournamentID string `form:"tournamentId"`
-		FullName     string `form:"fullName"`
-		Country      string `form:"country"`
-		Honeypot     string `form:"website"`
+		TournamentID   string `form:"tournamentId"`
+		FirstName      string `form:"firstName"`
+		LastName       string `form:"lastName"`
+		Country        string `form:"country"`
+		Department     string `form:"department"`
+		WhatsAppNumber string `form:"whatsAppNumber"`
+		Birthdate      string `form:"birthdate"`
+		Gender         string `form:"gender"`
+		Honeypot       string `form:"website"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -226,8 +231,13 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 	t, playerName, err := h.selfRegisterUC.Execute(
 		context.Background(),
 		body.TournamentID,
-		body.FullName,
+		body.FirstName,
+		body.LastName,
 		body.Country,
+		body.Department,
+		body.WhatsAppNumber,
+		body.Birthdate,
+		body.Gender,
 	)
 
 	if err != nil {

@@ -48,7 +48,8 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 	t.Run("Register existing player", func(t *testing.T) {
 		data := url.Values{}
 		data.Set("tournamentId", tourney.ID.String())
-		data.Set("fullName", "Jane Doe")
+		data.Set("firstName", "Jane")
+		data.Set("lastName", "Doe")
 		data.Set("country", "NIC")
 
 		req := httptest.NewRequest("POST", "/tournaments/register", strings.NewReader(data.Encode()))
@@ -86,7 +87,8 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 	t.Run("Register non-existent player (creates new player with starting ELO 500)", func(t *testing.T) {
 		data := url.Values{}
 		data.Set("tournamentId", tourney.ID.String())
-		data.Set("fullName", "Bob Newguy")
+		data.Set("firstName", "Bob")
+		data.Set("lastName", "Newguy")
 		data.Set("country", "CRC")
 
 		req := httptest.NewRequest("POST", "/tournaments/register", strings.NewReader(data.Encode()))
@@ -150,7 +152,8 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 	t.Run("Fail with single name (no last name)", func(t *testing.T) {
 		data := url.Values{}
 		data.Set("tournamentId", tourney.ID.String())
-		data.Set("fullName", "Cher")
+		data.Set("firstName", "Cher")
+		data.Set("lastName", "")
 		data.Set("country", "USA")
 
 		req := httptest.NewRequest("POST", "/tournaments/register", strings.NewReader(data.Encode()))

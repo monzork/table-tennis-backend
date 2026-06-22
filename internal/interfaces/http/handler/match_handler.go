@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"time"
+
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
@@ -1031,6 +1033,60 @@ func (h *MatchHandler) renderTeamMatchForm(c *fiber.Ctx, matchID, tournamentID, 
 		"SquadBP1":     squadBP1,
 		"SquadBP2":     squadBP2,
 		"SquadBP3":     squadBP3,
-		"Finished":     parent.Status == "finished",
 	})
 }
+
+// Start sets a match status to in_progress, persists to DB, broadcasts WS update, and renders updated row.
+func (h *MatchHandler) Start(c *fiber.Ctx) error {
+	matchIDStr := c.Params("id")
+	if matchIDStr == "" {
+		matchIDStr = c.FormValue("matchId")
+	}
+	matchUUID, err := uuid.Parse(matchIDStr)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid match ID")
+	}
+
+	// Fetch match from DB
+	m, err := h.matchRepo.GetByID(c.Context(), matchUUID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "Match not found")
+	}
+
+	// Update status to in_progress
+	m.Status = "in_progress"
+	now := time.Now()
+	m.UpdatedAt = &now
+	_, err = h.matchRepo.DB().NewUpdate().Model(m).WherePK().Column("status", "updated_at").Exec(c.Context())
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	// Broadcast real-time update to all bracket viewers for this tournament
+	GlobalBracketHub.Broadcast(m.TournamentID.String(), map[string]string{
+		"event":        "score_updated",
+		"tournamentId": m.TournamentID.String(),
+		"matchId":      m.ID.String(),
+	})
+
+	// Fetch fully loaded tournament to get populated player objects in matches
+	t, err := h.tournamentRepo.GetByID(c.Context(), m.TournamentID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	var matched *tournament.Match
+	for i := range t.Matches {
+		if t.Matches[i].ID == matchUUID {
+			matched = &t.Matches[i]
+			break
+		}
+	}
+
+	if matched == nil {
+		return fiber.NewError(fiber.StatusNotFound, "Match not found in tournament list")
+	}
+
+	return c.Render("admin/partials/match-row", matched)
+}
+

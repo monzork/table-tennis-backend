@@ -1,4 +1,6 @@
-<div class="space-y-10 text-white/90 animate-fade-in max-w-5xl mx-auto px-4">
+<div class="space-y-10 text-white/90 animate-fade-in max-w-5xl mx-auto px-4"
+     hx-ext="ws" ws-connect="/ws/brackets/{{.Tournament.ID}}"
+     hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); htmx.trigger('#match-list-container', 'reload-matches'); }">
   {{/* Header */}}
   <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4">
     <div>
@@ -51,7 +53,12 @@
     {{$count := len .Tournament.Participants}}
     {{$teamCount := len .Tournament.Teams}}
     {{if or (gt $count 1) (gt $teamCount 1)}}
-    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar">
+    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar"
+         hx-get="/tournaments/{{.Tournament.ID}}"
+         hx-trigger="reload-bracket"
+         hx-select="#bracket-container"
+         hx-target="this"
+         hx-swap="outerHTML">
       {{template "admin/partials/tournament-bracket" .BracketViewModel}}
     </div>
     {{else}}
@@ -62,8 +69,26 @@
   </section>
 
   {{/* Encounter Match List */}}
-  <section class="space-y-4 pt-6 border-t border-white/10">
-    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Encounter Match List</h2>
+  <section class="space-y-4 pt-6 border-t border-white/10" id="match-list-container"
+           hx-get="/tournaments/{{.Tournament.ID}}"
+           hx-trigger="reload-matches"
+           hx-select="#match-list-container"
+           hx-target="this"
+           hx-swap="outerHTML">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Encounter Match List</h2>
+      <select name="status"
+              hx-get="/tournaments/{{.Tournament.ID}}"
+              hx-target="#public-matches-tbody"
+              hx-select="#public-matches-tbody"
+              hx-trigger="change"
+              class="bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-300 hover:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-white">
+        <option value="all" {{if eq .StatusFilter "all"}}selected{{end}}>All Matches</option>
+        <option value="scheduled" {{if eq .StatusFilter "scheduled"}}selected{{end}}>Waiting / Scheduled</option>
+        <option value="in_progress" {{if eq .StatusFilter "in_progress"}}selected{{end}}>In Progress</option>
+        <option value="finished" {{if eq .StatusFilter "finished"}}selected{{end}}>Finished</option>
+      </select>
+    </div>
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
       <table class="w-full text-left border-collapse text-xs font-medium">
         <thead>
@@ -74,7 +99,7 @@
             <th class="p-4">Status</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-white/10">
+        <tbody id="public-matches-tbody" class="divide-y divide-white/10">
           {{range .Tournament.Matches}}
           <tr class="hover:bg-white/5 transition-colors">
             <td class="p-4 text-gray-300 capitalize">{{.MatchType}}</td>
@@ -95,8 +120,10 @@
             <td class="p-4">
                 {{if eq .Status "finished"}}
                     <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">Finished</span>
+                {{else if eq .Status "in_progress"}}
+                    <span class="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">In Progress</span>
                 {{else}}
-                    <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">Scheduled</span>
+                    <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">Waiting</span>
                 {{end}}
             </td>
           </tr>

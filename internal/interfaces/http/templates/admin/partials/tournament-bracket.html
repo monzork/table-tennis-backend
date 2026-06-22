@@ -128,19 +128,33 @@
               {{else}}
                 {{if not $vm.IsPublic}}
                   {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
-                  {{$btnClass := "mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-white hover:text-white border border-white/20 hover:border-white/50 bg-white/10 hover:bg-white/20 rounded-lg py-2 px-2 transition-all"}}
-                  {{$btnText := "⚡ Score Match"}}
                   {{if and .Match (eq .Match.Status "in_progress")}}
-                    {{$btnClass = "mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 rounded-lg py-2 px-2 transition-all"}}
-                    {{$btnText = "✏️ Edit Score"}}
+                    <button
+                      class="mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-2 px-2 transition-all"
+                      hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.ID}}&p2Id={{.Player2.ID}}"
+                      hx-target="#score-modal-content"
+                      hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
+                      ✏️ Edit Score
+                    </button>
+                  {{else}}
+                    <div class="flex gap-1.5 mt-2">
+                      <button
+                        class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/50 bg-white/10 hover:bg-white/20 rounded-lg py-2 px-1 transition-all"
+                        hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.ID}}&p2Id={{.Player2.ID}}"
+                        hx-target="#score-modal-content"
+                        hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
+                        ⚡ Score
+                      </button>
+                      {{if and .Match (eq .Match.Status "scheduled")}}
+                      <button
+                        class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 px-1 transition-all"
+                        hx-post="/matches/{{$mId}}/start"
+                        hx-swap="none">
+                        ▶ Start
+                      </button>
+                      {{end}}
+                    </div>
                   {{end}}
-                  <button
-                    class="{{$btnClass}}"
-                    hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.ID}}&p2Id={{.Player2.ID}}"
-                    hx-target="#score-modal-content"
-                    hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
-                    {{$btnText}}
-                  </button>
                 {{else}}
                   <div class="mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 border border-white/5 rounded-lg py-2 px-2 text-center">
                     Scheduled
@@ -306,19 +320,33 @@
                     {{else}}
                       {{if not $vm.IsPublic}}
                         {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
-                        {{$btnClass := "mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-white hover:text-white border border-white/20 hover:border-white/50 bg-white/10 hover:bg-white/20 rounded-lg py-2 px-2 transition-all"}}
-                        {{$btnText := "⚡ Score Match"}}
                         {{if and .Match (eq .Match.Status "in_progress")}}
-                          {{$btnClass = "mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 rounded-lg py-2 px-2 transition-all"}}
-                          {{$btnText = "✏️ Edit Score"}}
+                          <button
+                            class="proj-hide mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-2 px-2 transition-all"
+                            hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.ID}}&p2Id={{.Player2.ID}}"
+                            hx-target="#score-modal-content"
+                            hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
+                            ✏️ Edit Score
+                          </button>
+                        {{else}}
+                          <div class="proj-hide flex gap-1.5 mt-2">
+                            <button
+                              class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/50 bg-white/10 hover:bg-white/20 rounded-lg py-2 px-1 transition-all"
+                              hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.ID}}&p2Id={{.Player2.ID}}"
+                              hx-target="#score-modal-content"
+                              hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
+                              ⚡ Score
+                            </button>
+                            {{if and .Match (eq .Match.Status "scheduled")}}
+                            <button
+                              class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 px-1 transition-all"
+                              hx-post="/matches/{{$mId}}/start"
+                              hx-swap="none">
+                              ▶ Start
+                            </button>
+                            {{end}}
+                          </div>
                         {{end}}
-                        <button
-                          class="{{$btnClass}} proj-hide"
-                          hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.ID}}&p2Id={{.Player2.ID}}"
-                          hx-target="#score-modal-content"
-                          hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
-                          {{$btnText}}
-                        </button>
                       {{else}}
                         <div class="mt-2 w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 border border-white/5 rounded-lg py-2 px-2 text-center">
                           Scheduled
@@ -390,19 +418,33 @@
                           {{else}}
                             {{if not $vm.IsPublic}}
                               {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
-                              {{$btnClass := "mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-white hover:text-gray-300 border border-white/20 hover:border-white/40 rounded-lg py-1 px-2 transition-all"}}
-                              {{$btnText := "⚡ Score Match"}}
                               {{if and .Match (eq .Match.Status "in_progress")}}
-                                {{$btnClass = "mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 rounded-lg py-1 px-2 transition-all"}}
-                                {{$btnText = "✏️ Edit Score"}}
+                                <button
+                                  class="proj-hide mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-1 px-2 transition-all"
+                                  hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}"
+                                  hx-target="#score-modal-content"
+                                  hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
+                                  ✏️ Edit Score
+                                </button>
+                              {{else}}
+                                <div class="proj-hide flex gap-1.5 mt-1">
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-1 px-1 transition-all"
+                                    hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}"
+                                    hx-target="#score-modal-content"
+                                    hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
+                                    ⚡ Score
+                                  </button>
+                                  {{if and .Match (eq .Match.Status "scheduled")}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/{{$mId}}/start"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{end}}
+                                </div>
                               {{end}}
-                              <button
-                                class="{{$btnClass}} proj-hide"
-                                hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}"
-                                hx-target="#score-modal-content"
-                                hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
-                                {{$btnText}}
-                              </button>
                             {{else}}
                               <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 border border-white/5 rounded-lg py-1 px-2 text-center">
                                 Scheduled
@@ -551,19 +593,33 @@
                     {{else}}
                       {{if not $vm.IsPublic}}
                         {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
-                        {{$btnClass := "mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-white hover:text-gray-300 border border-white/20 hover:border-white/40 rounded-lg py-1 px-2 transition-all"}}
-                        {{$btnText := "⚡ Score Match"}}
                         {{if and .Match (eq .Match.Status "in_progress")}}
-                          {{$btnClass = "mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 rounded-lg py-1 px-2 transition-all"}}
-                          {{$btnText = "✏️ Edit Score"}}
+                          <button
+                            class="proj-hide mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-1 px-2 transition-all"
+                            hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}"
+                            hx-target="#score-modal-content"
+                            hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
+                            ✏️ Edit Score
+                          </button>
+                        {{else}}
+                          <div class="proj-hide flex gap-1.5 mt-1">
+                            <button
+                              class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-1 px-1 transition-all"
+                              hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}"
+                              hx-target="#score-modal-content"
+                              hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
+                              ⚡ Score
+                            </button>
+                            {{if and .Match (eq .Match.Status "scheduled")}}
+                            <button
+                              class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                              hx-post="/matches/{{$mId}}/start"
+                              hx-swap="none">
+                              ▶ Start
+                            </button>
+                            {{end}}
+                          </div>
                         {{end}}
-                        <button
-                          class="{{$btnClass}} proj-hide"
-                          hx-get="/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}"
-                          hx-target="#score-modal-content"
-                          hx-on:click="document.getElementById('score-modal').classList.remove('hidden')">
-                          {{$btnText}}
-                        </button>
                       {{else}}
                         <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 border border-white/5 rounded-lg py-1 px-2 text-center">
                           Scheduled

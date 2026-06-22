@@ -231,6 +231,7 @@ func main() {
 	api.Post("/events/bulk-delete", eventHandler.DeleteBulk)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)
+	api.Post("/matches/:id/start", matchHandler.Start)
 	api.Get("/matches/:id/score-form", matchHandler.ShowScoreForm)
 	api.Put("/matches/:id/score", matchHandler.UpdateScore)
 	api.Get("/divisions", divisionHandler.ShowEditForm) // for new

@@ -202,7 +202,11 @@
   {{end}}
 
   {{/* ── Bracket/Groups Area ───────────────────────────────────── */}}
-  <section class="space-y-6">
+  <section class="space-y-6" hx-ext="ws" ws-connect="/ws/brackets/{{.Tournament.ID}}"
+           hx-on::ws-open="document.getElementById('ws-status').textContent = '🟢 Live'; document.getElementById('ws-status').className = 'text-[9px] font-bold uppercase tracking-widest text-green-400';"
+           hx-on::ws-close="document.getElementById('ws-status').textContent = '🔴 Reconnecting…'; document.getElementById('ws-status').className = 'text-[9px] font-bold uppercase tracking-widest text-red-400';"
+           hx-on::ws-error="document.getElementById('ws-status').textContent = '🔴 Reconnecting…'; document.getElementById('ws-status').className = 'text-[9px] font-bold uppercase tracking-widest text-red-400';"
+           hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); if (typeof showToast === 'function') { showToast('📡 Score updated in real-time', 'success'); } }">
     <div class="flex items-center justify-between">
       <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Tournament Draw</h2>
       <span id="ws-status" class="text-[9px] font-bold uppercase tracking-widest text-yellow-400">⏳ Connecting…</span>
@@ -211,7 +215,12 @@
     {{$count := len $participants}}
     {{$teamCount := len .Tournament.Teams}}
     {{if or (gt $count 1) (gt $teamCount 1)}}
-    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar">
+    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar"
+         hx-get="/admin/tournaments/{{.Tournament.ID}}"
+         hx-trigger="reload-bracket"
+         hx-select="#bracket-container"
+         hx-target="this"
+         hx-swap="outerHTML">
       {{template "admin/partials/tournament-bracket" .BracketViewModel}}
     </div>
     {{else}}
@@ -224,14 +233,27 @@
 
   {{/* ── Matches Log & Custom Scheduling ────────────────────────── */}}
   <section class="space-y-4 pt-6 border-t border-white/10">
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Encounter Match List</h2>
         <p class="text-[10px] text-gray-500 mt-1">Schedule and score custom individual match-ups (e.g. Swaythling / Davis Cup: A vs X, B vs Y)</p>
       </div>
-      <button onclick="document.getElementById('custom-match-modal').classList.remove('hidden')" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-1.5 px-4 rounded-full transition-all uppercase tracking-wider text-[10px]">
-        + Schedule custom match
-      </button>
+      <div class="flex items-center gap-3">
+        <select name="status"
+                hx-get="/admin/tournaments/{{.Tournament.ID}}"
+                hx-target="#custom-matches-list"
+                hx-select="#custom-matches-list"
+                hx-trigger="change"
+                class="bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-300 hover:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-white">
+          <option value="all" {{if eq .StatusFilter "all"}}selected{{end}}>All Matches</option>
+          <option value="scheduled" {{if eq .StatusFilter "scheduled"}}selected{{end}}>Waiting / Scheduled</option>
+          <option value="in_progress" {{if eq .StatusFilter "in_progress"}}selected{{end}}>In Progress</option>
+          <option value="finished" {{if eq .StatusFilter "finished"}}selected{{end}}>Finished</option>
+        </select>
+        <button onclick="document.getElementById('custom-match-modal').classList.remove('hidden')" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-1.5 px-4 rounded-full transition-all uppercase tracking-wider text-[10px]">
+          + Schedule custom match
+        </button>
+      </div>
     </div>
 
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
@@ -394,63 +416,13 @@
         }
     })();
 
+
     // Clear pending toast if HTMX returns a response error
     document.body.addEventListener('htmx:responseError', function() {
         sessionStorage.removeItem('pending_toast');
     });
 
-    // ── Real-time Bracket WebSocket ──────────────────────────────────────────
-    (function() {
-        const tournamentId = '{{.Tournament.ID}}';
-        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-        const wsUrl = `${proto}://${location.host}/ws/brackets/${tournamentId}`;
-
-        let ws;
-        let reconnectDelay = 2000;
-        const MAX_DELAY = 30000;
-
-        function connect() {
-            ws = new WebSocket(wsUrl);
-
-            ws.onopen = function() {
-                reconnectDelay = 2000; // reset on success
-                showWsStatus('🟢 Live', 'text-green-400');
-            };
-
-            ws.onmessage = function(evt) {
-                try {
-                    const data = JSON.parse(evt.data);
-                    if (data.event === 'score_updated') {
-                        // Re-load just the bracket container via HTMX
-                        const bc = document.getElementById('bracket-container');
-                        if (bc) {
-                            htmx.ajax('GET', location.pathname, {target: '#bracket-container', swap: 'innerHTML'});
-                        }
-                        showToast('📡 Score updated in real-time', 'success');
-                    }
-                } catch(e) {}
-            };
-
-            ws.onclose = function() {
-                showWsStatus('🔴 Reconnecting…', 'text-red-400');
-                setTimeout(connect, reconnectDelay);
-                reconnectDelay = Math.min(reconnectDelay * 1.5, MAX_DELAY);
-            };
-
-            ws.onerror = function() {
-                ws.close();
-            };
-        }
-
-        function showWsStatus(text, colorClass) {
-            let el = document.getElementById('ws-status');
-            if (!el) return;
-            el.textContent = text;
-            el.className = `text-[9px] font-bold uppercase tracking-widest ${colorClass}`;
-        }
-
-        connect();
-    })();
+    // WebSocket replaced by HTMX ws extension
 </script>
 
 

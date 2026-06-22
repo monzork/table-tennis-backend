@@ -142,8 +142,33 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 	if err := r.db.NewSelect().Model(&models).Scan(ctx); err != nil {
 		return nil, err
 	}
+
+	// Batch-load participant counts per tournament
+	type countRow struct {
+		TournamentID uuid.UUID `bun:"tournament_id"`
+		Count        int       `bun:"count"`
+	}
+	var counts []countRow
+	_ = r.db.NewSelect().
+		TableExpr("tournament_participants").
+		ColumnExpr("tournament_id, COUNT(*) AS count").
+		GroupExpr("tournament_id").
+		Scan(ctx, &counts)
+
+	countMap := make(map[uuid.UUID]int, len(counts))
+	for _, c := range counts {
+		countMap[c.TournamentID] = c.Count
+	}
+
 	tournaments := make([]*tournament.Tournament, len(models))
 	for i, m := range models {
+		// Build a placeholder Participants slice so len() returns the real count
+		cnt := countMap[m.ID]
+		participants := make([]*player.Player, cnt)
+		for j := range participants {
+			participants[j] = &player.Player{}
+		}
+
 		tournaments[i] = &tournament.Tournament{
 			ID:        m.ID,
 			Name:      m.Name,
@@ -158,6 +183,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			EventID:   m.EventID,
 			SkipElo:   m.SkipElo,
 			WinnerName: m.WinnerName,
+			Participants: participants,
 			Rules:     []tournament.Rule{},
 			Matches:   []tournament.Match{},
 		}

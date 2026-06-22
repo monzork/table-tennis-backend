@@ -1,5 +1,5 @@
 {{define "admin/partials/match-row"}}
-<tr class="hover:bg-white/5 transition-colors group" id="match-row-{{.ID}}">
+<tr class="hover:bg-white/5 transition-colors group match-log-row" id="match-row-{{.ID}}" data-status="{{.Status}}">
     <td class="p-4 text-xs font-mono text-gray-500" title="{{.TournamentID}}">{{.TournamentID}}</td>
     <td class="p-4 text-gray-300 capitalize">{{.MatchType}}</td>
     
@@ -22,8 +22,10 @@
     <td class="p-4">
         {{if eq .Status "finished"}}
             <span class="px-2 py-1 rounded bg-white/10 text-white text-xs font-bold uppercase tracking-wider border border-white/20">Finished</span>
+        {{else if eq .Status "in_progress"}}
+            <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-wider border border-blue-500/20">In Progress</span>
         {{else}}
-            <span class="px-2 py-1 rounded bg-white/5 text-gray-300 text-xs font-bold uppercase tracking-wider border border-white/10">In Progress</span>
+            <span class="px-2 py-1 rounded bg-white/5 text-gray-500 text-xs font-bold uppercase tracking-wider border border-white/10">Waiting</span>
         {{end}}
     </td>
 
@@ -38,6 +40,10 @@
                 </select>
                 <button type="submit" class="bg-white hover:bg-gray-200 text-black font-bold py-1 px-3 text-xs rounded transition-all uppercase tracking-wider">Finish</button>
             </form>
+        {{else if eq .Status "scheduled"}}
+            <button hx-post="/matches/{{.ID}}/start" hx-swap="outerHTML" hx-target="#match-row-{{.ID}}" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
+                Start Match
+            </button>
         {{end}}
     </td>
 </tr>

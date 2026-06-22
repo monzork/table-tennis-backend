@@ -164,6 +164,7 @@ func (h *EventHandler) DeleteBulk(c *fiber.Ctx) error {
 }
 
 func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
+	lang := getLang(c)
 	id := c.Params("id")
 	e, err := h.getByID.Execute(c.Context(), id)
 	if err != nil {
@@ -171,9 +172,9 @@ func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 	}
 	divisions, _ := h.divisionUC.GetAll(c.Context())
 
-	return c.Render("public/event-detail", fiber.Map{
+	return c.Render("public/event-detail", merge(tMap(lang), fiber.Map{
 		"Event":     e,
 		"Divisions": divisions,
 		"Type":      "Tournaments", // highlight tournaments tab in layout
-	}, "layouts/public")
+	}), "layouts/public")
 }

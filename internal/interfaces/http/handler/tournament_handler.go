@@ -6,6 +6,7 @@ import (
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/tournament"
 	"table-tennis-backend/internal/domain/player"
+	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -152,6 +153,18 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
+
+	statusFilter := c.Query("status", "all")
+	if statusFilter != "all" {
+		var filtered []tournamentDomain.Match
+		for _, m := range t.Matches {
+			if m.Status == statusFilter {
+				filtered = append(filtered, m)
+			}
+		}
+		t.Matches = filtered
+	}
+
 	players, _ := h.leaderboardUC.ExecuteSingles(c.Context())
 	divisions, _ := h.divisionUC.GetAll(c.Context())
 
@@ -178,6 +191,7 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		"Divisions":        divisions,
 		"BracketViewModel": vm,
 		"AvailableParticipants": availableParticipants,
+		"StatusFilter":     statusFilter,
 	}, "layouts/admin")
 }
 
@@ -438,31 +452,46 @@ func (h *TournamentHandler) RemovePlayerFromTeam(c *fiber.Ctx) error {
 }
 
 func (h *TournamentHandler) PublicList(c *fiber.Ctx) error {
+	lang := getLang(c)
 	tournaments, err := h.getTournamentsUC.Execute(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
-	return c.Render("public/tournaments", fiber.Map{
+	return c.Render("public/tournaments", merge(tMap(lang), fiber.Map{
 		"Tournaments": tournaments,
 		"Type":        "Tournaments",
-	}, "layouts/public")
+	}), "layouts/public")
 }
 
 func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
+	lang := getLang(c)
 	id := c.Params("id")
 	t, err := h.getByID.Execute(c.Context(), id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
+
+	statusFilter := c.Query("status", "all")
+	if statusFilter != "all" {
+		var filtered []tournamentDomain.Match
+		for _, m := range t.Matches {
+			if m.Status == statusFilter {
+				filtered = append(filtered, m)
+			}
+		}
+		t.Matches = filtered
+	}
+
 	divisions, _ := h.divisionUC.GetAll(c.Context())
 
 	vm := BuildTournamentViewModel(t, divisions)
 	vm.IsPublic = true
 
-	return c.Render("public/tournament-detail", fiber.Map{
+	return c.Render("public/tournament-detail", merge(tMap(lang), fiber.Map{
 		"Tournament":       t,
 		"Divisions":        divisions,
 		"BracketViewModel": vm,
 		"Type":             "Tournaments",
-	}, "layouts/public")
+		"StatusFilter":     statusFilter,
+	}), "layouts/public")
 }
