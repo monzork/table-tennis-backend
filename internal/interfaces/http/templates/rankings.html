@@ -5,15 +5,15 @@
     </header>
 
     <!-- Gender / Format Navigation Tabs -->
-    <div class="flex flex-wrap justify-center gap-2">
-        <a href="/rankings/mens/singles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "M-singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mens_singles"}}</a>
-        <a href="/rankings/womens/singles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "F-singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.womens_singles"}}</a>
-        <a href="/rankings/mens/doubles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "M-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mens_doubles"}}</a>
-        <a href="/rankings/womens/doubles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "F-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.womens_doubles"}}</a>
-        <a href="/rankings/mixed/doubles" class="tab-btn px-5 py-2 rounded-full border text-sm font-bold tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mixed_doubles"}}</a>
+    <div class="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+        <a href="/rankings/mens/singles" class="tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "M-singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mens_singles"}}</a>
+        <a href="/rankings/womens/singles" class="tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "F-singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.womens_singles"}}</a>
+        <a href="/rankings/mens/doubles" class="tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "M-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mens_doubles"}}</a>
+        <a href="/rankings/womens/doubles" class="tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "F-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.womens_doubles"}}</a>
+        <a href="/rankings/mixed/doubles" class="tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mixed_doubles"}}</a>
     </div>
 
-    <div class="glass p-4 sm:p-6 rounded-3xl border border-white/10 flex flex-col md:flex-row gap-4 items-end relative z-20">
+    <div class="glass p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10 flex flex-col md:flex-row gap-3 sm:gap-4 items-end relative z-20">
         <div class="flex-1 min-w-[200px] w-full">
             <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">{{index .T "rankings.search_label"}}</label>
             <input type="text"
@@ -58,15 +58,15 @@
         </div>
     </div>
 
-    <div class="glass rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative">
+    <div class="glass rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative">
         <div class="absolute inset-0 bg-gradient-to-b from-white/3 to-transparent pointer-events-none"></div>
         <table class="w-full text-left border-collapse relative z-10">
-            <thead>
+            <thead class="hidden sm:table-header-group">
                 <tr class="bg-black/60 border-b border-white/15">
-                    <th class="py-3 px-2 sm:py-6 sm:px-4 font-bold text-gray-300 uppercase text-[10px] sm:text-xs tracking-widest w-16 sm:w-24 text-center">{{index .T "rankings.col_rank"}}</th>
-                    <th class="py-3 px-2 sm:py-6 sm:px-4 font-bold text-gray-300 uppercase text-[10px] sm:text-xs tracking-widest">{{index .T "rankings.col_player"}}</th>
-                    <th class="py-3 px-2 sm:py-6 sm:px-4 font-bold text-gray-300 uppercase text-[10px] sm:text-xs tracking-widest text-center">{{index .T "rankings.col_assoc"}}</th>
-                    <th class="py-3 px-2 sm:py-6 sm:px-4 font-bold text-gray-300 uppercase text-[10px] sm:text-xs tracking-widest text-right pr-4 sm:pr-8">{{index .T "rankings.col_points"}}</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest w-24 text-center">{{index .T "rankings.col_rank"}}</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest">{{index .T "rankings.col_player"}}</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-center">{{index .T "rankings.col_assoc"}}</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-right pr-8">{{index .T "rankings.col_points"}}</th>
                 </tr>
             </thead>
             <tbody id="rankings-tbody" class="divide-y divide-white/5">

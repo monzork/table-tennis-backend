@@ -1,16 +1,17 @@
 {{range $group := .Groups}}
     {{if and $.IsDivisional $group.Division}}
         <tr class="division-header bg-black/80 border-y-2 border-white/10">
-            <td colspan="4" class="py-4 px-6 font-black uppercase italic text-2xl tracking-widest text-left" style="color: {{$group.Division.Color}};">
+            <td colspan="4" class="py-3 px-4 sm:py-4 sm:px-6 font-black uppercase italic text-lg sm:text-2xl tracking-widest text-left" style="color: {{$group.Division.Color}};">
                 {{$group.Division.Name}}
-                <span class="text-xs font-light tracking-normal text-gray-400 ml-3 not-italic">
+                <span class="text-[10px] sm:text-xs font-light tracking-normal text-gray-400 ml-2 sm:ml-3 not-italic">
                     {{$group.Division.MinElo}} - {{if $group.Division.MaxElo}}{{$group.Division.MaxElo}}{{else}}∞{{end}}
                 </span>
             </td>
         </tr>
     {{end}}
     {{range $p := $group.Players}}
-        <tr class="ranking-row group cursor-default transition-all duration-300">
+        {{/* ─── Desktop row (hidden on mobile) ─── */}}
+        <tr class="ranking-row group cursor-default transition-all duration-300 hidden sm:table-row">
             <td class="py-6 px-4 text-center font-black text-3xl italic text-gray-400 group-hover:text-white transition-colors">
                 {{.Rank}}
             </td>
@@ -31,6 +32,36 @@
             </td>
             <td class="py-6 px-4 text-right font-black text-3xl italic text-white tracking-tight pr-8">
                 {{if eq $.RankType "doubles"}}{{.DoublesElo}}{{else}}{{.SinglesElo}}{{end}}
+            </td>
+        </tr>
+
+        {{/* ─── Mobile card row (visible only on small screens) ─── */}}
+        <tr class="ranking-row sm:hidden border-b border-white/5 active:bg-white/5 transition-colors duration-150">
+            <td colspan="4" class="p-0">
+                <div class="flex items-center gap-3 px-3 py-3">
+                    {{/* Rank badge */}}
+                    <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-black text-lg italic text-gray-400">
+                        {{.Rank}}
+                    </div>
+
+                    {{/* Player info */}}
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-bold text-gray-200 truncate leading-tight">
+                            <span class="font-light text-gray-400">{{.FirstName}}</span> <span class="uppercase">{{.LastName}}</span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span class="text-[10px] font-bold tracking-widest text-gray-500 bg-white/5 px-1.5 py-0.5 rounded">{{.Country}}</span>
+                        </div>
+                    </div>
+
+                    {{/* Points */}}
+                    <div class="flex-shrink-0 text-right">
+                        <div class="text-lg font-black italic text-white tracking-tight leading-tight">
+                            {{if eq $.RankType "doubles"}}{{.DoublesElo}}{{else}}{{.SinglesElo}}{{end}}
+                        </div>
+                        <div class="text-[9px] font-bold uppercase tracking-widest text-gray-500">pts</div>
+                    </div>
+                </div>
             </td>
         </tr>
     {{end}}

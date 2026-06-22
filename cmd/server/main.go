@@ -166,14 +166,8 @@ func main() {
 
 	// Public read-only tournament/event details
 	app.Get("/tournaments", tournamentHandler.PublicList)
-	app.Get("/tournaments/:id", tournamentHandler.PublicDetail)
-	app.Get("/events/:id", eventHandler.PublicDetail)
 
-	// Redirect Root to Public Rankings
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Redirect("/rankings/singles")
-	})
-
+	// Public tournament self-registration (must be before /tournaments/:id)
 	// Public Signup with Rate Limiting (5 requests per min)
 	signupLimiter := limiter.New(limiter.Config{
 		Max:        5,
@@ -182,13 +176,20 @@ func main() {
 			return c.IP()
 		},
 	})
+	app.Get("/tournaments/register", publicHandler.ShowTournamentRegistration)
+	app.Post("/tournaments/register", signupLimiter, publicHandler.RegisterToTournament)
+
+	app.Get("/tournaments/:id", tournamentHandler.PublicDetail)
+	app.Get("/events/:id", eventHandler.PublicDetail)
+
+	// Redirect Root to Public Rankings
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.Redirect("/rankings/singles")
+	})
+
 	app.Get("/register", publicHandler.ShowSignup)
 	app.Post("/register", signupLimiter, publicHandler.Register)
 	app.Get("/players/department-input", publicHandler.DepartmentInput)
-
-	// Public tournament self-registration
-	app.Get("/tournaments/register", publicHandler.ShowTournamentRegistration)
-	app.Post("/tournaments/register", signupLimiter, publicHandler.RegisterToTournament)
 
 	// Language switcher — sets cookie and redirects back to the referring page
 	app.Get("/lang/:locale", publicHandler.SetLang)
