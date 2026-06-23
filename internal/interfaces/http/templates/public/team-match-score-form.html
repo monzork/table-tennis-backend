@@ -19,19 +19,19 @@
                 <select name="squad_a_p1" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadAP1}}selected{{end}}>Select Player 1 (A)...</option>
                     {{if .TeamA}}{{range .TeamA.Players}}
-                    <option value="{{.ID}}" {{if eq .ID.String $.SquadAP1}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    <option value="{{.ID}}" {{if eq .ID $.SquadAP1}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
                     {{end}}{{end}}
                 </select>
                 <select name="squad_a_p2" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadAP2}}selected{{end}}>Select Player 2 (B)...</option>
                     {{if .TeamA}}{{range .TeamA.Players}}
-                    <option value="{{.ID}}" {{if eq .ID.String $.SquadAP2}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    <option value="{{.ID}}" {{if eq .ID $.SquadAP2}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
                     {{end}}{{end}}
                 </select>
                 <select name="squad_a_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadAP3}}selected{{end}}>Select Player 3 (C)...</option>
                     {{if .TeamA}}{{range .TeamA.Players}}
-                    <option value="{{.ID}}" {{if eq .ID.String $.SquadAP3}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    <option value="{{.ID}}" {{if eq .ID $.SquadAP3}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
                     {{end}}{{end}}
                 </select>
             </div>
@@ -46,19 +46,19 @@
                 <select name="squad_b_p1" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadBP1}}selected{{end}}>Select Player 1 (X)...</option>
                     {{if .TeamB}}{{range .TeamB.Players}}
-                    <option value="{{.ID}}" {{if eq .ID.String $.SquadBP1}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    <option value="{{.ID}}" {{if eq .ID $.SquadBP1}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
                     {{end}}{{end}}
                 </select>
                 <select name="squad_b_p2" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadBP2}}selected{{end}}>Select Player 2 (Y)...</option>
                     {{if .TeamB}}{{range .TeamB.Players}}
-                    <option value="{{.ID}}" {{if eq .ID.String $.SquadBP2}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    <option value="{{.ID}}" {{if eq .ID $.SquadBP2}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
                     {{end}}{{end}}
                 </select>
                 <select name="squad_b_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadBP3}}selected{{end}}>Select Player 3 (Z)...</option>
                     {{if .TeamB}}{{range .TeamB.Players}}
-                    <option value="{{.ID}}" {{if eq .ID.String $.SquadBP3}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
+                    <option value="{{.ID}}" {{if eq .ID $.SquadBP3}}selected{{end}}>{{.FirstName}} {{.LastName}}</option>
                     {{end}}{{end}}
                 </select>
             </div>
@@ -71,7 +71,7 @@
         <select name="refereeId" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white text-xs focus:outline-none focus:ring-1 focus:ring-white">
             <option value="">No Referee (Self-Managed)</option>
             {{range .Participants}}
-            <option value="{{.ID.String}}" {{if $.RefereeID}}{{if eq $.RefereeID.String .ID.String}}selected{{end}}{{end}}>
+            <option value="{{.ID}}" {{if $.RefereeID}}{{if eq $.RefereeID .ID}}selected{{end}}{{end}}>
                 {{.FirstName}} {{.LastName}}
             </option>
             {{end}}

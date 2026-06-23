@@ -21,7 +21,7 @@
     <div class="grid gap-6 md:grid-cols-2 mb-10">
         {{range .Tournaments}}
         <div class="tournament-card glass rounded-3xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 cursor-pointer group relative overflow-hidden
-            {{if and $.TournamentID (eq $.TournamentID .ID.String)}}ring-2 ring-white/60{{end}}"
+            {{if and $.TournamentID (eq $.TournamentID .ID)}}ring-2 ring-white/60{{end}}"
              onclick="selectTournament('{{.ID}}', '{{.Name}}')">
             <!-- Glow decoration -->
             <div class="absolute -top-8 -right-8 w-32 h-32 bg-white/3 rounded-full blur-2xl group-hover:bg-white/8 transition-all duration-500"></div>

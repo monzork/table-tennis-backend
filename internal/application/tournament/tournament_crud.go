@@ -2,9 +2,9 @@ package tournament
 
 import (
 	"context"
+	divisionDomain "table-tennis-backend/internal/domain/division"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,20 +13,16 @@ import (
 // ─── Get By ID ───────────────────────────────────────────────────────────────
 
 type GetTournamentByIDUseCase struct {
-	repo         *bun.TournamentRepository
-	divisionRepo *bun.DivisionRepository
+	repo         tournamentDomain.Repository
+	divisionRepo divisionDomain.Repository
 }
 
-func NewGetTournamentByIDUseCase(repo *bun.TournamentRepository, divisionRepo *bun.DivisionRepository) *GetTournamentByIDUseCase {
+func NewGetTournamentByIDUseCase(repo tournamentDomain.Repository, divisionRepo divisionDomain.Repository) *GetTournamentByIDUseCase {
 	return &GetTournamentByIDUseCase{repo: repo, divisionRepo: divisionRepo}
 }
 
 func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (*tournamentDomain.Tournament, error) {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return nil, err
-	}
-	t, err := uc.repo.GetByID(ctx, id)
+	t, err := uc.repo.GetByID(ctx, idStr)
 	if err != nil {
 		return nil, err
 	}
@@ -75,12 +71,12 @@ func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (
 // ─── Update ──────────────────────────────────────────────────────────────────
 
 type UpdateTournamentUseCase struct {
-	repo         *bun.TournamentRepository
-	playerRepo   *bun.PlayerRepository
-	divisionRepo *bun.DivisionRepository
+	repo         tournamentDomain.Repository
+	playerRepo   playerDomain.Repository
+	divisionRepo divisionDomain.Repository
 }
 
-func NewUpdateTournamentUseCase(repo *bun.TournamentRepository, playerRepo *bun.PlayerRepository, divisionRepo *bun.DivisionRepository) *UpdateTournamentUseCase {
+func NewUpdateTournamentUseCase(repo tournamentDomain.Repository, playerRepo playerDomain.Repository, divisionRepo divisionDomain.Repository) *UpdateTournamentUseCase {
 	return &UpdateTournamentUseCase{repo: repo, playerRepo: playerRepo, divisionRepo: divisionRepo}
 }
 
@@ -97,13 +93,9 @@ func (uc *UpdateTournamentUseCase) Execute(
 	registrationOpen bool,
 	participantIDs []string, newPlayers []NewPlayerData,
 	stageRuleOverrides []StageRuleOverride, groupPassCount int,
-	skipElo bool, eventID *uuid.UUID,
+	skipElo bool, eventID *string,
 	teamFormat string,
 ) (*tournamentDomain.Tournament, error) {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return nil, err
-	}
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
 		return nil, err
@@ -117,11 +109,10 @@ func (uc *UpdateTournamentUseCase) Execute(
 
 	// Handle existing players
 	for _, pidStr := range participantIDs {
-		pid, err := uuid.Parse(pidStr)
-		if err != nil {
+		if pidStr == "" {
 			continue
 		}
-		p, err := uc.playerRepo.GetById(ctx, pid)
+		p, err := uc.playerRepo.GetById(ctx, pidStr)
 		if err == nil {
 			participants = append(participants, p)
 		}
@@ -129,7 +120,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 
 	// Handle newly created players ad-hoc
 	for _, np := range newPlayers {
-		p, err := playerDomain.NewPlayer(np.FirstName, np.LastName, time.Now(), np.Gender, "", "")
+		p, err := playerDomain.NewPlayer(uuid.NewString(), np.FirstName, np.LastName, time.Now(), np.Gender, "", "")
 		if err != nil {
 			return nil, err
 		}
@@ -139,18 +130,17 @@ func (uc *UpdateTournamentUseCase) Execute(
 		participants = append(participants, p)
 	}
 
-	t, err := tournamentDomain.NewTournament(name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, participants)
+	t, err := tournamentDomain.NewTournament(idStr, name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, participants)
 	if err != nil {
 		return nil, err
 	}
-	t.ID = id
 	t.RegistrationOpen = registrationOpen
 	t.SkipElo = skipElo
 	t.EventID = eventID
 	t.TeamFormat = teamFormat
 
 	// Preserve existing teams
-	if existing, err := uc.repo.GetByID(ctx, id); err == nil {
+	if existing, err := uc.repo.GetByID(ctx, idStr); err == nil {
 		t.Teams = existing.Teams
 	}
 
@@ -181,7 +171,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	for i := range t.StageRules {
 		for _, ov := range stageRuleOverrides {
 			if t.StageRules[i].Stage == ov.Stage {
-				t.StageRules[i].TournamentID = id
+				t.StageRules[i].TournamentID = idStr
 				t.StageRules[i].BestOf = ov.BestOf
 				t.StageRules[i].PointsToWin = ov.PointsToWin
 				t.StageRules[i].PointsMargin = ov.PointsMargin
@@ -198,17 +188,13 @@ func (uc *UpdateTournamentUseCase) Execute(
 // ─── Delete ──────────────────────────────────────────────────────────────────
 
 type DeleteTournamentUseCase struct {
-	repo *bun.TournamentRepository
+	repo tournamentDomain.Repository
 }
 
-func NewDeleteTournamentUseCase(repo *bun.TournamentRepository) *DeleteTournamentUseCase {
+func NewDeleteTournamentUseCase(repo tournamentDomain.Repository) *DeleteTournamentUseCase {
 	return &DeleteTournamentUseCase{repo: repo}
 }
 
 func (uc *DeleteTournamentUseCase) Execute(ctx context.Context, idStr string) error {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return err
-	}
-	return uc.repo.Delete(ctx, id)
+	return uc.repo.Delete(ctx, idStr)
 }

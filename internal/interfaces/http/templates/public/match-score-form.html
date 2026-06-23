@@ -38,7 +38,7 @@
         <select name="refereeId" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
             <option value="">No Referee (Self-Managed)</option>
             {{range .Participants}}
-            <option value="{{.ID.String}}" {{if $.RefereeID}}{{if eq $.RefereeID.String .ID.String}}selected{{end}}{{end}}>
+            <option value="{{.ID}}" {{if $.RefereeID}}{{if eq $.RefereeID .ID}}selected{{end}}{{end}}>
                 {{.FirstName}} {{.LastName}}
             </option>
             {{end}}

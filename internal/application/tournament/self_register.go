@@ -7,21 +7,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
 // SelfRegisterUseCase allows an existing player (identified by name + country)
 // to self-register into a tournament that has RegistrationOpen == true.
 type SelfRegisterUseCase struct {
-	tournamentRepo *bun.TournamentRepository
-	playerRepo     *bun.PlayerRepository
+	tournamentRepo tournamentDomain.Repository
+	playerRepo     playerDomain.Repository
 }
 
 func NewSelfRegisterUseCase(
-	tournamentRepo *bun.TournamentRepository,
-	playerRepo *bun.PlayerRepository,
+	tournamentRepo tournamentDomain.Repository,
+	playerRepo playerDomain.Repository,
 ) *SelfRegisterUseCase {
 	return &SelfRegisterUseCase{
 		tournamentRepo: tournamentRepo,
@@ -63,7 +63,7 @@ func (uc *SelfRegisterUseCase) Execute(
 		return nil, "", errors.New("first and last name are required for registration")
 	}
 
-	t, err := uc.tournamentRepo.GetByIDStr(ctx, tournamentIDStr)
+	t, err := uc.tournamentRepo.GetByID(ctx, tournamentIDStr)
 	if err != nil {
 		return nil, "", errors.New("tournament not found")
 	}
@@ -103,7 +103,7 @@ func (uc *SelfRegisterUseCase) Execute(
 			}
 		}
 
-		newPlayer, err := playerDomain.NewPlayer(firstName, lastName, birthdate, gender, countryUpper, strings.TrimSpace(department))
+		newPlayer, err := playerDomain.NewPlayer(uuid.NewString(), firstName, lastName, birthdate, gender, countryUpper, strings.TrimSpace(department))
 		if err != nil {
 			return nil, "", fmt.Errorf("failed to create new player: %w", err)
 		}
@@ -124,8 +124,9 @@ func (uc *SelfRegisterUseCase) Execute(
 		}
 	}
 
-	// Persist the new participant
-	if err := uc.tournamentRepo.AddParticipant(ctx, t.ID, matched.ID, matched.SinglesElo, matched.DoublesElo); err != nil {
+	// Persist the new participant via updating the aggregate root
+	t.Participants = append(t.Participants, matched)
+	if err := uc.tournamentRepo.Update(ctx, t); err != nil {
 		return nil, "", fmt.Errorf("failed to register player: %w", err)
 	}
 

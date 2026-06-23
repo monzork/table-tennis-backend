@@ -1,15 +1,21 @@
 package division
 
 import (
+	"context"
 	"errors"
-
-	"github.com/google/uuid"
 )
 
 var (
 	ErrInvalidName     = errors.New("division name is required")
 	ErrInvalidEloRange = errors.New("min_elo must be less than max_elo when max_elo is set")
 )
+
+type Repository interface {
+	Save(ctx context.Context, d *Division) error
+	GetAll(ctx context.Context) ([]*Division, error)
+	Delete(ctx context.Context, id string) error
+	GetById(ctx context.Context, id string) (*Division, error)
+}
 
 type Division struct {
 	ID           string
@@ -21,7 +27,7 @@ type Division struct {
 	Color        string
 }
 
-func NewDivision(name string, displayOrder int, minElo int16, maxElo *int16, category, color string) (*Division, error) {
+func NewDivision(id, name string, displayOrder int, minElo int16, maxElo *int16, category, color string) (*Division, error) {
 	if name == "" {
 		return nil, ErrInvalidName
 	}
@@ -35,7 +41,7 @@ func NewDivision(name string, displayOrder int, minElo int16, maxElo *int16, cat
 		color = "#ffffff"
 	}
 	return &Division{
-		ID:           uuid.New().String(),
+		ID:           id,
 		Name:         name,
 		DisplayOrder: displayOrder,
 		MinElo:       minElo,

@@ -182,7 +182,7 @@ func (h *PublicHandler) ShowTournamentRegisterForm(c *fiber.Ctx) error {
 	// Find the specific tournament
 	var target interface{}
 	for _, t := range tournaments {
-		if t.ID.String() == tid {
+		if t.ID == tid {
 			target = t
 			break
 		}

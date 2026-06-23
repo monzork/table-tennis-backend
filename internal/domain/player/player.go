@@ -4,19 +4,25 @@ import (
 	"context"
 	"errors"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Repository interface {
-	GetById(ctx context.Context, id uuid.UUID) (*Player, error)
+	GetById(ctx context.Context, id string) (*Player, error)
+	GetByIDs(ctx context.Context, ids []string) ([]*Player, error)
 	Save(ctx context.Context, p *Player) error
+	Delete(ctx context.Context, id string) error
+	Search(ctx context.Context, query string) ([]*Player, error)
+	GetAll(ctx context.Context) ([]*Player, error)
+	GetAllSingles(ctx context.Context) ([]*Player, error)
+	GetAllDoubles(ctx context.Context) ([]*Player, error)
+	GetSinglesByGender(ctx context.Context, gender string) ([]*Player, error)
+	GetDoublesByGender(ctx context.Context, gender string) ([]*Player, error)
 }
 
 var ErrInvalidName = errors.New("first and last name required")
 
 type Player struct {
-	ID             uuid.UUID
+	ID             string
 	FirstName      string
 	LastName       string
 	Birthdate      time.Time
@@ -29,7 +35,7 @@ type Player struct {
 	Pin            string
 }
 
-func NewPlayer(firstName, lastName string, birthdate time.Time, gender, country, department string) (*Player, error) {
+func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, country, department string) (*Player, error) {
 	if firstName == "" || lastName == "" {
 		return nil, ErrInvalidName
 	}
@@ -37,7 +43,7 @@ func NewPlayer(firstName, lastName string, birthdate time.Time, gender, country,
 		gender = "M"
 	}
 	return &Player{
-		ID:             uuid.New(),
+		ID:             id,
 		FirstName:      firstName,
 		LastName:       lastName,
 		Birthdate:      birthdate,

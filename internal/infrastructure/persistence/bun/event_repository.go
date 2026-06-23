@@ -25,8 +25,19 @@ func NewEventRepository(db *bun.DB, tournamentRepo *TournamentRepository) *Event
 func (r *EventRepository) DB() *bun.DB { return r.db }
 
 func (r *EventRepository) Save(ctx context.Context, e *event.Event) error {
+	id, err := uuid.Parse(e.ID)
+	if err != nil {
+		return err
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	model := &EventModel{
-		ID:         e.ID,
+		ID:         id,
 		Name:       e.Name,
 		DivisionID: e.DivisionID,
 		SkipElo:    e.SkipElo,
@@ -34,13 +45,29 @@ func (r *EventRepository) Save(ctx context.Context, e *event.Event) error {
 		EndDate:    e.EndDate,
 		NumTables:  e.NumTables,
 	}
-	_, err := r.db.NewInsert().Model(model).Exec(ctx)
-	return err
+
+	_, err = tx.NewInsert().Model(model).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, t := range e.Tournaments {
+		if err := r.tournamentRepo.SaveTx(ctx, tx, t); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
-func (r *EventRepository) GetByID(ctx context.Context, id uuid.UUID) (*event.Event, error) {
+func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Event, error) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, err
+	}
+
 	model := new(EventModel)
-	err := r.db.NewSelect().Model(model).Where("id = ?", id).Scan(ctx)
+	err = r.db.NewSelect().Model(model).Where("id = ?", id).Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +75,7 @@ func (r *EventRepository) GetByID(ctx context.Context, id uuid.UUID) (*event.Eve
 	tourneys, _ := r.tournamentRepo.GetByEventID(ctx, id)
 
 	return &event.Event{
-		ID:          model.ID,
+		ID:          model.ID.String(),
 		Name:        model.Name,
 		DivisionID:  model.DivisionID,
 		SkipElo:     model.SkipElo,
@@ -131,7 +158,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 
 	toPlayer := func(pm *PlayerModel) *player.Player {
 		return &player.Player{
-			ID:         pm.ID,
+			ID:         pm.ID.String(),
 			FirstName:  pm.FirstName,
 			LastName:   pm.LastName,
 			Gender:     pm.Gender,
@@ -157,7 +184,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 	}
 
 	// Build tournaments indexed by event
-	tournamentsByEvent := make(map[uuid.UUID][]*tournament.Tournament)
+	tournamentsByEvent := make(map[string][]*tournament.Tournament)
 	for _, m := range allTournamentModels {
 		var participantPlayers []*player.Player
 		for _, pt := range partsByTournament[m.ID] {
@@ -175,57 +202,68 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 				}
 			}
 			teams = append(teams, &tournament.Team{
-				ID:           tm.ID,
-				TournamentID: tm.TournamentID,
+				ID:           tm.ID.String(),
+				TournamentID: tm.TournamentID.String(),
 				Name:         tm.Name,
 				Players:      teamPlayers,
 			})
 		}
 
-		eid := uuid.Nil
+		eidStr := ""
 		if m.EventID != nil {
-			eid = *m.EventID
+			eidStr = m.EventID.String()
 		}
-		tournamentsByEvent[eid] = append(tournamentsByEvent[eid], &tournament.Tournament{
-			ID:        m.ID,
-			Name:      m.Name,
-			Type:      m.Type,
-			Format:    m.Format,
-			Status:    m.Status,
-			EventCategory: m.EventCategory,
-			StartDate: m.StartDate,
-			EndDate:   m.EndDate,
-			GroupPassCount: m.GroupPassCount,
+
+		var eventIDPtr *string
+		if m.EventID != nil {
+			s := m.EventID.String()
+			eventIDPtr = &s
+		}
+
+		tournamentsByEvent[eidStr] = append(tournamentsByEvent[eidStr], &tournament.Tournament{
+			ID:               m.ID.String(),
+			Name:             m.Name,
+			Type:             m.Type,
+			Format:           m.Format,
+			Status:           m.Status,
+			EventCategory:    m.EventCategory,
+			StartDate:        m.StartDate,
+			EndDate:          m.EndDate,
+			GroupPassCount:   m.GroupPassCount,
 			RegistrationOpen: m.RegistrationOpen,
-			EventID:   m.EventID,
-			SkipElo:   m.SkipElo,
-			Participants: participantPlayers,
-			Rules:     []tournament.Rule{},
-			Matches:   []tournament.Match{},
-			Teams:     teams,
-			TeamFormat: m.TeamFormat,
+			EventID:          eventIDPtr,
+			SkipElo:          m.SkipElo,
+			Participants:     participantPlayers,
+			Rules:            []tournament.Rule{},
+			Matches:          []tournament.Match{},
+			Teams:            teams,
+			TeamFormat:       m.TeamFormat,
 		})
 	}
 
 	events := make([]*event.Event, len(models))
 	for i, m := range models {
 		events[i] = &event.Event{
-			ID:          m.ID,
+			ID:          m.ID.String(),
 			Name:        m.Name,
 			DivisionID:  m.DivisionID,
 			SkipElo:     m.SkipElo,
 			StartDate:   m.StartDate,
 			EndDate:     m.EndDate,
 			NumTables:   m.NumTables,
-			Tournaments: tournamentsByEvent[m.ID],
+			Tournaments: tournamentsByEvent[m.ID.String()],
 		}
 	}
 	return events, nil
 }
 
 func (r *EventRepository) Update(ctx context.Context, e *event.Event) error {
+	id, err := uuid.Parse(e.ID)
+	if err != nil {
+		return err
+	}
 	model := &EventModel{
-		ID:         e.ID,
+		ID:         id,
 		Name:       e.Name,
 		DivisionID: e.DivisionID,
 		SkipElo:    e.SkipElo,
@@ -233,11 +271,16 @@ func (r *EventRepository) Update(ctx context.Context, e *event.Event) error {
 		EndDate:    e.EndDate,
 		NumTables:  e.NumTables,
 	}
-	_, err := r.db.NewUpdate().Model(model).WherePK().Column("name", "division_id", "skip_elo", "start_date", "end_date", "num_tables").Exec(ctx)
+	_, err = r.db.NewUpdate().Model(model).WherePK().Column("name", "division_id", "skip_elo", "start_date", "end_date", "num_tables").Exec(ctx)
 	return err
 }
 
-func (r *EventRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *EventRepository) Delete(ctx context.Context, idStr string) error {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return err
+	}
+
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -286,10 +329,20 @@ func (r *EventRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return tx.Commit()
 }
 
-func (r *EventRepository) DeleteEvents(ctx context.Context, ids []uuid.UUID) error {
+func (r *EventRepository) DeleteEvents(ctx context.Context, idStrs []string) error {
+	if len(idStrs) == 0 {
+		return nil
+	}
+	ids := make([]uuid.UUID, 0, len(idStrs))
+	for _, s := range idStrs {
+		if uid, err := uuid.Parse(s); err == nil {
+			ids = append(ids, uid)
+		}
+	}
 	if len(ids) == 0 {
 		return nil
 	}
+
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -332,4 +385,3 @@ func (r *EventRepository) DeleteEvents(ctx context.Context, ids []uuid.UUID) err
 
 	return tx.Commit()
 }
-

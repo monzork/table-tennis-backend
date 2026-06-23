@@ -3,14 +3,13 @@ package leaderboard
 import (
 	"context"
 	"table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
 type GetLeaderboardUseCase struct {
-	playerRepo bun.PlayerRepository
+	playerRepo player.Repository
 }
 
-func NewGetLeaderboardUseCase(repo bun.PlayerRepository) *GetLeaderboardUseCase {
+func NewGetLeaderboardUseCase(repo player.Repository) *GetLeaderboardUseCase {
 	return &GetLeaderboardUseCase{playerRepo: repo}
 }
 

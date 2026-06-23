@@ -3,26 +3,20 @@ package tournament
 import (
 	"context"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 
 	"github.com/google/uuid"
 )
 
 type CreateTeamUseCase struct {
-	repo *bun.TournamentRepository
+	repo tournamentDomain.Repository
 }
 
-func NewCreateTeamUseCase(repo *bun.TournamentRepository) *CreateTeamUseCase {
+func NewCreateTeamUseCase(repo tournamentDomain.Repository) *CreateTeamUseCase {
 	return &CreateTeamUseCase{repo: repo}
 }
 
 func (uc *CreateTeamUseCase) Execute(ctx context.Context, tournamentIDStr string, name string) (*tournamentDomain.Team, error) {
-	tourneyID, err := uuid.Parse(tournamentIDStr)
-	if err != nil {
-		return nil, err
-	}
-
-	team, err := tournamentDomain.NewTeam(tourneyID, name)
+	team, err := tournamentDomain.NewTeam(uuid.NewString(), tournamentIDStr, name)
 	if err != nil {
 		return nil, err
 	}
@@ -35,57 +29,37 @@ func (uc *CreateTeamUseCase) Execute(ctx context.Context, tournamentIDStr string
 }
 
 type DeleteTeamUseCase struct {
-	repo *bun.TournamentRepository
+	repo tournamentDomain.Repository
 }
 
-func NewDeleteTeamUseCase(repo *bun.TournamentRepository) *DeleteTeamUseCase {
+func NewDeleteTeamUseCase(repo tournamentDomain.Repository) *DeleteTeamUseCase {
 	return &DeleteTeamUseCase{repo: repo}
 }
 
 func (uc *DeleteTeamUseCase) Execute(ctx context.Context, idStr string) error {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return err
-	}
-	return uc.repo.DeleteTeam(ctx, id)
+	return uc.repo.DeleteTeam(ctx, idStr)
 }
 
 type AssignPlayerToTeamUseCase struct {
-	repo *bun.TournamentRepository
+	repo tournamentDomain.Repository
 }
 
-func NewAssignPlayerToTeamUseCase(repo *bun.TournamentRepository) *AssignPlayerToTeamUseCase {
+func NewAssignPlayerToTeamUseCase(repo tournamentDomain.Repository) *AssignPlayerToTeamUseCase {
 	return &AssignPlayerToTeamUseCase{repo: repo}
 }
 
 func (uc *AssignPlayerToTeamUseCase) Execute(ctx context.Context, teamIDStr string, playerIDStr string) error {
-	teamID, err := uuid.Parse(teamIDStr)
-	if err != nil {
-		return err
-	}
-	playerID, err := uuid.Parse(playerIDStr)
-	if err != nil {
-		return err
-	}
-	return uc.repo.AddPlayerToTeam(ctx, teamID, playerID)
+	return uc.repo.AddPlayerToTeam(ctx, teamIDStr, playerIDStr)
 }
 
 type RemovePlayerFromTeamUseCase struct {
-	repo *bun.TournamentRepository
+	repo tournamentDomain.Repository
 }
 
-func NewRemovePlayerFromTeamUseCase(repo *bun.TournamentRepository) *RemovePlayerFromTeamUseCase {
+func NewRemovePlayerFromTeamUseCase(repo tournamentDomain.Repository) *RemovePlayerFromTeamUseCase {
 	return &RemovePlayerFromTeamUseCase{repo: repo}
 }
 
 func (uc *RemovePlayerFromTeamUseCase) Execute(ctx context.Context, teamIDStr string, playerIDStr string) error {
-	teamID, err := uuid.Parse(teamIDStr)
-	if err != nil {
-		return err
-	}
-	playerID, err := uuid.Parse(playerIDStr)
-	if err != nil {
-		return err
-	}
-	return uc.repo.RemovePlayerFromTeam(ctx, teamID, playerID)
+	return uc.repo.RemovePlayerFromTeam(ctx, teamIDStr, playerIDStr)
 }

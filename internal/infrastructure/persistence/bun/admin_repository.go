@@ -4,6 +4,7 @@ import (
 	"context"
 	"table-tennis-backend/internal/domain/admin"
 
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 )
 
@@ -23,20 +24,25 @@ func (r *AdminRepository) GetByUsername(ctx context.Context, username string) (*
 	}
 
 	return &admin.Admin{
-		ID:           model.ID,
+		ID:           model.ID.String(),
 		Username:     model.Username,
 		PasswordHash: model.PasswordHash,
 	}, nil
 }
 
 func (r *AdminRepository) Save(ctx context.Context, a *admin.Admin) error {
+	id, err := uuid.Parse(a.ID)
+	if err != nil {
+		return err
+	}
+
 	model := &AdminModel{
-		ID:           a.ID,
+		ID:           id,
 		Username:     a.Username,
 		PasswordHash: a.PasswordHash,
 	}
 
-	_, err := r.db.NewInsert().
+	_, err = r.db.NewInsert().
 		Model(model).
 		On("CONFLICT (id) DO UPDATE").
 		Set("username = EXCLUDED.username").

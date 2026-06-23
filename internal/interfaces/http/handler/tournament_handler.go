@@ -9,7 +9,6 @@ import (
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 type TournamentHandler struct {
@@ -132,11 +131,9 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	}
 
 	skipElo := c.FormValue("skipElo") == "on"
-	var eventID *uuid.UUID
+	var eventID *string
 	if eIDStr := c.FormValue("eventId"); eIDStr != "" {
-		if parsed, err := uuid.Parse(eIDStr); err == nil {
-			eventID = &parsed
-		}
+		eventID = &eIDStr
 	}
 
 	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, skipElo, eventID, body.TeamFormat)
@@ -173,7 +170,7 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 
 	// Calculate available participants (those not in any team)
 	var availableParticipants []*player.Player
-	assignedMap := make(map[uuid.UUID]bool)
+	assignedMap := make(map[string]bool)
 	for _, team := range t.Teams {
 		for _, p := range team.Players {
 			assignedMap[p.ID] = true
@@ -272,11 +269,9 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	}
 
 	skipElo := c.FormValue("skipElo") == "on"
-	var eventID *uuid.UUID
+	var eventID *string
 	if eIDStr := c.FormValue("eventId"); eIDStr != "" {
-		if parsed, err := uuid.Parse(eIDStr); err == nil {
-			eventID = &parsed
-		}
+		eventID = &eIDStr
 	}
 
 	t, err := h.updateUC.Execute(
@@ -311,11 +306,7 @@ func (h *TournamentHandler) Delete(c *fiber.Ctx) error {
 
 func (h *TournamentHandler) Finish(c *fiber.Ctx) error {
 	idStr := c.Params("id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid tournament id")
-	}
-	if err := h.finishUC.Execute(c.Context(), id); err != nil {
+	if err := h.finishUC.Execute(c.Context(), idStr); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 	if c.Get("HX-Request") != "" {

@@ -7,7 +7,6 @@ import (
 	eventDomain "table-tennis-backend/internal/domain/event"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,17 +20,17 @@ type CategoryConfig struct {
 }
 
 type CreateEventUseCase struct {
-	eventRepo      *bun.EventRepository
-	tournamentRepo *bun.TournamentRepository
-	playerRepo     *bun.PlayerRepository
-	divisionRepo   *bun.DivisionRepository
+	eventRepo      eventDomain.Repository
+	tournamentRepo tournamentDomain.Repository
+	playerRepo     playerDomain.Repository
+	divisionRepo   divisionDomain.Repository
 }
 
 func NewCreateEventUseCase(
-	eventRepo *bun.EventRepository,
-	tournamentRepo *bun.TournamentRepository,
-	playerRepo *bun.PlayerRepository,
-	divisionRepo *bun.DivisionRepository,
+	eventRepo eventDomain.Repository,
+	tournamentRepo tournamentDomain.Repository,
+	playerRepo playerDomain.Repository,
+	divisionRepo divisionDomain.Repository,
 ) *CreateEventUseCase {
 	return &CreateEventUseCase{
 		eventRepo:      eventRepo,
@@ -58,7 +57,7 @@ func (uc *CreateEventUseCase) Execute(
 		return nil, err
 	}
 
-	e, err := eventDomain.NewEvent(name, divisionID, skipElo, start, end)
+	e, err := eventDomain.NewEvent(uuid.NewString(), name, divisionID, skipElo, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -73,19 +72,19 @@ func (uc *CreateEventUseCase) Execute(
 	}
 
 	// Collect all unique player IDs across all categories and batch-load them
-	allIDSet := make(map[uuid.UUID]bool)
+	allIDSet := make(map[string]bool)
 	for _, cfg := range []CategoryConfig{singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen} {
 		for _, idStr := range cfg.PlayerIDs {
-			if id, err := uuid.Parse(idStr); err == nil {
-				allIDSet[id] = true
+			if idStr != "" {
+				allIDSet[idStr] = true
 			}
 		}
 	}
-	allIDs := make([]uuid.UUID, 0, len(allIDSet))
+	allIDs := make([]string, 0, len(allIDSet))
 	for id := range allIDSet {
 		allIDs = append(allIDs, id)
 	}
-	playerCache := make(map[uuid.UUID]*playerDomain.Player)
+	playerCache := make(map[string]*playerDomain.Player)
 	if len(allIDs) > 0 {
 		loaded, err := uc.playerRepo.GetByIDs(ctx, allIDs)
 		if err == nil {
@@ -95,43 +94,23 @@ func (uc *CreateEventUseCase) Execute(
 		}
 	}
 
-	tx, err := uc.eventRepo.DB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.NewInsert().Model(&bun.EventModel{
-		ID:         e.ID,
-		Name:       e.Name,
-		DivisionID: e.DivisionID,
-		SkipElo:    e.SkipElo,
-		StartDate:  e.StartDate,
-		EndDate:    e.EndDate,
-	}).Exec(ctx); err != nil {
-		return nil, err
-	}
-
-	// Helper to create a tournament under this event (within the shared transaction)
+	// Helper to create a tournament under this event
 	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player) error {
-		t, err := tournamentDomain.NewTournament(tName, tType, tFormat, category, start, end, []tournamentDomain.Rule{}, groupPassCount, players)
+		t, err := tournamentDomain.NewTournament(uuid.NewString(), tName, tType, tFormat, category, start, end, []tournamentDomain.Rule{}, groupPassCount, players)
 		if err != nil {
 			return err
 		}
 		t.EventID = &e.ID
 		t.SkipElo = skipElo
-		return uc.tournamentRepo.SaveTx(ctx, tx, t)
+		e.Tournaments = append(e.Tournaments, t)
+		return nil
 	}
 
 	// Helper to get qualified players for a category (from cache)
 	getPlayers := func(ids []string, gender string, isDoubles bool) []*playerDomain.Player {
 		var players []*playerDomain.Player
 		for _, idStr := range ids {
-			id, err := uuid.Parse(idStr)
-			if err != nil {
-				continue
-			}
-			p, ok := playerCache[id]
+			p, ok := playerCache[idStr]
 			if !ok {
 				continue
 			}
@@ -201,7 +180,7 @@ func (uc *CreateEventUseCase) Execute(
 		_ = createSubTourney(tName, "teams", teamsWomen.Format, "women", teamsWomen.GroupPassCount, players)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := uc.eventRepo.Save(ctx, e); err != nil {
 		return nil, err
 	}
 
@@ -210,26 +189,22 @@ func (uc *CreateEventUseCase) Execute(
 }
 
 type GetEventByIDUseCase struct {
-	eventRepo *bun.EventRepository
+	eventRepo eventDomain.Repository
 }
 
-func NewGetEventByIDUseCase(eventRepo *bun.EventRepository) *GetEventByIDUseCase {
+func NewGetEventByIDUseCase(eventRepo eventDomain.Repository) *GetEventByIDUseCase {
 	return &GetEventByIDUseCase{eventRepo: eventRepo}
 }
 
 func (uc *GetEventByIDUseCase) Execute(ctx context.Context, idStr string) (*eventDomain.Event, error) {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return nil, err
-	}
-	return uc.eventRepo.GetByID(ctx, id)
+	return uc.eventRepo.GetByID(ctx, idStr)
 }
 
 type GetAllEventsUseCase struct {
-	eventRepo *bun.EventRepository
+	eventRepo eventDomain.Repository
 }
 
-func NewGetAllEventsUseCase(eventRepo *bun.EventRepository) *GetAllEventsUseCase {
+func NewGetAllEventsUseCase(eventRepo eventDomain.Repository) *GetAllEventsUseCase {
 	return &GetAllEventsUseCase{eventRepo: eventRepo}
 }
 
@@ -238,29 +213,17 @@ func (uc *GetAllEventsUseCase) Execute(ctx context.Context) ([]*eventDomain.Even
 }
 
 type DeleteEventUseCase struct {
-	eventRepo *bun.EventRepository
+	eventRepo eventDomain.Repository
 }
 
-func NewDeleteEventUseCase(eventRepo *bun.EventRepository) *DeleteEventUseCase {
+func NewDeleteEventUseCase(eventRepo eventDomain.Repository) *DeleteEventUseCase {
 	return &DeleteEventUseCase{eventRepo: eventRepo}
 }
 
 func (uc *DeleteEventUseCase) Execute(ctx context.Context, idStr string) error {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return err
-	}
-	return uc.eventRepo.Delete(ctx, id)
+	return uc.eventRepo.Delete(ctx, idStr)
 }
 
 func (uc *DeleteEventUseCase) ExecuteBulk(ctx context.Context, idStrs []string) error {
-	var ids []uuid.UUID
-	for _, idStr := range idStrs {
-		id, err := uuid.Parse(idStr)
-		if err != nil {
-			return err
-		}
-		ids = append(ids, id)
-	}
-	return uc.eventRepo.DeleteEvents(ctx, ids)
+	return uc.eventRepo.DeleteEvents(ctx, idStrs)
 }

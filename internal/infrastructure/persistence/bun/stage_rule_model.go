@@ -20,9 +20,13 @@ type StageRuleModel struct {
 }
 
 func stageRuleToModel(r tournament.StageRule) *StageRuleModel {
+	id := r.ID
+	if id == "" {
+		id = uuid.NewString()
+	}
 	return &StageRuleModel{
-		ID:           r.ID.String(),
-		TournamentID: r.TournamentID.String(),
+		ID:           id,
+		TournamentID: r.TournamentID,
 		Stage:        r.Stage,
 		BestOf:       r.BestOf,
 		PointsToWin:  r.PointsToWin,
@@ -31,11 +35,9 @@ func stageRuleToModel(r tournament.StageRule) *StageRuleModel {
 }
 
 func stageRuleToDomain(m StageRuleModel) tournament.StageRule {
-	id, _ := uuid.Parse(m.ID)
-	tid, _ := uuid.Parse(m.TournamentID)
 	return tournament.StageRule{
-		ID:           id,
-		TournamentID: tid,
+		ID:           m.ID,
+		TournamentID: m.TournamentID,
 		Stage:        m.Stage,
 		BestOf:       m.BestOf,
 		PointsToWin:  m.PointsToWin,
@@ -46,7 +48,7 @@ func stageRuleToDomain(m StageRuleModel) tournament.StageRule {
 // loadStageRules fetches all stage rules for a tournament (shared helper).
 func loadStageRules(ctx context.Context, db *bun.DB, tournamentID uuid.UUID) []tournament.StageRule {
 	var models []StageRuleModel
-	_ = db.NewSelect().Model(&models).Where("tournament_id = ?", tournamentID).Scan(ctx)
+	_ = db.NewSelect().Model(&models).Where("tournament_id = ?", tournamentID.String()).Scan(ctx)
 	rules := make([]tournament.StageRule, len(models))
 	for i, m := range models {
 		rules[i] = stageRuleToDomain(m)
@@ -68,7 +70,7 @@ func saveStageRules(ctx context.Context, tx bun.IDB, rules []tournament.StageRul
 }
 
 // replaceStageRules deletes old rules and re-inserts new ones inside a transaction.
-func replaceStageRules(ctx context.Context, tx bun.IDB, tournamentID uuid.UUID, rules []tournament.StageRule) error {
+func replaceStageRules(ctx context.Context, tx bun.IDB, tournamentID string, rules []tournament.StageRule) error {
 	if _, err := tx.NewDelete().TableExpr("tournament_stage_rules").
 		Where("tournament_id = ?", tournamentID).Exec(ctx); err != nil {
 		return err
@@ -80,7 +82,7 @@ func replaceStageRules(ctx context.Context, tx bun.IDB, tournamentID uuid.UUID, 
 func GetStageRule(ctx context.Context, db *bun.DB, tournamentID uuid.UUID, stage string) (*StageRuleModel, error) {
 	m := new(StageRuleModel)
 	err := db.NewSelect().Model(m).
-		Where("tournament_id = ?", tournamentID).
+		Where("tournament_id = ?", tournamentID.String()).
 		Where("stage = ?", stage).
 		Scan(ctx)
 	if err != nil {

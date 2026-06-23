@@ -3,43 +3,40 @@ package player
 import (
 	"context"
 	"table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type GetPlayerByIDUseCase struct {
-	repo *bun.PlayerRepository
+	repo player.Repository
 }
 
-func NewGetPlayerByIDUseCase(repo *bun.PlayerRepository) *GetPlayerByIDUseCase {
+func NewGetPlayerByIDUseCase(repo player.Repository) *GetPlayerByIDUseCase {
 	return &GetPlayerByIDUseCase{repo: repo}
 }
 
 func (uc *GetPlayerByIDUseCase) Execute(ctx context.Context, idStr string) (*player.Player, error) {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
+	if _, err := uuid.Parse(idStr); err != nil {
 		return nil, err
 	}
-	return uc.repo.GetById(ctx, id)
+	return uc.repo.GetById(ctx, idStr)
 }
 
 type UpdatePlayerUseCase struct {
-	repo *bun.PlayerRepository
+	repo player.Repository
 }
 
-func NewUpdatePlayerUseCase(repo *bun.PlayerRepository) *UpdatePlayerUseCase {
+func NewUpdatePlayerUseCase(repo player.Repository) *UpdatePlayerUseCase {
 	return &UpdatePlayerUseCase{repo: repo}
 }
 
 func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, lastName, birthdate, gender, country, department, whatsAppNumber string, singlesElo, doublesElo int16) (*player.Player, error) {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
+	if _, err := uuid.Parse(idStr); err != nil {
 		return nil, err
 	}
 
-	p, err := uc.repo.GetById(ctx, id)
+	p, err := uc.repo.GetById(ctx, idStr)
 	if err != nil {
 		return nil, err
 	}
@@ -73,26 +70,25 @@ func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, la
 }
 
 type DeletePlayerUseCase struct {
-	repo *bun.PlayerRepository
+	repo player.Repository
 }
 
-func NewDeletePlayerUseCase(repo *bun.PlayerRepository) *DeletePlayerUseCase {
+func NewDeletePlayerUseCase(repo player.Repository) *DeletePlayerUseCase {
 	return &DeletePlayerUseCase{repo: repo}
 }
 
 func (uc *DeletePlayerUseCase) Execute(ctx context.Context, idStr string) error {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
+	if _, err := uuid.Parse(idStr); err != nil {
 		return err
 	}
-	return uc.repo.Delete(ctx, id)
+	return uc.repo.Delete(ctx, idStr)
 }
 
 type SearchPlayersUseCase struct {
-	repo *bun.PlayerRepository
+	repo player.Repository
 }
 
-func NewSearchPlayersUseCase(repo *bun.PlayerRepository) *SearchPlayersUseCase {
+func NewSearchPlayersUseCase(repo player.Repository) *SearchPlayersUseCase {
 	return &SearchPlayersUseCase{repo: repo}
 }
 

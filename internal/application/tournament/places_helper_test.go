@@ -10,7 +10,7 @@ import (
 
 func TestGetTournamentPlaces_NotFinished(t *testing.T) {
 	tourney := &tournamentDomain.Tournament{
-		ID:     uuid.New(),
+		ID:     uuid.New().String(),
 		Name:   "Unfinished Tourney",
 		Format: "elimination",
 		Status: "in_progress",
@@ -23,13 +23,13 @@ func TestGetTournamentPlaces_NotFinished(t *testing.T) {
 }
 
 func TestGetTournamentPlaces_Elimination(t *testing.T) {
-	p1 := &player.Player{ID: uuid.New(), FirstName: "Alice", LastName: "Smith"}
-	p2 := &player.Player{ID: uuid.New(), FirstName: "Bob", LastName: "Jones"}
-	p3 := &player.Player{ID: uuid.New(), FirstName: "Charlie", LastName: "Brown"}
-	p4 := &player.Player{ID: uuid.New(), FirstName: "Diana", LastName: "Prince"}
+	p1 := &player.Player{ID: uuid.New().String(), FirstName: "Alice", LastName: "Smith"}
+	p2 := &player.Player{ID: uuid.New().String(), FirstName: "Bob", LastName: "Jones"}
+	p3 := &player.Player{ID: uuid.New().String(), FirstName: "Charlie", LastName: "Brown"}
+	p4 := &player.Player{ID: uuid.New().String(), FirstName: "Diana", LastName: "Prince"}
 
 	tourney := &tournamentDomain.Tournament{
-		ID:           uuid.New(),
+		ID:           uuid.New().String(),
 		Name:         "Elimination Cup",
 		Type:         "singles",
 		Format:       "elimination",
@@ -38,7 +38,7 @@ func TestGetTournamentPlaces_Elimination(t *testing.T) {
 		Matches: []tournamentDomain.Match{
 			// Semifinals
 			{
-				ID:         uuid.New(),
+				ID:         uuid.New().String(),
 				Stage:      "semifinal",
 				Status:     "finished",
 				TeamA:      []*player.Player{p1},
@@ -47,7 +47,7 @@ func TestGetTournamentPlaces_Elimination(t *testing.T) {
 				Sets:       []tournamentDomain.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}},
 			},
 			{
-				ID:         uuid.New(),
+				ID:         uuid.New().String(),
 				Stage:      "semifinal",
 				Status:     "finished",
 				TeamA:      []*player.Player{p2},
@@ -57,7 +57,7 @@ func TestGetTournamentPlaces_Elimination(t *testing.T) {
 			},
 			// Final
 			{
-				ID:         uuid.New(),
+				ID:         uuid.New().String(),
 				Stage:      "final",
 				Status:     "finished",
 				TeamA:      []*player.Player{p1},
@@ -83,12 +83,12 @@ func TestGetTournamentPlaces_Elimination(t *testing.T) {
 }
 
 func TestGetTournamentPlaces_RoundRobin(t *testing.T) {
-	p1 := &player.Player{ID: uuid.New(), FirstName: "Alice", LastName: "Smith", SinglesElo: 1000}
-	p2 := &player.Player{ID: uuid.New(), FirstName: "Bob", LastName: "Jones", SinglesElo: 900}
-	p3 := &player.Player{ID: uuid.New(), FirstName: "Charlie", LastName: "Brown", SinglesElo: 800}
+	p1 := &player.Player{ID: uuid.New().String(), FirstName: "Alice", LastName: "Smith", SinglesElo: 1000}
+	p2 := &player.Player{ID: uuid.New().String(), FirstName: "Bob", LastName: "Jones", SinglesElo: 900}
+	p3 := &player.Player{ID: uuid.New().String(), FirstName: "Charlie", LastName: "Brown", SinglesElo: 800}
 
 	tourney := &tournamentDomain.Tournament{
-		ID:           uuid.New(),
+		ID:           uuid.New().String(),
 		Name:         "Round Robin League",
 		Type:         "singles",
 		Format:       "round_robin",
@@ -96,7 +96,7 @@ func TestGetTournamentPlaces_RoundRobin(t *testing.T) {
 		Participants: []*player.Player{p1, p2, p3},
 		Matches: []tournamentDomain.Match{
 			{
-				ID:         uuid.New(),
+				ID:         uuid.New().String(),
 				Stage:      "group",
 				Status:     "finished",
 				TeamA:      []*player.Player{p1},
@@ -105,7 +105,7 @@ func TestGetTournamentPlaces_RoundRobin(t *testing.T) {
 				Sets:       []tournamentDomain.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}},
 			},
 			{
-				ID:         uuid.New(),
+				ID:         uuid.New().String(),
 				Stage:      "group",
 				Status:     "finished",
 				TeamA:      []*player.Player{p2},
@@ -114,7 +114,7 @@ func TestGetTournamentPlaces_RoundRobin(t *testing.T) {
 				Sets:       []tournamentDomain.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}},
 			},
 			{
-				ID:         uuid.New(),
+				ID:         uuid.New().String(),
 				Stage:      "group",
 				Status:     "finished",
 				TeamA:      []*player.Player{p1},

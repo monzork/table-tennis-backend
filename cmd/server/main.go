@@ -24,7 +24,9 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
 	fiberws "github.com/gofiber/websocket/v2"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
@@ -44,7 +46,7 @@ func main() {
 	searchPlayerUC := player.NewSearchPlayersUseCase(playerRepo)
 	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, importPlayerUC)
 
-	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(*playerRepo)
+	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 
 	divisionRepo := bun.NewDivisionRepository(bun.DB)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
@@ -91,11 +93,11 @@ func main() {
 	deleteEventUC := event.NewDeleteEventUseCase(eventRepo)
 	eventHandler := handler.NewEventHandler(createEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC)
 
-	GetMatchesUC := match.NewGetMatchesUseCase(*bun.DB, *playerRepo)
+	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
-	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo)
+	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
@@ -116,8 +118,11 @@ func main() {
 		if pass == "" {
 			pass = "password"
 		}
-		if a, err := adminDomain.NewAdmin(user, pass); err == nil {
-			adminRepo.Save(context.Background(), a)
+		hashed, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+		if err == nil {
+			if a, err := adminDomain.NewAdmin(uuid.New().String(), user, string(hashed)); err == nil {
+				adminRepo.Save(context.Background(), a)
+			}
 		}
 	}
 

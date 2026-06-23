@@ -2,21 +2,21 @@ package tournament
 
 import (
 	"context"
+	divisionDomain "table-tennis-backend/internal/domain/division"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type CreateTournamentUseCase struct {
-	repo         *bun.TournamentRepository
-	playerRepo   *bun.PlayerRepository
-	divisionRepo *bun.DivisionRepository
+	repo         tournamentDomain.Repository
+	playerRepo   playerDomain.Repository
+	divisionRepo divisionDomain.Repository
 }
 
-func NewCreateTournamentUseCase(repo *bun.TournamentRepository, playerRepo *bun.PlayerRepository, divisionRepo *bun.DivisionRepository) *CreateTournamentUseCase {
+func NewCreateTournamentUseCase(repo tournamentDomain.Repository, playerRepo playerDomain.Repository, divisionRepo divisionDomain.Repository) *CreateTournamentUseCase {
 	return &CreateTournamentUseCase{repo: repo, playerRepo: playerRepo, divisionRepo: divisionRepo}
 }
 
@@ -38,7 +38,7 @@ func (uc *CreateTournamentUseCase) Execute(
 	groupPassCount int,
 	stageRuleOverrides []StageRuleOverride,
 	skipElo bool,
-	eventID *uuid.UUID,
+	eventID *string,
 	teamFormat string,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
@@ -54,11 +54,10 @@ func (uc *CreateTournamentUseCase) Execute(
 
 	// Handle existing players
 	for _, idStr := range participantIDs {
-		id, err := uuid.Parse(idStr)
-		if err != nil {
+		if idStr == "" {
 			continue
 		}
-		p, err := uc.playerRepo.GetById(ctx, id)
+		p, err := uc.playerRepo.GetById(ctx, idStr)
 		if err == nil {
 			participants = append(participants, p)
 		}
@@ -66,7 +65,7 @@ func (uc *CreateTournamentUseCase) Execute(
 
 	// Handle new players
 	for _, np := range newPlayers {
-		p, err := playerDomain.NewPlayer(np.FirstName, np.LastName, time.Now(), np.Gender, "", "")
+		p, err := playerDomain.NewPlayer(uuid.NewString(), np.FirstName, np.LastName, time.Now(), np.Gender, "", "")
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +92,7 @@ func (uc *CreateTournamentUseCase) Execute(
 		}
 	}
 
-	t, err := tournamentDomain.NewTournament(name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, filteredParticipants)
+	t, err := tournamentDomain.NewTournament(uuid.NewString(), name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, filteredParticipants)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +153,7 @@ func (uc *CreateTournamentUseCase) Execute(
 		}
 
 		pairName := pairSuffix + " " + name
-		pairT, err := tournamentDomain.NewTournament(pairName, tournamentType, format, pairCategory, start, end, []tournamentDomain.Rule{}, groupPassCount, pairParticipants)
+		pairT, err := tournamentDomain.NewTournament(uuid.NewString(), pairName, tournamentType, format, pairCategory, start, end, []tournamentDomain.Rule{}, groupPassCount, pairParticipants)
 		if err == nil {
 			pairT.SkipElo = skipElo
 			pairT.EventID = eventID

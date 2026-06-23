@@ -3,16 +3,16 @@ package player
 import (
 	"context"
 	playerDomain "table-tennis-backend/internal/domain/player"
-	playerDB "table-tennis-backend/internal/infrastructure/persistence/bun"
 
+	"github.com/google/uuid"
 	"time"
 )
 
 type RegisterPlayerUseCase struct {
-	repo *playerDB.PlayerRepository
+	repo playerDomain.Repository
 }
 
-func NewRegisterPlayerUseCase(repo *playerDB.PlayerRepository) *RegisterPlayerUseCase {
+func NewRegisterPlayerUseCase(repo playerDomain.Repository) *RegisterPlayerUseCase {
 	return &RegisterPlayerUseCase{repo: repo}
 }
 
@@ -22,7 +22,7 @@ func (uc *RegisterPlayerUseCase) Execute(ctx context.Context, firstName, lastNam
 		return nil, err
 	}
 
-	p, err := playerDomain.NewPlayer(firstName, lastName, bd, gender, country, department)
+	p, err := playerDomain.NewPlayer(uuid.NewString(), firstName, lastName, bd, gender, country, department)
 	if err != nil {
 		return nil, err
 	}

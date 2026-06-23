@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
@@ -35,7 +36,7 @@ func TestTournamentHandler(t *testing.T) {
 	playerRepo := bunRepo.NewPlayerRepository(db)
 	tournamentRepo := bunRepo.NewTournamentRepository(db)
 	
-	p1, _ := playerDomain.NewPlayer("Test", "Player1", time.Now(), "M", "", "")
+	p1, _ := playerDomain.NewPlayer(uuid.New().String(), "Test", "Player1", time.Now(), "M", "", "")
 	playerRepo.Save(ctx, p1)
 
 	var createdTournamentID string
@@ -48,7 +49,7 @@ func TestTournamentHandler(t *testing.T) {
 		data.Set("startDate", time.Now().Format("2006-01-02"))
 		data.Set("endDate", time.Now().Add(48*time.Hour).Format("2006-01-02"))
 		data.Set("groupPassCount", "2")
-		data.Add("participant_ids[]", p1.ID.String())
+		data.Add("participant_ids[]", p1.ID)
 
 		req := httptest.NewRequest("POST", "/tournaments", strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -128,10 +129,10 @@ func TestTournamentHandler(t *testing.T) {
 	})
 	
 	t.Run("Delete Tournament", func(t *testing.T) {
-		tourney, _ := tournamentDomain.NewTournament("Temp", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, nil)
+		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Temp", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, nil)
 		tournamentRepo.Save(ctx, tourney)
 
-		req := httptest.NewRequest("DELETE", fmt.Sprintf("/tournaments/%s", tourney.ID.String()), nil)
+		req := httptest.NewRequest("DELETE", fmt.Sprintf("/tournaments/%s", tourney.ID), nil)
 		req.Header.Set("Cookie", sessionCookie)
 
 		resp, err := app.Test(req)
@@ -145,13 +146,13 @@ func TestTournamentHandler(t *testing.T) {
 	})
 
 	t.Run("Move Player Between Groups", func(t *testing.T) {
-		p2, _ := playerDomain.NewPlayer("Test", "Player2", time.Now(), "M", "", "")
+		p2, _ := playerDomain.NewPlayer(uuid.New().String(), "Test", "Player2", time.Now(), "M", "", "")
 		playerRepo.Save(ctx, p2)
-		p3, _ := playerDomain.NewPlayer("Test", "Player3", time.Now(), "M", "", "")
+		p3, _ := playerDomain.NewPlayer(uuid.New().String(), "Test", "Player3", time.Now(), "M", "", "")
 		playerRepo.Save(ctx, p3)
-		p4, _ := playerDomain.NewPlayer("Test", "Player4", time.Now(), "M", "", "")
+		p4, _ := playerDomain.NewPlayer(uuid.New().String(), "Test", "Player4", time.Now(), "M", "", "")
 		playerRepo.Save(ctx, p4)
-		p5, _ := playerDomain.NewPlayer("Test", "Player5", time.Now(), "M", "", "")
+		p5, _ := playerDomain.NewPlayer(uuid.New().String(), "Test", "Player5", time.Now(), "M", "", "")
 		playerRepo.Save(ctx, p5)
 
 		data := url.Values{}
@@ -162,11 +163,11 @@ func TestTournamentHandler(t *testing.T) {
 		data.Set("endDate", time.Now().Add(48*time.Hour).Format("2006-01-02"))
 		data.Set("groupPassCount", "2")
 		data.Set("skipElo", "true")
-		data.Add("participant_ids[]", p1.ID.String())
-		data.Add("participant_ids[]", p2.ID.String())
-		data.Add("participant_ids[]", p3.ID.String())
-		data.Add("participant_ids[]", p4.ID.String())
-		data.Add("participant_ids[]", p5.ID.String())
+		data.Add("participant_ids[]", p1.ID)
+		data.Add("participant_ids[]", p2.ID)
+		data.Add("participant_ids[]", p3.ID)
+		data.Add("participant_ids[]", p4.ID)
+		data.Add("participant_ids[]", p5.ID)
 
 		req := httptest.NewRequest("POST", "/tournaments", strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -186,7 +187,7 @@ func TestTournamentHandler(t *testing.T) {
 			t.Fatalf("failed to find tournament: %v", err)
 		}
 
-		tourney, err := tournamentRepo.GetByID(ctx, tm.ID)
+		tourney, err := tournamentRepo.GetByID(ctx, tm.ID.String())
 		if err != nil {
 			t.Fatalf("failed to load tourney domain: %v", err)
 		}
@@ -203,10 +204,10 @@ func TestTournamentHandler(t *testing.T) {
 		movingPlayerID := groupA.Players[0].ID
 
 		moveData := url.Values{}
-		moveData.Set("playerId", movingPlayerID.String())
-		moveData.Set("targetGroupId", groupB.ID.String())
+		moveData.Set("playerId", movingPlayerID)
+		moveData.Set("targetGroupId", groupB.ID)
 
-		moveReq := httptest.NewRequest("POST", fmt.Sprintf("/admin/tournaments/%s/move-player", tourney.ID.String()), strings.NewReader(moveData.Encode()))
+		moveReq := httptest.NewRequest("POST", fmt.Sprintf("/admin/tournaments/%s/move-player", tourney.ID), strings.NewReader(moveData.Encode()))
 		moveReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		moveReq.Header.Set("Cookie", sessionCookie)
 
@@ -218,7 +219,7 @@ func TestTournamentHandler(t *testing.T) {
 			t.Fatalf("expected 200 OK for move, got %v", moveResp.StatusCode)
 		}
 
-		tourneyReloaded, err := tournamentRepo.GetByID(ctx, tm.ID)
+		tourneyReloaded, err := tournamentRepo.GetByID(ctx, tm.ID.String())
 		if err != nil {
 			t.Fatalf("failed to reload tourney: %v", err)
 		}

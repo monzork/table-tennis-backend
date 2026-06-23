@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/google/uuid"
 	"table-tennis-backend/internal/domain/match"
 	"table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
@@ -30,7 +29,7 @@ func NewFinishTournamentUseCase(
 	}
 }
 
-func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID uuid.UUID) error {
+func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID string) error {
 	t, err := uc.tournamentRepo.GetByID(ctx, tournamentID)
 	if err != nil {
 		return err

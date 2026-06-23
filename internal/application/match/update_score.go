@@ -6,18 +6,18 @@ import (
 	"strconv"
 	"strings"
 	"table-tennis-backend/internal/domain/tournament"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
-
-	"github.com/google/uuid"
 )
 
 type UpdateMatchScoreUseCase struct {
-	matchRepo    *bun.MatchRepository
-	stageRuleRepo func(ctx context.Context, tournamentID uuid.UUID, stage string) (*bun.StageRuleModel, error)
+	matchRepo      tournament.MatchRepository
+	tournamentRepo tournament.Repository
 }
 
-func NewUpdateMatchScoreUseCase(matchRepo *bun.MatchRepository) *UpdateMatchScoreUseCase {
-	return &UpdateMatchScoreUseCase{matchRepo: matchRepo}
+func NewUpdateMatchScoreUseCase(matchRepo tournament.MatchRepository, tournamentRepo tournament.Repository) *UpdateMatchScoreUseCase {
+	return &UpdateMatchScoreUseCase{
+		matchRepo:      matchRepo,
+		tournamentRepo: tournamentRepo,
+	}
 }
 
 // SetScoreInput is one set "A-B" e.g. "11-8"
@@ -59,33 +59,39 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 	tournamentIDStr string,
 	stage string,
 ) error {
-	matchID, err := uuid.Parse(matchIDStr)
-	if err != nil {
-		return fmt.Errorf("invalid match id: %w", err)
-	}
-	tournamentID, err := uuid.Parse(tournamentIDStr)
-	if err != nil {
-		return fmt.Errorf("invalid tournament id: %w", err)
-	}
-
 	sets, err := ParseSetScores(rawScores)
 	if err != nil {
 		return err
 	}
 
-	var status string
-	if err := uc.matchRepo.DB().NewSelect().TableExpr("tournaments").Column("status").Where("id = ?", tournamentID).Scan(ctx, &status); err == nil {
-		if status == "finished" {
-			return fmt.Errorf("cannot update score of a finished tournament")
+	t, err := uc.tournamentRepo.GetByID(ctx, tournamentIDStr)
+	if err != nil {
+		return fmt.Errorf("tournament not found: %w", err)
+	}
+
+	if t.Status == "finished" {
+		return fmt.Errorf("cannot update score of a finished tournament")
+	}
+
+	// Load the stage rule for this stage from the tournament
+	var stageRule tournament.StageRule
+	foundRule := false
+	for _, r := range t.StageRules {
+		if r.Stage == stage {
+			stageRule = r
+			foundRule = true
+			break
+		}
+	}
+	if !foundRule {
+		// Fallback to default WTT rules
+		stageRule = tournament.StageRule{
+			BestOf:       5,
+			PointsToWin:  11,
+			PointsMargin: 2,
+			Stage:        stage,
 		}
 	}
 
-	// Load the stage rule for this stage
-	stageRule, err := bun.GetStageRule(ctx, uc.matchRepo.DB(), tournamentID, stage)
-	if err != nil {
-		// Fallback to default
-		stageRule = &bun.StageRuleModel{BestOf: 5, PointsToWin: 11, PointsMargin: 2, Stage: stage}
-	}
-
-	return uc.matchRepo.UpdateScore(ctx, matchID, sets, stageRule)
+	return uc.matchRepo.UpdateScore(ctx, matchIDStr, sets, stageRule)
 }

@@ -27,7 +27,7 @@ func NewCreateMatchUseCase(
 	}
 }
 
-func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID uuid.UUID, matchType string, teamAPlayerIDs, teamBPlayerIDs []uuid.UUID, opts ...string) (*tournament.Match, error) {
+func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, matchType string, teamAPlayerIDs, teamBPlayerIDs []string, opts ...string) (*tournament.Match, error) {
 	t, err := uc.tournamentRepo.GetByID(ctx, tournamentID)
 	if err != nil {
 		return nil, errors.New("tournament not found")
@@ -36,7 +36,7 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID uuid.UUI
 	isTeamBased := matchType == "doubles" || matchType == "teams"
 
 	// For team-based matches, resolve team IDs to their players
-	teamPlayersMap := make(map[uuid.UUID][]*player.Player)
+	teamPlayersMap := make(map[string][]*player.Player)
 	if isTeamBased {
 		for _, team := range t.Teams {
 			teamPlayersMap[team.ID] = team.Players
@@ -87,7 +87,7 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID uuid.UUI
 	}
 
 	m := &tournament.Match{
-		ID:           uuid.New(),
+		ID:           uuid.NewString(),
 		TournamentID: tournamentID,
 		MatchType:    matchType,
 		TeamA:        teamA,

@@ -39,24 +39,24 @@ func TestMatchHandler(t *testing.T) {
 	tournamentRepo := bunRepo.NewTournamentRepository(db)
 	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
 	
-	p1, _ := playerDomain.NewPlayer("Alice", "Smith", time.Now(), "F", "", "")
-	p2, _ := playerDomain.NewPlayer("Bob", "Jones", time.Now(), "M", "", "")
+	p1, _ := playerDomain.NewPlayer(uuid.New().String(), "Alice", "Smith", time.Now(), "F", "", "")
+	p2, _ := playerDomain.NewPlayer(uuid.New().String(), "Bob", "Jones", time.Now(), "M", "", "")
 	playerRepo.Save(ctx, p1)
 	playerRepo.Save(ctx, p2)
 
-	tourney, _ := tournamentDomain.NewTournament("Test Tourney", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2})
+	tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Test Tourney", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2})
 	tournamentRepo.Save(ctx, tourney)
 
-	m := &tournamentDomain.Match{ID: uuid.New(), TournamentID: tourney.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled"}
+	m := &tournamentDomain.Match{ID: uuid.New().String(), TournamentID: tourney.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled"}
 	matchRepo.Save(ctx, m)
 
 	t.Run("Update Score", func(t *testing.T) {
 		data := url.Values{}
-		data.Set("tournamentId", tourney.ID.String())
+		data.Set("tournamentId", tourney.ID)
 		data.Set("stage", "final")
 		data.Add("scores[]", "11-9")
 
-		req := httptest.NewRequest("PUT", fmt.Sprintf("/matches/%s/score", m.ID.String()), strings.NewReader(data.Encode()))
+		req := httptest.NewRequest("PUT", fmt.Sprintf("/matches/%s/score", m.ID), strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Cookie", sessionCookie)
 
@@ -72,7 +72,7 @@ func TestMatchHandler(t *testing.T) {
 
 	t.Run("Finish Match", func(t *testing.T) {
 		data := url.Values{}
-		data.Set("matchId", m.ID.String())
+		data.Set("matchId", m.ID)
 		data.Set("winnerTeam", "A")
 
 		req := httptest.NewRequest("POST", "/matches/finish", strings.NewReader(data.Encode()))
@@ -104,7 +104,8 @@ func TestMatchHandler(t *testing.T) {
 	})
 
 	t.Run("Public Score Update - Invalid PIN", func(t *testing.T) {
-		mModel, err := matchRepo.GetByID(ctx, m.ID)
+		mUUID, _ := uuid.Parse(m.ID)
+		mModel, err := matchRepo.GetByID(ctx, mUUID)
 		if err != nil {
 			t.Fatalf("failed to get match: %v", err)
 		}
@@ -115,8 +116,8 @@ func TestMatchHandler(t *testing.T) {
 		}
 
 		data := url.Values{}
-		data.Set("matchId", m.ID.String())
-		data.Set("tournamentId", tourney.ID.String())
+		data.Set("matchId", m.ID)
+		data.Set("tournamentId", tourney.ID)
 		data.Set("stage", "final")
 		data.Set("pin", "9999") // Invalid PIN
 		data.Add("scores[]_a", "11")
@@ -140,8 +141,8 @@ func TestMatchHandler(t *testing.T) {
 
 	t.Run("Public Score Update - Valid Match PIN", func(t *testing.T) {
 		data := url.Values{}
-		data.Set("matchId", m.ID.String())
-		data.Set("tournamentId", tourney.ID.String())
+		data.Set("matchId", m.ID)
+		data.Set("tournamentId", tourney.ID)
 		data.Set("stage", "final")
 		data.Set("pin", "5555") // Valid match PIN
 		data.Add("scores[]_a", "11")

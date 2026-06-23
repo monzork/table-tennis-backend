@@ -3,14 +3,13 @@ package tournament
 import (
 	"context"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
 type GetTournamentsUseCase struct {
-	repo *bun.TournamentRepository
+	repo tournamentDomain.Repository
 }
 
-func NewGetTournamentsUseCase(repo *bun.TournamentRepository) *GetTournamentsUseCase {
+func NewGetTournamentsUseCase(repo tournamentDomain.Repository) *GetTournamentsUseCase {
 	return &GetTournamentsUseCase{repo: repo}
 }
 

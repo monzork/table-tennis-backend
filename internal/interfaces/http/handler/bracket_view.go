@@ -42,7 +42,7 @@ type DivisionView struct {
 type PlayerStanding = tournament.PlayerStanding
 
 type GroupView struct {
-	ID        uuid.UUID
+	ID        string
 	Name      string
 	Players   []*player.Player
 	Standings []PlayerStanding
@@ -142,7 +142,7 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 		return vm
 	}
 
-	assignedMap := make(map[uuid.UUID]bool)
+	assignedMap := make(map[string]bool)
 
 	// Valid divisions for tournament type
 	var validDivs []*division.Division
@@ -421,7 +421,7 @@ func buildGroupEliminationGroups(t *tournament.Tournament, players []*player.Pla
 		}
 
 		gv := GroupView{
-			ID:        uuid.New(),
+			ID:        uuid.New().String(),
 			Name:      fmt.Sprintf("Group %c", 'A'+i),
 			Players:   gp,
 			Standings: buildStandings(gp, t.Matches),

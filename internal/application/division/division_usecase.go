@@ -3,14 +3,15 @@ package division
 import (
 	"context"
 	"table-tennis-backend/internal/domain/division"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
+
+	"github.com/google/uuid"
 )
 
 type DivisionUseCase struct {
-	repo *bun.DivisionRepository
+	repo division.Repository
 }
 
-func NewDivisionUseCase(repo *bun.DivisionRepository) *DivisionUseCase {
+func NewDivisionUseCase(repo division.Repository) *DivisionUseCase {
 	return &DivisionUseCase{repo: repo}
 }
 
@@ -27,7 +28,7 @@ func (uc *DivisionUseCase) Save(ctx context.Context, id, name string, displayOrd
 		d, err = uc.repo.GetById(ctx, id)
 		if err != nil {
              // fallback to new if not found
-			d, err = division.NewDivision(name, displayOrder, minElo, maxElo, category, color)
+			d, err = division.NewDivision(id, name, displayOrder, minElo, maxElo, category, color)
 		} else {
 			d.Name = name
 			d.DisplayOrder = displayOrder
@@ -44,7 +45,7 @@ func (uc *DivisionUseCase) Save(ctx context.Context, id, name string, displayOrd
 			}
 		}
 	} else {
-		d, err = division.NewDivision(name, displayOrder, minElo, maxElo, category, color)
+		d, err = division.NewDivision(uuid.NewString(), name, displayOrder, minElo, maxElo, category, color)
 	}
 
 	if err != nil {

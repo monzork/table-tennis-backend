@@ -9,8 +9,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
+	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 
 	"table-tennis-backend/internal/application/division"
@@ -67,7 +69,8 @@ func SetupTestDB() (*bun.DB, error) {
 	}
 
 	adminRepo := bunRepo.NewAdminRepository(bunDB)
-	a, _ := adminDomain.NewAdmin("admin", "password")
+	hashed, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+	a, _ := adminDomain.NewAdmin(uuid.New().String(), "admin", string(hashed))
 	adminRepo.Save(ctx, a)
 
 	return bunDB, nil
@@ -88,7 +91,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
 	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, importPlayerUC)
 
-	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(*playerRepo)
+	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 
 	divisionRepo := bunRepo.NewDivisionRepository(db)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
@@ -123,11 +126,11 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	getAllEventsUC := event.NewGetAllEventsUseCase(eventRepo)
 	deleteEventUC := event.NewDeleteEventUseCase(eventRepo)
 	eventHandler := handler.NewEventHandler(createEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC)
-	GetMatchesUC := match.NewGetMatchesUseCase(*db, *playerRepo)
+	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
-	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo)
+	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)

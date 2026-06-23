@@ -7,27 +7,21 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/jung-kurt/gofpdf"
 	"table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
+	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 )
 
 type ExportTournamentPdfUseCase struct {
-	tournamentRepo *bun.TournamentRepository
+	tournamentRepo tournamentDomain.Repository
 }
 
-func NewExportTournamentPdfUseCase(tournamentRepo *bun.TournamentRepository) *ExportTournamentPdfUseCase {
+func NewExportTournamentPdfUseCase(tournamentRepo tournamentDomain.Repository) *ExportTournamentPdfUseCase {
 	return &ExportTournamentPdfUseCase{tournamentRepo: tournamentRepo}
 }
 
 func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDStr string) ([]byte, error) {
-	id, err := uuid.Parse(tournamentIDStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid tournament id")
-	}
-
-	t, err := uc.tournamentRepo.GetByID(ctx, id)
+	t, err := uc.tournamentRepo.GetByID(ctx, tournamentIDStr)
 	if err != nil {
 		return nil, err
 	}

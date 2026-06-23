@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
@@ -25,7 +26,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 	tournamentRepo := bunRepo.NewTournamentRepository(db)
 
 	// Create a player that is already registered
-	existingPlayer, err := playerDomain.NewPlayer("Jane", "Doe", time.Now().AddDate(-25, 0, 0), "F", "NIC", "")
+	existingPlayer, err := playerDomain.NewPlayer(uuid.New().String(), "Jane", "Doe", time.Now().AddDate(-25, 0, 0), "F", "NIC", "")
 	if err != nil {
 		t.Fatalf("failed to create existing player: %v", err)
 	}
@@ -36,7 +37,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 	}
 
 	// Create a tournament that is open for registration
-	tourney, err := tournamentDomain.NewTournament("Open Championship", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, nil)
+	tourney, err := tournamentDomain.NewTournament(uuid.New().String(), "Open Championship", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, nil)
 	if err != nil {
 		t.Fatalf("failed to create tournament: %v", err)
 	}
@@ -47,7 +48,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 
 	t.Run("Register existing player", func(t *testing.T) {
 		data := url.Values{}
-		data.Set("tournamentId", tourney.ID.String())
+		data.Set("tournamentId", tourney.ID)
 		data.Set("firstName", "Jane")
 		data.Set("lastName", "Doe")
 		data.Set("country", "NIC")
@@ -86,7 +87,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 
 	t.Run("Register non-existent player (creates new player with starting ELO 500)", func(t *testing.T) {
 		data := url.Values{}
-		data.Set("tournamentId", tourney.ID.String())
+		data.Set("tournamentId", tourney.ID)
 		data.Set("firstName", "Bob")
 		data.Set("lastName", "Newguy")
 		data.Set("country", "CRC")
@@ -151,7 +152,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 
 	t.Run("Fail with single name (no last name)", func(t *testing.T) {
 		data := url.Values{}
-		data.Set("tournamentId", tourney.ID.String())
+		data.Set("tournamentId", tourney.ID)
 		data.Set("firstName", "Cher")
 		data.Set("lastName", "")
 		data.Set("country", "USA")

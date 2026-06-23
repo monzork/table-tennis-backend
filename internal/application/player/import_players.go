@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/xuri/excelize/v2"
 
 	playerDomain "table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
 // ImportResult summarises the outcome of a bulk import.
@@ -25,10 +25,10 @@ type ImportResult struct {
 
 // ImportPlayersUseCase reads a CSV or Excel file and bulk-inserts players.
 type ImportPlayersUseCase struct {
-	playerRepo *bun.PlayerRepository
+	playerRepo playerDomain.Repository
 }
 
-func NewImportPlayersUseCase(repo *bun.PlayerRepository) *ImportPlayersUseCase {
+func NewImportPlayersUseCase(repo playerDomain.Repository) *ImportPlayersUseCase {
 	return &ImportPlayersUseCase{playerRepo: repo}
 }
 
@@ -181,7 +181,7 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 		birthdate = time.Now()
 	}
 
-	p, err := playerDomain.NewPlayer(firstName, lastName, birthdate, gender, country, department)
+	p, err := playerDomain.NewPlayer(uuid.NewString(), firstName, lastName, birthdate, gender, country, department)
 	if err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("row %d: %v", rowNum, err))
 		result.Skipped++

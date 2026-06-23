@@ -149,7 +149,7 @@ func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
 	selectedMap := make(map[string]bool)
 	if selectAll {
 		for _, p := range players {
-			selectedMap[p.ID.String()] = true
+			selectedMap[p.ID] = true
 		}
 	} else {
 		for _, id := range c.Request().URI().QueryArgs().PeekMulti("participant_ids[]") {

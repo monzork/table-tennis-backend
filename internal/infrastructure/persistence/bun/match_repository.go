@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
 	"time"
 
@@ -74,6 +75,41 @@ func (r *MatchRepository) GenerateUniquePin(ctx context.Context) string {
 }
 
 func (r *MatchRepository) Save(ctx context.Context, m *tournament.Match) error {
+	mID, err := uuid.Parse(m.ID)
+	if err != nil {
+		return err
+	}
+	tID, err := uuid.Parse(m.TournamentID)
+	if err != nil {
+		return err
+	}
+	pA1, err := uuid.Parse(m.TeamA[0].ID)
+	if err != nil {
+		return err
+	}
+	pB1, err := uuid.Parse(m.TeamB[0].ID)
+	if err != nil {
+		return err
+	}
+
+	var teamMatchIDPtr *uuid.UUID
+	if m.TeamMatchID != nil {
+		uid, err := uuid.Parse(*m.TeamMatchID)
+		if err != nil {
+			return err
+		}
+		teamMatchIDPtr = &uid
+	}
+
+	var refereeIDPtr *uuid.UUID
+	if m.RefereeID != nil {
+		uid, err := uuid.Parse(*m.RefereeID)
+		if err != nil {
+			return err
+		}
+		refereeIDPtr = &uid
+	}
+
 	stage := m.Stage
 	if stage == "" {
 		stage = "group"
@@ -81,35 +117,42 @@ func (r *MatchRepository) Save(ctx context.Context, m *tournament.Match) error {
 	if m.Pin == "" {
 		m.Pin = r.GenerateUniquePin(ctx)
 	}
+
 	model := &MatchModel{
-		ID:             m.ID,
-		TournamentID:   m.TournamentID,
+		ID:             mID,
+		TournamentID:   tID,
 		MatchType:      m.MatchType,
-		TeamAPlayer1ID: m.TeamA[0].ID,
-		TeamBPlayer1ID: m.TeamB[0].ID,
+		TeamAPlayer1ID: pA1,
+		TeamBPlayer1ID: pB1,
 		Status:         m.Status,
 		Stage:          stage,
 		RoundNumber:    1,
-		TeamMatchID:    m.TeamMatchID,
-		RefereeID:      m.RefereeID,
+		TeamMatchID:    teamMatchIDPtr,
+		RefereeID:      refereeIDPtr,
 		TableNumber:    m.TableNumber,
 		Pin:            m.Pin,
 	}
 
 	if len(m.TeamA) == 2 {
-		id := m.TeamA[1].ID
-		model.TeamAPlayer2ID = &id
+		pA2, err := uuid.Parse(m.TeamA[1].ID)
+		if err != nil {
+			return err
+		}
+		model.TeamAPlayer2ID = &pA2
 	}
 	if len(m.TeamB) == 2 {
-		id := m.TeamB[1].ID
-		model.TeamBPlayer2ID = &id
+		pB2, err := uuid.Parse(m.TeamB[1].ID)
+		if err != nil {
+			return err
+		}
+		model.TeamBPlayer2ID = &pB2
 	}
 
 	if m.WinnerTeam != "" {
 		model.WinnerTeam = &m.WinnerTeam
 	}
 
-	_, err := r.db.NewInsert().Model(model).
+	_, err = r.db.NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
 		Set("status = EXCLUDED.status, winner_team = EXCLUDED.winner_team, referee_id = EXCLUDED.referee_id, table_number = EXCLUDED.table_number, pin = EXCLUDED.pin, team_a_player_1_id = EXCLUDED.team_a_player_1_id, team_b_player_1_id = EXCLUDED.team_b_player_1_id, team_a_player_2_id = EXCLUDED.team_a_player_2_id, team_b_player_2_id = EXCLUDED.team_b_player_2_id").
 		Exec(ctx)
@@ -135,7 +178,12 @@ func (r *MatchRepository) GetSets(ctx context.Context, matchID string) ([]MatchS
 
 // UpdateScore replaces all set scores, resolves winner, persists, updates players' Elo,
 // and advances the winner into the next match if configured.
-func (r *MatchRepository) UpdateScore(ctx context.Context, id uuid.UUID, sets []tournament.MatchSet, stageRule *StageRuleModel) error {
+func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []tournament.MatchSet, stageRule tournament.StageRule) error {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return err
+	}
+
 	m, err := r.GetByID(ctx, id)
 	if err != nil {
 		return err
@@ -181,8 +229,6 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, id uuid.UUID, sets []
 		}
 		m.WinnerTeam = &winner
 		m.Status = "finished"
-
-
 
 		// Advance winner to next match slot if configured
 		if m.NextMatchID != nil {
@@ -299,22 +345,105 @@ func containsMatch(matches []MatchModel, id uuid.UUID) bool {
 	return false
 }
 
-func (r *MatchRepository) CountUnfinishedMatches(ctx context.Context, tournamentID uuid.UUID) (int, error) {
+func (r *MatchRepository) CountUnfinishedMatches(ctx context.Context, tournamentID string) (int, error) {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return 0, err
+	}
 	return r.db.NewSelect().
 		Model((*MatchModel)(nil)).
-		Where("tournament_id = ?", tournamentID).
+		Where("tournament_id = ?", tID).
 		Where("status != ?", "finished").
 		Where("team_match_id IS NULL").
 		Count(ctx)
 }
 
-func (r *MatchRepository) CountFinishedMatches(ctx context.Context, tournamentID uuid.UUID) (int, error) {
+func (r *MatchRepository) CountFinishedMatches(ctx context.Context, tournamentID string) (int, error) {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return 0, err
+	}
 	return r.db.NewSelect().
 		Model((*MatchModel)(nil)).
-		Where("tournament_id = ?", tournamentID).
+		Where("tournament_id = ?", tID).
 		Where("status = ?", "finished").
 		Where("team_match_id IS NULL").
 		Count(ctx)
+}
+
+func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, error) {
+	var models []MatchModel
+	if err := r.db.NewSelect().Model(&models).Order("created_at DESC").Scan(ctx); err != nil {
+		return nil, err
+	}
+
+	matches := make([]*tournament.Match, 0, len(models))
+	for _, m := range models {
+		teamA := []*player.Player{}
+		if p, err := r.playerRepo.GetById(ctx, m.TeamAPlayer1ID.String()); err == nil {
+			teamA = append(teamA, p)
+		}
+		if m.TeamAPlayer2ID != nil {
+			if p, err := r.playerRepo.GetById(ctx, m.TeamAPlayer2ID.String()); err == nil {
+				teamA = append(teamA, p)
+			}
+		}
+
+		teamB := []*player.Player{}
+		if p, err := r.playerRepo.GetById(ctx, m.TeamBPlayer1ID.String()); err == nil {
+			teamB = append(teamB, p)
+		}
+		if m.TeamBPlayer2ID != nil {
+			if p, err := r.playerRepo.GetById(ctx, m.TeamBPlayer2ID.String()); err == nil {
+				teamB = append(teamB, p)
+			}
+		}
+
+		var sets []tournament.MatchSet
+		var setModels []MatchSetModel
+		_ = r.db.NewSelect().Model(&setModels).Where("match_id = ?", m.ID.String()).Order("set_number ASC").Scan(ctx)
+		for _, sm := range setModels {
+			sets = append(sets, tournament.MatchSet{
+				Number: sm.SetNumber,
+				ScoreA: sm.ScoreA,
+				ScoreB: sm.ScoreB,
+			})
+		}
+
+		wt := ""
+		if m.WinnerTeam != nil {
+			wt = *m.WinnerTeam
+		}
+
+		var teamMatchIDPtr *string
+		if m.TeamMatchID != nil {
+			s := m.TeamMatchID.String()
+			teamMatchIDPtr = &s
+		}
+		var refereeIDPtr *string
+		if m.RefereeID != nil {
+			s := m.RefereeID.String()
+			refereeIDPtr = &s
+		}
+
+		matches = append(matches, &tournament.Match{
+			ID:           m.ID.String(),
+			TournamentID: m.TournamentID.String(),
+			MatchType:    m.MatchType,
+			TeamA:        teamA,
+			TeamB:        teamB,
+			Status:       m.Status,
+			WinnerTeam:   wt,
+			Sets:         sets,
+			TeamMatchID:  teamMatchIDPtr,
+			Stage:        m.Stage,
+			UpdatedAt:    m.UpdatedAt,
+			RefereeID:    refereeIDPtr,
+			TableNumber:  m.TableNumber,
+			Pin:          m.Pin,
+		})
+	}
+	return matches, nil
 }
 
 func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID uuid.UUID) ([]int, error) {
