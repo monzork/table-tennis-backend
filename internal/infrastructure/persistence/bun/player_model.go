@@ -21,6 +21,7 @@ type PlayerModel struct {
 	Department     string     `bun:"department,notnull,default:''"`
 	WhatsAppNumber string     `bun:"whatsapp_number,nullzero"`
 	Pin            string     `bun:"pin,notnull,default:'1234'"`
+	NationalID     string     `bun:"national_id,nullzero"`
 	CreatedAt      time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
 }

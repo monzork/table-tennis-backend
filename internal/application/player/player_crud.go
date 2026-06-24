@@ -26,7 +26,7 @@ func NewUpdatePlayerUseCase(repo player.Repository) *UpdatePlayerUseCase {
 	return &UpdatePlayerUseCase{repo: repo}
 }
 
-func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, lastName, birthdate, gender, country, department, whatsAppNumber string, singlesElo, doublesElo int16) (*player.Player, error) {
+func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, lastName, birthdate, gender, country, department, whatsAppNumber, nationalID string, singlesElo, doublesElo int16) (*player.Player, error) {
 	p, err := uc.repo.GetById(ctx, idStr)
 	if err != nil {
 		return nil, err
@@ -50,8 +50,8 @@ func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, la
 		p.Country = country
 	}
 	p.Department = department
-	
 	p.WhatsAppNumber = whatsAppNumber
+	p.NationalID = nationalID
 	
 	p.UpdateSinglesElo(singlesElo)
 	p.UpdateDoublesElo(doublesElo)

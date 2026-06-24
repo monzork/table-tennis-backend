@@ -103,7 +103,7 @@ func (uc *SelfRegisterUseCase) Execute(
 			}
 		}
 
-		newPlayer, err := playerDomain.NewPlayer(idgen.Generate(), firstName, lastName, birthdate, gender, countryUpper, strings.TrimSpace(department))
+		newPlayer, err := playerDomain.NewPlayer(idgen.Generate(), firstName, lastName, birthdate, gender, countryUpper, strings.TrimSpace(department), "")
 		if err != nil {
 			return nil, "", fmt.Errorf("failed to create new player: %w", err)
 		}

@@ -157,6 +157,13 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 	doublesEloStr := cell(row, colIdx, "doubles_elo")
 	whatsappNumber := cell(row, colIdx, "whatsapp_number")
 	pin := cell(row, colIdx, "pin")
+	nationalID := cell(row, colIdx, "national_id")
+	if nationalID == "" {
+		nationalID = cell(row, colIdx, "cedula")
+	}
+	if nationalID == "" {
+		nationalID = cell(row, colIdx, "id_card")
+	}
 
 	if firstName == "" || lastName == "" {
 		result.Errors = append(result.Errors, fmt.Sprintf("row %d: missing first_name or last_name — skipped", rowNum))
@@ -181,7 +188,7 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 		birthdate = time.Now()
 	}
 
-	p, err := playerDomain.NewPlayer(idgen.Generate(), firstName, lastName, birthdate, gender, country, department)
+	p, err := playerDomain.NewPlayer(idgen.Generate(), firstName, lastName, birthdate, gender, country, department, nationalID)
 	if err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("row %d: %v", rowNum, err))
 		result.Skipped++

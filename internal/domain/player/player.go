@@ -33,9 +33,10 @@ type Player struct {
 	Department     string
 	WhatsAppNumber string
 	Pin            string
+	NationalID     string
 }
 
-func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, country, department string) (*Player, error) {
+func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, country, department, nationalID string) (*Player, error) {
 	if firstName == "" || lastName == "" {
 		return nil, ErrInvalidName
 	}
@@ -54,6 +55,7 @@ func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, coun
 		Department:     department,
 		WhatsAppNumber: "",
 		Pin:            "1234",
+		NationalID:     nationalID,
 	}, nil
 }
 

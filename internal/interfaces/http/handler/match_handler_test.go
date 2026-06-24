@@ -39,8 +39,8 @@ func TestMatchHandler(t *testing.T) {
 	tournamentRepo := bunRepo.NewTournamentRepository(db)
 	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
 	
-	p1, _ := playerDomain.NewPlayer(uuid.New().String(), "Alice", "Smith", time.Now(), "F", "", "")
-	p2, _ := playerDomain.NewPlayer(uuid.New().String(), "Bob", "Jones", time.Now(), "M", "", "")
+	p1, _ := playerDomain.NewPlayer(uuid.New().String(), "Alice", "Smith", time.Now(), "F", "", "", "")
+	p2, _ := playerDomain.NewPlayer(uuid.New().String(), "Bob", "Jones", time.Now(), "M", "", "", "")
 	playerRepo.Save(ctx, p1)
 	playerRepo.Save(ctx, p2)
 

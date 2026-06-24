@@ -26,7 +26,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 	tournamentRepo := bunRepo.NewTournamentRepository(db)
 
 	// Create a player that is already registered
-	existingPlayer, err := playerDomain.NewPlayer(uuid.New().String(), "Jane", "Doe", time.Now().AddDate(-25, 0, 0), "F", "NIC", "")
+	existingPlayer, err := playerDomain.NewPlayer(uuid.New().String(), "Jane", "Doe", time.Now().AddDate(-25, 0, 0), "F", "NIC", "", "")
 	if err != nil {
 		t.Fatalf("failed to create existing player: %v", err)
 	}

@@ -40,9 +40,15 @@
             {{template "partials/department-input" dict "Theme" "admin-edit" "Country" .Country "Department" .Department}}
         </div>
     </div>
-    <div class="space-y-1">
-        <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">WhatsApp Number</label>
-        <input type="text" name="whatsAppNumber" value="{{.WhatsAppNumber}}" placeholder="+52..." class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+    <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">WhatsApp Number</label>
+            <input type="text" name="whatsAppNumber" value="{{.WhatsAppNumber}}" placeholder="+52..." class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">National ID (Cédula)</label>
+            <input type="text" name="nationalID" value="{{.NationalID}}" placeholder="e.g. 001-000000-0000A" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4 pt-2 border-t border-white/5 mt-4">
