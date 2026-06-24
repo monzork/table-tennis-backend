@@ -23,6 +23,9 @@ func stageRuleToModel(r tournament.StageRule) *StageRuleModel {
 	id := r.ID
 	if id == "" {
 		id = uuid.NewString()
+	} else if _, err := uuid.Parse(id); err != nil {
+		// Convert deterministic domain string to a valid UUID format
+		id = uuid.NewSHA1(uuid.NameSpaceURL, []byte(r.ID)).String()
 	}
 	return &StageRuleModel{
 		ID:           id,
