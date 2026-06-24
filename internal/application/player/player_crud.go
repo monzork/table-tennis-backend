@@ -4,8 +4,6 @@ import (
 	"context"
 	"table-tennis-backend/internal/domain/player"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type GetPlayerByIDUseCase struct {
@@ -17,9 +15,6 @@ func NewGetPlayerByIDUseCase(repo player.Repository) *GetPlayerByIDUseCase {
 }
 
 func (uc *GetPlayerByIDUseCase) Execute(ctx context.Context, idStr string) (*player.Player, error) {
-	if _, err := uuid.Parse(idStr); err != nil {
-		return nil, err
-	}
 	return uc.repo.GetById(ctx, idStr)
 }
 
@@ -32,10 +27,6 @@ func NewUpdatePlayerUseCase(repo player.Repository) *UpdatePlayerUseCase {
 }
 
 func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, lastName, birthdate, gender, country, department, whatsAppNumber string, singlesElo, doublesElo int16) (*player.Player, error) {
-	if _, err := uuid.Parse(idStr); err != nil {
-		return nil, err
-	}
-
 	p, err := uc.repo.GetById(ctx, idStr)
 	if err != nil {
 		return nil, err
@@ -78,9 +69,6 @@ func NewDeletePlayerUseCase(repo player.Repository) *DeletePlayerUseCase {
 }
 
 func (uc *DeletePlayerUseCase) Execute(ctx context.Context, idStr string) error {
-	if _, err := uuid.Parse(idStr); err != nil {
-		return err
-	}
 	return uc.repo.Delete(ctx, idStr)
 }
 

@@ -3,11 +3,10 @@ package tournament
 import (
 	"context"
 	divisionDomain "table-tennis-backend/internal/domain/division"
+	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type CreateTournamentUseCase struct {
@@ -65,7 +64,7 @@ func (uc *CreateTournamentUseCase) Execute(
 
 	// Handle new players
 	for _, np := range newPlayers {
-		p, err := playerDomain.NewPlayer(uuid.NewString(), np.FirstName, np.LastName, time.Now(), np.Gender, "", "")
+		p, err := playerDomain.NewPlayer(idgen.Generate(), np.FirstName, np.LastName, time.Now(), np.Gender, "", "")
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +91,7 @@ func (uc *CreateTournamentUseCase) Execute(
 		}
 	}
 
-	t, err := tournamentDomain.NewTournament(uuid.NewString(), name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, filteredParticipants)
+	t, err := tournamentDomain.NewTournament(idgen.Generate(), name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, filteredParticipants)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +152,7 @@ func (uc *CreateTournamentUseCase) Execute(
 		}
 
 		pairName := pairSuffix + " " + name
-		pairT, err := tournamentDomain.NewTournament(uuid.NewString(), pairName, tournamentType, format, pairCategory, start, end, []tournamentDomain.Rule{}, groupPassCount, pairParticipants)
+		pairT, err := tournamentDomain.NewTournament(idgen.Generate(), pairName, tournamentType, format, pairCategory, start, end, []tournamentDomain.Rule{}, groupPassCount, pairParticipants)
 		if err == nil {
 			pairT.SkipElo = skipElo
 			pairT.EventID = eventID

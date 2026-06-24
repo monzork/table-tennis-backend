@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
+	"table-tennis-backend/internal/domain/idgen"
 	"github.com/xuri/excelize/v2"
 
 	playerDomain "table-tennis-backend/internal/domain/player"
@@ -181,7 +181,7 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 		birthdate = time.Now()
 	}
 
-	p, err := playerDomain.NewPlayer(uuid.NewString(), firstName, lastName, birthdate, gender, country, department)
+	p, err := playerDomain.NewPlayer(idgen.Generate(), firstName, lastName, birthdate, gender, country, department)
 	if err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("row %d: %v", rowNum, err))
 		result.Skipped++

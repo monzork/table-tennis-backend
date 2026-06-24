@@ -3,8 +3,7 @@ package division
 import (
 	"context"
 	"table-tennis-backend/internal/domain/division"
-
-	"github.com/google/uuid"
+	"table-tennis-backend/internal/domain/idgen"
 )
 
 type DivisionUseCase struct {
@@ -45,7 +44,7 @@ func (uc *DivisionUseCase) Save(ctx context.Context, id, name string, displayOrd
 			}
 		}
 	} else {
-		d, err = division.NewDivision(uuid.NewString(), name, displayOrder, minElo, maxElo, category, color)
+		d, err = division.NewDivision(idgen.Generate(), name, displayOrder, minElo, maxElo, category, color)
 	}
 
 	if err != nil {

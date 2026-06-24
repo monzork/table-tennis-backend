@@ -2,9 +2,9 @@ package player
 
 import (
 	"context"
+	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
 
-	"github.com/google/uuid"
 	"time"
 )
 
@@ -22,7 +22,7 @@ func (uc *RegisterPlayerUseCase) Execute(ctx context.Context, firstName, lastNam
 		return nil, err
 	}
 
-	p, err := playerDomain.NewPlayer(uuid.NewString(), firstName, lastName, bd, gender, country, department)
+	p, err := playerDomain.NewPlayer(idgen.Generate(), firstName, lastName, bd, gender, country, department)
 	if err != nil {
 		return nil, err
 	}

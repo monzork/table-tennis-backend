@@ -5,11 +5,10 @@ import (
 	"fmt"
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	eventDomain "table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type CategoryConfig struct {
@@ -57,7 +56,7 @@ func (uc *CreateEventUseCase) Execute(
 		return nil, err
 	}
 
-	e, err := eventDomain.NewEvent(uuid.NewString(), name, divisionID, skipElo, start, end)
+	e, err := eventDomain.NewEvent(idgen.Generate(), name, divisionID, skipElo, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +95,7 @@ func (uc *CreateEventUseCase) Execute(
 
 	// Helper to create a tournament under this event
 	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player) error {
-		t, err := tournamentDomain.NewTournament(uuid.NewString(), tName, tType, tFormat, category, start, end, []tournamentDomain.Rule{}, groupPassCount, players)
+		t, err := tournamentDomain.NewTournament(idgen.Generate(), tName, tType, tFormat, category, start, end, []tournamentDomain.Rule{}, groupPassCount, players)
 		if err != nil {
 			return err
 		}

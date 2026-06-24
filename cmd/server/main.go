@@ -24,12 +24,14 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
 	fiberws "github.com/gofiber/websocket/v2"
-	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"golang.org/x/crypto/bcrypt"
+	"table-tennis-backend/internal/domain/idgen"
+	"table-tennis-backend/internal/infrastructure/identity"
+	"table-tennis-backend/internal/infrastructure/security"
 )
 
 func main() {
+	idgen.Register(identity.NewUUIDGenerator())
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found or failed to load")
@@ -107,6 +109,8 @@ func main() {
 
 	adminRepo := bun.NewAdminRepository(bun.DB)
 
+	hasher := security.NewBcryptHasher()
+
 	// Seed default admin if DB empty
 	count, _ := adminRepo.Count(context.Background())
 	if count == 0 {
@@ -118,16 +122,16 @@ func main() {
 		if pass == "" {
 			pass = "password"
 		}
-		hashed, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+		hashed, err := hasher.Hash(pass)
 		if err == nil {
-			if a, err := adminDomain.NewAdmin(uuid.New().String(), user, string(hashed)); err == nil {
+			if a, err := adminDomain.NewAdmin(idgen.Generate(), user, hashed); err == nil {
 				adminRepo.Save(context.Background(), a)
 			}
 		}
 	}
 
 	store := session.New()
-	authHandler := handler.NewAuthHandler(store, adminRepo)
+	authHandler := handler.NewAuthHandler(store, adminRepo, hasher)
 	authMiddleware := middleware.Protected(store)
 
 	engine := html.New("./internal/interfaces/http/templates", ".html")

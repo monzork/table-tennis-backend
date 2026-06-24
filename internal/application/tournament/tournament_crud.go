@@ -3,11 +3,10 @@ package tournament
 import (
 	"context"
 	divisionDomain "table-tennis-backend/internal/domain/division"
+	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // ─── Get By ID ───────────────────────────────────────────────────────────────
@@ -120,7 +119,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 
 	// Handle newly created players ad-hoc
 	for _, np := range newPlayers {
-		p, err := playerDomain.NewPlayer(uuid.NewString(), np.FirstName, np.LastName, time.Now(), np.Gender, "", "")
+		p, err := playerDomain.NewPlayer(idgen.Generate(), np.FirstName, np.LastName, time.Now(), np.Gender, "", "")
 		if err != nil {
 			return nil, err
 		}

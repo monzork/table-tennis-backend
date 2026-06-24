@@ -3,10 +3,9 @@ package match
 import (
 	"context"
 	"errors"
+	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/player"
 	tournament "table-tennis-backend/internal/domain/tournament"
-
-	"github.com/google/uuid"
 )
 
 type CreateMatchUseCase struct {
@@ -87,7 +86,7 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 	}
 
 	m := &tournament.Match{
-		ID:           uuid.NewString(),
+		ID:           idgen.Generate(),
 		TournamentID: tournamentID,
 		MatchType:    matchType,
 		TeamA:        teamA,

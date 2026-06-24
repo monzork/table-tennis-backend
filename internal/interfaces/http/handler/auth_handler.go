@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"golang.org/x/crypto/bcrypt"
+	"table-tennis-backend/internal/domain/security"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	"table-tennis-backend/internal/interfaces/http/i18n"
 	"github.com/gofiber/fiber/v2"
@@ -11,10 +11,11 @@ import (
 type AuthHandler struct {
 	store     *session.Store
 	adminRepo *bun.AdminRepository
+	hasher    security.PasswordHasher
 }
 
-func NewAuthHandler(store *session.Store, adminRepo *bun.AdminRepository) *AuthHandler {
-	return &AuthHandler{store: store, adminRepo: adminRepo}
+func NewAuthHandler(store *session.Store, adminRepo *bun.AdminRepository, hasher security.PasswordHasher) *AuthHandler {
+	return &AuthHandler{store: store, adminRepo: adminRepo, hasher: hasher}
 }
 
 // ShowLogin renders the login page
@@ -51,7 +52,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid Username or Password"}), "layouts/public")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(body.Password)); err != nil {
+	if err := h.hasher.Compare(admin.PasswordHash, body.Password); err != nil {
 		lang := getLang(c)
 		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid Username or Password"}), "layouts/public")
 	}

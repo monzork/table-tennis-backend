@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/player"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 var ErrInvalidDates = errors.New("tournament end date must be after start date")
@@ -246,7 +245,7 @@ func (t *Tournament) AutoAssignGroups() error {
 	if t.Format == "round_robin" {
 		t.Groups = []Group{
 			{
-				ID:           uuid.NewString(),
+				ID:           idgen.Generate(),
 				TournamentID: t.ID,
 				Name:         "All Against All",
 				Players:      units, // Everyone in one single group
@@ -265,7 +264,7 @@ func (t *Tournament) AutoAssignGroups() error {
 	t.Groups = make([]Group, numGroups)
 	for i := 0; i < numGroups; i++ {
 		t.Groups[i] = Group{
-			ID:           uuid.NewString(),
+			ID:           idgen.Generate(),
 			TournamentID: t.ID,
 			Name:         fmt.Sprintf("Group %c", 'A'+i),
 			Players:      []*player.Player{},
@@ -403,7 +402,7 @@ func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
 				groupName = fmt.Sprintf("%s - Bracket Draw", dg.Name)
 			}
 			t.Groups = append(t.Groups, Group{
-				ID:           uuid.NewString(),
+				ID:           idgen.Generate(),
 				TournamentID: t.ID,
 				Name:         groupName,
 				Players:      dg.Players,
@@ -419,7 +418,7 @@ func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
 		divGroupsList := make([]Group, numGroups)
 		for i := 0; i < numGroups; i++ {
 			divGroupsList[i] = Group{
-				ID:           uuid.NewString(),
+				ID:           idgen.Generate(),
 				TournamentID: t.ID,
 				Name:         fmt.Sprintf("%s - Group %c", dg.Name, 'A'+i),
 				Players:      []*player.Player{},

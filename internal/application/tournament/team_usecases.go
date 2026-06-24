@@ -2,9 +2,8 @@ package tournament
 
 import (
 	"context"
+	"table-tennis-backend/internal/domain/idgen"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
-
-	"github.com/google/uuid"
 )
 
 type CreateTeamUseCase struct {
@@ -16,7 +15,7 @@ func NewCreateTeamUseCase(repo tournamentDomain.Repository) *CreateTeamUseCase {
 }
 
 func (uc *CreateTeamUseCase) Execute(ctx context.Context, tournamentIDStr string, name string) (*tournamentDomain.Team, error) {
-	team, err := tournamentDomain.NewTeam(uuid.NewString(), tournamentIDStr, name)
+	team, err := tournamentDomain.NewTeam(idgen.Generate(), tournamentIDStr, name)
 	if err != nil {
 		return nil, err
 	}

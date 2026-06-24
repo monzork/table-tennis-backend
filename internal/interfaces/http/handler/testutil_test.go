@@ -9,10 +9,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
-	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
-	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 
 	"table-tennis-backend/internal/application/division"
@@ -22,10 +20,17 @@ import (
 	"table-tennis-backend/internal/application/player"
 	"table-tennis-backend/internal/application/tournament"
 	adminDomain "table-tennis-backend/internal/domain/admin"
+	"table-tennis-backend/internal/domain/idgen"
+	"table-tennis-backend/internal/infrastructure/identity"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
+	securityInfra "table-tennis-backend/internal/infrastructure/security"
 	"table-tennis-backend/internal/interfaces/http/handler"
 	"table-tennis-backend/internal/interfaces/http/middleware"
 )
+
+func init() {
+	idgen.Register(identity.NewUUIDGenerator())
+}
 
 var (
 	testDB *bun.DB
@@ -69,8 +74,9 @@ func SetupTestDB() (*bun.DB, error) {
 	}
 
 	adminRepo := bunRepo.NewAdminRepository(bunDB)
-	hashed, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
-	a, _ := adminDomain.NewAdmin(uuid.New().String(), "admin", string(hashed))
+	hasher := securityInfra.NewBcryptHasher()
+	hashed, _ := hasher.Hash("password")
+	a, _ := adminDomain.NewAdmin(idgen.Generate(), "admin", hashed)
 	adminRepo.Save(ctx, a)
 
 	return bunDB, nil
@@ -141,7 +147,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	adminRepo := bunRepo.NewAdminRepository(db)
 
 	store = session.New()
-	authHandler := handler.NewAuthHandler(store, adminRepo)
+	authHandler := handler.NewAuthHandler(store, adminRepo, securityInfra.NewBcryptHasher())
 	authMiddleware := middleware.Protected(store)
 
 	engine := html.New("../templates", ".html")
