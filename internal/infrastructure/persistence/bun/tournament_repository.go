@@ -174,7 +174,7 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *tourna
 
 func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tournament, error) {
 	var models []TournamentModel
-	if err := r.db.NewSelect().Model(&models).Scan(ctx); err != nil {
+	if err := r.db.NewSelect().Model(&models).Order("start_date DESC").Scan(ctx); err != nil {
 		return nil, err
 	}
 
@@ -743,7 +743,7 @@ func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
 
 func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UUID) ([]*tournament.Tournament, error) {
 	var models []TournamentModel
-	if err := r.db.NewSelect().Model(&models).Where("event_id = ?", eventID).Scan(ctx); err != nil {
+	if err := r.db.NewSelect().Model(&models).Where("event_id = ?", eventID).Order("start_date DESC").Scan(ctx); err != nil {
 		return nil, err
 	}
 	if len(models) == 0 {
