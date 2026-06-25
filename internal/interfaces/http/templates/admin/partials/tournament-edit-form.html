@@ -1,5 +1,10 @@
 <h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Edit <span class="text-white">Event</span></h2>
 <form hx-put="/tournaments/{{.Tournament.ID}}" hx-target="#edit-modal-content" hx-on:htmx:before-request="sessionStorage.setItem('pending_toast', 'Tournament updated successfully!')" class="space-y-5">
+    <div id="edit-selected-participants-hidden">
+        {{range .Tournament.Participants}}
+        <input type="hidden" name="participant_ids[]" value="{{.ID}}">
+        {{end}}
+    </div>
     {{if .Tournament.SkipElo}}<input type="hidden" name="skipElo" value="on">{{end}}
     {{if .Tournament.EventID}}<input type="hidden" name="eventId" value="{{.Tournament.EventID}}">{{end}}
     <div class="space-y-2">
@@ -86,7 +91,7 @@
             {{$pid := .ID}}
             {{range $selectedPlayers}}{{if eq .ID $pid}}{{$isTagged = true}}{{end}}{{end}}
             <label class="player-card relative cursor-pointer group" data-gender="{{.Gender}}">
-                <input type="checkbox" name="participant_ids[]" value="{{.ID}}" class="hidden peer" {{if $isTagged}}checked{{end}}>
+                <input type="checkbox" value="{{.ID}}" class="hidden peer participant-checkbox" {{if $isTagged}}checked{{end}}>
                 <div class="p-3 rounded-lg border border-white/5 bg-white/[0.02] peer-checked:border-white/40 peer-checked:bg-white/10 group-hover:bg-white/5 transition-all">
                     <div class="flex items-center justify-between gap-2">
                         <div class="min-w-0">

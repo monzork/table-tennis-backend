@@ -74,7 +74,7 @@
     <div class="bg-club-panel border border-white/10 p-8 rounded-2xl max-w-md w-full relative">
         <button hx-on:click="document.getElementById('add-player-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
         <h2 class="text-2xl font-bold uppercase mb-6 tracking-wide">New Athlete</h2>
-        <form hx-post="/players" hx-target="#player-list" hx-swap="beforeend" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('add-player-modal').classList.add('hidden')" class="space-y-4">
+        <form hx-post="/players" hx-target="#player-list" hx-swap="beforeend" hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-player-modal').classList.add('hidden'); this.reset(); document.getElementById('add-country').dispatchEvent(new Event('change')); }" class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <input type="text" name="firstName" placeholder="First Name" required class="bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
                 <input type="text" name="secondName" placeholder="Second Name (Opt)" class="bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
@@ -103,12 +103,17 @@
             <div class="flex gap-4">
                 <div class="flex-1">
                     <label class="text-[9px] font-bold uppercase text-gray-500 mb-1 block">Country</label>
-                    <input type="text" id="add-country" name="country" placeholder="Country" required
-                           hx-get="/players/department-input?theme=admin-add"
-                           hx-trigger="change, keyup changed delay:300ms"
-                           hx-target="#add-department-container"
-                           hx-swap="innerHTML"
-                           class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors uppercase">
+                    <select id="add-country" name="country" required
+                            hx-get="/players/department-input?theme=admin-add"
+                            hx-trigger="change"
+                            hx-target="#add-department-container"
+                            hx-swap="innerHTML"
+                            class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer">
+                        <option value="" disabled selected hidden>Select Country...</option>
+                        {{range countries}}
+                            <option value="{{.Code}}">{{.Name}} ({{.Code}})</option>
+                        {{end}}
+                    </select>
                 </div>
                 <div class="flex-1" id="add-department-container">
                     {{template "partials/department-input" dict "Theme" "admin-add" "Country" "" "Department" ""}}

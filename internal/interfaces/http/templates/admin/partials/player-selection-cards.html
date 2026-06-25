@@ -1,6 +1,6 @@
 {{range .Players}}
 <label class="player-card relative cursor-pointer group" data-gender="{{.Gender}}">
-    <input type="checkbox" name="participant_ids[]" value="{{.ID}}" class="hidden peer" 
+    <input type="checkbox" value="{{.ID}}" class="hidden peer participant-checkbox" 
         {{if index $.SelectedIDs .ID}}checked{{end}}>
     <div class="p-3 rounded-lg border border-white/5 bg-white/[0.02] peer-checked:border-white/40 peer-checked:bg-white/10 group-hover:bg-white/5 transition-all">
         <div class="flex items-center justify-between gap-2">

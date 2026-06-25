@@ -4,13 +4,13 @@
 CREATE TABLE IF NOT EXISTS players (
     id TEXT PRIMARY KEY,
     first_name TEXT NOT NULL,
-    second_name TEXT NOT NULL DEFAULT '',
+    second_name TEXT,
     last_name TEXT NOT NULL,
-    second_last_name TEXT NOT NULL DEFAULT '',
+    second_last_name TEXT,
     birthdate TEXT NOT NULL,
     elo INTEGER NOT NULL DEFAULT 1000,
     country TEXT NOT NULL,
-    department TEXT NOT NULL DEFAULT '',
+    department TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT
 );

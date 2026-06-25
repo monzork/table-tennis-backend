@@ -135,6 +135,42 @@ func main() {
 	authMiddleware := middleware.Protected(store)
 
 	engine := html.New("./internal/interfaces/http/templates", ".html")
+	type CountryInfo struct {
+		Code string
+		Name string
+	}
+	countriesList := []CountryInfo{
+		{"NIC", "Nicaragua"},
+		{"ARG", "Argentina"},
+		{"BRA", "Brazil"},
+		{"CAN", "Canada"},
+		{"CHL", "Chile"},
+		{"CHN", "China"},
+		{"COL", "Colombia"},
+		{"CRC", "Costa Rica"},
+		{"CUB", "Cuba"},
+		{"DOM", "Dominican Republic"},
+		{"ECU", "Ecuador"},
+		{"SLV", "El Salvador"},
+		{"ESP", "Spain"},
+		{"FRA", "France"},
+		{"GER", "Germany"},
+		{"GTM", "Guatemala"},
+		{"HON", "Honduras"},
+		{"JPN", "Japan"},
+		{"KOR", "South Korea"},
+		{"MEX", "Mexico"},
+		{"PAN", "Panama"},
+		{"PER", "Peru"},
+		{"PRI", "Puerto Rico"},
+		{"SWE", "Sweden"},
+		{"TPE", "Chinese Taipei"},
+		{"USA", "United States"},
+		{"VEN", "Venezuela"},
+	}
+	engine.AddFunc("countries", func() []CountryInfo {
+		return countriesList
+	})
 	engine.AddFunc("add", func(a, b int) int {
 		return a + b
 	})

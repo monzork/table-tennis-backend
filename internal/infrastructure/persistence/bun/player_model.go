@@ -20,7 +20,7 @@ type PlayerModel struct {
 	SinglesElo     int16      `bun:"singles_elo,notnull,default:1000"`
 	DoublesElo     int16      `bun:"doubles_elo,notnull,default:1000"`
 	Country        string     `bun:"country,notnull"`
-	Department     string     `bun:"department,notnull,default:''"`
+	Department     string     `bun:"department,nullzero"`
 	WhatsAppNumber string     `bun:"whatsapp_number,nullzero"`
 	Pin            string     `bun:"pin,notnull,default:'1234'"`
 	NationalID     string     `bun:"national_id,nullzero"`

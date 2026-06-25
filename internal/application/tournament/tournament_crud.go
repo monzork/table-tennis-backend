@@ -138,31 +138,79 @@ func (uc *UpdateTournamentUseCase) Execute(
 	t.EventID = eventID
 	t.TeamFormat = teamFormat
 
-	// Preserve existing teams
+	// Preserve existing teams and conditionally preserve/regenerate groups
 	if existing, err := uc.repo.GetByID(ctx, idStr); err == nil {
 		t.Teams = existing.Teams
-	}
 
-	// Fetch divisions list to seed groups per-division
-	var divsList []tournamentDomain.DivisionSeeding
-	if !skipElo {
-		divs, err := uc.divisionRepo.GetAll(ctx)
-		if err == nil {
-			for _, d := range divs {
-				if d.Category == "both" || d.Category == tournamentType {
-					divsList = append(divsList, tournamentDomain.DivisionSeeding{
-						Name:   d.Name,
-						MinElo: d.MinElo,
-						MaxElo: d.MaxElo,
-					})
+		// Check if participants, format, type, or category changed
+		participantsChanged := false
+		if len(existing.Participants) != len(participants) {
+			participantsChanged = true
+		} else {
+			existingMap := make(map[string]bool)
+			for _, p := range existing.Participants {
+				existingMap[p.ID] = true
+			}
+			for _, p := range participants {
+				if !existingMap[p.ID] {
+					participantsChanged = true
+					break
 				}
 			}
 		}
-	}
 
-	if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
-		if err := t.AssignGroupsByDivisions(divsList); err != nil {
-			return nil, err
+		formatChanged := existing.Format != format
+		typeChanged := existing.Type != tournamentType
+		categoryChanged := existing.EventCategory != category
+
+		if !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && len(existing.Groups) > 0 {
+			t.Groups = existing.Groups
+		} else {
+			// Fetch divisions list to seed groups per-division
+			var divsList []tournamentDomain.DivisionSeeding
+			if !skipElo {
+				divs, err := uc.divisionRepo.GetAll(ctx)
+				if err == nil {
+					for _, d := range divs {
+						if d.Category == "both" || d.Category == tournamentType {
+							divsList = append(divsList, tournamentDomain.DivisionSeeding{
+								Name:   d.Name,
+								MinElo: d.MinElo,
+								MaxElo: d.MaxElo,
+							})
+						}
+					}
+				}
+			}
+
+			if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
+				if err := t.AssignGroupsByDivisions(divsList); err != nil {
+					return nil, err
+				}
+			}
+		}
+	} else {
+		// Fallback for new / not found
+		var divsList []tournamentDomain.DivisionSeeding
+		if !skipElo {
+			divs, err := uc.divisionRepo.GetAll(ctx)
+			if err == nil {
+				for _, d := range divs {
+					if d.Category == "both" || d.Category == tournamentType {
+						divsList = append(divsList, tournamentDomain.DivisionSeeding{
+							Name:   d.Name,
+							MinElo: d.MinElo,
+							MaxElo: d.MaxElo,
+						})
+					}
+				}
+			}
+		}
+
+		if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
+			if err := t.AssignGroupsByDivisions(divsList); err != nil {
+				return nil, err
+			}
 		}
 	}
 

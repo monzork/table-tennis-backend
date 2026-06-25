@@ -216,5 +216,65 @@
         // Restore saved preference immediately (before first paint)
         applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
     </script>
+    <script>
+        // Synchronise search/filter checked state for player selection cards
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('participant-checkbox')) {
+                const grid = e.target.closest('#player-selection-grid, #edit-player-selection-grid');
+                if (!grid) return;
+
+                const isEdit = grid.id === 'edit-player-selection-grid';
+                const containerId = isEdit ? 'edit-selected-participants-hidden' : 'selected-participants-hidden';
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                const val = e.target.value;
+                const existing = container.querySelector(`input[value="${val}"]`);
+
+                if (e.target.checked) {
+                    if (!existing) {
+                        const hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = 'participant_ids[]';
+                        hidden.value = val;
+                        container.appendChild(hidden);
+                    }
+                } else {
+                    if (existing) {
+                        existing.remove();
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('htmx:afterSwap', function(e) {
+            const target = e.target;
+            if (target && (target.id === 'player-selection-grid' || target.id === 'edit-player-selection-grid')) {
+                const isEdit = target.id === 'edit-player-selection-grid';
+                const containerId = isEdit ? 'edit-selected-participants-hidden' : 'selected-participants-hidden';
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                const checkboxes = target.querySelectorAll('.participant-checkbox');
+                checkboxes.forEach(cb => {
+                    const val = cb.value;
+                    const existing = container.querySelector(`input[value="${val}"]`);
+                    if (cb.checked) {
+                        if (!existing) {
+                            const hidden = document.createElement('input');
+                            hidden.type = 'hidden';
+                            hidden.name = 'participant_ids[]';
+                            hidden.value = val;
+                            container.appendChild(hidden);
+                        }
+                    } else {
+                        if (existing) {
+                            existing.remove();
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

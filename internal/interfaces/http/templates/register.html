@@ -52,12 +52,17 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div class="space-y-2">
                     <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "register.country"}}</label>
-                    <input type="text" id="reg-country" name="country" required placeholder="{{index .T "register.country_ph"}}"
+                    <select id="reg-country" name="country" required
                            hx-get="/players/department-input?theme=register"
-                           hx-trigger="keyup changed delay:300ms, change"
+                           hx-trigger="change"
                            hx-target="#department-container"
                            hx-swap="innerHTML"
-                           class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all uppercase text-base sm:text-sm">
+                           class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all appearance-none text-base sm:text-sm cursor-pointer">
+                        <option value="" disabled selected hidden>{{index .T "register.country_ph"}}</option>
+                        {{range countries}}
+                            <option value="{{.Code}}">{{.Name}} ({{.Code}})</option>
+                        {{end}}
+                    </select>
                 </div>
                 <div class="space-y-2" id="department-container">
                     {{template "partials/department-input" .}}

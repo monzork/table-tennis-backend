@@ -6,15 +6,15 @@
 CREATE TABLE IF NOT EXISTS players (
     id UUID PRIMARY KEY,
     first_name TEXT NOT NULL,
-    second_name TEXT NOT NULL DEFAULT '',
+    second_name TEXT,
     last_name TEXT NOT NULL,
-    second_last_name TEXT NOT NULL DEFAULT '',
+    second_last_name TEXT,
     birthdate TIMESTAMP NOT NULL,
     gender TEXT NOT NULL DEFAULT 'M',
     singles_elo INTEGER NOT NULL DEFAULT 1000,
     doubles_elo INTEGER NOT NULL DEFAULT 1000,
     country TEXT NOT NULL,
-    department TEXT NOT NULL DEFAULT '',
+    department TEXT,
     whatsapp_number TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP

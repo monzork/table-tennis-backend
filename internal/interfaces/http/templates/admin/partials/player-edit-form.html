@@ -40,12 +40,17 @@
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Nationality (ISO)</label>
-            <input type="text" id="edit-country" name="country" value="{{.Country}}" required
-                   hx-get="/players/department-input?theme=admin-edit"
-                   hx-trigger="change, keyup changed delay:300ms"
-                   hx-target="#edit-department-container"
-                   hx-swap="innerHTML"
-                   class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white uppercase">
+            <select id="edit-country" name="country" required
+                    hx-get="/players/department-input?theme=admin-edit"
+                    hx-trigger="change"
+                    hx-target="#edit-department-container"
+                    hx-swap="innerHTML"
+                    class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none cursor-pointer">
+                {{$currentCountry := .Country}}
+                {{range countries}}
+                    <option value="{{.Code}}" {{if eq .Code $currentCountry}}selected{{end}}>{{.Name}} ({{.Code}})</option>
+                {{end}}
+            </select>
         </div>
         <div class="space-y-1" id="edit-department-container">
             {{template "partials/department-input" dict "Theme" "admin-edit" "Country" .Country "Department" .Department}}

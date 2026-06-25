@@ -68,7 +68,79 @@ func Connect() {
 	// Ensure players table has national_id column
 	_, _ = DB.NewRaw("ALTER TABLE players ADD COLUMN national_id TEXT DEFAULT ''").Exec(context.Background())
 	// Ensure players table has second_name column
-	_, _ = DB.NewRaw("ALTER TABLE players ADD COLUMN second_name TEXT DEFAULT ''").Exec(context.Background())
+	_, _ = DB.NewRaw("ALTER TABLE players ADD COLUMN second_name TEXT").Exec(context.Background())
 	// Ensure players table has second_last_name column
-	_, _ = DB.NewRaw("ALTER TABLE players ADD COLUMN second_last_name TEXT DEFAULT ''").Exec(context.Background())
+	_, _ = DB.NewRaw("ALTER TABLE players ADD COLUMN second_last_name TEXT").Exec(context.Background())
+
+	// Migrate existing optional fields with empty strings to NULL
+	if dsn == "" {
+		type TableInfo struct {
+			Cid       int     `bun:"cid"`
+			Name      string  `bun:"name"`
+			Type      string  `bun:"type"`
+			Notnull   int     `bun:"notnull"`
+			DfltValue *string `bun:"dflt_value"`
+			Pk        int     `bun:"pk"`
+		}
+		var info []TableInfo
+		err := DB.NewRaw("PRAGMA table_info(players)").Scan(context.Background(), &info)
+		if err == nil {
+			needsRecreation := false
+			for _, col := range info {
+				if (col.Name == "second_name" || col.Name == "second_last_name" || col.Name == "department") && col.Notnull == 1 {
+					needsRecreation = true
+					break
+				}
+			}
+			if needsRecreation {
+				log.Println("Migrating SQLite players table to drop NOT NULL constraints for optional fields...")
+				_, _ = DB.NewRaw("PRAGMA foreign_keys=OFF").Exec(context.Background())
+				
+				// Create new table
+				_, _ = DB.NewRaw(`
+					CREATE TABLE players_new (
+						id TEXT PRIMARY KEY,
+						first_name TEXT NOT NULL,
+						second_name TEXT,
+						last_name TEXT NOT NULL,
+						second_last_name TEXT,
+						birthdate TEXT NOT NULL,
+						gender TEXT NOT NULL DEFAULT 'M',
+						singles_elo INTEGER NOT NULL DEFAULT 1000,
+						doubles_elo INTEGER NOT NULL DEFAULT 1000,
+						country TEXT NOT NULL,
+						department TEXT,
+						whatsapp_number TEXT,
+						pin TEXT NOT NULL DEFAULT '1234',
+						national_id TEXT,
+						created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+						updated_at TEXT
+					)
+				`).Exec(context.Background())
+				
+				// Copy data
+				_, _ = DB.NewRaw(`
+					INSERT INTO players_new (id, first_name, second_name, last_name, second_last_name, birthdate, gender, singles_elo, doubles_elo, country, department, whatsapp_number, pin, national_id, created_at, updated_at)
+					SELECT id, first_name, NULLIF(second_name, ''), last_name, NULLIF(second_last_name, ''), birthdate, gender, singles_elo, doubles_elo, country, NULLIF(department, ''), whatsapp_number, pin, national_id, created_at, updated_at FROM players
+				`).Exec(context.Background())
+				
+				// Drop and rename
+				_, _ = DB.NewRaw("DROP TABLE players").Exec(context.Background())
+				_, _ = DB.NewRaw("ALTER TABLE players_new RENAME TO players").Exec(context.Background())
+				_, _ = DB.NewRaw("PRAGMA foreign_keys=ON").Exec(context.Background())
+			}
+		}
+	} else {
+		// PostgreSQL drop NOT NULL constraints
+		_, _ = DB.NewRaw("ALTER TABLE players ALTER COLUMN second_name DROP NOT NULL").Exec(context.Background())
+		_, _ = DB.NewRaw("ALTER TABLE players ALTER COLUMN second_last_name DROP NOT NULL").Exec(context.Background())
+		_, _ = DB.NewRaw("ALTER TABLE players ALTER COLUMN department DROP NOT NULL").Exec(context.Background())
+	}
+
+	// Sync empty strings to NULL
+	_, _ = DB.NewRaw("UPDATE players SET second_name = NULL WHERE second_name = ''").Exec(context.Background())
+	_, _ = DB.NewRaw("UPDATE players SET second_last_name = NULL WHERE second_last_name = ''").Exec(context.Background())
+	_, _ = DB.NewRaw("UPDATE players SET department = NULL WHERE department = ''").Exec(context.Background())
+	_, _ = DB.NewRaw("UPDATE players SET whatsapp_number = NULL WHERE whatsapp_number = ''").Exec(context.Background())
+	_, _ = DB.NewRaw("UPDATE players SET national_id = NULL WHERE national_id = ''").Exec(context.Background())
 }
