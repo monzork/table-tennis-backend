@@ -570,6 +570,7 @@ type Repository interface {
 	AddPlayerToTeam(ctx context.Context, teamID string, playerID string) error
 	RemovePlayerFromTeam(ctx context.Context, teamID string, playerID string) error
 	GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]ParticipantSnapshot, error)
+	GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error)
 }
 
 type MatchRepository interface {

@@ -43,6 +43,14 @@ type TournamentParticipantModel struct {
 	EloAfterDoubles  *int16 `bun:"elo_after_doubles"`
 }
 
+type TournamentOfficialModel struct {
+	bun.BaseModel `bun:"table:tournament_officials"`
+
+	TournamentID uuid.UUID `bun:"tournament_id,pk,type:uuid"`
+	PlayerID     uuid.UUID `bun:"player_id,pk,type:uuid"`
+	Pin          string    `bun:"pin,notnull"`
+}
+
 type GroupModel struct {
 	bun.BaseModel `bun:"table:groups"`
 

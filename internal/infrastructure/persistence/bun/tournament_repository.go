@@ -1158,3 +1158,28 @@ func (r *TournamentRepository) GetParticipantPINsByTournament(ctx context.Contex
 	}
 	return result, nil
 }
+
+// GetParticipantOrOfficialByPIN checks both tournament participants and officials for a matching PIN.
+func (r *TournamentRepository) GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error) {
+	if pin == "" {
+		return "", fmt.Errorf("empty pin")
+	}
+
+	var playerID string
+	
+	// Check participants
+	err := r.db.NewSelect().Table("tournament_participants").Column("player_id").
+		Where("tournament_id = ? AND pin = ?", tournamentID, pin).Scan(ctx, &playerID)
+	if err == nil && playerID != "" {
+		return playerID, nil
+	}
+
+	// Check officials
+	err = r.db.NewSelect().Table("tournament_officials").Column("player_id").
+		Where("tournament_id = ? AND pin = ?", tournamentID, pin).Scan(ctx, &playerID)
+	if err == nil && playerID != "" {
+		return playerID, nil
+	}
+
+	return "", fmt.Errorf("no participant or official found with the given PIN")
+}

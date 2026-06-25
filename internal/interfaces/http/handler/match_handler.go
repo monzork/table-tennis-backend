@@ -861,11 +861,10 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 			return c.SendString("<div class='text-red-400 font-mono text-sm'>Match not found: " + err.Error() + "</div>")
 		}
 
-		// Validate PIN against match PIN only
+		// Validate PIN against tournament participants and officials
 		submittedPin := c.FormValue("pin")
-		pinValid := submittedPin != "" && submittedPin == parent.Pin
-
-		if !pinValid {
+		updaterPlayerID, err := h.tournamentRepo.GetParticipantOrOfficialByPIN(c.Context(), parent.TournamentID.String(), submittedPin)
+		if err != nil || updaterPlayerID == "" {
 			return c.SendString("<div class='text-red-400 font-mono text-sm'>Invalid PIN. Please try again.</div>")
 		}
 
@@ -994,7 +993,8 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 				parent.RefereeID = &refUUID
 			}
 		} else {
-			parent.RefereeID = nil
+			refUUID, _ := uuid.Parse(updaterPlayerID)
+			parent.RefereeID = &refUUID
 		}
 		_, _ = h.matchRepo.DB().NewUpdate().Model(parent).WherePK().Column("referee_id", "table_number").Exec(c.Context())
 
@@ -1072,9 +1072,9 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 
 	submittedPin := c.FormValue("pin")
 
-	// Validate PIN: only accept the match's own PIN
-	pinValid := submittedPin != "" && submittedPin == m.Pin
-	if !pinValid {
+	// Validate PIN against tournament participants and officials
+	updaterPlayerID, err := h.tournamentRepo.GetParticipantOrOfficialByPIN(c.Context(), m.TournamentID.String(), submittedPin)
+	if err != nil || updaterPlayerID == "" {
 		return c.SendString("<div class='text-red-400 font-mono text-sm'>Invalid Verification PIN. Please try again.</div>")
 	}
 
@@ -1088,14 +1088,15 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 		m.TableNumber = nil
 	}
 
-	// Update referee if provided
+	// Update referee if provided, otherwise default to the PIN owner
 	if refereeIDStr != "" {
 		refUUID, err := uuid.Parse(refereeIDStr)
 		if err == nil {
 			m.RefereeID = &refUUID
 		}
 	} else {
-		m.RefereeID = nil
+		refUUID, _ := uuid.Parse(updaterPlayerID)
+		m.RefereeID = &refUUID
 	}
 
 	// Persist referee and table number
@@ -1650,7 +1651,8 @@ func (h *MatchHandler) ValidateMatchPIN(c *fiber.Ctx) error {
 	}
 
 	submittedPin := c.FormValue("pin")
-	if submittedPin == "" || submittedPin != m.Pin {
+	_, err = h.tournamentRepo.GetParticipantOrOfficialByPIN(c.Context(), m.TournamentID.String(), submittedPin)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("<p class=\"text-red-400 font-mono text-sm text-center mt-4\">❌ Incorrect PIN. Please try again.</p>")
 	}
 
