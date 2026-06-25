@@ -354,12 +354,17 @@
 
 {{/* ── Score Entry Modal ── */}}
 <div id="score-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
-  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-md w-full relative shadow-2xl" id="score-modal-content">
-    <button onclick="document.getElementById('score-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-    </button>
-    <div class="flex justify-center p-8">
+  <div class="bg-club-panel border border-white/10 rounded-3xl max-w-md w-full relative shadow-2xl" id="score-modal-content">
+    <div class="flex items-center justify-between px-8 pt-7 pb-0">
+      <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Score Entry</span>
+      <button onclick="document.getElementById('score-modal').classList.add('hidden')" class="text-gray-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="score-modal-body" class="text-white px-8 pb-8 pt-4 overflow-y-auto max-h-[80vh]">
+      <div class="flex justify-center py-8">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -563,14 +568,10 @@
         modal.classList.remove('hidden');
     }
 
-    // Re-initialize HTMX on dynamically swapped bracket/match-list content
-    // so Score/Start buttons keep their hx-get attributes active after reloads.
-    document.addEventListener('htmx:afterSwap', function(evt) {
-        const target = evt.detail.target;
-        if (target && (target.id === 'bracket-container' || target.id === 'custom-matches-list')) {
-            htmx.process(target);
-        }
-    });
+    function openScoreModal(url) {
+        document.getElementById('score-modal').classList.remove('hidden');
+        htmx.ajax('GET', url, { target: '#score-modal-body', swap: 'innerHTML' });
+    }
 </script>
 
 

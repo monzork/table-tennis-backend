@@ -259,6 +259,10 @@ func main() {
 	app.Get("/score/:matchId", matchHandler.ShowMatchScorePage)
 	app.Post("/score/:matchId/verify", matchHandler.ValidateMatchPIN)
 
+	// Admin Score Form (read-only partial — no auth needed, no sensitive data)
+	app.Get("/admin/matches/score/form", matchHandler.ShowScoreForm)
+	app.Post("/admin/matches/score/form", matchHandler.ShowScoreForm)
+
 	app.Get("/players/import/template", playerHandler.ImportTemplate) // public template download
 
 	// ==========================================
@@ -336,8 +340,6 @@ func main() {
 	api.Post("/events/bulk-delete", eventHandler.DeleteBulk)
 
 	// Matches API
-	admin.Get("/matches/score/form", matchHandler.ShowScoreForm)
-	admin.Post("/matches/score/form", matchHandler.ShowScoreForm)
 	admin.Post("/matches/score/update", matchHandler.UpdateScore)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)

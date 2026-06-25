@@ -1,4 +1,4 @@
-<h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter">Enter <span class="text-white">Scores</span></h2>
+<h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter text-white">Enter <span class="text-white">Scores</span></h2>
 <p class="text-xs text-gray-500 mb-6 font-mono">
     {{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}
     {{if .IsDoubles}}
@@ -16,7 +16,7 @@
     hx-post="/admin/matches/score/update"
     {{end}}
     {{if .IsSubMatch}}
-    hx-target="#score-modal-content"
+    hx-target="#score-modal-body"
     hx-swap="innerHTML"
     {{else}}
     hx-target="#score-error"

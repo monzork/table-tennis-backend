@@ -2,7 +2,7 @@
 <p class="text-xs text-gray-400 mb-6 font-mono">{{if .TeamA}}{{.TeamA.Name}}{{else}}Team A{{end}} vs {{if .TeamB}}{{.TeamB.Name}}{{else}}Team B{{end}} · {{.TeamFormat}} Cup</p>
 
 <!-- Squad Selection Form -->
-<form hx-put="/matches/{{.MatchID}}/score" hx-target="#score-modal-content" hx-swap="innerHTML" class="space-y-4 mb-6 border-b border-white/10 pb-6">
+<form hx-put="/matches/{{.MatchID}}/score" hx-target="#score-modal-body" hx-swap="innerHTML" class="space-y-4 mb-6 border-b border-white/10 pb-6">
     <input type="hidden" name="action" value="update_squads">
     <input type="hidden" name="tournamentId" value="{{.TournamentID}}">
     <input type="hidden" name="matchId" value="{{.MatchID}}">
@@ -71,7 +71,7 @@
         </button>
         <button type="button"
                 hx-post="/admin/matches/score/form?action=swap"
-                hx-target="#score-modal-content"
+                hx-target="#score-modal-body"
                 hx-include="closest form"
                 class="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-extrabold py-2 px-3 rounded-xl transition-all text-[9px] uppercase tracking-widest"
                 title="Swap Team A ⇄ Team B">
@@ -117,7 +117,7 @@
         <div class="ml-4">
             {{if or (not $.Finished) (eq .Status "finished")}}
             <button hx-get="/admin/matches/score/form?tournamentId={{$.TournamentID}}&matchId={{.ID}}&stage={{$.Stage}}&bestOf={{$.BestOf}}&p1Id={{.TeamAPlayer1ID}}&p2Id={{.TeamBPlayer1ID}}"
-                hx-target="#score-modal-content"
+                hx-target="#score-modal-body"
                 class="bg-white hover:bg-gray-200 text-black font-extrabold text-[10px] uppercase tracking-widest px-3 py-2 rounded-xl transition-colors">
                 Score
             </button>
