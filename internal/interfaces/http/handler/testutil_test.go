@@ -259,6 +259,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	api.Post("/events/bulk-delete", eventHandler.DeleteBulk)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)
+	api.Post("/matches/:id/start", matchHandler.Start)
 	api.Put("/matches/:id/score", matchHandler.UpdateScore)
 	api.Post("/divisions", divisionHandler.CreateOrUpdate)
 	api.Delete("/divisions/:id", divisionHandler.Delete)

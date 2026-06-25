@@ -22,14 +22,14 @@
   <div hx-ext="ws" ws-connect="/ws/brackets/{{.Tournament.ID}}"
        hx-on::ws-open="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🟢 Live'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-green-400'; }"
        hx-on::ws-close="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-red-400'; }"
-       hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#board-columns', 'reload-board'); }">
+       hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#board-columns', 'reload-board'); if (data.matchStatus === 'finished' && data.message) { showToast(data.message, 'success'); } } else if(data.event === 'referee_notification') { if (data.message) { showToast(data.message, 'info'); } }">
 
     <div id="board-columns"
          hx-get="/admin/tournaments/{{.Tournament.ID}}/board/columns"
          hx-trigger="reload-board"
          hx-target="#board-columns"
          hx-swap="innerHTML">
-      {{template "admin/partials/board-columns" (dict "Tournament" .Tournament "Scheduled" .Scheduled "InProgress" .InProgress "Finished" .Finished)}}
+      {{template "admin/partials/board-columns" (dict "Tournament" .Tournament "Scheduled" .Scheduled "InProgress" .InProgress "Finished" .Finished "Tables" .Tables)}}
     </div>
 
   </div>
@@ -61,14 +61,32 @@
     htmx.ajax('GET', url, { target: '#score-modal-body', swap: 'innerHTML' });
   }
 
-  function showToast(message, type) {
+  function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
     const toast = document.createElement('div');
     toast.className = 'flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border border-white/10 shadow-2xl transition-all duration-500 transform translate-x-full opacity-0 pointer-events-auto max-w-sm';
-    toast.innerHTML = '<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="text-xs font-bold uppercase tracking-wider text-white/90">' + message + '</span>';
+    
+    let iconColor = 'text-emerald-400';
+    let iconSvg = '<svg class="w-5 h-5 ' + iconColor + ' shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+    if (type === 'error') {
+        iconColor = 'text-red-500';
+        iconSvg = '<svg class="w-5 h-5 ' + iconColor + ' shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+        toast.classList.add('border-red-500/30');
+    } else if (type === 'info') {
+        iconColor = 'text-blue-400';
+        iconSvg = '<svg class="w-5 h-5 ' + iconColor + ' shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+    }
+
+    toast.innerHTML = iconSvg + '<span class="text-xs font-bold uppercase tracking-wider text-white/90">' + message + '</span>';
     container.appendChild(toast);
     requestAnimationFrame(() => { toast.classList.remove('translate-x-full', 'opacity-0'); });
     setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => toast.remove(), 500); }, 4000);
   }
+
+  document.addEventListener('show-toast', function(evt) {
+    if (evt.detail && evt.detail.message) {
+      showToast(evt.detail.message, evt.detail.type || 'success');
+    }
+  });
 </script>

@@ -43,37 +43,37 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 	}
 
 	var teamA []*player.Player
-	for _, id := range teamAPlayerIDs {
-		if isTeamBased {
+	if isTeamBased {
+		for _, id := range teamAPlayerIDs {
 			if players, ok := teamPlayersMap[id]; ok && len(players) > 0 {
 				teamA = append(teamA, players...)
 			} else {
 				return nil, errors.New("team A not found in tournament")
 			}
-		} else {
-			p, err := uc.playerRepo.GetById(ctx, id)
-			if err != nil {
-				return nil, errors.New("team A player not found")
-			}
-			teamA = append(teamA, p)
 		}
+	} else if len(teamAPlayerIDs) > 0 {
+		ps, err := uc.playerRepo.GetByIDs(ctx, teamAPlayerIDs)
+		if err != nil {
+			return nil, errors.New("team A player not found")
+		}
+		teamA = append(teamA, ps...)
 	}
 
 	var teamB []*player.Player
-	for _, id := range teamBPlayerIDs {
-		if isTeamBased {
+	if isTeamBased {
+		for _, id := range teamBPlayerIDs {
 			if players, ok := teamPlayersMap[id]; ok && len(players) > 0 {
 				teamB = append(teamB, players...)
 			} else {
 				return nil, errors.New("team B not found in tournament")
 			}
-		} else {
-			p, err := uc.playerRepo.GetById(ctx, id)
-			if err != nil {
-				return nil, errors.New("team B player not found")
-			}
-			teamB = append(teamB, p)
 		}
+	} else if len(teamBPlayerIDs) > 0 {
+		ps, err := uc.playerRepo.GetByIDs(ctx, teamBPlayerIDs)
+		if err != nil {
+			return nil, errors.New("team B player not found")
+		}
+		teamB = append(teamB, ps...)
 	}
 
 	if matchType == "" {

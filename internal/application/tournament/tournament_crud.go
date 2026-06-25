@@ -108,13 +108,15 @@ func (uc *UpdateTournamentUseCase) Execute(
 	var participants []*playerDomain.Player
 
 	// Handle existing players
+	var validIDs []string
 	for _, pidStr := range participantIDs {
-		if pidStr == "" {
-			continue
+		if pidStr != "" {
+			validIDs = append(validIDs, pidStr)
 		}
-		p, err := uc.playerRepo.GetById(ctx, pidStr)
-		if err == nil {
-			participants = append(participants, p)
+	}
+	if len(validIDs) > 0 {
+		if ps, err := uc.playerRepo.GetByIDs(ctx, validIDs); err == nil {
+			participants = append(participants, ps...)
 		}
 	}
 

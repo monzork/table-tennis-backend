@@ -160,4 +160,67 @@ func TestMatchHandler(t *testing.T) {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
 	})
+
+	t.Run("Table Exclusivity and Override", func(t *testing.T) {
+		// Create two scheduled matches
+		m1 := &tournamentDomain.Match{ID: uuid.New().String(), TournamentID: tourney.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled"}
+		matchRepo.Save(ctx, m1)
+
+		m2 := &tournamentDomain.Match{ID: uuid.New().String(), TournamentID: tourney.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled"}
+		matchRepo.Save(ctx, m2)
+
+		// Start first match on Table 1 manually
+		startData1 := url.Values{}
+		startData1.Set("tableNumber", "1")
+		req1 := httptest.NewRequest("POST", fmt.Sprintf("/matches/%s/start", m1.ID), strings.NewReader(startData1.Encode()))
+		req1.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req1.Header.Set("Cookie", sessionCookie)
+		resp1, err := app.Test(req1)
+		if err != nil || resp1.StatusCode != 200 {
+			buf := new(bytes.Buffer)
+			if resp1 != nil && resp1.Body != nil {
+				buf.ReadFrom(resp1.Body)
+			}
+			t.Fatalf("failed to start first match (status %d): %s, err: %v", resp1.StatusCode, buf.String(), err)
+		}
+
+		// Verify table 1 is occupied
+		mUUID1, _ := uuid.Parse(m1.ID)
+		mModel1, _ := matchRepo.GetByID(ctx, mUUID1)
+		if mModel1.TableNumber == nil || *mModel1.TableNumber != 1 {
+			t.Errorf("expected table 1, got %v", mModel1.TableNumber)
+		}
+
+		// Try starting second match on Table 1 (occupied) -> should fail
+		startData2 := url.Values{}
+		startData2.Set("tableNumber", "1")
+		req2 := httptest.NewRequest("POST", fmt.Sprintf("/matches/%s/start", m2.ID), strings.NewReader(startData2.Encode()))
+		req2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req2.Header.Set("Cookie", sessionCookie)
+		resp2, err := app.Test(req2)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		hxTrigger := resp2.Header.Get("HX-Trigger")
+		if !strings.Contains(hxTrigger, "Table 1 is currently occupied by another match!") {
+			t.Errorf("expected occupied table toast in HX-Trigger, got: %s", hxTrigger)
+		}
+
+		mUUID2, _ := uuid.Parse(m2.ID)
+		mModel2, _ := matchRepo.GetByID(ctx, mUUID2)
+		if mModel2.Status != "scheduled" {
+			t.Errorf("expected match 2 to remain scheduled, got status: %s", mModel2.Status)
+		}
+
+		// Try starting second match on Table 2 (free) -> should succeed
+		startData3 := url.Values{}
+		startData3.Set("tableNumber", "2")
+		req3 := httptest.NewRequest("POST", fmt.Sprintf("/matches/%s/start", m2.ID), strings.NewReader(startData3.Encode()))
+		req3.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req3.Header.Set("Cookie", sessionCookie)
+		resp3, err := app.Test(req3)
+		if err != nil || resp3.StatusCode != 200 {
+			t.Errorf("expected start on table 2 to succeed, got %v", resp3.StatusCode)
+		}
+	})
 }

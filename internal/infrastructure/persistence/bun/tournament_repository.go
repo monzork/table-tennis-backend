@@ -632,7 +632,7 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 	existingPINs := make(map[string]string)
 	{
 		var existingParts []TournamentParticipantModel
-		_ = r.db.NewSelect().Model(&existingParts).Column("player_id", "pin").Where("tournament_id = ?", tID).Scan(ctx)
+		_ = tx.NewSelect().Model(&existingParts).Column("player_id", "pin").Where("tournament_id = ?", tID).Scan(ctx)
 		for _, ep := range existingParts {
 			existingPINs[ep.PlayerID.String()] = ep.Pin
 		}
@@ -1048,6 +1048,39 @@ func (r *TournamentRepository) UpdateParticipantElo(ctx context.Context, tournam
 		Where("tournament_id = ? AND player_id = ?", tID, pID).
 		Exec(ctx)
 	return err
+}
+
+func (r *TournamentRepository) UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error {
+	if len(players) == 0 {
+		return nil
+	}
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return err
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, p := range players {
+		pID, err := uuid.Parse(p.ID)
+		if err != nil {
+			return err
+		}
+		_, err = tx.NewUpdate().
+			TableExpr("tournament_participants").
+			Set("elo_after_singles = ?, elo_after_doubles = ?", p.SinglesElo, p.DoublesElo).
+			Where("tournament_id = ? AND player_id = ?", tID, pID).
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 // AddParticipant inserts a single player into tournament_participants.

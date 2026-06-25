@@ -1,6 +1,25 @@
 {{define "admin/partials/board-columns"}}
 {{$t := .Tournament}}
 
+{{/* ── Table Availability Panel ── */}}
+<div class="mb-6 glass rounded-3xl border border-white/10 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-club-panel/30 backdrop-blur-md">
+  <div>
+    <h3 class="text-xs font-black uppercase tracking-widest text-gray-400">Table Status</h3>
+    <p class="text-[11px] text-gray-500 mt-1">Select an active table or start matches on available tables.</p>
+  </div>
+  <div class="flex flex-wrap gap-2.5">
+    {{range .Tables}}
+    <div class="flex items-center gap-2 px-3.5 py-2 rounded-2xl border transition-all duration-300 {{if .IsUsed}}bg-red-500/10 border-red-500/30 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.07)]{{else}}bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.07)]{{end}}">
+      <span class="w-1.5 h-1.5 rounded-full {{if .IsUsed}}bg-red-500 animate-pulse{{else}}bg-emerald-500{{end}}"></span>
+      <span class="text-xs font-black font-mono">Table {{.Number}}</span>
+      <span class="text-[9px] uppercase tracking-wider font-bold opacity-80">{{if .IsUsed}}OCCUPIED{{else}}AVAILABLE{{end}}</span>
+    </div>
+    {{else}}
+    <div class="text-[11px] italic text-gray-600">No tables configured</div>
+    {{end}}
+  </div>
+</div>
+
 <div class="grid grid-cols-3 gap-6 min-h-[calc(100vh-220px)]">
 
   {{/* ── Scheduled ─────────────────────────────────── */}}
@@ -26,17 +45,26 @@
           <span class="text-[10px] font-black text-gray-600 tabular-nums">—</span>
         </div>
       </div>
-      <div class="flex gap-1.5 mt-1">
+      <div class="flex flex-col gap-2 mt-1 w-full">
         {{if .MatchID}}
-        <button
-          class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 transition-all"
-          hx-post="/matches/{{.MatchID}}/start"
-          hx-swap="none">
-          ▶ Start
-        </button>
+        <form hx-post="/matches/{{.MatchID}}/start" hx-swap="none" class="flex gap-1.5 items-center w-full">
+          <select name="tableNumber" class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
+            <option value="">Auto</option>
+            {{range $.Tables}}
+              <option value="{{.Number}}" {{if .IsUsed}}class="text-gray-500 bg-black"{{else}}class="text-white bg-black"{{end}}>
+                T{{.Number}} {{if .IsUsed}}(used){{else}}(free){{end}}
+              </option>
+            {{end}}
+          </select>
+          <button
+            type="submit"
+            class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 transition-all">
+            ▶ Start
+          </button>
+        </form>
         {{end}}
         <button
-          class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-2 transition-all"
+          class="w-full text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-2 transition-all"
           onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
           ⚡ Score
         </button>

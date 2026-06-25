@@ -77,6 +77,7 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 			return tI.Before(tJ)
 		})
 
+		var allUpdatedPlayers []*player.Player
 		for _, m := range t.Matches {
 			if m.WinnerTeam == "" {
 				continue
@@ -84,21 +85,34 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 
 			if len(m.TeamA) > 0 && len(m.TeamB) > 0 {
 				match.CalculateAndApplyElo(m.MatchType, m.TeamA, m.TeamB, m.WinnerTeam)
-				for _, p := range m.TeamA {
-					_ = uc.playerRepo.Save(ctx, p)
-				}
-				for _, p := range m.TeamB {
-					_ = uc.playerRepo.Save(ctx, p)
-				}
+				allUpdatedPlayers = append(allUpdatedPlayers, m.TeamA...)
+				allUpdatedPlayers = append(allUpdatedPlayers, m.TeamB...)
 			}
+		}
+
+		if len(allUpdatedPlayers) > 0 {
+			// deduplicate players by ID if needed, though SaveMultiple with ON CONFLICT handles it.
+			// however, we've updated their Elo in memory, so the latest instance in the slice 
+			// has the most recent Elo. Saving them all works if ordered correctly, but better to dedup.
+			latestPlayers := make(map[string]*player.Player)
+			for _, p := range allUpdatedPlayers {
+				latestPlayers[p.ID] = p
+			}
+			var deduplicated []*player.Player
+			for _, p := range latestPlayers {
+				deduplicated = append(deduplicated, p)
+			}
+			_ = uc.playerRepo.SaveMultiple(ctx, deduplicated)
 		}
 	}
 
 	// Finalize EloAfter snapshots using domain repository method
+	var pids []string
 	for _, p := range t.Participants {
-		if updatedPlayer, err := uc.playerRepo.GetById(ctx, p.ID); err == nil {
-			_ = uc.tournamentRepo.UpdateParticipantElo(ctx, tournamentID, p.ID, updatedPlayer.SinglesElo, updatedPlayer.DoublesElo)
-		}
+		pids = append(pids, p.ID)
+	}
+	if updatedPlayers, err := uc.playerRepo.GetByIDs(ctx, pids); err == nil {
+		_ = uc.tournamentRepo.UpdateParticipantsElo(ctx, tournamentID, updatedPlayers)
 	}
 
 	// Calculate and set the tournament winner name

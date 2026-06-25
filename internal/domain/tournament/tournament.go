@@ -565,6 +565,7 @@ type Repository interface {
 	Update(ctx context.Context, t *Tournament) error
 	Delete(ctx context.Context, id string) error
 	UpdateParticipantElo(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error
+	UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error
 	SaveTeam(ctx context.Context, team *Team) error
 	DeleteTeam(ctx context.Context, id string) error
 	AddPlayerToTeam(ctx context.Context, teamID string, playerID string) error

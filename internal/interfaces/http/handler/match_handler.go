@@ -98,22 +98,180 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	// In a real application, we would fetch the match from the repository here.
-	// Since this handler creates a dummy match. Let's assume we fetch it so the compiler doesn't complain.
-	// For now we just instantiate a mock one to satisfy the finishUC.
-	m := &tournament.Match{
-		ID:         body.MatchID,
-		TeamA:      []*player.Player{},
-		TeamB:      []*player.Player{},
-		Status:     "in_progress",
-		WinnerTeam: "",
+	mUUID, err := uuid.Parse(body.MatchID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid match ID")
 	}
 
-	if err := h.finishUC.Execute(m, body.WinnerTeam); err != nil {
+	mModel, err := h.matchRepo.GetByID(c.Context(), mUUID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "match not found")
+	}
+
+	t, err := h.tournamentRepo.GetByID(c.Context(), mModel.TournamentID.String())
+	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(m)
+	var matched *tournament.Match
+	for i := range t.Matches {
+		if t.Matches[i].ID == body.MatchID {
+			matched = &t.Matches[i]
+			break
+		}
+	}
+
+	if matched == nil {
+		return fiber.NewError(fiber.StatusNotFound, "match not found in tournament list")
+	}
+
+	tx, err := h.matchRepo.DB().BeginTx(c.Context(), nil)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	defer tx.Rollback()
+
+	// Update match to finished
+	mModel.Status = "finished"
+	mModel.WinnerTeam = &body.WinnerTeam
+	now := time.Now()
+	mModel.UpdatedAt = &now
+
+	_, err = tx.NewUpdate().Model(mModel).WherePK().Column("status", "winner_team", "updated_at").Exec(c.Context())
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	// Advance winner to next match slot if configured
+	if mModel.NextMatchID != nil {
+		nextID, _ := uuid.Parse(*mModel.NextMatchID)
+		winnedPlayerID := mModel.TeamAPlayer1ID
+		if body.WinnerTeam == "B" {
+			winnedPlayerID = mModel.TeamBPlayer1ID
+		}
+		if mModel.NextMatchSlot == "A" {
+			_, _ = tx.NewUpdate().TableExpr("matches").Set("team_a_player_1_id = ?, status = 'scheduled'", winnedPlayerID).Where("id = ? AND status = 'scheduled'", nextID).Exec(c.Context())
+		} else {
+			_, _ = tx.NewUpdate().TableExpr("matches").Set("team_b_player_1_id = ?, status = 'scheduled'", winnedPlayerID).Where("id = ? AND status = 'scheduled'", nextID).Exec(c.Context())
+		}
+	}
+
+	// If this was a sub-match of a team match, update parent team match status
+	if mModel.TeamMatchID != nil {
+		var siblingMatches []bun.MatchModel
+		_ = tx.NewSelect().Model(&siblingMatches).Where("team_match_id = ?", mModel.TeamMatchID).Scan(c.Context())
+
+		subWinsA, subWinsB := 0, 0
+		for _, sm := range siblingMatches {
+			if sm.ID == mModel.ID {
+				if body.WinnerTeam == "A" {
+					subWinsA++
+				} else {
+					subWinsB++
+				}
+				continue
+			}
+			if sm.Status == "finished" && sm.WinnerTeam != nil {
+				if *sm.WinnerTeam == "A" {
+					subWinsA++
+				} else if *sm.WinnerTeam == "B" {
+					subWinsB++
+				}
+			}
+		}
+
+		parentMatch := new(bun.MatchModel)
+		if err := tx.NewSelect().Model(parentMatch).Where("id = ?", mModel.TeamMatchID).Scan(c.Context()); err == nil {
+			if subWinsA >= 3 {
+				w := "A"
+				parentMatch.WinnerTeam = &w
+				parentMatch.Status = "finished"
+			} else if subWinsB >= 3 {
+				w := "B"
+				parentMatch.WinnerTeam = &w
+				parentMatch.Status = "finished"
+			} else {
+				parentMatch.Status = "in_progress"
+			}
+			pNow := time.Now()
+			parentMatch.UpdatedAt = &pNow
+			_, _ = tx.NewUpdate().Model(parentMatch).WherePK().Column("status", "winner_team", "updated_at").Exec(c.Context())
+
+			if parentMatch.Status == "finished" {
+				_, _ = tx.NewUpdate().TableExpr("matches").
+					Set("status = 'scheduled'").
+					Where("team_match_id = ? AND status = 'in_progress' AND id != ?", mModel.TeamMatchID, mModel.ID).
+					Exec(c.Context())
+			}
+
+			if parentMatch.Status == "finished" && parentMatch.NextMatchID != nil {
+				nextID, _ := uuid.Parse(*parentMatch.NextMatchID)
+				winnedTeamID := parentMatch.TeamAPlayer1ID
+				if *parentMatch.WinnerTeam == "B" {
+					winnedTeamID = parentMatch.TeamBPlayer1ID
+				}
+				if parentMatch.NextMatchSlot == "A" {
+					_, _ = tx.NewUpdate().TableExpr("matches").Set("team_a_player_1_id = ?, status = 'scheduled'", winnedTeamID).Where("id = ? AND status = 'scheduled'", nextID).Exec(c.Context())
+				} else {
+					_, _ = tx.NewUpdate().TableExpr("matches").Set("team_b_player_1_id = ?, status = 'scheduled'", winnedTeamID).Where("id = ? AND status = 'scheduled'", nextID).Exec(c.Context())
+				}
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	// Apply Elo
+	_ = h.finishUC.Execute(matched, body.WinnerTeam)
+
+	var nameA, nameB string
+	if len(matched.TeamA) > 0 {
+		p := matched.TeamA[0]
+		if len(matched.TeamA) > 1 {
+			nameA = p.FirstName + " / " + matched.TeamA[1].FirstName
+		} else {
+			nameA = p.FirstName + " " + p.LastName
+		}
+	} else {
+		nameA = "TBD"
+	}
+	
+	if len(matched.TeamB) > 0 {
+		p := matched.TeamB[0]
+		if len(matched.TeamB) > 1 {
+			nameB = p.FirstName + " / " + matched.TeamB[1].FirstName
+		} else {
+			nameB = p.FirstName + " " + p.LastName
+		}
+	} else {
+		nameB = "TBD"
+	}
+	matchName := nameA + " vs " + nameB
+
+	GlobalBracketHub.Broadcast(mModel.TournamentID.String(), map[string]string{
+		"event":        "score_updated",
+		"tournamentId": mModel.TournamentID.String(),
+		"matchId":      body.MatchID,
+		"matchStatus":  "finished",
+		"message":      fmt.Sprintf("Match finished: %s", matchName),
+	})
+
+	// Re-fetch tournament to render updated row
+	t, _ = h.tournamentRepo.GetByID(c.Context(), mModel.TournamentID.String())
+	var updatedMatched *tournament.Match
+	for i := range t.Matches {
+		if t.Matches[i].ID == body.MatchID {
+			updatedMatched = &t.Matches[i]
+			break
+		}
+	}
+	if updatedMatched == nil {
+		return fiber.NewError(fiber.StatusNotFound, "match not found")
+	}
+
+	return c.Render("admin/partials/match-row", updatedMatched)
 }
 
 func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
@@ -840,6 +998,35 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 
 				if tableNumberStr != "" {
 					if tNum, err := strconv.Atoi(tableNumberStr); err == nil {
+						// Check if another match in this tournament/event is currently in_progress on this table
+						var occupiedList []int
+						if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
+							if t.EventID != nil {
+								eventUUID, _ := uuid.Parse(*t.EventID)
+								occupiedList, _ = h.matchRepo.GetOccupiedTablesByEvent(c.Context(), eventUUID)
+							} else {
+								tourneyUUID, _ := uuid.Parse(t.ID)
+								occupiedList, _ = h.matchRepo.GetOccupiedTablesByTournament(c.Context(), tourneyUUID)
+							}
+							
+							isOccupiedByOther := false
+							for _, occ := range occupiedList {
+								if occ == tNum {
+									count, err := h.matchRepo.DB().NewSelect().Model((*bun.MatchModel)(nil)).
+										Where("status = 'in_progress' AND table_number = ? AND id != ?", tNum, mUUID).
+										Count(c.Context())
+									if err == nil && count > 0 {
+										isOccupiedByOther = true
+									}
+									break
+								}
+							}
+
+							if isOccupiedByOther {
+								c.Set("HX-Trigger", `{"show-toast": {"message": "Table is currently occupied by another match!", "type": "error"}}`)
+								return fiber.NewError(fiber.StatusBadRequest, "Table is occupied")
+							}
+						}
 						m.TableNumber = &tNum
 					}
 				} else {
@@ -856,11 +1043,53 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	}
 
 	// Broadcast real-time update to all bracket viewers for this tournament
-	GlobalBracketHub.Broadcast(body.TournamentID, map[string]string{
+	var nameA, nameB string
+	var scored *bun.MatchModel
+	if mUUID, err := uuid.Parse(matchID); err == nil {
+		scored, _ = h.matchRepo.GetByID(c.Context(), mUUID)
+	}
+
+	if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
+		for i := range t.Matches {
+			if t.Matches[i].ID == matchID {
+				matched := &t.Matches[i]
+				if len(matched.TeamA) > 0 {
+					p := matched.TeamA[0]
+					if len(matched.TeamA) > 1 {
+						nameA = p.FirstName + " / " + matched.TeamA[1].FirstName
+					} else {
+						nameA = p.FirstName + " " + p.LastName
+					}
+				} else {
+					nameA = "TBD"
+				}
+				if len(matched.TeamB) > 0 {
+					p := matched.TeamB[0]
+					if len(matched.TeamB) > 1 {
+						nameB = p.FirstName + " / " + matched.TeamB[1].FirstName
+					} else {
+						nameB = p.FirstName + " " + p.LastName
+					}
+				} else {
+					nameB = "TBD"
+				}
+				break
+			}
+		}
+	}
+	matchName := nameA + " vs " + nameB
+
+	broadcastData := map[string]string{
 		"event":        "score_updated",
 		"tournamentId": body.TournamentID,
 		"matchId":      matchID,
-	})
+	}
+	if scored != nil && scored.Status == "finished" {
+		broadcastData["matchStatus"] = "finished"
+		broadcastData["message"] = fmt.Sprintf("Match finished: %s", matchName)
+	}
+
+	GlobalBracketHub.Broadcast(body.TournamentID, broadcastData)
 
 	// If this was a sub-match, return to the team matchup form instead of refreshing
 	mUUID, _ := uuid.Parse(matchID)
@@ -1114,6 +1343,34 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 	tableNumberStr := c.FormValue("tableNumber")
 	if tableNumberStr != "" {
 		if tNum, err := strconv.Atoi(tableNumberStr); err == nil {
+			// Check if another match in this tournament/event is currently in_progress on this table
+			var occupiedList []int
+			if t, err := h.tournamentRepo.GetByID(c.Context(), m.TournamentID.String()); err == nil {
+				if t.EventID != nil {
+					eventUUID, _ := uuid.Parse(*t.EventID)
+					occupiedList, _ = h.matchRepo.GetOccupiedTablesByEvent(c.Context(), eventUUID)
+				} else {
+					tourneyUUID, _ := uuid.Parse(t.ID)
+					occupiedList, _ = h.matchRepo.GetOccupiedTablesByTournament(c.Context(), tourneyUUID)
+				}
+				
+				isOccupiedByOther := false
+				for _, occ := range occupiedList {
+					if occ == tNum {
+						count, err := h.matchRepo.DB().NewSelect().Model((*bun.MatchModel)(nil)).
+							Where("status = 'in_progress' AND table_number = ? AND id != ?", tNum, mUUID).
+							Count(c.Context())
+						if err == nil && count > 0 {
+							isOccupiedByOther = true
+						}
+						break
+					}
+				}
+
+				if isOccupiedByOther {
+					return c.SendString("<div class='text-red-400 font-mono text-sm'>Table is currently occupied by another match!</div>")
+				}
+			}
 			m.TableNumber = &tNum
 		}
 	} else {
@@ -1189,11 +1446,48 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 	}
 
 	// Broadcast real-time update to all bracket viewers for this tournament
-	GlobalBracketHub.Broadcast(body.TournamentID, map[string]string{
+	var nameA, nameB string
+	if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
+		for i := range t.Matches {
+			if t.Matches[i].ID == matchID {
+				matched := &t.Matches[i]
+				if len(matched.TeamA) > 0 {
+					p := matched.TeamA[0]
+					if len(matched.TeamA) > 1 {
+						nameA = p.FirstName + " / " + matched.TeamA[1].FirstName
+					} else {
+						nameA = p.FirstName + " " + p.LastName
+					}
+				} else {
+					nameA = "TBD"
+				}
+				if len(matched.TeamB) > 0 {
+					p := matched.TeamB[0]
+					if len(matched.TeamB) > 1 {
+						nameB = p.FirstName + " / " + matched.TeamB[1].FirstName
+					} else {
+						nameB = p.FirstName + " " + p.LastName
+					}
+				} else {
+					nameB = "TBD"
+				}
+				break
+			}
+		}
+	}
+	matchName := nameA + " vs " + nameB
+
+	broadcastData := map[string]string{
 		"event":        "score_updated",
 		"tournamentId": body.TournamentID,
 		"matchId":      matchID,
-	})
+	}
+	if updatedMatch != nil && updatedMatch.Status == "finished" {
+		broadcastData["matchStatus"] = "finished"
+		broadcastData["message"] = fmt.Sprintf("Match finished: %s", matchName)
+	}
+
+	GlobalBracketHub.Broadcast(body.TournamentID, broadcastData)
 
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
@@ -1501,44 +1795,70 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	// Update status to in_progress
-	m.Status = "in_progress"
-	now := time.Now()
-	m.UpdatedAt = &now
+	// Override table number if provided manually in the form
+	manualTableStr := c.FormValue("tableNumber")
+	if manualTableStr != "" {
+		if tNum, err := strconv.Atoi(manualTableStr); err == nil {
+			m.TableNumber = &tNum
+		}
+	}
 
-	// Auto-assign table if not already assigned
+	// Auto-assign table if not already assigned or validate occupied table
+	var eventNumTables int
+	if t.EventID != nil {
+		eventNumTables, _ = h.tournamentRepo.GetEventNumTables(c.Context(), *t.EventID)
+	}
+
+	totalTables := 4
+	if t.NumTables > 0 {
+		totalTables = t.NumTables
+	}
+	if eventNumTables > 0 {
+		totalTables = eventNumTables
+	}
+
+	// Find occupied tables across the event/tournament
+	var occupiedList []int
+	if t.EventID != nil {
+		eventUUID, _ := uuid.Parse(*t.EventID)
+		occupiedList, _ = h.matchRepo.GetOccupiedTablesByEvent(c.Context(), eventUUID)
+	} else {
+		tourneyUUID, _ := uuid.Parse(t.ID)
+		occupiedList, _ = h.matchRepo.GetOccupiedTablesByTournament(c.Context(), tourneyUUID)
+	}
+
+	occupiedMap := make(map[int]bool)
+	for _, num := range occupiedList {
+		occupiedMap[num] = true
+	}
+
 	if m.TableNumber == nil {
-		// Resolve total tables
-		var eventNumTables int
-		if t.EventID != nil {
-			eventNumTables, _ = h.tournamentRepo.GetEventNumTables(c.Context(), *t.EventID)
+		// Find all available tables within totalTables range
+		var availableTables []int
+		for i := 1; i <= totalTables; i++ {
+			if !occupiedMap[i] {
+				availableTables = append(availableTables, i)
+			}
 		}
 
-		totalTables := 4
-		if t.NumTables > 0 {
-			totalTables = t.NumTables
-		}
-		if eventNumTables > 0 {
-			totalTables = eventNumTables
-		}
-
-		// Find occupied tables across the event/tournament
-		var occupiedList []int
-		if t.EventID != nil {
-			eventUUID, _ := uuid.Parse(*t.EventID)
-			occupiedList, _ = h.matchRepo.GetOccupiedTablesByEvent(c.Context(), eventUUID)
-		} else {
-			tourneyUUID, _ := uuid.Parse(t.ID)
-			occupiedList, _ = h.matchRepo.GetOccupiedTablesByTournament(c.Context(), tourneyUUID)
-		}
-
-		occupiedMap := make(map[int]bool)
-		for _, num := range occupiedList {
-			occupiedMap[num] = true
+		if len(availableTables) == 0 {
+			// No tables available!
+			c.Set("HX-Trigger", `{"show-toast": {"message": "All tables are currently occupied!", "type": "error"}}`)
+			
+			var matched *tournament.Match
+			for i := range t.Matches {
+				if t.Matches[i].ID == matchID {
+					matched = &t.Matches[i]
+					break
+				}
+			}
+			if matched == nil {
+				return fiber.NewError(fiber.StatusNotFound, "Match not found in tournament list")
+			}
+			return c.Render("admin/partials/match-row", matched)
 		}
 
 		// Heuristic logic:
-		// "prioritize it for 1st division games and SF and F for every other category"
 		isFirstDivision := false
 		tNameLower := strings.ToLower(t.Name)
 		if strings.Contains(tNameLower, "1st division") || 
@@ -1554,49 +1874,71 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 
 		isHighPriority := isFirstDivision || m.Stage == "semifinal" || m.Stage == "final"
 
-		assignedTable := 1
+		assignedTable := availableTables[0]
 		if isHighPriority {
 			if !occupiedMap[1] {
 				assignedTable = 1
 			} else if !occupiedMap[2] && totalTables >= 2 {
 				assignedTable = 2
 			} else {
-				found := false
-				for i := 3; i <= totalTables; i++ {
-					if !occupiedMap[i] {
-						assignedTable = i
-						found = true
-						break
-					}
-				}
-				if !found {
-					assignedTable = 1
-				}
+				assignedTable = availableTables[0]
 			}
 		} else {
 			found := false
-			for i := totalTables; i >= 3; i-- {
-				if !occupiedMap[i] {
-					assignedTable = i
-					found = true
-					break
+			for _, tbl := range availableTables {
+				if tbl >= 3 {
+					if !found || tbl > assignedTable {
+						assignedTable = tbl
+						found = true
+					}
 				}
 			}
 			if !found {
 				if !occupiedMap[2] && totalTables >= 2 {
 					assignedTable = 2
-				} else if !occupiedMap[1] {
-					assignedTable = 1
 				} else {
-					assignedTable = totalTables
-					if assignedTable < 1 {
-						assignedTable = 1
-					}
+					assignedTable = availableTables[0]
 				}
 			}
 		}
 		m.TableNumber = &assignedTable
+	} else {
+		// Table was already assigned, check if it's currently occupied by another match
+		isOccupiedByOther := false
+		for _, occ := range occupiedList {
+			if occ == *m.TableNumber {
+				mUUID := m.ID
+				count, err := h.matchRepo.DB().NewSelect().Model((*bun.MatchModel)(nil)).
+					Where("status = 'in_progress' AND table_number = ? AND id != ?", *m.TableNumber, mUUID).
+					Count(c.Context())
+				if err == nil && count > 0 {
+					isOccupiedByOther = true
+				}
+				break
+			}
+		}
+
+		if isOccupiedByOther {
+			c.Set("HX-Trigger", fmt.Sprintf(`{"show-toast": {"message": "Table %d is currently occupied by another match!", "type": "error"}}`, *m.TableNumber))
+			var matched *tournament.Match
+			for i := range t.Matches {
+				if t.Matches[i].ID == matchID {
+					matched = &t.Matches[i]
+					break
+				}
+			}
+			if matched == nil {
+				return fiber.NewError(fiber.StatusNotFound, "Match not found in tournament list")
+			}
+			return c.Render("admin/partials/match-row", matched)
+		}
 	}
+
+	// Update status to in_progress
+	m.Status = "in_progress"
+	now := time.Now()
+	m.UpdatedAt = &now
+
 
 	// Generate PIN if missing
 	if m.Pin == "" {

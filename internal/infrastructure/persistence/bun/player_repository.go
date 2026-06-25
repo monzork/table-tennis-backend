@@ -187,3 +187,46 @@ func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.
 	}
 	return r.mapModelsToDomain(models), nil
 }
+
+func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.Player) error {
+	if len(players) == 0 {
+		return nil
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, p := range players {
+		id, err := uuid.Parse(p.ID)
+		if err != nil {
+			return err
+		}
+		model := &PlayerModel{
+			ID:             id,
+			FirstName:      p.FirstName,
+			SecondName:     p.SecondName,
+			LastName:       p.LastName,
+			SecondLastName: p.SecondLastName,
+			Birthdate:      p.Birthdate,
+			Gender:         p.Gender,
+			SinglesElo:     p.SinglesElo,
+			DoublesElo:     p.DoublesElo,
+			Country:        p.Country,
+			Department:     p.Department,
+			WhatsAppNumber: p.WhatsAppNumber,
+			NationalID:     p.NationalID,
+		}
+
+		_, err = tx.NewInsert().Model(model).
+			On("CONFLICT (id) DO UPDATE").
+			Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id").
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+

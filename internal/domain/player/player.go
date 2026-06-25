@@ -10,6 +10,7 @@ type Repository interface {
 	GetById(ctx context.Context, id string) (*Player, error)
 	GetByIDs(ctx context.Context, ids []string) ([]*Player, error)
 	Save(ctx context.Context, p *Player) error
+	SaveMultiple(ctx context.Context, players []*Player) error
 	Delete(ctx context.Context, id string) error
 	Search(ctx context.Context, query string) ([]*Player, error)
 	GetAll(ctx context.Context) ([]*Player, error)

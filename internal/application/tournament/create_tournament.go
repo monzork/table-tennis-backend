@@ -53,13 +53,15 @@ func (uc *CreateTournamentUseCase) Execute(
 	var participants []*playerDomain.Player
 
 	// Handle existing players
+	var validIDs []string
 	for _, idStr := range participantIDs {
-		if idStr == "" {
-			continue
+		if idStr != "" {
+			validIDs = append(validIDs, idStr)
 		}
-		p, err := uc.playerRepo.GetById(ctx, idStr)
-		if err == nil {
-			participants = append(participants, p)
+	}
+	if len(validIDs) > 0 {
+		if ps, err := uc.playerRepo.GetByIDs(ctx, validIDs); err == nil {
+			participants = append(participants, ps...)
 		}
 	}
 
