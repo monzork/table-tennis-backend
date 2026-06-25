@@ -161,6 +161,25 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		p2Id = c.FormValue("p2Id")
 	}
 
+	// Load match metadata (pin, referee, table number, status) first
+	var matchPin string
+	var matchRefereeID *uuid.UUID
+	var matchTableNumber *int
+	matchStatus := "scheduled"
+	if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
+		mUUID, _ := uuid.Parse(matchID)
+		if mModel, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil {
+			matchPin = mModel.Pin
+			matchRefereeID = mModel.RefereeID
+			matchTableNumber = mModel.TableNumber
+			matchStatus = mModel.Status
+		}
+	}
+	var refereeIDStr string
+	if matchRefereeID != nil {
+		refereeIDStr = matchRefereeID.String()
+	}
+
 	// Check if tournament is teams
 	var isTeams bool
 	var isSubMatch bool
@@ -293,6 +312,24 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 				}
 			}
 
+			// Calculate wins count exactly like renderTeamMatchFormInternal
+			var setModels []bun.MatchSetModel
+			_ = h.matchRepo.DB().NewSelect().Model(&setModels).Where("match_id = ?", sm.ID).Scan(c.Context())
+
+			winsA, winsB := 0, 0
+			for _, set := range setModels {
+				if set.ScoreA > set.ScoreB {
+					winsA++
+				} else if set.ScoreB > set.ScoreA {
+					winsB++
+				}
+			}
+
+			wt := ""
+			if sm.WinnerTeam != nil {
+				wt = *sm.WinnerTeam
+			}
+
 			matchesVM = append(matchesVM, map[string]interface{}{
 				"ID":             sm.ID.String(),
 				"RoundNumber":    sm.RoundNumber,
@@ -302,8 +339,11 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 				"TeamBPlayer1ID": sm.TeamBPlayer1ID.String(),
 				"TeamBPlayer2ID": teamBP2,
 				"Status":         sm.Status,
-				"PlayerA":        pAName,
-				"PlayerB":        pBName,
+				"PlayerAName":    pAName,
+				"PlayerBName":    pBName,
+				"ScoreA":         winsA,
+				"ScoreB":         winsB,
+				"WinnerTeam":     wt,
 			})
 		}
 
@@ -349,7 +389,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 			"Stage":        stage,
 			"TeamA":        teamA,
 			"TeamB":        teamB,
-			"Matches":      matchesVM,
+			"SubMatches":   matchesVM,
 			"SquadAP1":     squadAP1,
 			"SquadAP2":     squadAP2,
 			"SquadAP3":     squadAP3,
@@ -357,6 +397,9 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 			"SquadBP2":     squadBP2,
 			"SquadBP3":     squadBP3,
 			"Participants": participants,
+			"Pin":          matchPin,
+			"RefereeID":    refereeIDStr,
+			"TableNumber":  matchTableNumber,
 		})
 	}
 
@@ -547,20 +590,6 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		sets = append(sets, setVM{Number: i, ScoreA: valA, ScoreB: valB})
 	}
 
-	var matchPin string
-	var matchRefereeID *uuid.UUID
-	var matchTableNumber *int
-	matchStatus := "scheduled"
-	if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
-		mUUID, _ := uuid.Parse(matchID)
-		if mModel, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil {
-			matchPin = mModel.Pin
-			matchRefereeID = mModel.RefereeID
-			matchTableNumber = mModel.TableNumber
-			matchStatus = mModel.Status
-		}
-	}
-
 	var participants []*player.Player
 	if tID != "" {
 		if t, err := h.tournamentRepo.GetByID(c.Context(), tID); err == nil {
@@ -583,7 +612,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		"PlayerANames": playerANames,
 		"PlayerBNames": playerBNames,
 		"Pin":          matchPin,
-		"RefereeID":    matchRefereeID,
+		"RefereeID":    refereeIDStr,
 		"TableNumber":  matchTableNumber,
 		"Status":       matchStatus,
 		"Participants": participants,
@@ -1369,6 +1398,11 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, tourna
 		})
 	}
 
+	var refereeIDStr string
+	if parent.RefereeID != nil {
+		refereeIDStr = parent.RefereeID.String()
+	}
+
 	return c.Render(templateName, fiber.Map{
 		"MatchID":      matchID,
 		"TournamentID": tournamentID,
@@ -1386,7 +1420,7 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, tourna
 		"SquadBP3":     squadBP3,
 		"Participants": t.Participants,
 		"Pin":          parent.Pin,
-		"RefereeID":    parent.RefereeID,
+		"RefereeID":    refereeIDStr,
 		"TableNumber":  parent.TableNumber,
 	})
 }

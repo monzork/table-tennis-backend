@@ -61,7 +61,7 @@
     {{if or (gt $count 1) (gt $teamCount 1)}}
     <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar"
          hx-get="/tournaments/{{.Tournament.ID}}"
-         hx-trigger="reload-bracket"
+         hx-trigger="reload-bracket, reload-bracket from:body"
          hx-select="#bracket-container"
          hx-target="this"
          hx-swap="outerHTML">
@@ -77,7 +77,7 @@
   {{/* Encounter Match List */}}
   <section class="space-y-4 pt-6 border-t border-white/10" id="match-list-container"
            hx-get="/tournaments/{{.Tournament.ID}}"
-           hx-trigger="reload-matches"
+           hx-trigger="reload-matches, reload-matches from:body"
            hx-select="#match-list-container"
            hx-target="this"
            hx-swap="outerHTML">
