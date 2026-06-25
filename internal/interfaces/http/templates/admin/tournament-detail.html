@@ -221,9 +221,9 @@
     <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar"
          hx-get="/admin/tournaments/{{.Tournament.ID}}"
          hx-trigger="reload-bracket"
-         hx-select="#bracket-container"
-         hx-target="this"
-         hx-swap="outerHTML">
+         hx-select="#bracket-container > *"
+         hx-target="#bracket-container"
+         hx-swap="innerHTML">
       {{template "admin/partials/tournament-bracket" .BracketViewModel}}
     </div>
     {{else}}
@@ -273,9 +273,10 @@
         </thead>
         <tbody id="custom-matches-list" class="divide-y divide-white/10"
                hx-get="/admin/tournaments/{{.Tournament.ID}}?status={{.StatusFilter}}"
-               hx-select="#custom-matches-list"
+               hx-select="#custom-matches-list > *"
+               hx-target="#custom-matches-list"
                hx-trigger="reload-matches"
-               hx-swap="outerHTML">
+               hx-swap="innerHTML">
           {{range .Tournament.Matches}}
             {{template "admin/partials/match-row" .}}
           {{else}}
@@ -561,6 +562,15 @@
         
         modal.classList.remove('hidden');
     }
+
+    // Re-initialize HTMX on dynamically swapped bracket/match-list content
+    // so Score/Start buttons keep their hx-get attributes active after reloads.
+    document.addEventListener('htmx:afterSwap', function(evt) {
+        const target = evt.detail.target;
+        if (target && (target.id === 'bracket-container' || target.id === 'custom-matches-list')) {
+            htmx.process(target);
+        }
+    });
 </script>
 
 
