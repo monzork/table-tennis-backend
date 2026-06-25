@@ -258,6 +258,22 @@ func main() {
 	// QR-code score entry — shareable per-match URL
 	app.Get("/score/:matchId", matchHandler.ShowMatchScorePage)
 	app.Post("/score/:matchId/verify", matchHandler.ValidateMatchPIN)
+
+	app.Get("/players/import/template", playerHandler.ImportTemplate) // public template download
+
+	// ==========================================
+	// WEBSOCKET ROUTES
+	// ==========================================
+
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		if fiberws.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
+	app.Get("/ws/brackets/:tournamentId", fiberws.New(handler.WsBracketHandler))
+
 	// ==========================================
 	// AUTHENTICATION ROUTES
 	// ==========================================
@@ -295,7 +311,7 @@ func main() {
 	api.Put("/players/:id", playerHandler.Update)
 	api.Delete("/players/:id", playerHandler.Delete)
 	api.Post("/players/import", playerHandler.Import)
-	app.Get("/players/import/template", playerHandler.ImportTemplate) // public template download
+
 
 	// Tournaments API
 	admin.Get("/tournaments/:id", tournamentHandler.Detail)
@@ -337,19 +353,6 @@ func main() {
 
 	// Reports API
 	admin.Get("/reports/all-tournaments/pdf", tournamentHandler.ExportAllPDF)
-
-	// ==========================================
-	// WEBSOCKET ROUTES
-	// ==========================================
-
-	app.Use("/ws", func(c *fiber.Ctx) error {
-		if fiberws.IsWebSocketUpgrade(c) {
-			c.Locals("allowed", true)
-			return c.Next()
-		}
-		return fiber.ErrUpgradeRequired
-	})
-	app.Get("/ws/brackets/:tournamentId", fiberws.New(handler.WsBracketHandler))
 
 	log.Fatal(app.Listen(":8080"))
 }

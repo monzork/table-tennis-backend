@@ -38,10 +38,17 @@
 
     <div id="public-score-result" class="hidden text-sm text-red-400 mb-2 font-mono text-center"></div>
 
-    <button type="submit" 
-        class="w-full bg-white hover:bg-gray-100 text-black font-black py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg text-sm">
-        Submit Scores
-    </button>
+    <div class="flex gap-3">
+        <button type="button" 
+            onclick="document.getElementById('public-score-modal').classList.add('hidden')"
+            class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-bold py-4 rounded-2xl transition-all uppercase tracking-widest text-xs">
+            Cancel
+        </button>
+        <button type="submit" 
+            class="flex-[2] bg-white hover:bg-gray-100 text-black font-black py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg text-xs">
+            Submit Scores
+        </button>
+    </div>
 </form>
 
 <script>
