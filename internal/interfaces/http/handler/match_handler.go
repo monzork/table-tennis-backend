@@ -550,12 +550,14 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 	var matchPin string
 	var matchRefereeID *uuid.UUID
 	var matchTableNumber *int
+	matchStatus := "scheduled"
 	if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
 		mUUID, _ := uuid.Parse(matchID)
 		if mModel, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil {
 			matchPin = mModel.Pin
 			matchRefereeID = mModel.RefereeID
 			matchTableNumber = mModel.TableNumber
+			matchStatus = mModel.Status
 		}
 	}
 
@@ -583,6 +585,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		"Pin":          matchPin,
 		"RefereeID":    matchRefereeID,
 		"TableNumber":  matchTableNumber,
+		"Status":       matchStatus,
 		"Participants": participants,
 	})
 }
@@ -1597,6 +1600,45 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 	}
 
 	return c.Render("admin/partials/match-row", matched)
+}
+
+// Reset reverts a match back to "scheduled", clearing all sets, winner, and table assignment.
+func (h *MatchHandler) Reset(c *fiber.Ctx) error {
+	mUUID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid match ID")
+	}
+
+	m, err := h.matchRepo.GetByID(c.Context(), mUUID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "match not found")
+	}
+
+	m.Status = "scheduled"
+	m.WinnerTeam = nil
+	m.TableNumber = nil
+	now := time.Now()
+	m.UpdatedAt = &now
+
+	_, err = h.matchRepo.DB().NewDelete().TableExpr("match_sets").Where("match_id = ?", mUUID).Exec(c.Context())
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	_, err = h.matchRepo.DB().NewUpdate().Model(m).WherePK().
+		Column("status", "winner_team", "table_number", "updated_at").Exec(c.Context())
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	GlobalBracketHub.Broadcast(m.TournamentID.String(), map[string]string{
+		"event":        "score_updated",
+		"tournamentId": m.TournamentID.String(),
+		"matchId":      m.ID.String(),
+	})
+
+	c.Set("HX-Trigger", "reload-bracket, reload-matches")
+	return c.SendStatus(fiber.StatusOK)
 }
 
 // ShowMatchScorePage renders the standalone public score page for a match.

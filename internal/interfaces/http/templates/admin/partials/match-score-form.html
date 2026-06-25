@@ -70,14 +70,24 @@
     <div id="score-error" class="hidden text-sm text-red-400 mb-4 font-mono"></div>
 
     <div class="flex gap-3">
-        <button type="button" 
+        <button type="button"
             onclick="document.getElementById('score-modal').classList.add('hidden')"
             class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-bold py-4 rounded-2xl transition-all uppercase tracking-widest text-sm">
             Cancel
         </button>
-        <button type="submit" 
+        <button type="submit"
             class="flex-[2] bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg">
             Save Scores
         </button>
     </div>
 </form>
+
+{{if and .MatchID (ne .Status "scheduled")}}
+<button type="button"
+    hx-post="/matches/{{.MatchID}}/reset"
+    hx-swap="none"
+    hx-on::after-request="document.getElementById('score-modal').classList.add('hidden')"
+    class="w-full text-[10px] font-bold uppercase tracking-widest text-red-400 border border-red-500/20 hover:border-red-500/40 bg-red-500/5 hover:bg-red-500/10 rounded-xl py-2.5 transition-all mt-2">
+    ↺ Reset to Scheduled
+</button>
+{{end}}

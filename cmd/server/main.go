@@ -346,6 +346,7 @@ func main() {
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)
 	api.Post("/matches/:id/start", matchHandler.Start)
+	api.Post("/matches/:id/reset", matchHandler.Reset)
 	api.Get("/matches/:id/score-form", matchHandler.ShowScoreForm)
 	api.Put("/matches/:id/score", matchHandler.UpdateScore)
 
