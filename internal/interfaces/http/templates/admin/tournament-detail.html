@@ -375,6 +375,36 @@
   </div>
 </div>
 
+{{/* ── QR Code Modal ── */}}
+<div id="qr-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
+  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-sm w-full relative shadow-2xl text-center">
+    <button onclick="document.getElementById('qr-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    
+    <h3 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-2">Scan to Score Match</h3>
+    <p id="qr-matchup" class="text-sm font-semibold text-white/90 mb-6 truncate"></p>
+    
+    <div class="bg-white p-4 rounded-2xl inline-block mb-6 shadow-xl">
+      <img id="qr-image" src="" alt="QR Code" class="w-48 h-48 mx-auto">
+    </div>
+    
+    <div class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
+      <span class="text-[10px] font-bold uppercase text-gray-500 tracking-wider block mb-1">Verification PIN</span>
+      <span id="qr-pin" class="text-2xl font-black text-yellow-400 font-mono tracking-widest">0000</span>
+    </div>
+    
+    <div class="flex gap-2">
+      <button id="qr-copy-btn" class="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+        Copy Link
+      </button>
+      <a id="qr-open-btn" href="" target="_blank" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px] flex items-center justify-center">
+        Open Link
+      </a>
+    </div>
+  </div>
+</div>
+
 <style>
 .custom-scrollbar::-webkit-scrollbar { height: 8px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
@@ -504,6 +534,32 @@
                 targetGroupId: targetGroupId
             }
         });
+    }
+
+    function showQRCodeModal(matchId, pin, matchup) {
+        const modal = document.getElementById('qr-modal');
+        const matchupEl = document.getElementById('qr-matchup');
+        const imageEl = document.getElementById('qr-image');
+        const pinEl = document.getElementById('qr-pin');
+        const copyBtn = document.getElementById('qr-copy-btn');
+        const openBtn = document.getElementById('qr-open-btn');
+        
+        const scoreUrl = window.location.origin + '/score/' + matchId;
+        
+        matchupEl.textContent = matchup;
+        pinEl.textContent = pin;
+        imageEl.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(scoreUrl);
+        openBtn.href = scoreUrl;
+        
+        copyBtn.onclick = function() {
+            navigator.clipboard.writeText(scoreUrl).then(() => {
+                showToast('📋 Link copied to clipboard!', 'success');
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+            });
+        };
+        
+        modal.classList.remove('hidden');
     }
 </script>
 
