@@ -105,6 +105,44 @@ func (h *LeaderboardHandler) getGroupedPlayersByGender(c *fiber.Ctx, rankType st
 	return groups, nil
 }
 
+func groupAndRankPlayers(players []*player.Player, rankType string, isDivisional bool, divisions []*divisionDomain.Division) []DivisionGroupView {
+	var groups []DivisionGroupView
+	globalRank := 1
+	if isDivisional {
+		for _, div := range divisions {
+			var divPlayers []RankedPlayer
+			for _, p := range players {
+				elo := p.SinglesElo
+				if rankType == "doubles" {
+					elo = p.DoublesElo
+				}
+				if div.ContainsElo(elo) {
+					divPlayers = append(divPlayers, RankedPlayer{Player: p, Rank: globalRank})
+					globalRank++
+				}
+			}
+			if len(divPlayers) > 0 {
+				groups = append(groups, DivisionGroupView{
+					Division: div,
+					Players:  divPlayers,
+				})
+			}
+		}
+	} else {
+		// Flat list
+		var rankedPlayers []RankedPlayer
+		for _, p := range players {
+			rankedPlayers = append(rankedPlayers, RankedPlayer{Player: p, Rank: globalRank})
+			globalRank++
+		}
+		groups = []DivisionGroupView{{
+			Division: nil,
+			Players:  rankedPlayers,
+		}}
+	}
+	return groups
+}
+
 func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender string, title string) error {
 	query := c.Query("q")
 	divFilter := c.Query("division")
@@ -183,40 +221,26 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 
 	// 4. Group and Rank
 	isDivisional := sortOrder == "points_desc" && query == "" && (divFilter == "" || divFilter == "all")
+	isMixed := gender == ""
+
+	var menGroups []DivisionGroupView
+	var womenGroups []DivisionGroupView
 	var groups []DivisionGroupView
-	
-	globalRank := 1
-	if isDivisional {
-		for _, div := range divisions {
-			var divPlayers []RankedPlayer
-			for _, p := range finalPlayers {
-				elo := p.SinglesElo
-				if rankType == "doubles" {
-					elo = p.DoublesElo
-				}
-				if div.ContainsElo(elo) {
-					divPlayers = append(divPlayers, RankedPlayer{Player: p, Rank: globalRank})
-					globalRank++
-				}
-			}
-			if len(divPlayers) > 0 {
-				groups = append(groups, DivisionGroupView{
-					Division: div,
-					Players:  divPlayers,
-				})
-			}
-		}
-	} else {
-		// Flat list
-		var rankedPlayers []RankedPlayer
+
+	if isMixed {
+		var menPlayers []*player.Player
+		var womenPlayers []*player.Player
 		for _, p := range finalPlayers {
-			rankedPlayers = append(rankedPlayers, RankedPlayer{Player: p, Rank: globalRank})
-			globalRank++
+			if strings.ToUpper(p.Gender) == "M" {
+				menPlayers = append(menPlayers, p)
+			} else if strings.ToUpper(p.Gender) == "F" {
+				womenPlayers = append(womenPlayers, p)
+			}
 		}
-		groups = []DivisionGroupView{{
-			Division: nil,
-			Players:  rankedPlayers,
-		}}
+		menGroups = groupAndRankPlayers(menPlayers, rankType, isDivisional, divisions)
+		womenGroups = groupAndRankPlayers(womenPlayers, rankType, isDivisional, divisions)
+	} else {
+		groups = groupAndRankPlayers(finalPlayers, rankType, isDivisional, divisions)
 	}
 
 	lang := getLang(c)
@@ -226,24 +250,27 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 	}
 
 	data := fiber.Map{
-		"Groups":        groups,
-		"Type":          title,
-		"RankType":      rankType,
-		"Gender":        gender,
-		"ActiveTab":     gender + "-" + rankType,
-		"Query":         query,
-		"Division":      divFilter,
-		"Sort":          sortOrder,
-		"IsDivisional":  isDivisional,
-		"Divisions":     divisions,
-		"CurrentPath":   c.Path(),
-		"T":             tMap,
-		"Lang":          lang,
-		"Title":         title,
+		"Groups":       groups,
+		"MenGroups":    menGroups,
+		"WomenGroups":  womenGroups,
+		"IsMixed":      isMixed,
+		"Type":         title,
+		"RankType":     rankType,
+		"Gender":       gender,
+		"ActiveTab":    gender + "-" + rankType,
+		"Query":        query,
+		"Division":     divFilter,
+		"Sort":         sortOrder,
+		"IsDivisional": isDivisional,
+		"Divisions":    divisions,
+		"CurrentPath":  c.Path(),
+		"T":            tMap,
+		"Lang":         lang,
+		"Title":        title,
 	}
 
 	if c.Get("HX-Request") == "true" {
-		return c.Render("partials/rankings-table", data)
+		return c.Render("partials/rankings-container", data)
 	}
 
 	return c.Render("rankings", data, "layouts/public")
