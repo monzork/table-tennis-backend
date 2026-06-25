@@ -24,7 +24,9 @@ var ErrInvalidName = errors.New("first and last name required")
 type Player struct {
 	ID             string
 	FirstName      string
+	SecondName     string
 	LastName       string
+	SecondLastName string
 	Birthdate      time.Time
 	Gender         string
 	SinglesElo     int16
@@ -73,4 +75,18 @@ func (p *Player) UpdateDoublesElo(newElo int16) {
 
 func (p *Player) FullName() string {
 	return p.FirstName + " " + p.LastName
+}
+
+func (p *Player) FirstNameWithSecond() string {
+	if p.SecondName != "" {
+		return p.FirstName + " " + p.SecondName
+	}
+	return p.FirstName
+}
+
+func (p *Player) LastNameWithSecond() string {
+	if p.SecondLastName != "" {
+		return p.LastName + " " + p.SecondLastName
+	}
+	return p.LastName
 }

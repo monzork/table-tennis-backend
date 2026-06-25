@@ -24,7 +24,9 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 	model := &PlayerModel{
 		ID:             id,
 		FirstName:      p.FirstName,
+		SecondName:     p.SecondName,
 		LastName:       p.LastName,
+		SecondLastName: p.SecondLastName,
 		Birthdate:      p.Birthdate,
 		Gender:         p.Gender,
 		SinglesElo:     p.SinglesElo,
@@ -38,7 +40,7 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 
 	_, err = r.db.NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, pin = EXCLUDED.pin, national_id = EXCLUDED.national_id").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, pin = EXCLUDED.pin, national_id = EXCLUDED.national_id").
 		Exec(ctx)
 
 	return err
@@ -98,7 +100,9 @@ func (r *PlayerRepository) mapModelsToDomain(models []PlayerModel) []*player.Pla
 		players[i] = &player.Player{
 			ID:             m.ID.String(),
 			FirstName:      m.FirstName,
+			SecondName:     m.SecondName,
 			LastName:       m.LastName,
+			SecondLastName: m.SecondLastName,
 			Birthdate:      m.Birthdate,
 			Gender:         m.Gender,
 			SinglesElo:     m.SinglesElo,
@@ -128,7 +132,9 @@ func (r *PlayerRepository) GetById(ctx context.Context, id string) (*player.Play
 	return &player.Player{
 		ID:             model.ID.String(),
 		FirstName:      model.FirstName,
+		SecondName:     model.SecondName,
 		LastName:       model.LastName,
+		SecondLastName: model.SecondLastName,
 		Birthdate:      model.Birthdate,
 		Gender:         model.Gender,
 		SinglesElo:     model.SinglesElo,
@@ -175,7 +181,7 @@ func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.
 	var models []PlayerModel
 	q := r.db.NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc)
 	if query != "" {
-		q = q.Where("first_name LIKE ? OR last_name LIKE ?", "%"+query+"%", "%"+query+"%")
+		q = q.Where("first_name LIKE ? OR second_name LIKE ? OR last_name LIKE ? OR second_last_name LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
 	}
 	if err := q.Scan(ctx); err != nil {
 		return nil, err

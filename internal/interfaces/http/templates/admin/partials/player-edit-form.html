@@ -1,14 +1,25 @@
 <h2 class="text-2xl font-extrabold uppercase mb-8 tracking-tighter">Edit <span class="text-white">Athlete</span>.</h2>
 
-<form hx-put="/players/{{.ID}}" hx-target="#player-{{.ID}}" hx-swap="outerHTML" class="space-y-4" hx-on::after-request="if(event.detail.successful) document.getElementById('edit-player-modal').classList.add('hidden')">
+<form hx-put="/players/{{.ID}}" hx-target="#player-{{.ID}}" hx-swap="outerHTML" class="space-y-4" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('edit-player-modal').classList.add('hidden')">
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">First Name</label>
             <input type="text" name="firstName" value="{{.FirstName}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Second Name</label>
+            <input type="text" name="secondName" value="{{.SecondName}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Last Name</label>
             <input type="text" name="lastName" value="{{.LastName}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Second Last Name</label>
+            <input type="text" name="secondLastName" value="{{.SecondLastName}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
     </div>
 

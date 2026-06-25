@@ -26,7 +26,7 @@ func NewUpdatePlayerUseCase(repo player.Repository) *UpdatePlayerUseCase {
 	return &UpdatePlayerUseCase{repo: repo}
 }
 
-func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, lastName, birthdate, gender, country, department, whatsAppNumber, nationalID string, singlesElo, doublesElo int16) (*player.Player, error) {
+func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, secondName, lastName, secondLastName, birthdate, gender, country, department, whatsAppNumber, nationalID string, singlesElo, doublesElo int16) (*player.Player, error) {
 	p, err := uc.repo.GetById(ctx, idStr)
 	if err != nil {
 		return nil, err
@@ -35,9 +35,11 @@ func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, la
 	if firstName != "" {
 		p.FirstName = firstName
 	}
+	p.SecondName = secondName
 	if lastName != "" {
 		p.LastName = lastName
 	}
+	p.SecondLastName = secondLastName
 	if birthdate != "" {
 		if bd, err := time.Parse("2006-01-02", birthdate); err == nil {
 			p.Birthdate = bd

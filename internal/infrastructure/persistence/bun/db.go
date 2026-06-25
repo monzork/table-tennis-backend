@@ -67,4 +67,8 @@ func Connect() {
 	_, _ = DB.NewRaw("ALTER TABLE tournaments ADD COLUMN winner_name TEXT DEFAULT ''").Exec(context.Background())
 	// Ensure players table has national_id column
 	_, _ = DB.NewRaw("ALTER TABLE players ADD COLUMN national_id TEXT DEFAULT ''").Exec(context.Background())
+	// Ensure players table has second_name column
+	_, _ = DB.NewRaw("ALTER TABLE players ADD COLUMN second_name TEXT DEFAULT ''").Exec(context.Background())
+	// Ensure players table has second_last_name column
+	_, _ = DB.NewRaw("ALTER TABLE players ADD COLUMN second_last_name TEXT DEFAULT ''").Exec(context.Background())
 }

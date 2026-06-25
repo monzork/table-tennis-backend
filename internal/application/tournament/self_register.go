@@ -50,7 +50,9 @@ func (uc *SelfRegisterUseCase) Execute(
 	ctx context.Context,
 	tournamentIDStr string,
 	firstName string,
+	secondName string,
 	lastName string,
+	secondLastName string,
 	country string,
 	department string,
 	whatsAppNumber string,
@@ -73,7 +75,9 @@ func (uc *SelfRegisterUseCase) Execute(
 
 	// Search for the player by name (case-insensitive) and optional country
 	firstLower := strings.ToLower(firstName)
+	secondLower := strings.ToLower(strings.TrimSpace(secondName))
 	lastLower := strings.ToLower(lastName)
+	secondLastLower := strings.ToLower(strings.TrimSpace(secondLastName))
 	countryUpper := strings.ToUpper(strings.TrimSpace(country))
 
 	players, err := uc.playerRepo.GetAll(ctx)
@@ -84,9 +88,11 @@ func (uc *SelfRegisterUseCase) Execute(
 	var matched *playerDomain.Player
 	for _, p := range players {
 		pFirst := strings.ToLower(p.FirstName)
+		pSecond := strings.ToLower(p.SecondName)
 		pLast := strings.ToLower(p.LastName)
+		pSecondLast := strings.ToLower(p.SecondLastName)
 		pCountry := strings.ToUpper(p.Country)
-		if pFirst == firstLower && pLast == lastLower && (countryUpper == "" || pCountry == countryUpper) {
+		if pFirst == firstLower && pSecond == secondLower && pLast == lastLower && pSecondLast == secondLastLower && (countryUpper == "" || pCountry == countryUpper) {
 			matched = p
 			break
 		}
@@ -107,6 +113,8 @@ func (uc *SelfRegisterUseCase) Execute(
 		if err != nil {
 			return nil, "", fmt.Errorf("failed to create new player: %w", err)
 		}
+		newPlayer.SecondName = strings.TrimSpace(secondName)
+		newPlayer.SecondLastName = strings.TrimSpace(secondLastName)
 		newPlayer.WhatsAppNumber = strings.TrimSpace(whatsAppNumber)
 		newPlayer.UpdateSinglesElo(500)
 		newPlayer.UpdateDoublesElo(500)

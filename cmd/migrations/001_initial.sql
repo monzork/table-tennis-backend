@@ -4,7 +4,9 @@
 CREATE TABLE IF NOT EXISTS players (
     id TEXT PRIMARY KEY,
     first_name TEXT NOT NULL,
+    second_name TEXT NOT NULL DEFAULT '',
     last_name TEXT NOT NULL,
+    second_last_name TEXT NOT NULL DEFAULT '',
     birthdate TEXT NOT NULL,
     elo INTEGER NOT NULL DEFAULT 1000,
     country TEXT NOT NULL,

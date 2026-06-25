@@ -41,7 +41,9 @@ func NewPlayerHandler(
 func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 	var body struct {
 		FirstName      string `json:"firstName" form:"firstName"`
+		SecondName     string `json:"secondName" form:"secondName"`
 		LastName       string `json:"lastName" form:"lastName"`
+		SecondLastName string `json:"secondLastName" form:"secondLastName"`
 		Birthdate      string `json:"birthdate" form:"birthdate"`
 		Country        string `json:"country" form:"country"`
 		Department     string `json:"department" form:"department"`
@@ -56,7 +58,7 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	player, err := h.registerPlayerUC.Execute(context.Background(), body.FirstName, body.LastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, body.SinglesElo, body.DoublesElo)
+	player, err := h.registerPlayerUC.Execute(context.Background(), body.FirstName, body.SecondName, body.LastName, body.SecondLastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, body.SinglesElo, body.DoublesElo)
 
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -69,7 +71,9 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var body struct {
 		FirstName      string `json:"firstName" form:"firstName"`
+		SecondName     string `json:"secondName" form:"secondName"`
 		LastName       string `json:"lastName" form:"lastName"`
+		SecondLastName string `json:"secondLastName" form:"secondLastName"`
 		Birthdate      string `json:"birthdate" form:"birthdate"`
 		Country        string `json:"country" form:"country"`
 		Department     string `json:"department" form:"department"`
@@ -84,7 +88,7 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	player, err := h.updatePlayerUC.Execute(c.Context(), id, body.FirstName, body.LastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, body.SinglesElo, body.DoublesElo)
+	player, err := h.updatePlayerUC.Execute(c.Context(), id, body.FirstName, body.SecondName, body.LastName, body.SecondLastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, body.SinglesElo, body.DoublesElo)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -173,9 +177,9 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 		c.Set("Content-Type", "text/csv")
 		c.Set("Content-Disposition", `attachment; filename="players_template.csv"`)
 		return c.SendString(
-			"first_name,last_name,national_id,birthdate,gender,country,department,singles_elo,doubles_elo,whatsapp_number,pin\n" +
-				"John,Doe,001-150695-0000A,1995-06-15,M,MEX,IT,1200,1150,+5212345678,1234\n" +
-				"Jane,Smith,002-220398-0000B,1998-03-22,F,USA,HR,1350,1300,+11234567890,4321\n",
+			"first_name,second_name,last_name,second_last_name,national_id,birthdate,gender,country,department,singles_elo,doubles_elo,whatsapp_number,pin\n" +
+				"John,Carlos,Doe,Gomez,001-150695-0000A,1995-06-15,M,MEX,IT,1200,1150,+5212345678,1234\n" +
+				"Jane,,Smith,,002-220398-0000B,1998-03-22,F,USA,HR,1350,1300,+11234567890,4321\n",
 		)
 	}
 
@@ -217,14 +221,16 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 	})
 
 	type col struct {
-		Header  string
-		Width   float64
+		Header   string
+		Width    float64
 		Optional bool
-		Note    string
+		Note     string
 	}
 	cols := []col{
 		{"first_name", 16, false, ""},
+		{"second_name", 16, true, "Second Name"},
 		{"last_name", 16, false, ""},
+		{"second_last_name", 16, true, "Second Last Name"},
 		{"national_id", 20, true, "National ID / Cédula"},
 		{"birthdate", 14, false, "YYYY-MM-DD"},
 		{"gender", 10, false, "M or F"},
@@ -269,8 +275,8 @@ func (h *PlayerHandler) ImportTemplate(c *fiber.Ctx) error {
 
 	// Example data rows (4 and 5)
 	examples := [][]interface{}{
-		{"John", "Doe", "001-150695-0000A", "1995-06-15", "M", "MEX", "IT", 1200, 1150, "+5212345678", "1234"},
-		{"Jane", "Smith", "002-220398-0000B", "1998-03-22", "F", "USA", "HR", 1350, 1300, "+11234567890", "4321"},
+		{"John", "Carlos", "Doe", "Gomez", "001-150695-0000A", "1995-06-15", "M", "MEX", "IT", 1200, 1150, "+5212345678", "1234"},
+		{"Jane", "", "Smith", "", "002-220398-0000B", "1998-03-22", "F", "USA", "HR", 1350, 1300, "+11234567890", "4321"},
 	}
 	for r, row := range examples {
 		for c, val := range row {

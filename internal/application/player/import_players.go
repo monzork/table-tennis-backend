@@ -148,7 +148,9 @@ func cell(row []string, col map[string]int, key string) string {
 
 func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, colIdx map[string]int, rowNum int, result *ImportResult) error {
 	firstName := cell(row, colIdx, "first_name")
+	secondName := cell(row, colIdx, "second_name")
 	lastName := cell(row, colIdx, "last_name")
+	secondLastName := cell(row, colIdx, "second_last_name")
 	birthStr := cell(row, colIdx, "birthdate")
 	gender := strings.ToUpper(cell(row, colIdx, "gender"))
 	country := strings.ToUpper(cell(row, colIdx, "country"))
@@ -194,6 +196,8 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 		result.Skipped++
 		return err
 	}
+	p.SecondName = secondName
+	p.SecondLastName = secondLastName
 
 	// Apply optional Elo values if provided
 	if v, err := strconv.Atoi(singlesEloStr); err == nil && v > 0 {

@@ -10,9 +10,11 @@ import (
 type PlayerModel struct {
 	bun.BaseModel `bun:"table:players"`
 
-	ID         uuid.UUID  `bun:"id,pk,type:uuid"`
-	FirstName  string     `bun:"first_name,notnull"`
-	LastName   string     `bun:"last_name,notnull"`
+	ID             uuid.UUID  `bun:"id,pk,type:uuid"`
+	FirstName      string     `bun:"first_name,notnull"`
+	SecondName     string     `bun:"second_name,nullzero"`
+	LastName       string     `bun:"last_name,notnull"`
+	SecondLastName string     `bun:"second_last_name,nullzero"`
 	Birthdate  time.Time  `bun:"birthdate,notnull"`
 	Gender     string     `bun:"gender,notnull,default:'M'"`
 	SinglesElo     int16      `bun:"singles_elo,notnull,default:1000"`
@@ -24,4 +26,8 @@ type PlayerModel struct {
 	NationalID     string     `bun:"national_id,nullzero"`
 	CreatedAt      time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
+}
+
+func (m *PlayerModel) FullName() string {
+	return m.FirstName + " " + m.LastName
 }

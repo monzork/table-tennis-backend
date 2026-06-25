@@ -1,6 +1,6 @@
 <div class="p-8 relative z-10">
     <h2 class="text-3xl font-black uppercase italic tracking-tight mb-8">{{if .ID}}Edit <span class="text-white">Division</span>{{else}}Add <span class="text-white">Division</span>{{end}}</h2>
-    <form hx-post="/divisions" hx-target="{{if .ID}}#division-{{.ID}}{{else}}#division-list{{end}}" hx-swap="{{if .ID}}outerHTML{{else}}beforeend{{end}}" hx-on::after-request="if(event.detail.successful) document.getElementById('divisionModal').classList.add('hidden')">
+    <form hx-post="/divisions" hx-target="{{if .ID}}#division-{{.ID}}{{else}}#division-list{{end}}" hx-swap="{{if .ID}}outerHTML{{else}}beforeend{{end}}" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('divisionModal').classList.add('hidden')">
         <input type="hidden" name="id" value="{{.ID}}">
         <div class="space-y-6">
             <div>

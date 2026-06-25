@@ -51,7 +51,7 @@
         <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">Grand Event</span>.</h2>
         
         <form hx-post="/events" hx-target="#event-list" hx-swap="beforeend" 
-              hx-on::after-request="if(event.detail.successful) { document.getElementById('add-event-modal').classList.add('hidden'); this.reset(); document.getElementById('empty-state')?.remove(); }"
+              hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-event-modal').classList.add('hidden'); this.reset(); document.getElementById('empty-state')?.remove(); }"
               class="space-y-6">
             <div class="grid grid-cols-2 gap-6">
                 <div class="space-y-2">
@@ -109,7 +109,7 @@
                             <select name="participantIdsSinglesMen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "M"}}
-                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} (Elo: {{.SinglesElo}})</option>
                                 {{end}}
                                 {{end}}
                             </select>
@@ -146,7 +146,7 @@
                             <select name="participantIdsSinglesWomen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "F"}}
-                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} (Elo: {{.SinglesElo}})</option>
                                 {{end}}
                                 {{end}}
                             </select>
@@ -183,7 +183,7 @@
                             <select name="participantIdsDoublesMen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "M"}}
-                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.DoublesElo}})</option>
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} (Elo: {{.DoublesElo}})</option>
                                 {{end}}
                                 {{end}}
                             </select>
@@ -220,7 +220,7 @@
                             <select name="participantIdsDoublesWomen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "F"}}
-                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.DoublesElo}})</option>
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} (Elo: {{.DoublesElo}})</option>
                                 {{end}}
                                 {{end}}
                             </select>
@@ -256,7 +256,7 @@
                             <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
                             <select name="participantIdsDoublesMixed[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
-                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.DoublesElo}})</option>
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} (Elo: {{.DoublesElo}})</option>
                                 {{end}}
                             </select>
                         </div>
@@ -292,7 +292,7 @@
                             <select name="participantIdsTeamsMen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "M"}}
-                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} (Elo: {{.SinglesElo}})</option>
                                 {{end}}
                                 {{end}}
                             </select>
@@ -329,7 +329,7 @@
                             <select name="participantIdsTeamsWomen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "F"}}
-                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstName}} {{.LastName}} (Elo: {{.SinglesElo}})</option>
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} (Elo: {{.SinglesElo}})</option>
                                 {{end}}
                                 {{end}}
                             </select>

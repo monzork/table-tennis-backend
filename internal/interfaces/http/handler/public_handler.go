@@ -113,7 +113,9 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 	lang := getLang(c)
 	var body struct {
 		FirstName      string `form:"firstName"`
+		SecondName     string `form:"secondName"`
 		LastName       string `form:"lastName"`
+		SecondLastName string `form:"secondLastName"`
 		Birthdate      string `form:"birthdate"`
 		Country        string `form:"country"`
 		Department     string `form:"department"`
@@ -136,7 +138,9 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 	_, err := h.registerPlayerUC.Execute(
 		context.Background(),
 		body.FirstName,
+		body.SecondName,
 		body.LastName,
+		body.SecondLastName,
 		body.Birthdate,
 		body.Gender,
 		body.Country,
@@ -209,7 +213,9 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 	var body struct {
 		TournamentID   string `form:"tournamentId"`
 		FirstName      string `form:"firstName"`
+		SecondName     string `form:"secondName"`
 		LastName       string `form:"lastName"`
+		SecondLastName string `form:"secondLastName"`
 		Country        string `form:"country"`
 		Department     string `form:"department"`
 		WhatsAppNumber string `form:"whatsAppNumber"`
@@ -233,7 +239,9 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 		context.Background(),
 		body.TournamentID,
 		body.FirstName,
+		body.SecondName,
 		body.LastName,
+		body.SecondLastName,
 		body.Country,
 		body.Department,
 		body.WhatsAppNumber,

@@ -78,7 +78,7 @@
           <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
             {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
           </div>
-          <span class="text-sm font-semibold">{{.FirstName}} {{.LastName}}</span>
+          <span class="text-sm font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
           <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
         </div>
         {{else}}
@@ -90,7 +90,7 @@
           <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
             {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
           </div>
-          <span class="text-sm font-semibold">{{.FirstName}} {{.LastName}}</span>
+          <span class="text-sm font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
           <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
         </div>
         {{else}}
@@ -131,7 +131,7 @@
                 <div class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[9px] font-extrabold text-white">
                   {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
                 </div>
-                <span class="text-xs font-bold text-white">{{.FirstName}} {{.LastName}}</span>
+                <span class="text-xs font-bold text-white">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
               </div>
               <button hx-delete="/admin/tournaments/{{$.Tournament.ID}}/teams/{{$team.ID}}/players/{{.ID}}" hx-confirm="Remove this player from the team?" class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold">
                 ✕
@@ -151,7 +151,7 @@
           <select name="playerId" required class="flex-1 bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
             <option value="" disabled selected hidden>Assign Player...</option>
             {{range $.AvailableParticipants}}
-            <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+            <option value="{{.ID}}">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
             {{end}}
           </select>
           <button type="submit" class="bg-white hover:bg-gray-200 text-black font-extrabold text-[10px] uppercase tracking-widest px-3 rounded-xl transition-colors">
@@ -297,7 +297,7 @@
     
     <h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Schedule <span class="text-white">Match-up</span>.</h2>
     
-    <form hx-post="/matches/create" hx-target="#custom-matches-list" hx-swap="beforeend" class="space-y-4" hx-on::after-request="if(event.detail.successful) { document.getElementById('custom-match-modal').classList.add('hidden'); document.getElementById('no-custom-matches')?.remove(); }">
+    <form hx-post="/matches/create" hx-target="#custom-matches-list" hx-swap="beforeend" class="space-y-4" hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('custom-match-modal').classList.add('hidden'); document.getElementById('no-custom-matches')?.remove(); }">
       <input type="hidden" name="tournamentId" value="{{.Tournament.ID}}">
       
       <div class="space-y-2">
@@ -314,13 +314,13 @@
           <select name="teamAPlayerIds[]" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all cursor-pointer" required>
             <option value="" disabled selected>Select Player 1</option>
             {{range .Tournament.Participants}}
-            <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+            <option value="{{.ID}}">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
             {{end}}
           </select>
           <select name="teamAPlayerIds[]" id="teamA-player2" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all cursor-pointer hidden">
             <option value="" selected>Select Player 2 (Optional/Doubles)</option>
             {{range .Tournament.Participants}}
-            <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+            <option value="{{.ID}}">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
             {{end}}
           </select>
         </div>
@@ -332,13 +332,13 @@
           <select name="teamBPlayerIds[]" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all cursor-pointer" required>
             <option value="" disabled selected>Select Player 1</option>
             {{range .Tournament.Participants}}
-            <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+            <option value="{{.ID}}">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
             {{end}}
           </select>
           <select name="teamBPlayerIds[]" id="teamB-player2" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all cursor-pointer hidden">
             <option value="" selected>Select Player 2 (Optional/Doubles)</option>
             {{range .Tournament.Participants}}
-            <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+            <option value="{{.ID}}">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
             {{end}}
           </select>
         </div>

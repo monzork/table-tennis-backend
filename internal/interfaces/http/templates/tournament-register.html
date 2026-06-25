@@ -90,8 +90,21 @@
                                    class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
                         </div>
                         <div class="space-y-2">
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.second_name"}}</label>
+                            <input type="text" name="secondName" placeholder="Carlos"
+                                   class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        <div class="space-y-2">
                             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.last_name"}}</label>
                             <input type="text" name="lastName" required placeholder="Doe"
+                                   class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.second_last_name"}}</label>
+                            <input type="text" name="secondLastName" placeholder="Gomez"
                                    class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
                         </div>
                     </div>

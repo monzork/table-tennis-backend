@@ -39,7 +39,7 @@
             <option value="">No Referee (Self-Managed)</option>
             {{range .Participants}}
             <option value="{{.ID}}" {{if $.RefereeID}}{{if eq $.RefereeID .ID}}selected{{end}}{{end}}>
-                {{.FirstName}} {{.LastName}}
+                {{.FirstNameWithSecond}} {{.LastNameWithSecond}}
             </option>
             {{end}}
         </select>

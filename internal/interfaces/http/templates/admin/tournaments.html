@@ -44,7 +44,7 @@
         
         <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">New Event</span>.</h2>
         
-        <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" class="space-y-6" hx-on::after-request="if(event.detail.successful) document.getElementById('add-tournament-modal').classList.add('hidden')" hx-on:submit="console.log('submitting tournament...')">
+        <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" class="space-y-6" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('add-tournament-modal').classList.add('hidden')" hx-on:submit="console.log('submitting tournament...')">
             <div class="grid grid-cols-2 gap-6">
                 <div class="space-y-2">
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
@@ -359,7 +359,7 @@
                                 <div class="p-3 rounded-lg border border-white/5 bg-white/[0.02] peer-checked:border-white/40 peer-checked:bg-white/10 group-hover:bg-white/5 transition-all">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="min-w-0">
-                                            <p class="text-[11px] font-bold text-gray-300 truncate">{{.FirstName}} <span class="uppercase">{{.LastName}}</span></p>
+                                            <p class="text-[11px] font-bold text-gray-300 truncate">{{.FirstNameWithSecond}} <span class="uppercase">{{.LastNameWithSecond}}</span></p>
                                             <p class="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">{{.SinglesElo}} ELO • {{.Gender}}</p>
                                         </div>
                                         <div class="w-4 h-4 rounded border border-white/10 flex items-center justify-center">

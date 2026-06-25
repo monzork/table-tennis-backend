@@ -310,14 +310,16 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 	// Helper to convert PlayerModel to domain player
 	toPlayer := func(pm *PlayerModel) *player.Player {
 		return &player.Player{
-			ID:         pm.ID.String(),
-			FirstName:  pm.FirstName,
-			LastName:   pm.LastName,
-			Gender:     pm.Gender,
-			SinglesElo: pm.SinglesElo,
-			DoublesElo: pm.DoublesElo,
-			Country:    pm.Country,
-			Department: pm.Department,
+			ID:             pm.ID.String(),
+			FirstName:      pm.FirstName,
+			SecondName:     pm.SecondName,
+			LastName:       pm.LastName,
+			SecondLastName: pm.SecondLastName,
+			Gender:         pm.Gender,
+			SinglesElo:     pm.SinglesElo,
+			DoublesElo:     pm.DoublesElo,
+			Country:        pm.Country,
+			Department:     pm.Department,
 		}
 	}
 
@@ -800,13 +802,15 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 
 	toPlayer := func(pm *PlayerModel) *player.Player {
 		return &player.Player{
-			ID:         pm.ID.String(),
-			FirstName:  pm.FirstName,
-			LastName:   pm.LastName,
-			Gender:     pm.Gender,
-			SinglesElo: pm.SinglesElo,
-			DoublesElo: pm.DoublesElo,
-			Country:    pm.Country,
+			ID:             pm.ID.String(),
+			FirstName:      pm.FirstName,
+			SecondName:     pm.SecondName,
+			LastName:       pm.LastName,
+			SecondLastName: pm.SecondLastName,
+			Gender:         pm.Gender,
+			SinglesElo:     pm.SinglesElo,
+			DoublesElo:     pm.DoublesElo,
+			Country:        pm.Country,
 		}
 	}
 

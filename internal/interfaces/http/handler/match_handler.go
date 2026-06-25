@@ -264,7 +264,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		var playerModels []bun.PlayerModel
 		_ = h.matchRepo.DB().NewSelect().Model(&playerModels).Scan(c.Context())
 		for _, p := range playerModels {
-			playerNames[p.ID.String()] = p.FirstName + " " + p.LastName
+			playerNames[p.ID.String()] = p.FullName()
 		}
 
 		var matchesVM []map[string]interface{}
@@ -475,15 +475,15 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 
 		// Fallbacks & combining player names
 		if p1A != nil {
-			playerANames = p1A.FirstName + " " + p1A.LastName
+			playerANames = p1A.FullName()
 			if p2A != nil {
-				playerANames += " & " + p2A.FirstName + " " + p2A.LastName
+				playerANames += " & " + p2A.FullName()
 			}
 		}
 		if p1B != nil {
-			playerBNames = p1B.FirstName + " " + p1B.LastName
+			playerBNames = p1B.FullName()
 			if p2B != nil {
-				playerBNames += " & " + p2B.FirstName + " " + p2B.LastName
+				playerBNames += " & " + p2B.FullName()
 			}
 		}
 
@@ -502,21 +502,21 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		// Singles flow
 		if p1Id != "" {
 			if p, err := h.playerRepo.GetById(c.Context(), p1Id); err == nil {
-				playerAName = p.FirstName + " " + p.LastName
+				playerAName = p.FullName()
 			}
 		} else if existingMatch != nil {
 			if p, err := h.playerRepo.GetById(c.Context(), existingMatch.TeamAPlayer1ID.String()); err == nil {
-				playerAName = p.FirstName + " " + p.LastName
+				playerAName = p.FullName()
 			}
 		}
 
 		if p2Id != "" {
 			if p, err := h.playerRepo.GetById(c.Context(), p2Id); err == nil {
-				playerBName = p.FirstName + " " + p.LastName
+				playerBName = p.FullName()
 			}
 		} else if existingMatch != nil {
 			if p, err := h.playerRepo.GetById(c.Context(), existingMatch.TeamBPlayer1ID.String()); err == nil {
-				playerBName = p.FirstName + " " + p.LastName
+				playerBName = p.FullName()
 			}
 		}
 	}
@@ -1196,16 +1196,16 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 			refPlayer, _ := h.playerRepo.GetById(c.Context(), m.RefereeID.String())
 			refName := "Referee"
 			if refPlayer != nil {
-				refName = refPlayer.FirstName + " " + refPlayer.LastName
+				refName = refPlayer.FullName()
 			}
 
 			// Get player/team names for the message
 			var pAName, pBName string
 			if pA, err := h.playerRepo.GetById(c.Context(), m.TeamAPlayer1ID.String()); err == nil {
-				pAName = pA.FirstName + " " + pA.LastName
+				pAName = pA.FullName()
 			}
 			if pB, err := h.playerRepo.GetById(c.Context(), m.TeamBPlayer1ID.String()); err == nil {
-				pBName = pB.FirstName + " " + pB.LastName
+				pBName = pB.FullName()
 			}
 			
 			tableInfo := ""
@@ -1297,7 +1297,7 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, tourna
 	var playerModels []bun.PlayerModel
 	_ = h.matchRepo.DB().NewSelect().Model(&playerModels).Scan(c.Context())
 	for _, pm := range playerModels {
-		playerNames[pm.ID.String()] = pm.FirstName + " " + pm.LastName
+		playerNames[pm.ID.String()] = pm.FullName()
 	}
 
 	// Derive squad selections from sub-matches
