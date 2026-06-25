@@ -1,0 +1,74 @@
+<div class="space-y-6 text-white/90">
+
+  {{/* ── Header ── */}}
+  <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <a href="/admin/tournaments/{{.Tournament.ID}}" class="text-xs text-gray-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1 mb-2">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Back to Tournament
+      </a>
+      <h1 class="text-3xl font-extrabold tracking-tighter uppercase">{{.Tournament.Name}} <span class="text-gray-600">/ Board</span></h1>
+      <div class="flex gap-3 mt-2 flex-wrap items-center">
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Tournament.Type}}</span>
+        {{if .Tournament.NumTables}}
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Tournament.NumTables}} tables</span>
+        {{end}}
+        <span id="ws-status" class="text-[9px] font-bold uppercase tracking-widest text-yellow-400">⏳ Connecting…</span>
+      </div>
+    </div>
+  </header>
+
+  {{/* ── Columns — WS-connected ── */}}
+  <div hx-ext="ws" ws-connect="/ws/brackets/{{.Tournament.ID}}"
+       hx-on::ws-open="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🟢 Live'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-green-400'; }"
+       hx-on::ws-close="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-red-400'; }"
+       hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#board-columns', 'reload-board'); }">
+
+    <div id="board-columns"
+         hx-get="/admin/tournaments/{{.Tournament.ID}}/board/columns"
+         hx-trigger="reload-board"
+         hx-target="#board-columns"
+         hx-swap="innerHTML">
+      {{template "admin/partials/board-columns" (dict "Tournament" .Tournament "Scheduled" .Scheduled "InProgress" .InProgress "Finished" .Finished)}}
+    </div>
+
+  </div>
+
+</div>
+
+{{/* ── Score Entry Modal (same as detail page) ── */}}
+<div id="score-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
+  <div class="bg-club-panel border border-white/10 rounded-3xl max-w-md w-full relative shadow-2xl" id="score-modal-content">
+    <div class="flex items-center justify-between px-8 pt-7 pb-0">
+      <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Score Entry</span>
+      <button onclick="document.getElementById('score-modal').classList.add('hidden')" class="text-gray-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="score-modal-body" class="text-white px-8 pb-8 pt-4 overflow-y-auto max-h-[80vh]">
+      <div class="flex justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" class="fixed top-6 right-6 z-[250] space-y-3 pointer-events-none"></div>
+
+<script>
+  function openScoreModal(url) {
+    document.getElementById('score-modal').classList.remove('hidden');
+    htmx.ajax('GET', url, { target: '#score-modal-body', swap: 'innerHTML' });
+  }
+
+  function showToast(message, type) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border border-white/10 shadow-2xl transition-all duration-500 transform translate-x-full opacity-0 pointer-events-auto max-w-sm';
+    toast.innerHTML = '<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="text-xs font-bold uppercase tracking-wider text-white/90">' + message + '</span>';
+    container.appendChild(toast);
+    requestAnimationFrame(() => { toast.classList.remove('translate-x-full', 'opacity-0'); });
+    setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => toast.remove(), 500); }, 4000);
+  }
+</script>

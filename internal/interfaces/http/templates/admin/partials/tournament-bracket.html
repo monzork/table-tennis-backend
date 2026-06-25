@@ -487,10 +487,12 @@
                 {{end}}
               {{end}}
               
-              {{$canMove := true}}
-              {{if or (and $t.Matches (gt (len $t.Matches) 0)) $vm.IsPublic}}
-                {{$canMove = false}}
+              {{$hasStarted := false}}
+              {{range $t.Matches}}
+                {{if or (eq .Status "in_progress") (eq .Status "finished")}}{{$hasStarted = true}}{{end}}
               {{end}}
+              {{$canMove := true}}
+              {{if or $hasStarted $vm.IsPublic}}{{$canMove = false}}{{end}}
               
               {{range $idx, $p := .Players}}
               <tr 

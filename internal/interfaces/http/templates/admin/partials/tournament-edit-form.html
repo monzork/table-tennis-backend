@@ -52,6 +52,9 @@
             </select>
         </div>
         <div class="space-y-2">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Available Tables</label>
+            <input type="number" name="numTables" min="0" max="50" value="{{.Tournament.NumTables}}" placeholder="0 = auto" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <p class="text-[10px] text-gray-600">Used for auto-assigning tables when starting matches. 0 = inherit from event or default 4.</p>
         </div>
     </div>
     <div class="grid grid-cols-2 gap-4">

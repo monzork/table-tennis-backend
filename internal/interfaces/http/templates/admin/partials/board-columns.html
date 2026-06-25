@@ -1,0 +1,125 @@
+{{define "admin/partials/board-columns"}}
+{{$t := .Tournament}}
+
+<div class="grid grid-cols-3 gap-6 min-h-[calc(100vh-220px)]">
+
+  {{/* ── Scheduled ─────────────────────────────────── */}}
+  <div class="flex flex-col gap-3">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="w-2 h-2 rounded-full bg-gray-500"></span>
+      <h2 class="text-[10px] font-black uppercase tracking-widest text-gray-400">Scheduled</h2>
+      <span class="ml-auto text-[10px] font-bold text-gray-600 tabular-nums">{{len .Scheduled}}</span>
+    </div>
+    {{range .Scheduled}}
+    <div class="glass rounded-2xl border border-white/10 p-4 flex flex-col gap-3 group">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+        {{if .TableNumber}}<span class="text-[9px] font-bold text-yellow-400 font-mono">Table {{.TableNumber}}</span>{{end}}
+      </div>
+      <div class="space-y-1.5">
+        <div class="flex items-center gap-2 bg-white/5 border border-white/5 rounded-xl px-3 py-2">
+          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerAName}}</span>
+          <span class="text-[10px] font-black text-gray-600 tabular-nums">—</span>
+        </div>
+        <div class="flex items-center gap-2 bg-white/5 border border-white/5 rounded-xl px-3 py-2">
+          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerBName}}</span>
+          <span class="text-[10px] font-black text-gray-600 tabular-nums">—</span>
+        </div>
+      </div>
+      <div class="flex gap-1.5 mt-1">
+        {{if .MatchID}}
+        <button
+          class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 transition-all"
+          hx-post="/matches/{{.MatchID}}/start"
+          hx-swap="none">
+          ▶ Start
+        </button>
+        {{end}}
+        <button
+          class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-2 transition-all"
+          onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
+          ⚡ Score
+        </button>
+      </div>
+    </div>
+    {{else}}
+    <div class="glass rounded-2xl border border-white/5 border-dashed p-6 text-center text-gray-600 text-[11px] italic">No matches waiting</div>
+    {{end}}
+  </div>
+
+  {{/* ── In Progress ───────────────────────────────── */}}
+  <div class="flex flex-col gap-3">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
+      <h2 class="text-[10px] font-black uppercase tracking-widest text-yellow-400">In Progress</h2>
+      <span class="ml-auto text-[10px] font-bold text-gray-600 tabular-nums">{{len .InProgress}}</span>
+    </div>
+    {{range .InProgress}}
+    <div class="glass rounded-2xl border border-yellow-500/20 bg-yellow-400/5 p-4 flex flex-col gap-3">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+        {{if .TableNumber}}<span class="text-[9px] font-bold text-yellow-400 font-mono">Table {{.TableNumber}}</span>{{else}}<span class="text-[9px] text-gray-600 font-mono">No table</span>{{end}}
+      </div>
+      <div class="space-y-1.5">
+        <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerAName}}</span>
+          <span class="text-lg font-black text-white tabular-nums italic">{{.ScoreA}}</span>
+        </div>
+        <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerBName}}</span>
+          <span class="text-lg font-black text-white tabular-nums italic">{{.ScoreB}}</span>
+        </div>
+      </div>
+      {{if .Pin}}
+      <div class="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl px-3 py-1.5">
+        <span class="text-[9px] text-gray-500 font-mono uppercase tracking-widest">PIN</span>
+        <span class="text-sm font-black text-yellow-400 font-mono tracking-widest">{{.Pin}}</span>
+      </div>
+      {{end}}
+      <button
+        class="w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-2 transition-all"
+        onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
+        ✏️ Edit Score
+      </button>
+    </div>
+    {{else}}
+    <div class="glass rounded-2xl border border-yellow-500/10 border-dashed p-6 text-center text-gray-600 text-[11px] italic">No matches in progress</div>
+    {{end}}
+  </div>
+
+  {{/* ── Finished ──────────────────────────────────── */}}
+  <div class="flex flex-col gap-3">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="w-2 h-2 rounded-full bg-green-400"></span>
+      <h2 class="text-[10px] font-black uppercase tracking-widest text-green-400">Finished</h2>
+      <span class="ml-auto text-[10px] font-bold text-gray-600 tabular-nums">{{len .Finished}}</span>
+    </div>
+    {{range .Finished}}
+    <div class="glass rounded-2xl border border-green-500/10 bg-green-400/5 p-4 flex flex-col gap-2 opacity-80">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+        {{if .TableNumber}}<span class="text-[9px] text-gray-600 font-mono">Table {{.TableNumber}}</span>{{end}}
+      </div>
+      <div class="space-y-1.5">
+        <div class="flex items-center gap-2 px-3 py-2 rounded-xl border {{if gt .ScoreA .ScoreB}}bg-green-400/10 border-green-400/20{{else}}bg-white/5 border-white/5{{end}}">
+          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerAName}}</span>
+          <span class="text-lg font-black {{if gt .ScoreA .ScoreB}}text-green-400{{else}}text-gray-500{{end}} tabular-nums italic">{{.ScoreA}}</span>
+        </div>
+        <div class="flex items-center gap-2 px-3 py-2 rounded-xl border {{if gt .ScoreB .ScoreA}}bg-green-400/10 border-green-400/20{{else}}bg-white/5 border-white/5{{end}}">
+          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerBName}}</span>
+          <span class="text-lg font-black {{if gt .ScoreB .ScoreA}}text-green-400{{else}}text-gray-500{{end}} tabular-nums italic">{{.ScoreB}}</span>
+        </div>
+      </div>
+      <button
+        class="proj-hide w-full text-[9px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-400 border border-white/5 hover:border-white/10 rounded-lg py-1.5 transition-all mt-1"
+        onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
+        ✏️ Edit
+      </button>
+    </div>
+    {{else}}
+    <div class="glass rounded-2xl border border-green-500/5 border-dashed p-6 text-center text-gray-600 text-[11px] italic">No matches finished yet</div>
+    {{end}}
+  </div>
+
+</div>
+{{end}}

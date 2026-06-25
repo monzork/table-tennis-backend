@@ -488,3 +488,106 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 		"StatusFilter":     statusFilter,
 	}), "layouts/public")
 }
+
+// BoardCard is a flattened match representation used by the kanban board.
+type BoardCard struct {
+	MatchID     string
+	Status      string
+	Stage       string
+	BestOf      int
+	PlayerAName string
+	PlayerBName string
+	P1Id        string
+	P2Id        string
+	TableNumber *int
+	ScoreA      int
+	ScoreB      int
+	Pin         string
+}
+
+func buildBoardCards(t *tournamentDomain.Tournament) (scheduled, inProgress, finished []BoardCard) {
+	bestOfForStage := func(stage string) int {
+		for _, r := range t.StageRules {
+			if r.Stage == stage {
+				return r.BestOf
+			}
+		}
+		return 5
+	}
+	nameOf := func(players []*player.Player) string {
+		if len(players) == 0 {
+			return "TBD"
+		}
+		p := players[0]
+		if len(players) > 1 {
+			return p.FirstNameWithSecond() + " / " + players[1].FirstNameWithSecond()
+		}
+		return p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
+	}
+	idOf := func(players []*player.Player) string {
+		if len(players) == 0 {
+			return ""
+		}
+		return players[0].ID
+	}
+
+	for i := range t.Matches {
+		m := &t.Matches[i]
+		if m.TeamMatchID != nil { // skip sub-matches
+			continue
+		}
+		card := BoardCard{
+			MatchID:     m.ID,
+			Status:      m.Status,
+			Stage:       m.Stage,
+			BestOf:      bestOfForStage(m.Stage),
+			PlayerAName: nameOf(m.TeamA),
+			PlayerBName: nameOf(m.TeamB),
+			P1Id:        idOf(m.TeamA),
+			P2Id:        idOf(m.TeamB),
+			TableNumber: m.TableNumber,
+			ScoreA:      m.ScoreA(),
+			ScoreB:      m.ScoreB(),
+			Pin:         m.Pin,
+		}
+		switch m.Status {
+		case "in_progress":
+			inProgress = append(inProgress, card)
+		case "finished":
+			finished = append(finished, card)
+		default:
+			scheduled = append(scheduled, card)
+		}
+	}
+	return
+}
+
+func (h *TournamentHandler) Board(c *fiber.Ctx) error {
+	id := c.Params("id")
+	t, err := h.getByID.Execute(c.Context(), id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
+	scheduled, inProgress, finished := buildBoardCards(t)
+	return c.Render("admin/tournament-board", fiber.Map{
+		"Tournament": t,
+		"Scheduled":  scheduled,
+		"InProgress": inProgress,
+		"Finished":   finished,
+	}, "layouts/admin")
+}
+
+func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
+	id := c.Params("id")
+	t, err := h.getByID.Execute(c.Context(), id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
+	scheduled, inProgress, finished := buildBoardCards(t)
+	return c.Render("admin/partials/board-columns", fiber.Map{
+		"Tournament": t,
+		"Scheduled":  scheduled,
+		"InProgress": inProgress,
+		"Finished":   finished,
+	})
+}

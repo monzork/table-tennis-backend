@@ -319,6 +319,8 @@ func main() {
 
 	// Tournaments API
 	admin.Get("/tournaments/:id", tournamentHandler.Detail)
+	admin.Get("/tournaments/:id/board", tournamentHandler.Board)
+	admin.Get("/tournaments/:id/board/columns", tournamentHandler.BoardColumns)
 	api.Post("/tournaments", tournamentHandler.Create)
 	api.Get("/tournaments/:id/edit", tournamentHandler.ShowEditForm)
 	api.Put("/tournaments/:id", tournamentHandler.Update)
