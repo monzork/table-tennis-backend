@@ -5,20 +5,8 @@
     <title>Club Admin Portal</title>
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://unpkg.com/htmx.org@1.9.3/dist/ext/ws.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/static/dist/tailwind.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
-                    colors: {
-                        club: { red: '#ffffff', dark: '#0a0a0a', panel: '#111111', gold: '#e0e0e0' }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         /* ── Base (Admin / Dark) Theme ───────────────────────────── */
         body { background-color: #0a0a0a; color: #fff; transition: background .25s, color .25s; }

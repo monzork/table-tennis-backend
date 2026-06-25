@@ -19,15 +19,16 @@ import (
 	"table-tennis-backend/internal/interfaces/http/handler"
 	"table-tennis-backend/internal/interfaces/http/middleware"
 
+	"table-tennis-backend/internal/domain/idgen"
+	"table-tennis-backend/internal/infrastructure/identity"
+	"table-tennis-backend/internal/infrastructure/security"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
 	fiberws "github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
-	"table-tennis-backend/internal/domain/idgen"
-	"table-tennis-backend/internal/infrastructure/identity"
-	"table-tennis-backend/internal/infrastructure/security"
 )
 
 func main() {
@@ -199,12 +200,14 @@ func main() {
 		Views: engine,
 	})
 
+	app.Static("/static", "./static")
+
 	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 
 	// ==========================================
 	// PUBLIC ROUTES
 	// ==========================================
-	
+
 	// Rankings
 	app.Get("/rankings/singles", leaderboardHandler.GetSingles)
 	app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)
@@ -258,16 +261,15 @@ func main() {
 	// ==========================================
 	// AUTHENTICATION ROUTES
 	// ==========================================
-	
+
 	app.Get("/admin/login", authHandler.ShowLogin)
 	app.Post("/admin/login", authHandler.Login)
 	app.Post("/admin/logout", authHandler.Logout)
 
-
 	// ==========================================
 	// PROTECTED ADMIN DASHBOARD / VIEW GROUPS
 	// ==========================================
-	
+
 	admin := app.Group("/admin")
 	admin.Use(authMiddleware)
 
@@ -278,11 +280,10 @@ func main() {
 	admin.Get("/divisions", adminHandler.Divisions)
 	admin.Get("/player-field", adminHandler.NewPlayerField)
 
-
 	// ==========================================
 	// PROTECTED API / FORM ENDPOINTS
 	// ==========================================
-	
+
 	api := app.Group("/")
 	api.Use(authMiddleware)
 
@@ -337,11 +338,10 @@ func main() {
 	// Reports API
 	admin.Get("/reports/all-tournaments/pdf", tournamentHandler.ExportAllPDF)
 
-
 	// ==========================================
 	// WEBSOCKET ROUTES
 	// ==========================================
-	
+
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		if fiberws.IsWebSocketUpgrade(c) {
 			c.Locals("allowed", true)

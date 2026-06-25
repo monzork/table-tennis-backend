@@ -3,3 +3,5 @@
 *.db
 *.db-*
 node_modules/
+tailwindcss
+tailwindcss.exe

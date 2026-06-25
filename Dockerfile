@@ -32,6 +32,9 @@ COPY --from=builder /app/main .
 # Copy HTML templates required by Fiber at runtime
 COPY --from=builder /app/internal/interfaces/http/templates ./internal/interfaces/http/templates
 
+# Copy static assets required by Fiber at runtime
+COPY --from=builder /app/static ./static
+
 # Note: table_tennis.db is stored in /app.
 # Mount a volume here to persist the database across restarts:
 #   docker run -v ./data:/app -p 8080:8080 <image-name>

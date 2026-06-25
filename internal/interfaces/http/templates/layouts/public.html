@@ -7,27 +7,8 @@
     <meta name="description" content="Official Table Tennis Club rankings, athlete registration, and tournament management.">
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://unpkg.com/htmx.org@1.9.3/dist/ext/ws.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/static/dist/tailwind.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Outfit', 'sans-serif'],
-                    },
-                    colors: {
-                        club: {
-                            red: '#ffffff',
-                            dark: '#0a0a0a',
-                            panel: '#111111',
-                            gold: '#e0e0e0'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         body { background-color: #0a0a0a; color: #fff; counter-reset: rank; }
         .glass { background: rgba(18, 18, 18, 0.80); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.07); }
