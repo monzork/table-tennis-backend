@@ -5,12 +5,12 @@
     </header>
 
     <!-- Gender / Format Navigation Tabs -->
-    <div class="flex flex-wrap justify-center gap-1.5 sm:gap-2">
-        <a href="/rankings/mens/singles" class="tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "M-singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mens_singles"}}</a>
-        <a href="/rankings/womens/singles" class="tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "F-singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.womens_singles"}}</a>
-        <a href="/rankings/mens/doubles" class="tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "M-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mens_doubles"}}</a>
-        <a href="/rankings/womens/doubles" class="tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "F-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.womens_doubles"}}</a>
-        <a href="/rankings/mixed/doubles" class="tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mixed_doubles"}}</a>
+    <div class="flex overflow-x-auto gap-2 pb-2 sm:flex-wrap sm:justify-center sm:pb-0 snap-x snap-mandatory px-1 sm:px-0" style="scrollbar-width: none;">
+        <a href="/rankings/mens/singles" class="shrink-0 snap-center tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "M-singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mens_singles"}}</a>
+        <a href="/rankings/womens/singles" class="shrink-0 snap-center tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "F-singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.womens_singles"}}</a>
+        <a href="/rankings/mens/doubles" class="shrink-0 snap-center tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "M-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mens_doubles"}}</a>
+        <a href="/rankings/womens/doubles" class="shrink-0 snap-center tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "F-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.womens_doubles"}}</a>
+        <a href="/rankings/mixed/doubles" class="shrink-0 snap-center tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "-doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{index .T "rankings.mixed_doubles"}}</a>
     </div>
 
     <div class="glass p-3 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10 flex flex-col md:flex-row gap-3 sm:gap-4 items-end relative z-20">
@@ -27,34 +27,36 @@
                    hx-include="#division-filter, #sort-order"
                    hx-push-url="true">
         </div>
-        <div class="w-full md:w-48">
-            <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">{{index .T "rankings.filter_label"}}</label>
-            <select id="division-filter" 
-                    name="division" 
-                    class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
-                    hx-get="{{.CurrentPath}}"
-                    hx-target="#rankings-container"
-                    hx-include="[name='q'], #sort-order"
-                    hx-push-url="true">
-                <option value="all" {{if eq .Division "all"}}selected{{end}}>{{index .T "rankings.all_divisions"}}</option>
-                {{range .Divisions}}
-                <option value="{{.Name}}" {{if eq .Name $.Division}}selected{{end}}>{{.Name}}</option>
-                {{end}}
-            </select>
-        </div>
-        <div class="w-full md:w-48">
-            <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">{{index .T "rankings.sort_label"}}</label>
-            <select id="sort-order" 
-                    name="sort" 
-                    class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
-                    hx-get="{{.CurrentPath}}"
-                    hx-target="#rankings-container"
-                    hx-include="[name='q'], #division-filter"
-                    hx-push-url="true">
-                <option value="points_desc" {{if eq .Sort "points_desc"}}selected{{end}}>{{index .T "rankings.sort_pts_desc"}}</option>
-                <option value="points_asc" {{if eq .Sort "points_asc"}}selected{{end}}>{{index .T "rankings.sort_pts_asc"}}</option>
-                <option value="name_asc" {{if eq .Sort "name_asc"}}selected{{end}}>{{index .T "rankings.sort_name_asc"}}</option>
-            </select>
+        <div class="grid grid-cols-2 gap-3 w-full md:flex md:w-auto md:gap-4">
+            <div class="w-full md:w-48">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">{{index .T "rankings.filter_label"}}</label>
+                <select id="division-filter" 
+                        name="division" 
+                        class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
+                        hx-get="{{.CurrentPath}}"
+                        hx-target="#rankings-container"
+                        hx-include="[name='q'], #sort-order"
+                        hx-push-url="true">
+                    <option value="all" {{if eq .Division "all"}}selected{{end}}>{{index .T "rankings.all_divisions"}}</option>
+                    {{range .Divisions}}
+                    <option value="{{.Name}}" {{if eq .Name $.Division}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="w-full md:w-48">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">{{index .T "rankings.sort_label"}}</label>
+                <select id="sort-order" 
+                        name="sort" 
+                        class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
+                        hx-get="{{.CurrentPath}}"
+                        hx-target="#rankings-container"
+                        hx-include="[name='q'], #division-filter"
+                        hx-push-url="true">
+                    <option value="points_desc" {{if eq .Sort "points_desc"}}selected{{end}}>{{index .T "rankings.sort_pts_desc"}}</option>
+                    <option value="points_asc" {{if eq .Sort "points_asc"}}selected{{end}}>{{index .T "rankings.sort_pts_asc"}}</option>
+                    <option value="name_asc" {{if eq .Sort "name_asc"}}selected{{end}}>{{index .T "rankings.sort_name_asc"}}</option>
+                </select>
+            </div>
         </div>
     </div>
 

@@ -15,13 +15,15 @@
             <td class="py-6 px-4 text-center font-black text-3xl italic text-gray-400 group-hover:text-white transition-colors">
                 {{.Rank}}
             </td>
-            <td class="py-6 px-4 flex items-center gap-6">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-gray-300 border border-white/10 font-black shadow-lg group-hover:border-white/30 transition-colors">
-                    {{.Gender}}
-                </div>
-                <div>
-                    <div class="text-2xl tracking-wide text-gray-200 font-bold group-hover:text-white transition-colors">
-                        <span class="font-light text-gray-400 mr-1">{{.FirstNameWithSecond}}</span><span class="uppercase">{{.LastNameWithSecond}}</span>
+            <td class="py-6 px-4">
+                <div class="flex items-center gap-6">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-gray-300 border border-white/10 font-black shadow-lg group-hover:border-white/30 transition-colors">
+                        {{.Gender}}
+                    </div>
+                    <div>
+                        <div class="text-2xl tracking-wide text-gray-200 font-bold group-hover:text-white transition-colors">
+                            <span class="font-light text-gray-400 mr-1">{{.FirstNameWithSecond}}</span><span class="uppercase">{{.LastNameWithSecond}}</span>
+                        </div>
                     </div>
                 </div>
             </td>
@@ -36,30 +38,33 @@
         </tr>
 
         {{/* ─── Mobile card row (visible only on small screens) ─── */}}
-        <tr class="ranking-row sm:hidden border-b border-white/5 active:bg-white/5 transition-colors duration-150">
-            <td colspan="4" class="p-0">
-                <div class="flex items-center gap-3 px-3 py-3">
+        <tr class="ranking-row sm:hidden border-b border-white/5 relative block w-full mb-2 bg-white/5 rounded-xl border border-white/5">
+            <td colspan="4" class="block w-full p-0">
+                <div class="flex items-center gap-3 px-4 py-3 active:scale-[0.98] transition-transform duration-200 cursor-default">
                     {{/* Rank badge */}}
-                    <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-black text-lg italic text-gray-400">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center font-black text-lg italic text-gray-300 shadow-lg">
                         {{.Rank}}
                     </div>
 
                     {{/* Player info */}}
                     <div class="flex-1 min-w-0">
                         <div class="text-sm font-bold text-gray-200 truncate leading-tight">
-                            <span class="font-light text-gray-400">{{.FirstNameWithSecond}}</span> <span class="uppercase">{{.LastNameWithSecond}}</span>
+                            <span class="font-light text-gray-400 mr-0.5">{{.FirstNameWithSecond}}</span><span class="uppercase">{{.LastNameWithSecond}}</span>
                         </div>
-                        <div class="flex items-center gap-2 mt-0.5">
-                            <span class="text-[10px] font-bold tracking-widest text-gray-500 bg-white/5 px-1.5 py-0.5 rounded">{{.Country}}</span>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[9px] font-bold tracking-widest text-gray-400 bg-black/40 border border-white/10 px-1.5 py-0.5 rounded shadow-inner uppercase">{{.Country}}</span>
+                            {{if $.Compact}}
+                                <span class="text-[9px] font-bold tracking-widest text-gray-500">{{.Gender}}</span>
+                            {{end}}
                         </div>
                     </div>
 
                     {{/* Points */}}
-                    <div class="flex-shrink-0 text-right">
-                        <div class="text-lg font-black italic text-white tracking-tight leading-tight">
+                    <div class="flex-shrink-0 text-right pl-2">
+                        <div class="text-xl font-black italic text-white tracking-tight leading-none">
                             {{if eq $.RankType "doubles"}}{{.DoublesElo}}{{else}}{{.SinglesElo}}{{end}}
                         </div>
-                        <div class="text-[9px] font-bold uppercase tracking-widest text-gray-500">pts</div>
+                        <div class="text-[9px] font-bold uppercase tracking-widest text-gray-500 mt-0.5">pts</div>
                     </div>
                 </div>
             </td>
