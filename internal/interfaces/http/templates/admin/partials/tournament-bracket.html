@@ -252,7 +252,8 @@
                             hx-post="/admin/tournaments/{{$t.ID}}/move-player"
                             hx-vals='{"playerId": "{{.Player.ID}}"}'
                             name="targetGroupId"
-                            hx-trigger="change">
+                            hx-trigger="change"
+                            hx-swap="none">
                             <option value="" disabled selected>Move...</option>
                             {{range $divisionGroups}}
                               {{if ne .Name $currentGroupName}}

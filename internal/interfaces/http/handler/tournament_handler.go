@@ -78,6 +78,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		EndDate        string `form:"endDate"`
 		GroupPassCount int    `form:"groupPassCount"`
 		TeamFormat     string `form:"teamFormat"`
+		NumTables      int    `form:"numTables" json:"numTables"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -136,7 +137,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		eventID = &eIDStr
 	}
 
-	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, skipElo, eventID, body.TeamFormat)
+	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, skipElo, eventID, body.TeamFormat, body.NumTables)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -217,6 +218,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		GroupPassCount   int    `form:"groupPassCount"`
 		RegistrationOpen bool   `form:"registrationOpen"`
 		TeamFormat       string `form:"teamFormat"`
+		NumTables        int    `form:"numTables" json:"numTables"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -277,7 +279,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	t, err := h.updateUC.Execute(
 		c.Context(), id, body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
 		body.RegistrationOpen, participantIDs, newPlayers, stageRules, body.GroupPassCount,
-		skipElo, eventID, body.TeamFormat,
+		skipElo, eventID, body.TeamFormat, body.NumTables,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -372,7 +374,7 @@ func (h *TournamentHandler) MovePlayer(c *fiber.Ctx) error {
 	}
 
 	if c.Get("HX-Request") != "" {
-		c.Set("HX-Refresh", "true")
+		c.Set("HX-Trigger", "reload-bracket, reload-matches")
 		return c.SendStatus(fiber.StatusOK)
 	}
 	return c.SendString("OK")

@@ -137,9 +137,6 @@ func TestPlayerHandler(t *testing.T) {
 		if pm.WhatsAppNumber != "+5212345678" {
 			t.Errorf("expected WhatsAppNumber '+5212345678', got '%s'", pm.WhatsAppNumber)
 		}
-		if pm.Pin != "9876" {
-			t.Errorf("expected Pin '9876', got '%s'", pm.Pin)
-		}
 	})
 
 	t.Run("Search Player Case Insensitive", func(t *testing.T) {

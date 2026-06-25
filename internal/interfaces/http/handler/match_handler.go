@@ -844,6 +844,9 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 
 // UpdatePublicScore accepts set scores via public form, validates PIN, and persists them, notifying admin if finished by referee.
 func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
+	refereeIDStr := c.FormValue("refereeId")
+	isRefereeSubmission := refereeIDStr != ""
+
 	if c.FormValue("action") == "update_squads" {
 		matchID := c.Params("id")
 		if matchID == "" {

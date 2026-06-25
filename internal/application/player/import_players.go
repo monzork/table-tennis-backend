@@ -158,7 +158,6 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 	singlesEloStr := cell(row, colIdx, "singles_elo")
 	doublesEloStr := cell(row, colIdx, "doubles_elo")
 	whatsappNumber := cell(row, colIdx, "whatsapp_number")
-	pin := cell(row, colIdx, "pin")
 	nationalID := cell(row, colIdx, "national_id")
 	if nationalID == "" {
 		nationalID = cell(row, colIdx, "cedula")
@@ -208,9 +207,6 @@ func (uc *ImportPlayersUseCase) insertRow(ctx context.Context, row []string, col
 	}
 
 	p.WhatsAppNumber = whatsappNumber
-	if pin != "" {
-		p.Pin = pin
-	}
 
 	if err := uc.playerRepo.Save(ctx, p); err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("row %d: db error: %v", rowNum, err))
