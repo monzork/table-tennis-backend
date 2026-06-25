@@ -34,7 +34,6 @@ type Player struct {
 	Country        string
 	Department     string
 	WhatsAppNumber string
-	Pin            string
 	NationalID     string
 }
 
@@ -56,7 +55,6 @@ func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, coun
 		Country:        country,
 		Department:     department,
 		WhatsAppNumber: "",
-		Pin:            "1234",
 		NationalID:     nationalID,
 	}, nil
 }

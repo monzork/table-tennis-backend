@@ -141,4 +141,30 @@ func TestPlayerHandler(t *testing.T) {
 			t.Errorf("expected Pin '9876', got '%s'", pm.Pin)
 		}
 	})
+
+	t.Run("Search Player Case Insensitive", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/players/search?q=alice", nil)
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+
+		reqUpper := httptest.NewRequest("GET", "/players/search?q=ALICE", nil)
+		reqUpper.Header.Set("Cookie", sessionCookie)
+
+		respUpper, err := app.Test(reqUpper)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if respUpper.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", respUpper.StatusCode)
+		}
+	})
 }

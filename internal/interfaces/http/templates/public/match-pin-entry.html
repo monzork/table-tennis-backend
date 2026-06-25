@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Match Score Entry</title>
+  <meta name="description" content="Enter the match PIN to submit scores for this table tennis match."/>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #08090c;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --accent: #ffffff;
+      --accent-muted: rgba(255,255,255,0.5);
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --green: #34d399;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: #fff;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 90% 90%, rgba(20,184,166,0.08), transparent);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2rem 1.75rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1.75rem;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .vs-section {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding: 1.25rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    .player-names {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .player-name {
+      font-size: 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #fff;
+    }
+    .vs-badge {
+      font-size: 0.6rem;
+      font-weight: 900;
+      color: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 2px 8px;
+      letter-spacing: 0.15em;
+    }
+    {{if .TableNumber}}
+    .table-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 0.75rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 4px 12px;
+    }
+    {{end}}
+
+    .pin-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .pin-input-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .pin-digit {
+      width: 60px;
+      height: 72px;
+      background: rgba(255,255,255,0.04);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      caret-color: transparent;
+    }
+    .pin-digit:focus {
+      border-color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.07);
+    }
+    .pin-digit.filled {
+      border-color: rgba(99,102,241,0.6);
+      background: rgba(99,102,241,0.08);
+    }
+
+    /* Hidden real input for accessibility */
+    .pin-hidden {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      width: 1px;
+      height: 1px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 1rem;
+      border-radius: 14px;
+      background: #fff;
+      color: #000;
+      font-size: 0.875rem;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      margin-bottom: 0.5rem;
+    }
+    .submit-btn:hover { background: #e5e7eb; }
+    .submit-btn:active { transform: scale(0.98); }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #pin-error, #pin-result { margin-top: 1rem; }
+
+    .hint {
+      text-align: center;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.2);
+      margin-top: 1.25rem;
+    }
+
+    /* Score form that loads after PIN validation */
+    #score-form-area {
+      margin-top: 1.5rem;
+    }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border-radius: 8px;
+      padding: 3px 10px;
+      margin-top: 0.5rem;
+    }
+    .status-scheduled { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.1); }
+    .status-in_progress { background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
+    .status-finished { background: rgba(52,211,153,0.1); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+
+    @media (max-width: 380px) {
+      .pin-digit { width: 52px; height: 64px; font-size: 1.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- Logo -->
+    <div class="logo">
+      <div class="logo-icon">🏓</div>
+      <span class="logo-text">Score Entry</span>
+    </div>
+
+    <!-- Match Info -->
+    <div class="vs-section">
+      <div class="player-names">
+        <span class="player-name">{{.PlayerA}}</span>
+        <span class="vs-badge">VS</span>
+        <span class="player-name">{{.PlayerB}}</span>
+      </div>
+      {{if .TableNumber}}
+      <div class="table-badge">
+        🏓 Table {{.TableNumber}}
+      </div>
+      {{end}}
+      <div>
+        {{if eq .Status "in_progress"}}
+        <span class="status-badge status-in_progress">● Live</span>
+        {{else if eq .Status "scheduled"}}
+        <span class="status-badge status-scheduled">⏳ Scheduled</span>
+        {{else if eq .Status "finished"}}
+        <span class="status-badge status-finished">✓ Finished</span>
+        {{end}}
+      </div>
+    </div>
+
+    <!-- PIN Entry -->
+    <div id="pin-section">
+      <label class="pin-label">Enter Match PIN</label>
+
+      <form id="pin-form"
+            hx-post="/score/{{.MatchID}}/verify"
+            hx-target="#score-form-area"
+            hx-swap="innerHTML"
+            hx-indicator="#pin-spinner">
+        <input type="hidden" name="pin" id="pin-value"/>
+        <div class="pin-input-row" id="pin-digits">
+          <input class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" data-index="0"/>
+          <input class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" data-index="1"/>
+          <input class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" data-index="2"/>
+          <input class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" data-index="3"/>
+        </div>
+
+        <button type="submit" class="submit-btn" id="verify-btn" disabled>
+          Verify PIN →
+        </button>
+      </form>
+
+      <div id="score-form-area"></div>
+
+      <p class="hint">Ask the match official for the 4-digit PIN</p>
+    </div>
+  </div>
+
+  <script>
+    const digits = document.querySelectorAll('.pin-digit');
+    const pinValue = document.getElementById('pin-value');
+    const verifyBtn = document.getElementById('verify-btn');
+
+    function updatePIN() {
+      const pin = Array.from(digits).map(d => d.value).join('');
+      pinValue.value = pin;
+      digits.forEach((d, i) => {
+        d.classList.toggle('filled', d.value !== '');
+      });
+      verifyBtn.disabled = pin.length < 4;
+    }
+
+    digits.forEach((digit, index) => {
+      digit.addEventListener('input', (e) => {
+        // Only allow digits
+        digit.value = digit.value.replace(/\D/g, '').slice(-1);
+        updatePIN();
+        if (digit.value && index < digits.length - 1) {
+          digits[index + 1].focus();
+        }
+        if (digit.value && index === digits.length - 1) {
+          // Auto-submit when last digit entered
+          verifyBtn.click();
+        }
+      });
+
+      digit.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !digit.value && index > 0) {
+          digits[index - 1].focus();
+          digits[index - 1].value = '';
+          updatePIN();
+        }
+      });
+
+      digit.addEventListener('focus', () => digit.select());
+    });
+
+    // Focus first digit on load
+    digits[0].focus();
+
+    // After successful PIN verify, hide PIN section and show form
+    document.getElementById('pin-form').addEventListener('htmx:afterRequest', function(e) {
+      if (e.detail.xhr.status === 200) {
+        document.getElementById('pin-section').querySelector('.pin-label').style.display = 'none';
+        document.querySelector('.pin-input-row').style.display = 'none';
+        document.getElementById('verify-btn').style.display = 'none';
+        document.querySelector('.hint').style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

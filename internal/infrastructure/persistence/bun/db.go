@@ -71,6 +71,12 @@ func Connect() {
 	_, _ = DB.NewRaw("ALTER TABLE players ADD COLUMN second_name TEXT").Exec(context.Background())
 	// Ensure players table has second_last_name column
 	_, _ = DB.NewRaw("ALTER TABLE players ADD COLUMN second_last_name TEXT").Exec(context.Background())
+	// Ensure tournament_participants has pin column (migration 024)
+	_, _ = DB.NewRaw("ALTER TABLE tournament_participants ADD COLUMN pin TEXT NOT NULL DEFAULT '0000'").Exec(context.Background())
+	// Ensure events has num_tables
+	_, _ = DB.NewRaw("ALTER TABLE events ADD COLUMN num_tables INT NOT NULL DEFAULT 4").Exec(context.Background())
+	// Ensure tournaments has num_tables
+	_, _ = DB.NewRaw("ALTER TABLE tournaments ADD COLUMN num_tables INT NOT NULL DEFAULT 0").Exec(context.Background())
 
 	// Migrate existing optional fields with empty strings to NULL
 	if dsn == "" {
@@ -96,7 +102,7 @@ func Connect() {
 				log.Println("Migrating SQLite players table to drop NOT NULL constraints for optional fields...")
 				_, _ = DB.NewRaw("PRAGMA foreign_keys=OFF").Exec(context.Background())
 				
-				// Create new table
+				// Create new table (without pin column)
 				_, _ = DB.NewRaw(`
 					CREATE TABLE players_new (
 						id TEXT PRIMARY KEY,
@@ -111,7 +117,6 @@ func Connect() {
 						country TEXT NOT NULL,
 						department TEXT,
 						whatsapp_number TEXT,
-						pin TEXT NOT NULL DEFAULT '1234',
 						national_id TEXT,
 						created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 						updated_at TEXT
@@ -120,8 +125,8 @@ func Connect() {
 				
 				// Copy data
 				_, _ = DB.NewRaw(`
-					INSERT INTO players_new (id, first_name, second_name, last_name, second_last_name, birthdate, gender, singles_elo, doubles_elo, country, department, whatsapp_number, pin, national_id, created_at, updated_at)
-					SELECT id, first_name, NULLIF(second_name, ''), last_name, NULLIF(second_last_name, ''), birthdate, gender, singles_elo, doubles_elo, country, NULLIF(department, ''), whatsapp_number, pin, national_id, created_at, updated_at FROM players
+					INSERT INTO players_new (id, first_name, second_name, last_name, second_last_name, birthdate, gender, singles_elo, doubles_elo, country, department, whatsapp_number, national_id, created_at, updated_at)
+					SELECT id, first_name, NULLIF(second_name, ''), last_name, NULLIF(second_last_name, ''), birthdate, gender, singles_elo, doubles_elo, country, NULLIF(department, ''), whatsapp_number, national_id, created_at, updated_at FROM players
 				`).Exec(context.Background())
 				
 				// Drop and rename

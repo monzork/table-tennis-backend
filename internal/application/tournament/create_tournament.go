@@ -39,6 +39,7 @@ func (uc *CreateTournamentUseCase) Execute(
 	skipElo bool,
 	eventID *string,
 	teamFormat string,
+	numTables int,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -98,6 +99,7 @@ func (uc *CreateTournamentUseCase) Execute(
 	t.SkipElo = skipElo
 	t.EventID = eventID
 	t.TeamFormat = teamFormat
+	t.NumTables = numTables
 
 	// Fetch divisions list to seed groups per-division
 	var divsList []tournamentDomain.DivisionSeeding

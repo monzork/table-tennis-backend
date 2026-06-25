@@ -1,5 +1,5 @@
-<h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter">Report <span class="text-white">Score</span></h2>
-<p class="text-xs text-gray-500 mb-6 font-mono">
+<h2 class="text-xl font-extrabold uppercase mb-1 tracking-tighter">Update <span class="text-white">Score</span></h2>
+<p class="text-xs text-gray-500 mb-4 font-mono">
     {{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}
     {{if .IsDoubles}}
     <br/>
@@ -11,66 +11,44 @@
 
 <form
     hx-post="/public/matches/score/update"
-    hx-target="#public-score-error"
-    class="space-y-4 mb-6">
+    hx-target="#public-score-result"
+    hx-swap="innerHTML"
+    class="space-y-3 mb-4">
     
     <input type="hidden" name="tournamentId" value="{{.TournamentID}}">
     <input type="hidden" name="stage" value="{{.Stage}}">
     <input type="hidden" name="matchId" value="{{.MatchID}}">
     <input type="hidden" name="p1Id" value="{{.P1Id}}">
     <input type="hidden" name="p2Id" value="{{.P2Id}}">
+    <input type="hidden" name="pin" value="{{.Pin}}">
 
     <!-- Sets Scores -->
-    <div class="space-y-3 mb-6">
+    <div class="space-y-2 mb-4">
         {{range .Sets}}
         <div class="flex items-center gap-3">
-            <span class="text-xs text-gray-500 w-8 text-right">Set {{.Number}}</span>
-            <input name="scores[]_a" type="number" min="0" max="99" placeholder="A" value="{{.ScoreA}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-center text-lg font-bold focus:outline-none focus:ring-1 focus:ring-white">
-            <span class="text-gray-600 font-bold">–</span>
-            <input name="scores[]_b" type="number" min="0" max="99" placeholder="B" value="{{.ScoreB}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-center text-lg font-bold focus:outline-none focus:ring-1 focus:ring-white">
+            <span class="text-[10px] font-bold text-gray-500 w-10 text-right uppercase tracking-widest">Set {{.Number}}</span>
+            <input name="scores[]_a" type="number" min="0" max="99" placeholder="A" value="{{.ScoreA}}"
+                class="flex-1 bg-white/[0.04] border border-white/10 rounded-xl p-3 text-white text-center text-xl font-black focus:outline-none focus:border-white/30 transition-colors">
+            <span class="text-gray-600 font-bold text-lg">–</span>
+            <input name="scores[]_b" type="number" min="0" max="99" placeholder="B" value="{{.ScoreB}}"
+                class="flex-1 bg-white/[0.04] border border-white/10 rounded-xl p-3 text-white text-center text-xl font-black focus:outline-none focus:border-white/30 transition-colors">
         </div>
         {{end}}
     </div>
 
-    <!-- Referee (Optional) -->
-    <div class="space-y-1">
-        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block">Referee (Optional)</label>
-        <select name="refereeId" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
-            <option value="">No Referee (Self-Managed)</option>
-            {{range .Participants}}
-            <option value="{{.ID}}" {{if $.RefereeID}}{{if eq $.RefereeID .ID}}selected{{end}}{{end}}>
-                {{.FirstNameWithSecond}} {{.LastNameWithSecond}}
-            </option>
-            {{end}}
-        </select>
-    </div>
+    <div id="public-score-result" class="hidden text-sm text-red-400 mb-2 font-mono text-center"></div>
 
-    <!-- Table Number -->
-    <div class="space-y-1">
-        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block">Table Number</label>
-        <input name="tableNumber" type="number" min="1" max="50" placeholder="e.g. 1" value="{{if .TableNumber}}{{.TableNumber}}{{end}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
-    </div>
-
-    <!-- Authentication PIN -->
-    <div class="space-y-1">
-        <label class="text-[10px] font-bold uppercase tracking-widest text-yellow-500 block">Verification PIN</label>
-        <input name="pin" type="text" maxlength="8" placeholder="Enter Match PIN or Referee PIN" class="w-full bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-500 font-mono tracking-widest text-center" required>
-        <span class="text-[9px] text-gray-500 block">
-            If referee is selected, enter Referee PIN (default is 1234). Otherwise, enter the Match PIN.
-        </span>
-    </div>
-
-    <div id="public-score-error" class="hidden text-sm text-red-400 mb-4 font-mono"></div>
-
-    <div class="flex gap-3 pt-2">
-        <button type="button" 
-            onclick="document.getElementById('public-score-modal').classList.add('hidden')"
-            class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-bold py-4 rounded-2xl transition-all uppercase tracking-widest text-sm">
-            Cancel
-        </button>
-        <button type="submit" 
-            class="flex-[2] bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg">
-            Submit
-        </button>
-    </div>
+    <button type="submit" 
+        class="w-full bg-white hover:bg-gray-100 text-black font-black py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg text-sm">
+        Submit Scores
+    </button>
 </form>
+
+<script>
+// Show error div when it has content
+document.getElementById('public-score-result').addEventListener('DOMSubtreeModified', function() {
+    if (this.textContent.trim() !== '') {
+        this.classList.remove('hidden');
+    }
+});
+</script>

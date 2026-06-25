@@ -2,6 +2,7 @@ package bun
 
 import (
 	"context"
+	"strings"
 	"table-tennis-backend/internal/domain/player"
 
 	"github.com/google/uuid"
@@ -34,13 +35,12 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 		Country:        p.Country,
 		Department:     p.Department,
 		WhatsAppNumber: p.WhatsAppNumber,
-		Pin:            p.Pin,
 		NationalID:     p.NationalID,
 	}
 
 	_, err = r.db.NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, pin = EXCLUDED.pin, national_id = EXCLUDED.national_id").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id").
 		Exec(ctx)
 
 	return err
@@ -110,7 +110,6 @@ func (r *PlayerRepository) mapModelsToDomain(models []PlayerModel) []*player.Pla
 			Country:        m.Country,
 			Department:     m.Department,
 			WhatsAppNumber: m.WhatsAppNumber,
-			Pin:            m.Pin,
 			NationalID:     m.NationalID,
 		}
 	}
@@ -142,7 +141,6 @@ func (r *PlayerRepository) GetById(ctx context.Context, id string) (*player.Play
 		Country:        model.Country,
 		Department:     model.Department,
 		WhatsAppNumber: model.WhatsAppNumber,
-		Pin:            model.Pin,
 		NationalID:     model.NationalID,
 	}, nil
 }
@@ -181,7 +179,8 @@ func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.
 	var models []PlayerModel
 	q := r.db.NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc)
 	if query != "" {
-		q = q.Where("first_name LIKE ? OR second_name LIKE ? OR last_name LIKE ? OR second_last_name LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+		lowerQuery := "%" + strings.ToLower(query) + "%"
+		q = q.Where("LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?", lowerQuery, lowerQuery, lowerQuery, lowerQuery)
 	}
 	if err := q.Scan(ctx); err != nil {
 		return nil, err

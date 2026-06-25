@@ -252,7 +252,9 @@ func main() {
 	app.Post("/public/matches/start", matchHandler.Start)
 	app.Post("/public/matches/:id/start", matchHandler.Start)
 
-
+	// QR-code score entry — shareable per-match URL
+	app.Get("/score/:matchId", matchHandler.ShowMatchScorePage)
+	app.Post("/score/:matchId/verify", matchHandler.ValidateMatchPIN)
 	// ==========================================
 	// AUTHENTICATION ROUTES
 	// ==========================================

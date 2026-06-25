@@ -858,45 +858,12 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 			return c.SendString("<div class='text-red-400 font-mono text-sm'>Match not found: " + err.Error() + "</div>")
 		}
 
+		// Validate PIN against match PIN only
 		submittedPin := c.FormValue("pin")
-		refereeIDStr := c.FormValue("refereeId")
-
-		// Validate PIN
-		pinValid := false
-		if refereeIDStr != "" {
-			refPlayer, err := h.playerRepo.GetById(c.Context(), refereeIDStr)
-			if err == nil {
-				refPin := refPlayer.Pin
-				if refPin == "" {
-					refPin = "1234"
-				}
-				if submittedPin == refPin {
-					pinValid = true
-				}
-			}
-		}
-
-		// Fallback 1: check Match PIN
-		if !pinValid && parent.Pin != "" && submittedPin == parent.Pin {
-			pinValid = true
-		}
-
-		// Fallback 2: check current assigned referee's PIN
-		if !pinValid && parent.RefereeID != nil {
-			refPlayer, err := h.playerRepo.GetById(c.Context(), parent.RefereeID.String())
-			if err == nil {
-				refPin := refPlayer.Pin
-				if refPin == "" {
-					refPin = "1234"
-				}
-				if submittedPin == refPin {
-					pinValid = true
-				}
-			}
-		}
+		pinValid := submittedPin != "" && submittedPin == parent.Pin
 
 		if !pinValid {
-			return c.SendString("<div class='text-red-400 font-mono text-sm'>Invalid Verification PIN. Please try again.</div>")
+			return c.SendString("<div class='text-red-400 font-mono text-sm'>Invalid PIN. Please try again.</div>")
 		}
 
 		p1A, _ := uuid.Parse(c.FormValue("squad_a_p1"))
@@ -1101,46 +1068,9 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 	}
 
 	submittedPin := c.FormValue("pin")
-	refereeIDStr := c.FormValue("refereeId")
 
-	var isRefereeSubmission bool
-
-	// Validate PIN
-	pinValid := false
-	if refereeIDStr != "" {
-		refPlayer, err := h.playerRepo.GetById(c.Context(), refereeIDStr)
-		if err == nil {
-			refPin := refPlayer.Pin
-			if refPin == "" {
-				refPin = "1234"
-			}
-			if submittedPin == refPin {
-				pinValid = true
-				isRefereeSubmission = true
-			}
-		}
-	}
-
-	// Fallback 1: check Match PIN
-	if !pinValid && m.Pin != "" && submittedPin == m.Pin {
-		pinValid = true
-	}
-
-	// Fallback 2: check current assigned referee's PIN
-	if !pinValid && m.RefereeID != nil {
-		refPlayer, err := h.playerRepo.GetById(c.Context(), m.RefereeID.String())
-		if err == nil {
-			refPin := refPlayer.Pin
-			if refPin == "" {
-				refPin = "1234"
-			}
-			if submittedPin == refPin {
-				pinValid = true
-				isRefereeSubmission = true
-			}
-		}
-	}
-
+	// Validate PIN: only accept the match's own PIN
+	pinValid := submittedPin != "" && submittedPin == m.Pin
 	if !pinValid {
 		return c.SendString("<div class='text-red-400 font-mono text-sm'>Invalid Verification PIN. Please try again.</div>")
 	}
@@ -1663,5 +1593,127 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 	}
 
 	return c.Render("admin/partials/match-row", matched)
+}
+
+// ShowMatchScorePage renders the standalone public score page for a match.
+// Accessed via /score/:matchId (shareable QR-code URL).
+// Step 1: show PIN entry. Step 2 (POST): validate PIN, then show the score form inline.
+func (h *MatchHandler) ShowMatchScorePage(c *fiber.Ctx) error {
+	matchIDStr := c.Params("matchId")
+	if matchIDStr == "" {
+		matchIDStr = c.Params("id")
+	}
+	mUUID, err := uuid.Parse(matchIDStr)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid match ID")
+	}
+	m, err := h.matchRepo.GetByID(c.Context(), mUUID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "Match not found")
+	}
+
+	// Load player names
+	playerAName, playerBName := "Player A", "Player B"
+	if p, err := h.playerRepo.GetById(c.Context(), m.TeamAPlayer1ID.String()); err == nil {
+		playerAName = p.FullName()
+	}
+	if p, err := h.playerRepo.GetById(c.Context(), m.TeamBPlayer1ID.String()); err == nil {
+		playerBName = p.FullName()
+	}
+
+	return c.Render("public/match-pin-entry", fiber.Map{
+		"MatchID":     matchIDStr,
+		"PlayerA":     playerAName,
+		"PlayerB":     playerBName,
+		"TableNumber": m.TableNumber,
+		"Status":      m.Status,
+	})
+}
+
+// ValidateMatchPIN validates the PIN for a match and, if correct, returns the inline score form.
+// POST /score/:matchId/verify
+func (h *MatchHandler) ValidateMatchPIN(c *fiber.Ctx) error {
+	matchIDStr := c.Params("matchId")
+	if matchIDStr == "" {
+		matchIDStr = c.Params("id")
+	}
+	mUUID, err := uuid.Parse(matchIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("<p class=\"text-red-400 font-mono text-sm text-center\">Invalid match ID</p>")
+	}
+	m, err := h.matchRepo.GetByID(c.Context(), mUUID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).SendString("<p class=\"text-red-400 font-mono text-sm text-center\">Match not found</p>")
+	}
+
+	submittedPin := c.FormValue("pin")
+	if submittedPin == "" || submittedPin != m.Pin {
+		return c.Status(fiber.StatusUnauthorized).SendString("<p class=\"text-red-400 font-mono text-sm text-center mt-4\">❌ Incorrect PIN. Please try again.</p>")
+	}
+
+	if m.Status != "in_progress" {
+		return c.Status(fiber.StatusBadRequest).SendString("<p class=\"text-yellow-400 font-mono text-sm text-center mt-4\">⚠️ This match is not in progress yet.</p>")
+	}
+
+	// Load full match data for score form
+	t, _ := h.tournamentRepo.GetByID(c.Context(), m.TournamentID.String())
+	bestOf := 5
+	if t != nil {
+		for _, sr := range t.StageRules {
+			if sr.Stage == m.Stage {
+				bestOf = sr.BestOf
+				break
+			}
+		}
+	}
+
+	playerAName, playerBName := "Player A", "Player B"
+	if p, err := h.playerRepo.GetById(c.Context(), m.TeamAPlayer1ID.String()); err == nil {
+		playerAName = p.FullName()
+	}
+	if p, err := h.playerRepo.GetById(c.Context(), m.TeamBPlayer1ID.String()); err == nil {
+		playerBName = p.FullName()
+	}
+
+	type setVM struct {
+		Number int
+		ScoreA interface{}
+		ScoreB interface{}
+	}
+	var sets []setVM
+	existingScores := make(map[int]bun.MatchSetModel)
+	if s, err := h.matchRepo.GetSets(c.Context(), matchIDStr); err == nil {
+		for _, sm := range s {
+			existingScores[sm.SetNumber] = sm
+		}
+	}
+	for i := 1; i <= bestOf; i++ {
+		valA, valB := interface{}(""), interface{}("")
+		if sm, ok := existingScores[i]; ok {
+			valA = sm.ScoreA
+			valB = sm.ScoreB
+		}
+		sets = append(sets, setVM{Number: i, ScoreA: valA, ScoreB: valB})
+	}
+
+	tournamentID := ""
+	if t != nil {
+		tournamentID = t.ID
+	}
+
+	return c.Render("public/match-score-form", fiber.Map{
+		"MatchID":      matchIDStr,
+		"TournamentID": tournamentID,
+		"Stage":        m.Stage,
+		"BestOf":       bestOf,
+		"PlayerA":      playerAName,
+		"PlayerB":      playerBName,
+		"Sets":         sets,
+		"P1Id":         m.TeamAPlayer1ID.String(),
+		"P2Id":         m.TeamBPlayer1ID.String(),
+		"IsDoubles":    m.MatchType == "doubles",
+		"TableNumber":  m.TableNumber,
+		"Pin":          submittedPin, // pass validated PIN so form can re-submit
+	})
 }
 

@@ -77,7 +77,7 @@
                         <input type="radio" id="category-open" name="eventCategory" value="open" checked 
                                hx-get="/players/search/cards"
                                hx-target="#player-selection-grid"
-                               hx-include="[name='participant_ids[]'], #player-search"
+                               hx-include="closest form"
                                hx-trigger="change"
                                class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
@@ -89,7 +89,7 @@
                         <input type="radio" id="category-men" name="eventCategory" value="men" 
                                hx-get="/players/search/cards"
                                hx-target="#player-selection-grid"
-                               hx-include="[name='participant_ids[]'], #player-search"
+                               hx-include="closest form"
                                hx-trigger="change"
                                class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
@@ -101,7 +101,7 @@
                         <input type="radio" id="category-women" name="eventCategory" value="women" 
                                hx-get="/players/search/cards"
                                hx-target="#player-selection-grid"
-                               hx-include="[name='participant_ids[]'], #player-search"
+                               hx-include="closest form"
                                hx-trigger="change"
                                class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
@@ -113,7 +113,7 @@
                         <input type="radio" id="category-mixed" name="eventCategory" value="mixed" 
                                hx-get="/players/search/cards"
                                hx-target="#player-selection-grid"
-                               hx-include="[name='participant_ids[]'], #player-search"
+                               hx-include="closest form"
                                hx-trigger="change"
                                class="hidden peer">
                         <div class="p-3 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center">
@@ -326,17 +326,17 @@
                                 <button type="button"
                                     hx-get="/players/search/cards?gender=M&selectAll=true"
                                     hx-target="#player-selection-grid"
-                                    hx-include="[name='eventCategory'], #player-search"
+                                    hx-include="closest form"
                                     class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 transition-all">All Male</button>
                                 <button type="button"
                                     hx-get="/players/search/cards?gender=F&selectAll=true"
                                     hx-target="#player-selection-grid"
-                                    hx-include="[name='eventCategory'], #player-search"
+                                    hx-include="closest form"
                                     class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 text-pink-400 transition-all">All Female</button>
                                 <button type="button"
                                     hx-get="/players/search/cards"
                                     hx-target="#player-selection-grid"
-                                    hx-include="[name='eventCategory'], #player-search"
+                                    hx-include="closest form"
                                     onclick="document.getElementById('selected-participants-hidden').innerHTML = ''"
                                     class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 transition-all">Clear</button>
                             </div>
@@ -348,7 +348,7 @@
                                 hx-get="/players/search/cards" 
                                 hx-trigger="keyup changed delay:300ms" 
                                 hx-target="#player-selection-grid"
-                                hx-include="[name='participant_ids[]'], [name='eventCategory']"
+                                hx-include="closest form"
                                 onkeydown="if (event.key === 'Enter') { event.preventDefault(); }"
                                 placeholder="Search athletes by name..." 
                                 class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-white transition-all pl-10">

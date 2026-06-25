@@ -94,6 +94,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	stageRuleOverrides []StageRuleOverride, groupPassCount int,
 	skipElo bool, eventID *string,
 	teamFormat string,
+	numTables int,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -137,6 +138,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	t.SkipElo = skipElo
 	t.EventID = eventID
 	t.TeamFormat = teamFormat
+	t.NumTables = numTables
 
 	// Preserve existing teams and conditionally preserve/regenerate groups
 	if existing, err := uc.repo.GetByID(ctx, idStr); err == nil {

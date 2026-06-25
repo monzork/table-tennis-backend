@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/rand"
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
 
@@ -20,6 +21,18 @@ func NewTournamentRepository(db *bun.DB) *TournamentRepository {
 }
 
 func (r *TournamentRepository) DB() *bun.DB { return r.db }
+
+// generateUniqueTournamentPIN generates a 4-digit PIN not already in usedPINs,
+// then adds it to the set to prevent future collisions within the same batch.
+func generateUniqueTournamentPIN(usedPINs map[string]bool) string {
+	for {
+		pin := fmt.Sprintf("%04d", rand.Intn(10000))
+		if !usedPINs[pin] {
+			usedPINs[pin] = true
+			return pin
+		}
+	}
+}
 
 func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournament) error {
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -74,8 +87,9 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *tourna
 		return err
 	}
 
-	// Save participants in bulk
+	// Save participants in bulk with unique PINs per tournament
 	if len(t.Participants) > 0 {
+		usedPINs := make(map[string]bool)
 		partModels := make([]TournamentParticipantModel, len(t.Participants))
 		for i, p := range t.Participants {
 			pID, err := uuid.Parse(p.ID)
@@ -85,6 +99,7 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *tourna
 			partModels[i] = TournamentParticipantModel{
 				TournamentID:     tID,
 				PlayerID:         pID,
+				Pin:              generateUniqueTournamentPIN(usedPINs),
 				EloBeforeSingles: &p.SinglesElo,
 				EloBeforeDoubles: &p.DoublesElo,
 			}
@@ -613,6 +628,16 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		return err
 	}
 
+	// Load existing participant PINs BEFORE scrubbing, so we can re-assign them after re-insert
+	existingPINs := make(map[string]string)
+	{
+		var existingParts []TournamentParticipantModel
+		_ = r.db.NewSelect().Model(&existingParts).Column("player_id", "pin").Where("tournament_id = ?", tID).Scan(ctx)
+		for _, ep := range existingParts {
+			existingPINs[ep.PlayerID.String()] = ep.Pin
+		}
+	}
+
 	// Scrub existing groups, participants, and teams
 	tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE tournament_id = ?)", tID).Exec(ctx)
 	tx.NewDelete().TableExpr("groups").Where("tournament_id = ?", tID).Exec(ctx)
@@ -620,17 +645,30 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 	tx.NewDelete().TableExpr("team_players").Where("team_id IN (SELECT id FROM teams WHERE tournament_id = ?)", tID).Exec(ctx)
 	tx.NewDelete().TableExpr("teams").Where("tournament_id = ?", tID).Exec(ctx)
 
-	// Refresh participants in bulk
+	// Refresh participants in bulk, preserving existing PINs and generating unique new ones
 	if len(t.Participants) > 0 {
+		// Seed the used-PIN set with all preserved existing PINs
+		usedPINs := make(map[string]bool)
+		for _, pin := range existingPINs {
+			if pin != "" && pin != "0000" {
+				usedPINs[pin] = true
+			}
+		}
+
 		partModels := make([]TournamentParticipantModel, len(t.Participants))
 		for i, p := range t.Participants {
 			pID, err := uuid.Parse(p.ID)
 			if err != nil {
 				return err
 			}
+			pin := existingPINs[p.ID]
+			if pin == "" || pin == "0000" {
+				pin = generateUniqueTournamentPIN(usedPINs)
+			}
 			partModels[i] = TournamentParticipantModel{
 				TournamentID:     tID,
 				PlayerID:         pID,
+				Pin:              pin,
 				EloBeforeSingles: &p.SinglesElo,
 				EloBeforeDoubles: &p.DoublesElo,
 			}
@@ -1068,6 +1106,7 @@ func (r *TournamentRepository) GetParticipantSnapshots(ctx context.Context, tour
 	for i, s := range snapshots {
 		domainSnaps[i] = tournament.ParticipantSnapshot{
 			PlayerID:         s.PlayerID.String(),
+			Pin:              s.Pin,
 			EloBeforeSingles: s.EloBeforeSingles,
 			EloAfterSingles:  s.EloAfterSingles,
 			EloBeforeDoubles: s.EloBeforeDoubles,
@@ -1075,4 +1114,47 @@ func (r *TournamentRepository) GetParticipantSnapshots(ctx context.Context, tour
 		}
 	}
 	return domainSnaps, nil
+}
+
+// GetParticipantPIN returns the PIN for a specific player in a specific tournament.
+func (r *TournamentRepository) GetParticipantPIN(ctx context.Context, tournamentID, playerID string) (string, error) {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return "", err
+	}
+	pID, err := uuid.Parse(playerID)
+	if err != nil {
+		return "", err
+	}
+	var part TournamentParticipantModel
+	err = r.db.NewSelect().
+		Model(&part).
+		Where("tournament_id = ? AND player_id = ?", tID, pID).
+		Scan(ctx)
+	if err != nil {
+		return "", err
+	}
+	return part.Pin, nil
+}
+
+// GetParticipantPINsByTournament returns a map of playerID -> PIN for all participants in a tournament.
+func (r *TournamentRepository) GetParticipantPINsByTournament(ctx context.Context, tournamentID string) (map[string]string, error) {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return nil, err
+	}
+	var parts []TournamentParticipantModel
+	err = r.db.NewSelect().
+		Model(&parts).
+		Column("player_id", "pin").
+		Where("tournament_id = ?", tID).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]string, len(parts))
+	for _, p := range parts {
+		result[p.PlayerID.String()] = p.Pin
+	}
+	return result, nil
 }

@@ -42,7 +42,7 @@
             <select name="eventCategory" id="edit-category-select" 
                     hx-get="/players/search/cards"
                     hx-target="#edit-player-selection-grid"
-                    hx-include="[name='participant_ids[]'], #edit-player-search"
+                    hx-include="closest form"
                     hx-trigger="change"
                     class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
                 <option value="open" {{if eq .Tournament.EventCategory "open"}}selected{{end}}>Open (All Genders)</option>
@@ -78,7 +78,7 @@
                 hx-get="/players/search/cards" 
                 hx-trigger="keyup changed delay:300ms" 
                 hx-target="#edit-player-selection-grid"
-                hx-include="[name='participant_ids[]'], [name='eventCategory']"
+                hx-include="closest form"
                 onkeydown="if (event.key === 'Enter') { event.preventDefault(); }"
                 placeholder="Search athletes by name..." 
                 class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-white transition-all pl-10">

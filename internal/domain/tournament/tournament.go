@@ -551,6 +551,7 @@ func (t *Tournament) MovePlayer(playerID string, targetGroupID string, targetInd
 
 type ParticipantSnapshot struct {
 	PlayerID         string
+	Pin              string
 	EloBeforeSingles *int16
 	EloAfterSingles  *int16
 	EloBeforeDoubles *int16

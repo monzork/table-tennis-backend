@@ -35,6 +35,7 @@ type TournamentParticipantModel struct {
 
 	TournamentID uuid.UUID `bun:"tournament_id,pk,type:uuid"`
 	PlayerID     uuid.UUID `bun:"player_id,pk,type:uuid"`
+	Pin          string    `bun:"pin,notnull,default:'0000'"`
 
 	EloBeforeSingles *int16 `bun:"elo_before_singles"`
 	EloBeforeDoubles *int16 `bun:"elo_before_doubles"`
