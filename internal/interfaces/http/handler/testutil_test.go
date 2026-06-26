@@ -211,7 +211,33 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	engine.AddFunc("nicaraguaDepartments", func() []string {
 		return handler.NicaraguaDepartments
 	})
-	app := fiber.New(fiber.Config{Views: engine})
+	app := fiber.New(fiber.Config{
+		Views:             engine,
+		PassLocalsToViews: true,
+	})
+	
+	// Global Translation Middleware for tests
+	app.Use(func(c *fiber.Ctx) error {
+		lang := c.Cookies("lang")
+		if lang != "es" && lang != "en" {
+			lang = "en"
+		}
+		c.Locals("Lang", lang)
+		
+		translations := make(map[string]string)
+		if lang == "es" {
+			translations = map[string]string{
+				"nav.dashboard": "Dashboard",
+				// minimal mock to avoid panic in layout
+			}
+		} else {
+			translations = map[string]string{
+				"nav.dashboard": "Dashboard",
+			}
+		}
+		c.Locals("T", translations)
+		return c.Next()
+	})
 
 	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 

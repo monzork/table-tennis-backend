@@ -8,27 +8,26 @@
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
-        Back to Tournament
+        {{index .T "board.back"}}
       </a>
-      <h1 class="text-3xl font-extrabold tracking-tighter uppercase">{{.Tournament.Name}} <span class="text-gray-600">/
-          Board</span></h1>
+      <h1 class="text-3xl font-extrabold tracking-tighter uppercase">{{.Tournament.Name}} <span class="text-gray-600">{{index .T "board.board"}}</span></h1>
       <div class="flex gap-3 mt-2 flex-wrap items-center">
         <span
           class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Tournament.Type}}</span>
         {{if .Tournament.NumTables}}
         <span
           class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Tournament.NumTables}}
-          tables</span>
+          {{index .T "board.tables"}}</span>
         {{end}}
-        <span id="ws-status" class="text-[9px] font-bold uppercase tracking-widest text-yellow-400">⏳ Connecting…</span>
+        <span id="ws-status" class="text-[9px] font-bold uppercase tracking-widest text-yellow-400">{{index .T "board.connecting"}}</span>
       </div>
     </div>
   </header>
 
   {{/* ── Columns — WS-connected ── */}}
   <div hx-ext="ws" ws-connect="/ws/brackets/{{.Tournament.ID}}"
-    hx-on::ws-open="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🟢 Live'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-green-400'; }"
-    hx-on::ws-close="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-red-400'; }"
+    hx-on::ws-open="const el = document.getElementById('ws-status'); if(el) { el.textContent = '{{index .T "board.live"}}'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-green-400'; }"
+    hx-on::ws-close="const el = document.getElementById('ws-status'); if(el) { el.textContent = '{{index .T "board.reconnecting"}}'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-red-400'; }"
     hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#board-columns', 'reload-board'); if (data.matchStatus === 'finished' && data.message) { showToast(data.message, 'success'); } } else if(data.event === 'referee_notification') { if (data.message) { showToast(data.message, 'info'); } }">
 
     <div id="board-columns" hx-get="/admin/tournaments/{{.Tournament.ID}}/board/columns" hx-trigger="reload-board"
@@ -47,7 +46,7 @@
   <div class="bg-club-panel border border-white/10 rounded-3xl max-w-md w-full relative shadow-2xl"
     id="score-modal-content">
     <div class="flex items-center justify-between px-8 pt-7 pb-0">
-      <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Score Entry</span>
+      <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">{{index .T "board.score_entry"}}</span>
       <button onclick="document.getElementById('score-modal').classList.add('hidden')"
         class="text-gray-400 hover:text-white transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +72,7 @@
       </svg>
     </button>
 
-    <h3 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-2">Scan to Score Match</h3>
+    <h3 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-2">{{index .T "board.scan_score"}}</h3>
     <p id="qr-matchup" class="text-sm font-semibold text-white/90 mb-6 truncate"></p>
 
     <div class="bg-white p-4 rounded-2xl inline-block mb-6 shadow-xl">
@@ -81,18 +80,18 @@
     </div>
 
     <div class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
-      <span class="text-[10px] font-bold uppercase text-gray-500 tracking-wider block mb-1">Verification</span>
-      <span class="text-xs font-semibold text-gray-400">Players use their personal PIN</span>
+      <span class="text-[10px] font-bold uppercase text-gray-500 tracking-wider block mb-1">{{index .T "board.verification"}}</span>
+      <span class="text-xs font-semibold text-gray-400">{{index .T "board.personal_pin"}}</span>
     </div>
 
     <div class="flex gap-2">
       <button id="qr-copy-btn"
         class="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">
-        Copy Link
+        {{index .T "board.copy_link"}}
       </button>
       <a id="qr-open-btn" href="" target="_blank"
         class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px] flex items-center justify-center">
-        Open Link
+        {{index .T "board.open_link"}}
       </a>
     </div>
   </div>

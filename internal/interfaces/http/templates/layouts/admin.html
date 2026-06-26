@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{if .Lang}}{{.Lang}}{{else}}en{{end}}">
 <head>
     <meta charset="UTF-8">
     <title>Club Admin Portal</title>
@@ -147,16 +147,28 @@
                 <span class="text-xl font-extrabold uppercase tracking-widest text-white/90">Admin</span>
             </div>
             <div class="flex gap-6 font-semibold text-sm tracking-wider uppercase text-gray-400 items-center">
-                <a href="/admin" class="hover:text-white transition-colors proj-hide">Dashboard</a>
-                <a href="/admin/players" class="hover:text-white transition-colors proj-hide">Players</a>
-                <a href="/admin/events" class="hover:text-white transition-colors proj-hide">Events</a>
-                <a href="/admin/tournaments" class="hover:text-white transition-colors proj-hide">Tournaments</a>
-                <a href="/admin/divisions" class="hover:text-white transition-colors proj-hide">Divisions</a>
+                <a href="/admin" class="hover:text-white transition-colors proj-hide">{{index .T "nav.dashboard"}}</a>
+                <a href="/admin/players" class="hover:text-white transition-colors proj-hide">{{index .T "nav.players"}}</a>
+                <a href="/admin/events" class="hover:text-white transition-colors proj-hide">{{index .T "nav.events"}}</a>
+                <a href="/admin/tournaments" class="hover:text-white transition-colors proj-hide">{{index .T "nav.tournaments"}}</a>
+                <a href="/admin/divisions" class="hover:text-white transition-colors proj-hide">{{index .T "nav.divisions"}}</a>
                 <span class="w-px h-6 bg-white/20 mx-2 proj-hide"></span>
-                <a href="/rankings/singles" class="hover:text-white transition-colors text-gray-300 proj-hide" target="_blank">Public Rankings</a>
+                <a href="/rankings/singles" class="hover:text-white transition-colors text-gray-300 proj-hide" target="_blank">{{index .T "nav.public_rankings"}}</a>
                 <form method="POST" action="/admin/logout" class="ml-2 proj-hide">
-                    <button type="submit" class="hover:text-white transition-colors uppercase tracking-wider font-semibold text-gray-400 text-sm">Logout</button>
+                    <button type="submit" class="hover:text-white transition-colors uppercase tracking-wider font-semibold text-gray-400 text-sm">{{index .T "nav.logout"}}</button>
                 </form>
+
+                <!-- ── Language Switcher ── -->
+                <div class="flex items-center bg-black/40 rounded-full p-1 proj-hide border border-white/10">
+                    <a href="/lang/en"
+                       class="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-transparent transition-all {{if eq .Lang "en"}}bg-white/15 text-white border-white/60{{else}}text-gray-400 hover:text-white{{end}}">
+                        EN
+                    </a>
+                    <a href="/lang/es"
+                       class="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-transparent transition-all {{if eq .Lang "es"}}bg-white/15 text-white border-white/60{{else}}text-gray-400 hover:text-white{{end}}">
+                        ES
+                    </a>
+                </div>
 
                 <!-- ── Theme Switcher ── -->
                 <button id="theme-toggle"
@@ -173,7 +185,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                     </svg>
-                    <span id="theme-label">Projector</span>
+                    <span id="theme-label">{{index .T "nav.projector"}}</span>
                 </button>
             </div>
         </div>

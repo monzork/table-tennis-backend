@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"table-tennis-backend/internal/interfaces/http/i18n"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
@@ -197,10 +198,27 @@ func main() {
 		return handler.NicaraguaDepartments
 	})
 	app := fiber.New(fiber.Config{
-		Views: engine,
+		Views:             engine,
+		PassLocalsToViews: true,
 	})
 
 	app.Static("/static", "./static")
+	
+	// Global Translation Middleware
+	app.Use(func(c *fiber.Ctx) error {
+		lang := c.Cookies("lang")
+		if lang != "es" && lang != "en" {
+			lang = "en"
+		}
+		m := make(map[string]string)
+		// i18n package should be imported if not already. We'll check imports next.
+		for k := range i18n.Translations["en"] {
+			m[k] = i18n.T(lang, k)
+		}
+		c.Locals("T", m)
+		c.Locals("Lang", lang)
+		return c.Next()
+	})
 
 	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 

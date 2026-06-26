@@ -1,10 +1,10 @@
-<h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter text-white">Enter <span class="text-white">Scores</span></h2>
+<h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter text-white">{{index .T "score_form.title"}} <span class="text-white">{{index .T "score_form.scores"}}</span></h2>
 <p class="text-xs text-gray-500 mb-6 font-mono">
     {{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}
     {{if .IsDoubles}}
     <br/>
     <span class="text-gray-400 font-sans mt-1.5 block leading-relaxed">
-        <span class="text-white/60">Players:</span> {{.PlayerANames}} <span class="text-white/30">vs</span> {{.PlayerBNames}}
+        <span class="text-white/60">{{index .T "score_form.players"}}</span> {{.PlayerANames}} <span class="text-white/30">{{index .T "score_form.vs"}}</span> {{.PlayerBNames}}
     </span>
     {{end}}
 </p>
@@ -32,7 +32,7 @@
     <div class="space-y-3 mb-6">
         {{range .Sets}}
         <div class="flex items-center gap-3">
-            <span class="text-xs text-gray-500 w-8 text-right">Set {{.Number}}</span>
+            <span class="text-xs text-gray-500 w-8 text-right">{{index $.T "score_form.set"}} {{.Number}}</span>
             <input name="scores[]_a" type="number" min="0" max="99" placeholder="A" value="{{.ScoreA}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-center text-lg font-bold focus:outline-none focus:ring-1 focus:ring-white">
             <span class="text-gray-600 font-bold">–</span>
             <input name="scores[]_b" type="number" min="0" max="99" placeholder="B" value="{{.ScoreB}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-center text-lg font-bold focus:outline-none focus:ring-1 focus:ring-white">
@@ -42,9 +42,9 @@
 
     <!-- Referee (Optional) -->
     <div class="space-y-1">
-        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block font-mono">Referee (Optional)</label>
+        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block font-mono">{{index .T "score_form.referee_label"}}</label>
         <select name="refereeId" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
-            <option value="">No Referee (Self-Managed)</option>
+            <option value="">{{index .T "score_form.no_referee"}}</option>
             {{range .Participants}}
             <option value="{{.ID}}" {{if $.RefereeID}}{{if eq $.RefereeID .ID}}selected{{end}}{{end}}>
                 {{.FirstName}} {{.LastName}}
@@ -55,13 +55,13 @@
 
     <!-- Table Number -->
     <div class="space-y-1">
-        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block font-mono">Table Number</label>
+        <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block font-mono">{{index .T "score_form.table_number"}}</label>
         {{if .Tables}}
         <select name="tableNumber" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
-            <option value="">Auto / No Table</option>
+            <option value="">{{index .T "score_form.auto_no_table"}}</option>
             {{range .Tables}}
                 <option value="{{.Number}}" {{if .IsUsed}}disabled class="text-gray-500 bg-black"{{else}}class="text-white bg-black"{{end}} {{if eq $.TableNumberVal .Number}}selected{{end}}>
-                    Table {{.Number}} {{if .IsUsed}}(Occupied){{else}}(Available){{end}}
+                    {{index $.T "score_form.table"}} {{.Number}} {{if .IsUsed}}{{index $.T "score_form.occupied"}}{{else}}{{index $.T "score_form.available"}}{{end}}
                 </option>
             {{end}}
         </select>
@@ -73,7 +73,7 @@
     {{if .Pin}}
     <!-- Match PIN Info (For player self-report) -->
     <div class="bg-white/5 border border-white/5 rounded-xl p-3 flex justify-between items-center text-xs">
-        <span class="text-gray-500 font-mono">MATCH PIN:</span>
+        <span class="text-gray-500 font-mono">{{index .T "score_form.match_pin"}}</span>
         <span class="text-yellow-400 font-bold font-mono tracking-widest text-lg">{{.Pin}}</span>
     </div>
     {{end}}
@@ -84,11 +84,11 @@
         <button type="button"
             onclick="document.getElementById('score-modal').classList.add('hidden')"
             class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-bold py-4 rounded-2xl transition-all uppercase tracking-widest text-sm">
-            Cancel
+            {{index .T "score_form.cancel"}}
         </button>
         <button type="submit"
             class="flex-[2] bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg">
-            Save Scores
+            {{index .T "score_form.save_scores"}}
         </button>
     </div>
 </form>
@@ -99,6 +99,6 @@
     hx-swap="none"
     hx-on::after-request="document.getElementById('score-modal').classList.add('hidden')"
     class="w-full text-[10px] font-bold uppercase tracking-widest text-red-400 border border-red-500/20 hover:border-red-500/40 bg-red-500/5 hover:bg-red-500/10 rounded-xl py-2.5 transition-all mt-2">
-    ↺ Reset to Scheduled
+    {{index .T "score_form.reset"}}
 </button>
 {{end}}

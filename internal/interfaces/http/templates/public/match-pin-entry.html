@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{if .Lang}}{{.Lang}}{{else}}en{{end}}">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -219,12 +219,44 @@
     .status-in_progress { background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
     .status-finished { background: rgba(52,211,153,0.1); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
 
+    /* Language Switcher */
+    .lang-switcher {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      display: flex;
+      gap: 0.5rem;
+      z-index: 10;
+    }
+    .lang-btn {
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 0.25rem 0.5rem;
+      border-radius: 1rem;
+      text-decoration: none;
+      color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: all 0.2s ease;
+    }
+    .lang-btn.active {
+      color: #fff;
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(255,255,255,0.4);
+    }
+
     @media (max-width: 380px) {
       .pin-digit { width: 52px; height: 64px; font-size: 1.75rem; }
     }
   </style>
 </head>
 <body>
+  <!-- Language Switcher -->
+  <div class="lang-switcher">
+    <a href="/lang/en" class="lang-btn {{if eq .Lang "en"}}active{{end}}">EN</a>
+    <a href="/lang/es" class="lang-btn {{if eq .Lang "es"}}active{{end}}">ES</a>
+  </div>
+
   <div class="card">
     <!-- Logo -->
     <div class="logo">

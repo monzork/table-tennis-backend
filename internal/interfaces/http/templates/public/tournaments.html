@@ -1,7 +1,7 @@
 <div class="space-y-8 animate-fade-in text-white/90 max-w-5xl mx-auto px-4">
     <header class="text-center py-6">
-        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase">Tournaments <span class="text-white">.</span></h1>
-        <p class="text-gray-400 mt-2 font-bold uppercase tracking-widest text-xs">Official Series &amp; Leagues</p>
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase">{{index .T "tourneys.title"}} <span class="text-white">.</span></h1>
+        <p class="text-gray-400 mt-2 font-bold uppercase tracking-widest text-xs">{{index .T "tourneys.subtitle"}}</p>
     </header>
 
     <div class="glass rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
@@ -9,11 +9,11 @@
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-black/40 border-b border-white/10 text-gray-400 uppercase text-[10px] sm:text-xs tracking-wider font-bold">
-                        <th class="p-4 sm:p-6">Name</th>
-                        <th class="p-4 sm:p-6">Type</th>
-                        <th class="p-4 sm:p-6">Category</th>
-                        <th class="p-4 sm:p-6 hidden sm:table-cell">Dates</th>
-                        <th class="p-4 sm:p-6 text-right">Bracket</th>
+                        <th class="p-4 sm:p-6">{{index .T "tourneys.col_name"}}</th>
+                        <th class="p-4 sm:p-6">{{index .T "tourneys.col_type"}}</th>
+                        <th class="p-4 sm:p-6">{{index .T "tourneys.col_category"}}</th>
+                        <th class="p-4 sm:p-6 hidden sm:table-cell">{{index .T "tourneys.col_dates"}}</th>
+                        <th class="p-4 sm:p-6 text-right">{{index .T "tourneys.col_bracket"}}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/10 text-sm sm:text-base">
@@ -21,7 +21,7 @@
                     <tr class="hover:bg-white/5 transition-colors">
                         <td class="p-4 sm:p-6 font-semibold">
                             {{if .EventID}}
-                            <a href="/events/{{.EventID}}" class="block text-[8px] sm:text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider mb-1">← Part of Grand Event</a>
+                            <a href="/events/{{.EventID}}" class="block text-[8px] sm:text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider mb-1">{{index .T "tourneys.part_of"}}</a>
                             {{end}}
                             {{.Name}}
                         </td>
@@ -30,13 +30,13 @@
                         <td class="p-4 sm:p-6 text-gray-400 hidden sm:table-cell font-mono text-xs">{{.StartDate.Format "Jan 02, 2006"}} - {{.EndDate.Format "Jan 02, 2006"}}</td>
                         <td class="p-4 sm:p-6 text-right">
                             <a href="/tournaments/{{.ID}}" class="inline-block bg-white hover:bg-gray-200 text-black font-extrabold py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-[10px] sm:text-xs shadow">
-                                View Bracket
+                                {{index .T "tourneys.view_bracket"}}
                             </a>
                         </td>
                     </tr>
                     {{else}}
                     <tr>
-                        <td colspan="5" class="p-8 text-center text-gray-500">No tournaments available at the moment.</td>
+                        <td colspan="5" class="p-8 text-center text-gray-500">{{index .T "tourneys.no_avail"}}</td>
                     </tr>
                     {{end}}
                 </tbody>
