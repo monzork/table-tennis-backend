@@ -628,5 +628,7 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 		"InProgress": inProgress,
 		"Finished":   finished,
 		"Tables":     tables,
+		"T":          c.Locals("T"),
+		"Lang":       c.Locals("Lang"),
 	})
 }
