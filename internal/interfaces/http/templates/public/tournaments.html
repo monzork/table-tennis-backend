@@ -21,7 +21,7 @@
                     <tr class="hover:bg-white/5 transition-colors">
                         <td class="p-4 sm:p-6 font-semibold">
                             {{if .EventID}}
-                            <a href="/events/{{.EventID}}" class="block text-[8px] sm:text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider mb-1">{{index .T "tourneys.part_of"}}</a>
+                            <a href="/events/{{.EventID}}" class="block text-[8px] sm:text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider mb-1">{{index $.T "tourneys.part_of"}}</a>
                             {{end}}
                             {{.Name}}
                         </td>
@@ -30,7 +30,7 @@
                         <td class="p-4 sm:p-6 text-gray-400 hidden sm:table-cell font-mono text-xs">{{.StartDate.Format "Jan 02, 2006"}} - {{.EndDate.Format "Jan 02, 2006"}}</td>
                         <td class="p-4 sm:p-6 text-right">
                             <a href="/tournaments/{{.ID}}" class="inline-block bg-white hover:bg-gray-200 text-black font-extrabold py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-[10px] sm:text-xs shadow">
-                                {{index .T "tourneys.view_bracket"}}
+                                {{index $.T "tourneys.view_bracket"}}
                             </a>
                         </td>
                     </tr>
