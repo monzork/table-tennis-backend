@@ -33,7 +33,7 @@
     <div id="board-columns" hx-get="/admin/tournaments/{{.Tournament.ID}}/board/columns" hx-trigger="reload-board"
       hx-target="#board-columns" hx-swap="innerHTML">
       {{template "admin/partials/board-columns" (dict "Tournament" .Tournament "Scheduled" .Scheduled "InProgress"
-      .InProgress "Finished" .Finished "Tables" .Tables)}}
+      .InProgress "Finished" .Finished "Tables" .Tables "T" .T)}}
     </div>
 
   </div>
