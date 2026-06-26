@@ -295,8 +295,7 @@
       <form id="pin-form"
             hx-post="/score/{{.MatchID}}/verify"
             hx-target="#score-form-area"
-            hx-swap="innerHTML"
-            hx-indicator="#pin-spinner">
+            hx-swap="innerHTML">
         <input type="hidden" name="pin" id="pin-value"/>
         <div class="pin-input-row" id="pin-digits">
           <input class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" data-index="0"/>
