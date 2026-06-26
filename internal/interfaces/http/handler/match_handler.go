@@ -338,15 +338,23 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		refereeIDStr = matchRefereeID.String()
 	}
 
+	// Fetch tournament if tournamentId is provided
+	var tourney *tournament.Tournament
+	if tID != "" {
+		if t, err := h.tournamentRepo.GetByID(c.Context(), tID); err == nil {
+			tourney = t
+		}
+	}
+
 	// Check if tournament is teams
 	var isTeams bool
 	var isSubMatch bool
 	var teamA, teamB *tournament.Team
 	var subMatches []bun.MatchModel
 	var teamFormat string
-	if tID != "" {
-		if t, err := h.tournamentRepo.GetByID(c.Context(), tID); err == nil && t.Type == "teams" {
+	if tourney != nil && tourney.Type == "teams" {
 			tUUID, _ := uuid.Parse(tID)
+			t := tourney
 			// If matchID refers to a sub-match (has team_match_id), treat as regular singles/doubles
 			if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
 				mUUID, _ := uuid.Parse(matchID)
@@ -433,7 +441,6 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 					}
 				}
 			}
-		}
 	}
 
 	if isTeams {
@@ -558,16 +565,17 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 			"Pin":          matchPin,
 			"RefereeID":    refereeIDStr,
 			"TableNumber":  matchTableNumber,
+			"TableNumberVal": func() int {
+				if matchTableNumber != nil {
+					return *matchTableNumber
+				}
+				return 0
+			}(),
+			"Tables":       buildTables(tourney, matchID),
 		})
 	}
 
-	// Fetch tournament if tournamentId is provided
-	var tourney *tournament.Tournament
-	if tID != "" {
-		if t, err := h.tournamentRepo.GetByID(c.Context(), tID); err == nil {
-			tourney = t
-		}
-	}
+	// tourney is already fetched above
 
 	// Fetch existing match if matchID is provided
 	var existingMatch *bun.MatchModel
@@ -772,8 +780,15 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		"Pin":          matchPin,
 		"RefereeID":    refereeIDStr,
 		"TableNumber":  matchTableNumber,
+		"TableNumberVal": func() int {
+			if matchTableNumber != nil {
+				return *matchTableNumber
+			}
+			return 0
+		}(),
 		"Status":       matchStatus,
 		"Participants": participants,
+		"Tables":       buildTables(tourney, matchID),
 	})
 }
 

@@ -51,7 +51,7 @@
           <select name="tableNumber" class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
             <option value="">Auto</option>
             {{range $.Tables}}
-              <option value="{{.Number}}" {{if .IsUsed}}class="text-gray-500 bg-black"{{else}}class="text-white bg-black"{{end}}>
+              <option value="{{.Number}}" {{if .IsUsed}}disabled class="text-gray-500 bg-black"{{else}}class="text-white bg-black"{{end}}>
                 T{{.Number}} {{if .IsUsed}}(used){{else}}(free){{end}}
               </option>
             {{end}}
@@ -63,11 +63,21 @@
           </button>
         </form>
         {{end}}
-        <button
-          class="w-full text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-2 transition-all"
-          onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
-          ⚡ Score
-        </button>
+        <div class="flex gap-1.5 w-full">
+          <button
+            class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-2 transition-all"
+            onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
+            ⚡ Score
+          </button>
+          {{if .MatchID}}
+          <button type="button"
+            data-match-id="{{.MatchID}}" data-matchup="{{.PlayerAName}} vs {{.PlayerBName}}"
+            onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup)"
+            class="px-3 text-gray-400 hover:text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg transition-all flex items-center justify-center" title="Show QR Code">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+          </button>
+          {{end}}
+        </div>
       </div>
     </div>
     {{else}}
@@ -100,15 +110,25 @@
       </div>
       {{if .Pin}}
       <div class="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl px-3 py-1.5">
-        <span class="text-[9px] text-gray-500 font-mono uppercase tracking-widest">PIN</span>
-        <span class="text-sm font-black text-yellow-400 font-mono tracking-widest">{{.Pin}}</span>
+        <span class="text-[9px] text-gray-500 font-mono uppercase tracking-widest">OLD PIN</span>
+        <span class="text-sm font-black text-yellow-400 font-mono tracking-widest line-through opacity-50">{{.Pin}}</span>
       </div>
       {{end}}
-      <button
-        class="w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-2 transition-all"
-        onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
-        ✏️ Edit Score
-      </button>
+      <div class="flex gap-1.5 w-full">
+        <button
+          class="flex-1 text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-2 transition-all"
+          onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
+          ✏️ Edit Score
+        </button>
+        {{if .MatchID}}
+        <button type="button"
+          data-match-id="{{.MatchID}}" data-matchup="{{.PlayerAName}} vs {{.PlayerBName}}"
+          onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup)"
+          class="px-3 text-yellow-500 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg transition-all flex items-center justify-center" title="Show QR Code">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+        </button>
+        {{end}}
+      </div>
     </div>
     {{else}}
     <div class="glass rounded-2xl border border-yellow-500/10 border-dashed p-6 text-center text-gray-600 text-[11px] italic">No matches in progress</div>

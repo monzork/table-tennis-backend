@@ -505,6 +505,33 @@ type BoardCard struct {
 	Pin         string
 }
 
+type TableVM struct {
+	Number int
+	IsUsed bool
+}
+
+func buildTables(t *tournamentDomain.Tournament, excludeMatchID string) []TableVM {
+	var tables []TableVM
+	if t == nil || t.NumTables <= 0 {
+		return tables
+	}
+	used := make(map[int]bool)
+	for _, m := range t.Matches {
+		if m.Status == "in_progress" && m.TableNumber != nil {
+			if m.ID != excludeMatchID {
+				used[*m.TableNumber] = true
+			}
+		}
+	}
+	for i := 1; i <= t.NumTables; i++ {
+		tables = append(tables, TableVM{
+			Number: i,
+			IsUsed: used[i],
+		})
+	}
+	return tables
+}
+
 func buildBoardCards(t *tournamentDomain.Tournament) (scheduled, inProgress, finished []BoardCard) {
 	bestOfForStage := func(stage string) int {
 		for _, r := range t.StageRules {
@@ -569,11 +596,13 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 	scheduled, inProgress, finished := buildBoardCards(t)
+	tables := buildTables(t, "")
 	return c.Render("admin/tournament-board", fiber.Map{
 		"Tournament": t,
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
+		"Tables":     tables,
 	}, "layouts/admin")
 }
 
@@ -584,10 +613,12 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 	scheduled, inProgress, finished := buildBoardCards(t)
+	tables := buildTables(t, "")
 	return c.Render("admin/partials/board-columns", fiber.Map{
 		"Tournament": t,
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
+		"Tables":     tables,
 	})
 }

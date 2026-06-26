@@ -56,7 +56,18 @@
     <!-- Table Number -->
     <div class="space-y-1">
         <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 block font-mono">Table Number</label>
+        {{if .Tables}}
+        <select name="tableNumber" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+            <option value="">Auto / No Table</option>
+            {{range .Tables}}
+                <option value="{{.Number}}" {{if .IsUsed}}disabled class="text-gray-500 bg-black"{{else}}class="text-white bg-black"{{end}} {{if eq $.TableNumberVal .Number}}selected{{end}}>
+                    Table {{.Number}} {{if .IsUsed}}(Occupied){{else}}(Available){{end}}
+                </option>
+            {{end}}
+        </select>
+        {{else}}
         <input name="tableNumber" type="number" min="1" max="50" placeholder="e.g. 1" value="{{if .TableNumber}}{{.TableNumber}}{{end}}" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+        {{end}}
     </div>
 
     {{if .Pin}}
