@@ -183,13 +183,21 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		}
 	}
 
+	// Fetch Participant PINs
+	snapshots, _ := h.getByID.GetSnapshots(c.Context(), id)
+	playerPins := make(map[string]string)
+	for _, snap := range snapshots {
+		playerPins[snap.PlayerID] = snap.Pin
+	}
+
 	return c.Render("admin/tournament-detail", fiber.Map{
-		"Tournament":       t,
-		"Players":          players,
-		"Divisions":        divisions,
-		"BracketViewModel": vm,
+		"Tournament":            t,
+		"Players":               players,
+		"Divisions":             divisions,
+		"BracketViewModel":      vm,
 		"AvailableParticipants": availableParticipants,
-		"StatusFilter":     statusFilter,
+		"StatusFilter":          statusFilter,
+		"PlayerPins":            playerPins,
 	}, "layouts/admin")
 }
 

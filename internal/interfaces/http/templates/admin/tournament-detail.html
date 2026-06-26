@@ -85,6 +85,7 @@
           </div>
           <span class="text-sm font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
           <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
+          <span class="ml-2 text-[9px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 rounded font-mono" title="Player Match PIN">{{index $.PlayerPins .ID}}</span>
         </div>
         {{else}}
         <p class="text-sm text-gray-600">No participants available.</p>
@@ -97,6 +98,7 @@
           </div>
           <span class="text-sm font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
           <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
+          <span class="ml-2 text-[9px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 rounded font-mono" title="Player Match PIN">{{index $.PlayerPins .ID}}</span>
         </div>
         {{else}}
         <p class="text-sm text-gray-600">No participants registered.</p>
@@ -137,6 +139,7 @@
                   {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
                 </div>
                 <span class="text-xs font-bold text-white">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+                <span class="ml-1 text-[8px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1 rounded font-mono">{{index $.PlayerPins .ID}}</span>
               </div>
               <button hx-delete="/admin/tournaments/{{$.Tournament.ID}}/teams/{{$team.ID}}/players/{{.ID}}" hx-confirm="Remove this player from the team?" class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold">
                 ✕

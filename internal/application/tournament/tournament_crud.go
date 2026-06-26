@@ -67,6 +67,10 @@ func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (
 	return t, nil
 }
 
+func (uc *GetTournamentByIDUseCase) GetSnapshots(ctx context.Context, idStr string) ([]tournamentDomain.ParticipantSnapshot, error) {
+	return uc.repo.GetParticipantSnapshots(ctx, idStr)
+}
+
 // ─── Update ──────────────────────────────────────────────────────────────────
 
 type UpdateTournamentUseCase struct {
