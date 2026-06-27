@@ -6,7 +6,7 @@
                 <span class="w-2.5 h-7 bg-white rounded-md"></span>
                 {{if eq .RankType "doubles"}}{{index .T "rankings.mens_doubles"}}{{else}}{{index .T "rankings.mens_singles"}}{{end}}
             </h2>
-            <div class="glass rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
+            <div class="glass rounded-2xl overflow-hidden overflow-x-auto border border-white/10 shadow-2xl relative">
                 <div class="absolute inset-0 bg-gradient-to-b from-white/3 to-transparent pointer-events-none"></div>
                 <table class="w-full text-left border-collapse relative z-10">
                     <thead class="hidden sm:table-header-group">
@@ -30,7 +30,7 @@
                 <span class="w-2.5 h-7 bg-white rounded-md"></span>
                 {{if eq .RankType "doubles"}}{{index .T "rankings.womens_doubles"}}{{else}}{{index .T "rankings.womens_singles"}}{{end}}
             </h2>
-            <div class="glass rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
+            <div class="glass rounded-2xl overflow-hidden overflow-x-auto border border-white/10 shadow-2xl relative">
                 <div class="absolute inset-0 bg-gradient-to-b from-white/3 to-transparent pointer-events-none"></div>
                 <table class="w-full text-left border-collapse relative z-10">
                     <thead class="hidden sm:table-header-group">
@@ -50,7 +50,7 @@
     </div>
 {{else}}
     <!-- Single Table -->
-    <div class="glass rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative">
+    <div class="glass rounded-2xl sm:rounded-3xl overflow-hidden overflow-x-auto border border-white/10 shadow-2xl relative">
         <div class="absolute inset-0 bg-gradient-to-b from-white/3 to-transparent pointer-events-none"></div>
         <table class="w-full text-left border-collapse relative z-10">
             <thead class="hidden sm:table-header-group">
