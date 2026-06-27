@@ -86,13 +86,25 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 		return nameA, nameB
 	}
 
-	// 1. PARTICIPANT ASSOCIATIONS
-	pdf.AddPage()
-	writeHeader("PARTICIPANT ASSOCIATIONS")
+	getCountryCode := func(country string) string {
+		c := strings.TrimSpace(country)
+		if c == "" {
+			return "UNK"
+		}
+		runes := []rune(c)
+		if len(runes) > 3 {
+			c = string(runes[:3])
+		}
+		return strings.ToUpper(c)
+	}
 
+	// 1. FINAL STANDINGS / PLACINGS
 	if t.Status == "finished" {
 		first, second, third := getTournamentPlaces(t)
 		if first != "" || second != "" || third != "" {
+			pdf.AddPage()
+			writeHeader("FINAL STANDINGS / PLACINGS")
+
 			pdf.SetFillColor(245, 247, 250) // clean light grey background
 			pdf.SetFont("Arial", "B", 10)
 			pdf.CellFormat(0, 8, tr("  FINAL STANDINGS / PLACINGS"), "1", 1, "L", true, 0, "")
@@ -112,44 +124,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				pdf.CellFormat(45, 7, tr("  3rd Place:"), "1", 0, "L", false, 0, "")
 				pdf.CellFormat(0, 7, tr("  "+strings.ToUpper(third)), "1", 1, "L", false, 0, "")
 			}
-			pdf.Ln(10)
 		}
-	}
-
-	assocMap := make(map[string]bool)
-	var assocs []string
-	for _, p := range t.Participants {
-		country := strings.TrimSpace(p.Country)
-		if country == "" {
-			country = "UNKNOWN"
-		}
-		if !assocMap[country] {
-			assocMap[country] = true
-			assocs = append(assocs, country)
-		}
-	}
-	sort.Strings(assocs)
-
-	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(20, 8, "#", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(100, 8, tr("Association Name"), "1", 0, "C", false, 0, "")
-	pdf.CellFormat(40, 8, tr("ITTF Code"), "1", 1, "C", false, 0, "")
-
-	pdf.SetFont("Arial", "", 10)
-	codeMap := make(map[string]string)
-	for i, a := range assocs {
-		code := a
-		if len(code) > 3 {
-			runes := []rune(code)
-			if len(runes) > 3 {
-				code = string(runes[:3])
-			}
-			code = strings.ToUpper(code)
-		}
-		codeMap[a] = code
-		pdf.CellFormat(20, 8, fmt.Sprintf("%d", i+1), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(100, 8, tr(a), "1", 0, "L", false, 0, "")
-		pdf.CellFormat(40, 8, tr(code), "1", 1, "C", false, 0, "")
 	}
 
 	// 2. PARTICIPANTS LIST (SINGLE TABLE)
@@ -185,7 +160,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				}
 				pdf.CellFormat(20, 8, fmt.Sprintf("%d", 101+i), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(110, 8, tr(formatPlayerName(p)), "1", 0, "L", false, 0, "")
-				pdf.CellFormat(50, 8, tr(codeMap[country]), "1", 1, "C", false, 0, "")
+				pdf.CellFormat(50, 8, tr(getCountryCode(country)), "1", 1, "C", false, 0, "")
 			}
 		}
 
@@ -203,7 +178,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				}
 				pdf.CellFormat(20, 8, fmt.Sprintf("%d", 301+i), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(110, 8, tr(formatPlayerName(p)), "1", 0, "L", false, 0, "")
-				pdf.CellFormat(50, 8, tr(codeMap[country]), "1", 1, "C", false, 0, "")
+				pdf.CellFormat(50, 8, tr(getCountryCode(country)), "1", 1, "C", false, 0, "")
 			}
 		}
 	}
@@ -513,7 +488,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 			pdf.Ln(4)
 
 			w, h := pdf.GetPageSize()
-			marginL, marginT, marginR, marginB := 15.0, 42.0, 15.0, 15.0
+			marginL, marginT, marginR, marginB := 15.0, 52.0, 15.0, 15.0
 			printableW := w - marginL - marginR
 			printableH := h - marginT - marginB
 
@@ -530,12 +505,49 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 			}
 			boxH := 12.0
 
+			// Pre-calculate Y centers for all match boxes to avoid overlaps and layout constraints
+			centers := make([][]float64, numRounds)
+			for r := range rounds {
+				centers[r] = make([]float64, len(rounds[r].Matches))
+			}
+
+			// Round 0 is spread uniformly
+			k0 := len(rounds[0].Matches)
+			if k0 == 1 {
+				centers[0][0] = marginT + printableH/2
+			} else if k0 > 1 {
+				spacing := (printableH - boxH) / float64(k0-1)
+				for j := 0; j < k0; j++ {
+					centers[0][j] = marginT + boxH/2 + float64(j)*spacing
+				}
+			}
+
+			// Subsequent rounds are calculated as midpoints of their children
+			for r := 1; r < numRounds; r++ {
+				for j := range rounds[r].Matches {
+					if rounds[r].Name == "Champion" {
+						centers[r][0] = centers[r-1][0]
+					} else {
+						c1 := 2 * j
+						c2 := 2*j + 1
+						if c1 < len(centers[r-1]) && c2 < len(centers[r-1]) {
+							centers[r][j] = (centers[r-1][c1] + centers[r-1][c2]) / 2
+						} else if c1 < len(centers[r-1]) {
+							centers[r][j] = centers[r-1][c1]
+						} else {
+							centers[r][j] = marginT + printableH/2
+						}
+					}
+				}
+			}
+
+			// Draw Round Headers
 			pdf.SetFont("Arial", "B", 8)
 			pdf.SetTextColor(100, 100, 100)
 			for r, round := range rounds {
 				colStartX := marginL + float64(r)*colW
 				textX := colStartX + (colW-boxW)/2
-				pdf.Text(textX, marginT - 2, tr(round.Name))
+				pdf.Text(textX, marginT - 3, tr(round.Name))
 			}
 			pdf.SetTextColor(0, 0, 0)
 
@@ -545,7 +557,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				numMatches := len(round.Matches)
 
 				for j, m := range round.Matches {
-					y := marginT + (printableH/float64(numMatches))*(float64(j)+0.5) - boxH/2
+					y := centers[r][j] - boxH/2
 
 					if round.Name == "Champion" {
 						pdf.SetFillColor(255, 240, 220)
@@ -622,9 +634,9 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 					nextNumMatches := len(rounds[r+1].Matches)
 					if nextNumMatches > 0 && rounds[r+1].Name != "Champion" {
 						for j := 0; j < numMatches; j++ {
-							currentMidY := marginT + (printableH/float64(numMatches))*(float64(j)+0.5)
+							currentMidY := centers[r][j]
 							nextJ := j / 2
-							nextMidY := marginT + (printableH/float64(nextNumMatches))*(float64(nextJ)+0.5)
+							nextMidY := centers[r+1][nextJ]
 
 							lineX1 := x + boxW
 							lineX2 := x + boxW + (colW-boxW)/2
@@ -633,7 +645,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 							pdf.Line(lineX1, currentMidY, lineX2, currentMidY)
 
 							if j%2 == 0 && j+1 < numMatches {
-								siblingMidY := marginT + (printableH/float64(numMatches))*(float64(j+1)+0.5)
+								siblingMidY := centers[r][j+1]
 								pdf.Line(lineX2, currentMidY, lineX2, siblingMidY)
 
 								nextColStartX := marginL + float64(r+1)*colW
@@ -675,7 +687,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 
 			// Render sets
 			for setNum := 1; setNum <= 7; setNum++ {
-				var setScoreStr = "—"
+				var setScoreStr = "-"
 				for _, set := range m.Sets {
 					if set.Number == setNum {
 						setScoreStr = fmt.Sprintf("%d-%d", set.ScoreA, set.ScoreB)
