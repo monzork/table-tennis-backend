@@ -563,6 +563,7 @@ type Repository interface {
 	GetByID(ctx context.Context, id string) (*Tournament, error)
 	GetAll(ctx context.Context) ([]*Tournament, error)
 	Update(ctx context.Context, t *Tournament) error
+	UpdateGroups(ctx context.Context, t *Tournament) error
 	Delete(ctx context.Context, id string) error
 	UpdateParticipantElo(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error
 	UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error

@@ -23,5 +23,5 @@ func (uc *MovePlayerUseCase) Execute(ctx context.Context, tournamentIDStr, playe
 		return err
 	}
 
-	return uc.repo.Update(ctx, t)
+	return uc.repo.UpdateGroups(ctx, t)
 }

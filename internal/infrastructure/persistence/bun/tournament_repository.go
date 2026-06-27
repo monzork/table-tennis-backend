@@ -759,6 +759,61 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 	return tx.Commit()
 }
 
+func (r *TournamentRepository) UpdateGroups(ctx context.Context, t *tournament.Tournament) error {
+	tID, err := uuid.Parse(t.ID)
+	if err != nil {
+		return err
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Scrub existing groups and group participants
+	tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE tournament_id = ?)", tID).Exec(ctx)
+	tx.NewDelete().TableExpr("groups").Where("tournament_id = ?", tID).Exec(ctx)
+
+	// Refresh groups and group participants in bulk
+	if len(t.Groups) > 0 {
+		groupModels := make([]GroupModel, len(t.Groups))
+		var gpModels []GroupParticipantModel
+		for i, g := range t.Groups {
+			gID, err := uuid.Parse(g.ID)
+			if err != nil {
+				return err
+			}
+			groupModels[i] = GroupModel{
+				ID:           gID,
+				TournamentID: tID,
+				Name:         g.Name,
+			}
+			for idx, p := range g.Players {
+				pID, err := uuid.Parse(p.ID)
+				if err != nil {
+					return err
+				}
+				gpModels = append(gpModels, GroupParticipantModel{
+					GroupID:  gID,
+					PlayerID: pID,
+					Position: idx,
+				})
+			}
+		}
+		if _, err = tx.NewInsert().Model(&groupModels).Exec(ctx); err != nil {
+			return err
+		}
+		if len(gpModels) > 0 {
+			if _, err = tx.NewInsert().Model(&gpModels).Exec(ctx); err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
