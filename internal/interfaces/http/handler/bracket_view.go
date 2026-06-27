@@ -29,6 +29,10 @@ type DivisionView struct {
 	IsUnclassified bool
 	Players        []*player.Player
 
+	// GroupID is the DB group ID for elimination-format seeding draw.
+	// Empty for rounds-robin / groups-elimination divisions.
+	GroupID           string
+
 	Format            string
 	Standings         []PlayerStanding
 	RoundRobinMatches []MatchView
@@ -126,19 +130,18 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 
 	if t.SkipElo {
 		openPlayers := participants
+		var openGroupID string
 		if t.Format == "elimination" {
-			var matchingGroup *tournament.Group
-			for i := range t.Groups {
-				if t.Groups[i].Name == "Open Bracket - Bracket Draw" {
-					matchingGroup = &t.Groups[i]
-					break
+			if g := findGroupByPlayers(t, openPlayers); g != nil {
+				openGroupID = g.ID
+				if len(g.Players) > 0 {
+					openPlayers = g.Players
 				}
 			}
-			if matchingGroup != nil && len(matchingGroup.Players) > 0 {
-				openPlayers = matchingGroup.Players
-			}
 		}
-		vm.Divisions = append(vm.Divisions, buildDivisionView(t, "Open Bracket", "", 0, nil, false, openPlayers))
+		dv := buildDivisionView(t, "Open Bracket", "", 0, nil, false, openPlayers)
+		dv.GroupID = openGroupID
+		vm.Divisions = append(vm.Divisions, dv)
 		return vm
 	}
 
@@ -154,24 +157,38 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 
 	for _, d := range validDivs {
 		var dPlayers []*player.Player
+		var divGroupID string
 		name := d.Name
 		if strings.HasSuffix(strings.ToLower(name), " division") {
 			name = name[:len(name)-9]
 		}
 
 		if t.Format == "elimination" {
-			var matchingGroup *tournament.Group
-			expectedGroupName := fmt.Sprintf("%s - Bracket Draw", name)
+			// Find the bracket-draw group whose players belong to this division.
+			// We search by Elo range (same logic as the Elo filter below) applied
+			// to each group's player list.
 			for i := range t.Groups {
-				if t.Groups[i].Name == expectedGroupName {
-					matchingGroup = &t.Groups[i]
-					break
+				if !strings.HasSuffix(t.Groups[i].Name, " - Bracket Draw") {
+					continue
 				}
-			}
-			if matchingGroup != nil && len(matchingGroup.Players) > 0 {
-				dPlayers = matchingGroup.Players
-				for _, p := range dPlayers {
-					assignedMap[p.ID] = true
+				match := false
+				for _, gp := range t.Groups[i].Players {
+					elo := gp.SinglesElo
+					if t.Type == "doubles" || t.Type == "mixed_doubles" {
+						elo = gp.DoublesElo
+					}
+					if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
+						match = true
+						break
+					}
+				}
+				if match {
+					divGroupID = t.Groups[i].ID
+					dPlayers = t.Groups[i].Players
+					for _, p := range dPlayers {
+						assignedMap[p.ID] = true
+					}
+					break
 				}
 			}
 		}
@@ -193,7 +210,9 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 		}
 
 		if len(dPlayers) > 0 {
-			vm.Divisions = append(vm.Divisions, buildDivisionView(t, name, d.Color, d.MinElo, d.MaxElo, false, dPlayers))
+			dv := buildDivisionView(t, name, d.Color, d.MinElo, d.MaxElo, false, dPlayers)
+			dv.GroupID = divGroupID
+			vm.Divisions = append(vm.Divisions, dv)
 		}
 	}
 
@@ -205,10 +224,38 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 	}
 
 	if len(unassigned) > 0 {
-		vm.Divisions = append(vm.Divisions, buildDivisionView(t, "Unclassified", "", 0, nil, true, unassigned))
+		var unclassifiedGroupID string
+		if t.Format == "elimination" {
+			if g := findGroupByPlayers(t, unassigned); g != nil {
+				unclassifiedGroupID = g.ID
+			}
+		}
+		dv := buildDivisionView(t, "Unclassified", "", 0, nil, true, unassigned)
+		dv.GroupID = unclassifiedGroupID
+		vm.Divisions = append(vm.Divisions, dv)
 	}
 
 	return vm
+}
+
+// findGroupByPlayers returns the first tournament group that contains any of the given players.
+// Returns nil if no match is found.
+func findGroupByPlayers(t *tournament.Tournament, players []*player.Player) *tournament.Group {
+	if len(players) == 0 {
+		return nil
+	}
+	want := make(map[string]bool, len(players))
+	for _, p := range players {
+		want[p.ID] = true
+	}
+	for i := range t.Groups {
+		for _, gp := range t.Groups[i].Players {
+			if want[gp.ID] {
+				return &t.Groups[i]
+			}
+		}
+	}
+	return nil
 }
 
 func getBestOfForStage(t *tournament.Tournament, stage string) int {

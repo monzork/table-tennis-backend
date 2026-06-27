@@ -1,6 +1,7 @@
 {{$t := .Tournament}}
 {{$vm := .}}
 
+
 <div class="flex flex-col gap-10">
   {{range .Divisions}}
   <div class="glass rounded-2xl border border-white/10 p-6 overscroll-x-auto">
@@ -141,10 +142,17 @@
                         onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.ID}}&p2Id={{.Player2.ID}}')">
                         ⚡ Score
                       </button>
-                      {{if and .Match (eq .Match.Status "scheduled")}}
+                      {{if not .Match}}
                       <button
                         class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 px-1 transition-all"
-                        hx-post="/matches/{{$mId}}/start"
+                        hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.Player1.ID}}&p2Id={{.Player2.ID}}&stage={{.Stage}}"
+                        hx-swap="none">
+                        ▶ Start
+                      </button>
+                      {{else if eq .Match.Status "scheduled"}}
+                      <button
+                        class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 px-1 transition-all"
+                        hx-post="/matches/{{.Match.ID}}/start"
                         hx-swap="none">
                         ▶ Start
                       </button>
@@ -185,10 +193,11 @@
               data-group-id="{{$currentGroupID}}"
               class="group-card bg-black/20 rounded-3xl p-6 border border-white/5 shadow-lg relative transition-all duration-300"
               {{if $canMove}}
-                ondragover="handleDragOver(event)"
-                ondragenter="handleDragEnter(event, this)"
-                ondragleave="handleDragLeave(event, this)"
-                ondrop="handleDrop(event, '{{$t.ID}}', '{{$currentGroupID}}', this)"
+                data-tournament-id="{{$t.ID}}"
+                ondragover="onDragOver(event)"
+                ondragenter="onDragEnter(event, this)"
+                ondragleave="onDragLeave(event, this)"
+                ondrop="onDrop(event, this)"
               {{end}}>
               <div class="flex justify-between items-center border-b border-white/10 pb-4">
                 <div class="flex flex-col">
@@ -218,13 +227,16 @@
                     {{range $idx, $s := .Standings}}
                     <tr 
                       {{if $canMove}}
-                        draggable="true" 
-                        ondragstart="handleDragStart(event, '{{.Player.ID}}')" 
-                        ondragend="handleDragEnd(event)" 
-                        ondragover="handleDragOverRow(event)"
-                        ondragenter="handleDragEnterRow(event, this)"
-                        ondragleave="handleDragLeaveRow(event, this)"
-                        ondrop="handleDropRow(event, '{{$t.ID}}', '{{$currentGroupID}}', {{$idx}}, this)"
+                        draggable="true"
+                        ondragstart="onDragStart(event, '{{.Player.ID}}')"
+                        ondragend="onDragEnd(event)"
+                        data-tournament-id="{{$t.ID}}"
+                        data-group-id="{{$currentGroupID}}"
+                        data-target-index="{{$idx}}"
+                        ondragover="onDragOverRow(event)"
+                        ondragenter="onDragEnterRow(event, this)"
+                        ondragleave="onDragLeaveRow(event, this)"
+                        ondrop="onDropRow(event, this)"
                         class="cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all duration-200"
                       {{else}}
                         class="hover:bg-white/5 transition-all duration-200"
@@ -241,23 +253,6 @@
                           {{end}}
                           <span class="text-white">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</span>
                         </div>
-                        {{if $canMove}}
-                          <select 
-                            class="proj-hide bg-black/60 hover:bg-black/80 border border-white/10 rounded-lg text-[10px] px-2 py-1 text-gray-400 hover:text-white cursor-pointer transition-all focus:outline-none focus:ring-1 focus:ring-red-500/50 appearance-none pr-6 relative"
-                            style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23777%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 6px top 50%; background-size: 8px auto;"
-                            hx-post="/admin/tournaments/{{$t.ID}}/move-player"
-                            hx-vals='{"playerId": "{{.Player.ID}}"}'
-                            name="targetGroupId"
-                            hx-trigger="change"
-                            hx-swap="none">
-                            <option value="" disabled selected>Move...</option>
-                            {{range $divisionGroups}}
-                              {{if ne .Name $currentGroupName}}
-                                <option value="{{.ID}}">Move to {{.Name}}</option>
-                              {{end}}
-                            {{end}}
-                          </select>
-                        {{end}}
                       </td>
                       <td class="p-4 text-center opacity-60 tabular-nums">{{.Played}}</td>
                       <td class="p-4 text-center font-black text-white tabular-nums">{{.Wins}}</td>
@@ -328,10 +323,17 @@
                               onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.ID}}&p2Id={{.Player2.ID}}')">
                               ⚡ Score
                             </button>
-                            {{if and .Match (eq .Match.Status "scheduled")}}
+                            {{if not .Match}}
                             <button
                               class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 px-1 transition-all"
-                              hx-post="/matches/{{$mId}}/start"
+                              hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.Player1.ID}}&p2Id={{.Player2.ID}}&stage={{.Stage}}"
+                              hx-swap="none">
+                              ▶ Start
+                            </button>
+                            {{else if eq .Match.Status "scheduled"}}
+                            <button
+                              class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 px-1 transition-all"
+                              hx-post="/matches/{{.Match.ID}}/start"
                               hx-swap="none">
                               ▶ Start
                             </button>
@@ -420,10 +422,17 @@
                                     onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
                                     ⚡ Score
                                   </button>
-                                  {{if and .Match (eq .Match.Status "scheduled")}}
+                                  {{if not .Match}}
                                   <button
                                     class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
-                                    hx-post="/matches/{{$mId}}/start"
+                                    hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}&stage={{.Stage}}"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{else if eq .Match.Status "scheduled"}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/{{.Match.ID}}/start"
                                     hx-swap="none">
                                     ▶ Start
                                   </button>
@@ -458,7 +467,26 @@
       <!-- Direct Elimination -->
       {{if eq .Format "elimination"}}
         <!-- Bracket Seeding Draw List -->
-        <div class="mb-10 max-w-2xl glass rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+        {{/* GroupID is resolved in Go (bracket_view.go) — no fragile name-matching needed here */}}
+        {{$currentGroupID := .GroupID}}
+
+        {{$hasStarted := false}}
+        {{range $t.Matches}}
+          {{if or (eq .Status "in_progress") (eq .Status "finished")}}{{$hasStarted = true}}{{end}}
+        {{end}}
+        {{$canMove := true}}
+        {{if or $hasStarted $vm.IsPublic}}{{$canMove = false}}{{end}}
+
+        <div 
+          class="mb-10 max-w-2xl glass rounded-3xl border border-white/10 overflow-hidden shadow-2xl transition-all duration-300"
+          {{if $canMove}}
+            data-tournament-id="{{$t.ID}}"
+            data-group-id="{{$currentGroupID}}"
+            ondragover="onDragOver(event)"
+            ondragenter="onDragEnter(event, this)"
+            ondragleave="onDragLeave(event, this)"
+            ondrop="onDrop(event, this)"
+          {{end}}>
           <div class="bg-white/5 px-6 py-4 border-b border-white/10 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <h4 class="text-xs font-black uppercase text-gray-400 tracking-widest">Bracket Seeding Draw</h4>
@@ -476,34 +504,20 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
-              {{$currentGroupID := ""}}
-              {{$expectedGroupName := printf "%s - Bracket Draw" .Name}}
-              {{if .IsUnclassified}}{{$expectedGroupName = "Unclassified - Bracket Draw"}}{{end}}
-              {{if eq .Name "Open Bracket"}}{{$expectedGroupName = "Open Bracket - Bracket Draw"}}{{end}}
-              
-              {{range $gIdx, $g := $t.Groups}}
-                {{if eq $g.Name $expectedGroupName}}
-                  {{$currentGroupID = $g.ID}}
-                {{end}}
-              {{end}}
-              
-              {{$hasStarted := false}}
-              {{range $t.Matches}}
-                {{if or (eq .Status "in_progress") (eq .Status "finished")}}{{$hasStarted = true}}{{end}}
-              {{end}}
-              {{$canMove := true}}
-              {{if or $hasStarted $vm.IsPublic}}{{$canMove = false}}{{end}}
               
               {{range $idx, $p := .Players}}
               <tr 
                 {{if $canMove}}
-                  draggable="true" 
-                  ondragstart="handleDragStart(event, '{{$p.ID}}')" 
-                  ondragend="handleDragEnd(event)" 
-                  ondragover="handleDragOverRow(event)"
-                  ondragenter="handleDragEnterRow(event, this)"
-                  ondragleave="handleDragLeaveRow(event, this)"
-                  ondrop="handleDropRow(event, '{{$t.ID}}', '{{$currentGroupID}}', {{$idx}}, this)"
+                  draggable="true"
+                  ondragstart="onDragStart(event, '{{$p.ID}}')"
+                  ondragend="onDragEnd(event)"
+                  data-tournament-id="{{$t.ID}}"
+                  data-group-id="{{$currentGroupID}}"
+                  data-target-index="{{$idx}}"
+                  ondragover="onDragOverRow(event)"
+                  ondragenter="onDragEnterRow(event, this)"
+                  ondragleave="onDragLeaveRow(event, this)"
+                  ondrop="onDropRow(event, this)"
                   class="cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all duration-200"
                 {{else}}
                   class="opacity-75"
@@ -591,10 +605,17 @@
                               onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
                               ⚡ Score
                             </button>
-                            {{if and .Match (eq .Match.Status "scheduled")}}
+                            {{if not .Match}}
                             <button
                               class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
-                              hx-post="/matches/{{$mId}}/start"
+                              hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}&stage={{.Stage}}"
+                              hx-swap="none">
+                              ▶ Start
+                            </button>
+                            {{else if eq .Match.Status "scheduled"}}
+                            <button
+                              class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                              hx-post="/matches/{{.Match.ID}}/start"
                               hx-swap="none">
                               ▶ Start
                             </button>

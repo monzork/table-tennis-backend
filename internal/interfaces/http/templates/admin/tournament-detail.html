@@ -483,84 +483,93 @@
         }
     });
 
-    // Drag and Drop handlers for bracket seeding / group moves
-    function handleDragStart(event, playerId) {
-        event.dataTransfer.setData("text/plain", playerId);
-        event.dataTransfer.effectAllowed = "move";
+    // ── Drag & Drop ── JS reads data-* attributes at drop time → htmx.ajax() POST.
+    // Server responds with HX-Trigger: reload-bracket → bracket reloads automatically.
+
+    let _draggedPlayerId = null;
+
+    function onDragStart(event, playerId) {
+        _draggedPlayerId = playerId;
+        event.dataTransfer.effectAllowed = 'move';
         event.currentTarget.classList.add('opacity-40');
     }
 
-    function handleDragEnd(event) {
+    function onDragEnd(event) {
         event.currentTarget.classList.remove('opacity-40');
+        _draggedPlayerId = null;
     }
 
-    function handleDragOver(event) {
+    // ── Group-card / seeding-draw container drop zone ──
+    // Moves the player into this group (appends to end).
+    function onDragOver(event) {
         event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
+        event.dataTransfer.dropEffect = 'move';
     }
 
-    function handleDragEnter(event, element) {
+    function onDragEnter(event, el) {
         event.preventDefault();
-        element.classList.remove('border-white/5');
-        element.classList.add('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
+        el.classList.remove('border-white/5');
+        el.classList.add('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
     }
 
-    function handleDragOverRow(event) {
+    function onDragLeave(event, el) {
+        el.classList.add('border-white/5');
+        el.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
+    }
+
+    function onDrop(event, el) {
         event.preventDefault();
-        event.stopPropagation();
-        event.dataTransfer.dropEffect = "move";
-    }
+        el.classList.add('border-white/5');
+        el.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
 
-    function handleDragEnterRow(event, element) {
-        event.preventDefault();
-        event.stopPropagation();
-        element.classList.add('border-t-2', 'border-red-500/70', 'bg-red-500/5');
-    }
-
-    function handleDragLeaveRow(event, element) {
-        event.stopPropagation();
-        element.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
-    }
-
-    function handleDropRow(event, tournamentId, targetGroupId, targetIndex, element) {
-        event.preventDefault();
-        event.stopPropagation();
-        element.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
-
-        const playerId = event.dataTransfer.getData("text/plain");
+        const playerId = _draggedPlayerId;
         if (!playerId) return;
 
+        const tournamentId = el.dataset.tournamentId;
+        const targetGroupId = el.dataset.groupId || '';
+
         htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/move-player', {
-            source: document.getElementById('bracket-container'),
+            source: document.body,
             swap: 'none',
-            values: {
-                playerId: playerId,
-                targetGroupId: targetGroupId,
-                targetIndex: targetIndex
-            }
+            values: { playerId, targetGroupId }
         });
     }
 
-    function handleDragLeave(event, element) {
-        element.classList.add('border-white/5');
-        element.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
+    // ── Row drop zone ── reorders within a group or moves to a specific index.
+    // stopPropagation prevents the parent group card from also firing.
+    function onDragOverRow(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = 'move';
     }
 
-    function handleDrop(event, tournamentId, targetGroupId, element) {
+    function onDragEnterRow(event, el) {
         event.preventDefault();
-        element.classList.add('border-white/5');
-        element.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
+        event.stopPropagation();
+        el.classList.add('border-t-2', 'border-red-500/70', 'bg-red-500/5');
+    }
 
-        const playerId = event.dataTransfer.getData("text/plain");
+    function onDragLeaveRow(event, el) {
+        event.stopPropagation();
+        el.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
+    }
+
+    function onDropRow(event, el) {
+        event.preventDefault();
+        event.stopPropagation();
+        el.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
+
+        const playerId = _draggedPlayerId;
         if (!playerId) return;
 
+        const tournamentId = el.dataset.tournamentId;
+        const targetGroupId = el.dataset.groupId || '';
+        const targetIndex   = parseInt(el.dataset.targetIndex ?? '-1', 10);
+
         htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/move-player', {
-            source: document.getElementById('bracket-container'),
+            source: document.body,
             swap: 'none',
-            values: {
-                playerId: playerId,
-                targetGroupId: targetGroupId
-            }
+            values: { playerId, targetGroupId, targetIndex }
         });
     }
 

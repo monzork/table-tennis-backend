@@ -2,9 +2,11 @@ package handler
 
 import (
 	"fmt"
+	"strings"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/tournament"
+	divisionDomain "table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 
@@ -511,6 +513,7 @@ type BoardCard struct {
 	ScoreA      int
 	ScoreB      int
 	Pin         string
+	GroupName   string
 }
 
 type TableVM struct {
@@ -540,7 +543,7 @@ func buildTables(t *tournamentDomain.Tournament, excludeMatchID string) []TableV
 	return tables
 }
 
-func buildBoardCards(t *tournamentDomain.Tournament) (scheduled, inProgress, finished []BoardCard) {
+func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Division) (scheduled, inProgress, finished []BoardCard) {
 	bestOfForStage := func(stage string) int {
 		for _, r := range t.StageRules {
 			if r.Stage == stage {
@@ -566,6 +569,22 @@ func buildBoardCards(t *tournamentDomain.Tournament) (scheduled, inProgress, fin
 		return players[0].ID
 	}
 
+	findGroupName := func(playerID string) string {
+		for _, g := range t.Groups {
+			for _, p := range g.Players {
+				if p.ID == playerID {
+					name := g.Name
+					if idx := strings.Index(g.Name, " - "); idx != -1 {
+						name = g.Name[idx+3:]
+					}
+					return name
+				}
+			}
+		}
+		return ""
+	}
+
+	// 1. Process actual matches in database
 	for i := range t.Matches {
 		m := &t.Matches[i]
 		if m.TeamMatchID != nil { // skip sub-matches
@@ -584,6 +603,12 @@ func buildBoardCards(t *tournamentDomain.Tournament) (scheduled, inProgress, fin
 			ScoreA:      m.ScoreA(),
 			ScoreB:      m.ScoreB(),
 			Pin:         m.Pin,
+			GroupName: func() string {
+				if len(m.TeamA) > 0 {
+					return findGroupName(m.TeamA[0].ID)
+				}
+				return ""
+			}(),
 		}
 		switch m.Status {
 		case "in_progress":
@@ -594,7 +619,123 @@ func buildBoardCards(t *tournamentDomain.Tournament) (scheduled, inProgress, fin
 			scheduled = append(scheduled, card)
 		}
 	}
+
+	// 2. Identify virtual matches that should be scheduled based on the format
+	vm := BuildTournamentViewModel(t, divs)
+	for _, dv := range vm.Divisions {
+		if vm.Format == "round_robin" {
+			for _, mv := range dv.RoundRobinMatches {
+				if mv.Player1 != nil && mv.Player2 != nil {
+					if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID) {
+						groupName := findGroupName(mv.Player1.ID)
+						scheduled = append(scheduled, BoardCard{
+							MatchID:     "",
+							Status:      "scheduled",
+							Stage:       mv.Stage,
+							BestOf:      mv.BestOf,
+							PlayerAName: mv.Player1.FirstNameWithSecond() + " " + mv.Player1.LastNameWithSecond(),
+							PlayerBName: mv.Player2.FirstNameWithSecond() + " " + mv.Player2.LastNameWithSecond(),
+							P1Id:        mv.Player1.ID,
+							P2Id:        mv.Player2.ID,
+							TableNumber: nil,
+							ScoreA:      0,
+							ScoreB:      0,
+							Pin:         "",
+							GroupName:   groupName,
+						})
+					}
+				}
+			}
+		} else if vm.Format == "groups_elimination" {
+			for _, g := range dv.Groups {
+				for _, mv := range g.Matches {
+					if mv.Player1 != nil && mv.Player2 != nil {
+						if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID) {
+							scheduled = append(scheduled, BoardCard{
+								MatchID:     "",
+								Status:      "scheduled",
+								Stage:       mv.Stage,
+								BestOf:      mv.BestOf,
+								PlayerAName: mv.Player1.FirstNameWithSecond() + " " + mv.Player1.LastNameWithSecond(),
+								PlayerBName: mv.Player2.FirstNameWithSecond() + " " + mv.Player2.LastNameWithSecond(),
+								P1Id:        mv.Player1.ID,
+								P2Id:        mv.Player2.ID,
+								TableNumber: nil,
+								ScoreA:      0,
+								ScoreB:      0,
+								Pin:         "",
+								GroupName:   g.Name,
+							})
+						}
+					}
+				}
+			}
+			if dv.AllGroupsFinished {
+				for _, round := range dv.KnockoutRounds {
+					for _, bmv := range round.Matches {
+						if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
+							if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID) {
+								scheduled = append(scheduled, BoardCard{
+									MatchID:     "",
+									Status:      "scheduled",
+									Stage:       bmv.Stage,
+									BestOf:      bmv.BestOf,
+									PlayerAName: bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
+									PlayerBName: bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
+									P1Id:        bmv.Player1.Player.ID,
+									P2Id:        bmv.Player2.Player.ID,
+									TableNumber: nil,
+									ScoreA:      0,
+									ScoreB:      0,
+									Pin:         "",
+									GroupName:   "",
+								})
+							}
+						}
+					}
+				}
+			}
+		} else if vm.Format == "elimination" {
+			for _, round := range dv.KnockoutRounds {
+				for _, bmv := range round.Matches {
+					if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
+						if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID) {
+							scheduled = append(scheduled, BoardCard{
+								MatchID:     "",
+								Status:      "scheduled",
+								Stage:       bmv.Stage,
+								BestOf:      bmv.BestOf,
+								PlayerAName: bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
+								PlayerBName: bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
+								P1Id:        bmv.Player1.Player.ID,
+								P2Id:        bmv.Player2.Player.ID,
+								TableNumber: nil,
+								ScoreA:      0,
+								ScoreB:      0,
+								Pin:         "",
+								GroupName:   "",
+							})
+						}
+					}
+				}
+			}
+		}
+	}
 	return
+}
+
+func matchExists(matches []tournamentDomain.Match, p1ID, p2ID string) bool {
+	for _, m := range matches {
+		if m.TeamMatchID != nil {
+			continue
+		}
+		if len(m.TeamA) > 0 && len(m.TeamB) > 0 {
+			if (m.TeamA[0].ID == p1ID && m.TeamB[0].ID == p2ID) || (m.TeamA[0].ID == p2ID && m.TeamB[0].ID == p1ID) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (h *TournamentHandler) Board(c *fiber.Ctx) error {
@@ -603,7 +744,8 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
-	scheduled, inProgress, finished := buildBoardCards(t)
+	divs, _ := h.divisionUC.GetAll(c.Context())
+	scheduled, inProgress, finished := buildBoardCards(t, divs)
 	tables := buildTables(t, "")
 	return c.Render("admin/tournament-board", fiber.Map{
 		"Tournament": t,
@@ -620,7 +762,8 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
-	scheduled, inProgress, finished := buildBoardCards(t)
+	divs, _ := h.divisionUC.GetAll(c.Context())
+	scheduled, inProgress, finished := buildBoardCards(t, divs)
 	tables := buildTables(t, "")
 	return c.Render("admin/partials/board-columns", fiber.Map{
 		"Tournament": t,

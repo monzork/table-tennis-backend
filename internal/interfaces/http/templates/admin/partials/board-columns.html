@@ -32,7 +32,12 @@
     {{range .Scheduled}}
     <div class="glass rounded-2xl border border-white/10 p-4 flex flex-col gap-3 group">
       <div class="flex items-center justify-between gap-2">
-        <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+          {{if .GroupName}}
+          <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
+          {{end}}
+        </div>
         {{if .TableNumber}}<span class="text-[9px] font-bold text-yellow-400 font-mono">{{index $.T "board.table"}} {{.TableNumber}}</span>{{end}}
       </div>
       <div class="space-y-1.5">
@@ -48,6 +53,22 @@
       <div class="flex flex-col gap-2 mt-1 w-full">
         {{if .MatchID}}
         <form hx-post="/matches/{{.MatchID}}/start" hx-swap="none" class="flex gap-1.5 items-center w-full">
+          <select name="tableNumber" class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
+            <option value="">{{index $.T "board.auto"}}</option>
+            {{range $.Tables}}
+              <option value="{{.Number}}" {{if .IsUsed}}disabled class="text-gray-500 bg-black"{{else}}class="text-white bg-black"{{end}}>
+                T{{.Number}} {{if .IsUsed}}{{index $.T "board.used"}}{{else}}{{index $.T "board.free"}}{{end}}
+              </option>
+            {{end}}
+          </select>
+          <button
+            type="submit"
+            class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 transition-all">
+            {{index $.T "board.start"}}
+          </button>
+        </form>
+        {{else}}
+        <form hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}&stage={{.Stage}}" hx-swap="none" class="flex gap-1.5 items-center w-full">
           <select name="tableNumber" class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
             <option value="">{{index $.T "board.auto"}}</option>
             {{range $.Tables}}
@@ -95,7 +116,12 @@
     {{range .InProgress}}
     <div class="glass rounded-2xl border border-yellow-500/20 bg-yellow-400/5 p-4 flex flex-col gap-3">
       <div class="flex items-center justify-between gap-2">
-        <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+          {{if .GroupName}}
+          <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
+          {{end}}
+        </div>
         {{if .TableNumber}}<span class="text-[9px] font-bold text-yellow-400 font-mono">{{index $.T "board.table"}} {{.TableNumber}}</span>{{else}}<span class="text-[9px] text-gray-600 font-mono">{{index $.T "board.no_table"}}</span>{{end}}
       </div>
       <div class="space-y-1.5">
@@ -145,7 +171,12 @@
     {{range .Finished}}
     <div class="glass rounded-2xl border border-green-500/10 bg-green-400/5 p-4 flex flex-col gap-2 opacity-80">
       <div class="flex items-center justify-between gap-2">
-        <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+          {{if .GroupName}}
+          <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
+          {{end}}
+        </div>
         {{if .TableNumber}}<span class="text-[9px] text-gray-600 font-mono">{{index $.T "board.table"}} {{.TableNumber}}</span>{{end}}
       </div>
       <div class="space-y-1.5">
