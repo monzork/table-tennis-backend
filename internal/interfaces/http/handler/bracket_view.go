@@ -40,7 +40,10 @@ type DivisionView struct {
 	Groups            []GroupView
 	AllGroupsFinished bool
 
-	KnockoutRounds []RoundView
+	KnockoutRounds       []RoundView
+	KnockoutRoundsLeft   []RoundView
+	KnockoutRoundsRight  []RoundView
+	KnockoutRoundsCenter []RoundView
 }
 
 type PlayerStanding = tournament.PlayerStanding
@@ -313,7 +316,31 @@ func buildDivisionView(t *tournament.Tournament, name, color string, minElo int1
 		dv.KnockoutRounds = buildBracketRounds(t, players)
 	}
 
+	dv.KnockoutRoundsLeft, dv.KnockoutRoundsRight, dv.KnockoutRoundsCenter = splitKnockoutRounds(dv.KnockoutRounds)
+
 	return dv
+}
+
+func splitKnockoutRounds(rounds []RoundView) (left, right, center []RoundView) {
+	for _, r := range rounds {
+		if r.Name == "🏆 Final" || r.Name == "Champion" {
+			center = append(center, r)
+		} else {
+			half := len(r.Matches) / 2
+			
+			leftRound := RoundView{Name: r.Name, Matches: r.Matches[:half]}
+			rightRound := RoundView{Name: r.Name, Matches: r.Matches[half:]}
+			
+			left = append(left, leftRound)
+			right = append(right, rightRound)
+		}
+	}
+	
+	for i, j := 0, len(right)-1; i < j; i, j = i+1, j-1 {
+		right[i], right[j] = right[j], right[i]
+	}
+	
+	return left, right, center
 }
 
 

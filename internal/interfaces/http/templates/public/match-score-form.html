@@ -10,6 +10,9 @@
 </p>
 
 <form
+    id="public-score-form"
+    data-player-a="{{.PlayerA}}"
+    data-player-b="{{.PlayerB}}"
     hx-post="/public/matches/score/update"
     hx-target="#public-score-result"
     hx-swap="innerHTML"
@@ -52,6 +55,43 @@
 </form>
 
 <script>
+document.getElementById('public-score-form').addEventListener('htmx:confirm', function(e) {
+    let setsA = 0; let setsB = 0;
+    let inputsA = this.querySelectorAll('input[name=\'scores[]_a\']');
+    let inputsB = this.querySelectorAll('input[name=\'scores[]_b\']');
+    let hasScores = false;
+    
+    for (let i = 0; i < inputsA.length; i++) {
+        let a = parseInt(inputsA[i].value);
+        let b = parseInt(inputsB[i].value);
+        if (!isNaN(a) && !isNaN(b)) {
+            hasScores = true;
+            if (a > b) setsA++;
+            else if (b > a) setsB++;
+        }
+    }
+    
+    if (hasScores) {
+        let pA = this.getAttribute('data-player-a');
+        let pB = this.getAttribute('data-player-b');
+        let msg = "Are you sure the result is:\n\n";
+        
+        if (setsA > setsB) {
+            msg += pA + " wins " + setsA + " - " + setsB + " over " + pB;
+        } else if (setsB > setsA) {
+            msg += pB + " wins " + setsB + " - " + setsA + " over " + pA;
+        } else {
+            msg += "Tie " + setsA + " - " + setsB;
+        }
+        msg += "?";
+
+        e.preventDefault();
+        if (confirm(msg)) {
+            e.detail.issueRequest(true);
+        }
+    }
+});
+
 // Show error div when it has content
 document.getElementById('public-score-result').addEventListener('DOMSubtreeModified', function() {
     if (this.textContent.trim() !== '') {

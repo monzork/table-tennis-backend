@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -45,7 +46,8 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 		pdf.SetFont("Arial", "B", 14)
 		pdf.CellFormat(0, 10, tr("TORNEO TENIS DE MESA - "+strings.ToUpper(t.Name)), "", 1, "L", false, 0, "")
 		pdf.SetDrawColor(200, 200, 200)
-		pdf.Line(15, 38, 195, 38)
+		w, _ := pdf.GetPageSize()
+		pdf.Line(15, 38, w-15, 38)
 	})
 
 	// Helpers
@@ -55,19 +57,30 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 		pdf.Ln(3)
 	}
 
+	formatPlayerName := func(p *player.Player) string {
+		if p == nil {
+			return ""
+		}
+		lastName := strings.TrimSpace(p.LastName)
+		if lastName == " (Team)" || lastName == "" {
+			return p.FirstName
+		}
+		return p.FirstName + " " + p.LastName
+	}
+
 	getMatchPlayerNames := func(m tournamentDomain.Match) (string, string) {
 		nameA := "Team A"
 		if len(m.TeamA) > 0 {
-			nameA = m.TeamA[0].FirstName + " " + m.TeamA[0].LastName
+			nameA = formatPlayerName(m.TeamA[0])
 			if len(m.TeamA) > 1 {
-				nameA += "/" + m.TeamA[1].FirstName + " " + m.TeamA[1].LastName
+				nameA += "/" + formatPlayerName(m.TeamA[1])
 			}
 		}
 		nameB := "Team B"
 		if len(m.TeamB) > 0 {
-			nameB = m.TeamB[0].FirstName + " " + m.TeamB[0].LastName
+			nameB = formatPlayerName(m.TeamB[0])
 			if len(m.TeamB) > 1 {
-				nameB += "/" + m.TeamB[1].FirstName + " " + m.TeamB[1].LastName
+				nameB += "/" + formatPlayerName(m.TeamB[1])
 			}
 		}
 		return nameA, nameB
@@ -171,7 +184,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 					country = "UNKNOWN"
 				}
 				pdf.CellFormat(20, 8, fmt.Sprintf("%d", 101+i), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(110, 8, tr(p.FirstName+" "+p.LastName), "1", 0, "L", false, 0, "")
+				pdf.CellFormat(110, 8, tr(formatPlayerName(p)), "1", 0, "L", false, 0, "")
 				pdf.CellFormat(50, 8, tr(codeMap[country]), "1", 1, "C", false, 0, "")
 			}
 		}
@@ -189,8 +202,99 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 					country = "UNKNOWN"
 				}
 				pdf.CellFormat(20, 8, fmt.Sprintf("%d", 301+i), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(110, 8, tr(p.FirstName+" "+p.LastName), "1", 0, "L", false, 0, "")
+				pdf.CellFormat(110, 8, tr(formatPlayerName(p)), "1", 0, "L", false, 0, "")
 				pdf.CellFormat(50, 8, tr(codeMap[country]), "1", 1, "C", false, 0, "")
+			}
+		}
+	}
+
+	// 2.5 GROUP STANDINGS / POOLS
+	if t.Format == "round_robin" || t.Format == "groups_elimination" {
+		type groupStandings struct {
+			DivisionName string
+			GroupName    string
+			Players      []*player.Player
+			Standings    []tournamentDomain.PlayerStanding
+		}
+		var groupStages []groupStandings
+		for i := range t.Groups {
+			g := &t.Groups[i]
+			if !strings.HasSuffix(g.Name, " - Bracket Draw") {
+				divName := "Open Division"
+				grpName := g.Name
+				if idx := strings.Index(g.Name, " - "); idx != -1 {
+					divName = g.Name[:idx]
+					grpName = g.Name[idx+3:]
+				}
+				// Filter matches that are in this group and have valid teams
+				var gMatches []tournamentDomain.Match
+				for _, m := range t.Matches {
+					if m.TeamMatchID != nil {
+						continue
+					}
+					if len(m.TeamA) > 0 && len(m.TeamB) > 0 {
+						p1InGroup, p2InGroup := false, false
+						for _, gp := range g.Players {
+							if gp.ID == m.TeamA[0].ID {
+								p1InGroup = true
+							}
+							if gp.ID == m.TeamB[0].ID {
+								p2InGroup = true
+							}
+						}
+						if p1InGroup && p2InGroup && strings.ToLower(m.Stage) == "group" {
+							gMatches = append(gMatches, m)
+						}
+					}
+				}
+				st := tournamentDomain.BuildStandings(g.Players, gMatches)
+				groupStages = append(groupStages, groupStandings{
+					DivisionName: divName,
+					GroupName:    grpName,
+					Players:      g.Players,
+					Standings:    st,
+				})
+			}
+		}
+
+		if len(groupStages) > 0 {
+			pdf.AddPage()
+			writeHeader("GROUP STANDINGS / TABLAS DE POSICIONES DE GRUPOS")
+
+			for _, gs := range groupStages {
+				pdf.SetFont("Arial", "B", 10)
+				pdf.CellFormat(0, 8, tr(strings.ToUpper(gs.DivisionName)+" - "+strings.ToUpper(gs.GroupName)), "", 1, "L", false, 0, "")
+				pdf.Ln(2)
+
+				// Header
+				pdf.SetFillColor(240, 240, 240)
+				pdf.SetFont("Arial", "B", 9)
+				pdf.CellFormat(12, 8, "Pos", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(73, 8, tr("JUGADOR / PLAYER"), "1", 0, "C", true, 0, "")
+				pdf.CellFormat(15, 8, "P", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(15, 8, "W", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(15, 8, "L", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(15, 8, "PTS", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(35, 8, tr("SETS (+/-)"), "1", 1, "C", true, 0, "")
+
+				pdf.SetFont("Arial", "", 9)
+				for idx, std := range gs.Standings {
+					pdf.CellFormat(12, 8, fmt.Sprintf("%d", idx+1), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(73, 8, tr(formatPlayerName(std.Player)), "1", 0, "L", false, 0, "")
+					pdf.CellFormat(15, 8, fmt.Sprintf("%d", std.Played), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(15, 8, fmt.Sprintf("%d", std.Wins), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(15, 8, fmt.Sprintf("%d", std.Losses), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(15, 8, fmt.Sprintf("%d", std.Wins*2+std.Losses), "1", 0, "C", false, 0, "")
+
+					diff := std.SetsWon - std.SetsLost
+					diffStr := fmt.Sprintf("%+d", diff)
+					if diff == 0 {
+						diffStr = "0"
+					}
+					setsStr := fmt.Sprintf("%d - %d (%s)", std.SetsWon, std.SetsLost, diffStr)
+					pdf.CellFormat(35, 8, setsStr, "1", 1, "C", false, 0, "")
+				}
+				pdf.Ln(6)
 			}
 		}
 	}
@@ -316,9 +420,236 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 		}
 	}
 
+	// 3.5 VISUAL BRACKET DRAW
+	if t.Format == "elimination" || t.Format == "groups_elimination" {
+		type divisionBracket struct {
+			Name   string
+			Group  *tournamentDomain.Group
+			Rounds []pdfRoundView
+		}
+		var brackets []divisionBracket
+
+		for i := range t.Groups {
+			g := &t.Groups[i]
+			if strings.HasSuffix(g.Name, " - Bracket Draw") {
+				divName := g.Name[:len(g.Name)-15]
+				var rounds []pdfRoundView
+				if t.Format == "groups_elimination" {
+					var divRRGroups []*tournamentDomain.Group
+					for j := range t.Groups {
+						rg := &t.Groups[j]
+						if !strings.HasSuffix(rg.Name, " - Bracket Draw") && strings.HasPrefix(rg.Name, divName+" - ") {
+							divRRGroups = append(divRRGroups, rg)
+						}
+					}
+					sort.Slice(divRRGroups, func(a, b int) bool {
+						return divRRGroups[a].Name < divRRGroups[b].Name
+					})
+
+					var advancing []*player.Player
+					take := t.GroupPassCount
+					if take == 0 {
+						take = 2
+					}
+					for _, rg := range divRRGroups {
+						var rgMatches []tournamentDomain.Match
+						for _, m := range t.Matches {
+							if m.TeamMatchID != nil {
+								continue
+							}
+							if len(m.TeamA) > 0 && len(m.TeamB) > 0 {
+								p1InGroup, p2InGroup := false, false
+								for _, gp := range rg.Players {
+									if gp.ID == m.TeamA[0].ID {
+										p1InGroup = true
+									}
+									if gp.ID == m.TeamB[0].ID {
+										p2InGroup = true
+									}
+								}
+								if p1InGroup && p2InGroup && strings.ToLower(m.Stage) == "group" {
+									rgMatches = append(rgMatches, m)
+								}
+							}
+						}
+						st := tournamentDomain.BuildStandings(rg.Players, rgMatches)
+						limit := int(take)
+						if limit > len(st) {
+							limit = len(st)
+						}
+						for k := 0; k < limit; k++ {
+							advancing = append(advancing, st[k].Player)
+						}
+					}
+					sort.Slice(advancing, func(a, b int) bool {
+						ea := advancing[a].SinglesElo
+						eb := advancing[b].SinglesElo
+						if t.Type == "doubles" || t.Type == "mixed_doubles" {
+							ea = advancing[a].DoublesElo
+							eb = advancing[b].DoublesElo
+						}
+						return ea > eb
+					})
+					rounds = buildPdfBracketRounds(t, advancing)
+				} else {
+					rounds = buildPdfBracketRounds(t, g.Players)
+				}
+
+				if len(rounds) > 0 {
+					brackets = append(brackets, divisionBracket{
+						Name:   divName,
+						Group:  g,
+						Rounds: rounds,
+					})
+				}
+			}
+		}
+
+		for _, br := range brackets {
+			pdf.AddPageFormat("L", gofpdf.SizeType{Wd: 210, Ht: 297})
+
+			pdf.SetFont("Arial", "B", 12)
+			pdf.CellFormat(0, 8, tr("VISUAL BRACKET - "+strings.ToUpper(br.Name)), "", 1, "C", false, 0, "")
+			pdf.Ln(4)
+
+			w, h := pdf.GetPageSize()
+			marginL, marginT, marginR, marginB := 15.0, 42.0, 15.0, 15.0
+			printableW := w - marginL - marginR
+			printableH := h - marginT - marginB
+
+			rounds := br.Rounds
+			numRounds := len(rounds)
+			if numRounds == 0 {
+				continue
+			}
+
+			colW := printableW / float64(numRounds)
+			boxW := colW - 8.0
+			if boxW > 45.0 {
+				boxW = 45.0
+			}
+			boxH := 12.0
+
+			pdf.SetFont("Arial", "B", 8)
+			pdf.SetTextColor(100, 100, 100)
+			for r, round := range rounds {
+				colStartX := marginL + float64(r)*colW
+				textX := colStartX + (colW-boxW)/2
+				pdf.Text(textX, marginT - 2, tr(round.Name))
+			}
+			pdf.SetTextColor(0, 0, 0)
+
+			for r, round := range rounds {
+				colStartX := marginL + float64(r)*colW
+				x := colStartX + (colW-boxW)/2
+				numMatches := len(round.Matches)
+
+				for j, m := range round.Matches {
+					y := marginT + (printableH/float64(numMatches))*(float64(j)+0.5) - boxH/2
+
+					if round.Name == "Champion" {
+						pdf.SetFillColor(255, 240, 220)
+						pdf.Rect(x, y+boxH/4, boxW, boxH/2, "FD")
+
+						pdf.SetFont("Arial", "B", 7)
+						champName := "TBD"
+						if m.Player1 != nil && m.Player1.Player != nil {
+							champName = formatPlayerName(m.Player1.Player)
+						}
+						pdf.Text(x+4, y+boxH/2+2, tr("🏆 "+truncateStr(champName, 18)))
+						continue
+					}
+
+					pdf.SetFillColor(255, 255, 255)
+					pdf.Rect(x, y, boxW, boxH, "FD")
+					pdf.Line(x, y+boxH/2, x+boxW, y+boxH/2)
+
+					p1Name, p1Seed := "", ""
+					if m.Player1 != nil && m.Player1.Player != nil {
+						p1Name = formatPlayerName(m.Player1.Player)
+						if m.Player1.Seed > 0 {
+							p1Seed = fmt.Sprintf("#%d ", m.Player1.Seed)
+						}
+					} else if m.Player1 != nil {
+						p1Name = "BYE"
+					} else {
+						p1Name = "TBD"
+					}
+
+					p2Name, p2Seed := "", ""
+					if m.Player2 != nil && m.Player2.Player != nil {
+						p2Name = formatPlayerName(m.Player2.Player)
+						if m.Player2.Seed > 0 {
+							p2Seed = fmt.Sprintf("#%d ", m.Player2.Seed)
+						}
+					} else if m.Player2 != nil {
+						p2Name = "BYE"
+					} else {
+						p2Name = "TBD"
+					}
+
+					score1, score2 := "", ""
+					if m.Match != nil && (m.Match.Status == "finished" || m.Match.Status == "in_progress") {
+						score1 = fmt.Sprintf("%d", m.Match.ScoreA())
+						score2 = fmt.Sprintf("%d", m.Match.ScoreB())
+					}
+
+					p1Bold, p2Bold := "", ""
+					if m.Match != nil && m.Match.Status == "finished" {
+						if m.Match.WinnerTeam == "A" {
+							p1Bold = "B"
+						} else if m.Match.WinnerTeam == "B" {
+							p2Bold = "B"
+						}
+					}
+
+					pdf.SetFont("Arial", p1Bold, 7)
+					pdf.Text(x+2, y+4.5, tr(p1Seed+truncateStr(p1Name, 18)))
+					if score1 != "" {
+						pdf.SetFont("Arial", "B", 7)
+						pdf.Text(x+boxW-5, y+4.5, score1)
+					}
+
+					pdf.SetFont("Arial", p2Bold, 7)
+					pdf.Text(x+2, y+10.5, tr(p2Seed+truncateStr(p2Name, 18)))
+					if score2 != "" {
+						pdf.SetFont("Arial", "B", 7)
+						pdf.Text(x+boxW-5, y+10.5, score2)
+					}
+				}
+
+				if r < numRounds-1 {
+					nextNumMatches := len(rounds[r+1].Matches)
+					if nextNumMatches > 0 && rounds[r+1].Name != "Champion" {
+						for j := 0; j < numMatches; j++ {
+							currentMidY := marginT + (printableH/float64(numMatches))*(float64(j)+0.5)
+							nextJ := j / 2
+							nextMidY := marginT + (printableH/float64(nextNumMatches))*(float64(nextJ)+0.5)
+
+							lineX1 := x + boxW
+							lineX2 := x + boxW + (colW-boxW)/2
+
+							pdf.SetDrawColor(180, 180, 180)
+							pdf.Line(lineX1, currentMidY, lineX2, currentMidY)
+
+							if j%2 == 0 && j+1 < numMatches {
+								siblingMidY := marginT + (printableH/float64(numMatches))*(float64(j+1)+0.5)
+								pdf.Line(lineX2, currentMidY, lineX2, siblingMidY)
+
+								nextColStartX := marginL + float64(r+1)*colW
+								nextColBoxX := nextColStartX + (colW-boxW)/2
+								pdf.Line(lineX2, nextMidY, nextColBoxX, nextMidY)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// 4. DETAILED MATCH RESULTS
 	if len(t.Matches) > 0 {
-		pdf.AddPage()
+		pdf.AddPageFormat("P", gofpdf.SizeType{Wd: 210, Ht: 297})
 		writeHeader("DETAILED MATCH RESULTS")
 
 		pdf.SetFont("Arial", "B", 8)
@@ -420,6 +751,245 @@ func findHeaderImage() string {
 		dir = parent
 	}
 	return "open_tdm.jpeg"
+}
+
+type pdfMatchSlot struct {
+	Seed   int
+	Player *player.Player
+}
+
+type pdfBracketMatchView struct {
+	Player1 *pdfMatchSlot
+	Player2 *pdfMatchSlot
+	Match   *tournamentDomain.Match
+	Stage   string
+	BestOf  int
+}
+
+type pdfRoundView struct {
+	Name    string
+	Matches []pdfBracketMatchView
+}
+
+func nextPow2(n int) int {
+	if n <= 1 {
+		return 1
+	}
+	p := 1
+	for p < n {
+		p *= 2
+	}
+	return p
+}
+
+func getSeedingArrangement(size int) []int {
+	rounds := int(math.Log2(float64(size)))
+	if rounds == 0 {
+		return []int{1}
+	}
+	bracket := []int{1, 2}
+	for r := 2; r <= rounds; r++ {
+		var newBracket []int
+		sum := int(math.Pow(2, float64(r))) + 1
+		for i, seed := range bracket {
+			if i%2 == 0 {
+				newBracket = append(newBracket, seed, sum-seed)
+			} else {
+				newBracket = append(newBracket, sum-seed, seed)
+			}
+		}
+		bracket = newBracket
+	}
+	return bracket
+}
+
+func buildPdfBracketRounds(t *tournamentDomain.Tournament, players []*player.Player) []pdfRoundView {
+	if len(players) == 0 {
+		return nil
+	}
+	unresolvedSlot := &pdfMatchSlot{Seed: 0, Player: nil}
+	size := nextPow2(len(players))
+	if size < 2 {
+		size = 2
+	}
+	arrangement := getSeedingArrangement(size)
+
+	type Pair struct {
+		P1 *pdfMatchSlot
+		P2 *pdfMatchSlot
+	}
+
+	var current []Pair
+	for i := 0; i < len(arrangement); i += 2 {
+		s1 := arrangement[i] - 1
+		s2 := -1
+		if i+1 < len(arrangement) {
+			s2 = arrangement[i+1] - 1
+		}
+		
+		var p1, p2 *pdfMatchSlot
+		if s1 >= 0 && s1 < len(players) {
+			p1 = &pdfMatchSlot{Seed: s1 + 1, Player: players[s1]}
+		}
+		if s2 >= 0 && s2 < len(players) {
+			p2 = &pdfMatchSlot{Seed: s2 + 1, Player: players[s2]}
+		}
+		current = append(current, Pair{P1: p1, P2: p2})
+	}
+
+	var rounds []pdfRoundView
+	
+	bestOfForStage := func(stage string) int {
+		for _, r := range t.StageRules {
+			if r.Stage == stage {
+				return r.BestOf
+			}
+		}
+		return 5
+	}
+
+	for len(current) > 1 {
+		var next []Pair
+		var rvMatches []pdfBracketMatchView
+		
+		stageNameCurrent := "r32"
+		rem := len(current)
+		if rem == 8 {
+			stageNameCurrent = "r16"
+		} else if rem == 4 {
+			stageNameCurrent = "quarterfinal"
+		} else if rem == 2 {
+			stageNameCurrent = "semifinal"
+		} else if rem == 1 {
+			stageNameCurrent = "final"
+		}
+		
+		for i := 0; i < len(current); i += 2 {
+			mLeft := current[i]
+			mRight := current[i+1]
+
+			getWinner := func(m Pair) *pdfMatchSlot {
+				if m.P1 == unresolvedSlot || m.P2 == unresolvedSlot {
+					return unresolvedSlot
+				}
+
+				v1 := m.P1 != nil && m.P1.Player != nil
+				v2 := m.P2 != nil && m.P2.Player != nil
+
+				if !v1 && !v2 { return nil }
+				if v1 && !v2 { return m.P1 }
+				if !v1 && v2 { return m.P2 }
+
+				for k := range t.Matches {
+					tm := t.Matches[k]
+					if tm.TeamMatchID != nil {
+						continue
+					}
+					if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
+						if tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID {
+							if tm.WinnerTeam == "A" { return m.P1 } else { return m.P2 }
+						}
+						if tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID {
+							if tm.WinnerTeam == "A" { return m.P2 } else { return m.P1 }
+						}
+					}
+				}
+				return unresolvedSlot
+			}
+
+			next = append(next, Pair{P1: getWinner(mLeft), P2: getWinner(mRight)})
+		}
+
+		for i := 0; i < len(current); i++ {
+			p1 := current[i].P1
+			p2 := current[i].P2
+			var foundMatch *tournamentDomain.Match
+			if p1 != nil && p2 != nil && p1.Player != nil && p2.Player != nil {
+				for k := range t.Matches {
+					tm := t.Matches[k]
+					if tm.TeamMatchID != nil {
+						continue
+					}
+					if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
+						if (tm.TeamA[0].ID == p1.Player.ID && tm.TeamB[0].ID == p2.Player.ID) || (tm.TeamA[0].ID == p2.Player.ID && tm.TeamB[0].ID == p1.Player.ID) {
+							foundMatch = &t.Matches[k]
+							break
+						}
+					}
+				}
+			}
+			
+			rvMatches = append(rvMatches, pdfBracketMatchView{
+				Player1: p1,
+				Player2: p2,
+				Match: foundMatch,
+				Stage: stageNameCurrent,
+				BestOf: bestOfForStage(stageNameCurrent),
+			})
+		}
+
+		name := fmt.Sprintf("Round of %d", len(current)*2)
+		if len(current) == 4 { name = "Quarter-Finals" } else if len(current) == 2 { name = "Semi-Finals" } else if len(current) == 1 { name = "Final" }
+		
+		rounds = append(rounds, pdfRoundView{Name: name, Matches: rvMatches})
+		
+		current = next
+	}
+
+	if len(current) > 0 {
+		var finalMatch *tournamentDomain.Match
+		p1 := current[0].P1
+		p2 := current[0].P2
+		var champion *pdfMatchSlot
+
+		bothFinalistsKnown := p1 != nil && p1.Player != nil && p2 != nil && p2.Player != nil
+
+		if bothFinalistsKnown {
+			for k := range t.Matches {
+				tm := t.Matches[k]
+				if tm.TeamMatchID != nil {
+					continue
+				}
+				if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
+					if (tm.TeamA[0].ID == p1.Player.ID && tm.TeamB[0].ID == p2.Player.ID) || (tm.TeamA[0].ID == p2.Player.ID && tm.TeamB[0].ID == p1.Player.ID) {
+						finalMatch = &t.Matches[k]
+						if tm.Status == "finished" {
+							if tm.WinnerTeam == "A" {
+								if tm.TeamA[0].ID == p1.Player.ID { champion = p1 } else { champion = p2 }
+							} else {
+								if tm.TeamB[0].ID == p1.Player.ID { champion = p1 } else { champion = p2 }
+							}
+						}
+						break
+					}
+				}
+			}
+		}
+
+		rounds = append(rounds, pdfRoundView{
+			Name: "🏆 Final",
+			Matches: []pdfBracketMatchView{
+				{
+					Player1: p1,
+					Player2: p2,
+					Match: finalMatch,
+					Stage: "final",
+					BestOf: bestOfForStage("final"),
+				},
+			},
+		})
+
+		if champion != nil {
+			rounds = append(rounds, pdfRoundView{
+				Name: "Champion",
+				Matches: []pdfBracketMatchView{
+					{Player1: champion, Player2: nil},
+				},
+			})
+		}
+	}
+
+	return rounds
 }
 
 

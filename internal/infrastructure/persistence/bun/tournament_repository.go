@@ -1254,7 +1254,7 @@ func (r *TournamentRepository) GetParticipantOrOfficialByPIN(ctx context.Context
 	}
 
 	var playerID string
-	
+
 	// Check participants
 	err := r.db.NewSelect().Table("tournament_participants").Column("player_id").
 		Where("tournament_id = ? AND pin = ?", tournamentID, pin).Scan(ctx, &playerID)
