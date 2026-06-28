@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/tournament"
@@ -149,10 +150,43 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 
 func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	id := c.Params("id")
-	t, err := h.getByID.Execute(c.Context(), id)
-	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	
+	type result struct {
+		tournament *tournamentDomain.Tournament
+		err        error
+		players    any
+		divisions  []*divisionDomain.Division
+		snapshots  []tournamentDomain.ParticipantSnapshot
 	}
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(4)
+
+	go func() {
+		defer wg.Done()
+		res.tournament, res.err = h.getByID.Execute(c.Context(), id)
+	}()
+	go func() {
+		defer wg.Done()
+		res.players, _ = h.leaderboardUC.ExecuteSingles(c.Context())
+	}()
+	go func() {
+		defer wg.Done()
+		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
+	go func() {
+		defer wg.Done()
+		res.snapshots, _ = h.getByID.GetSnapshots(c.Context(), id)
+	}()
+	wg.Wait()
+
+	if res.err != nil {
+		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+	}
+	t := res.tournament
+	players := res.players
+	divisions := res.divisions
+	snapshots := res.snapshots
 
 	statusFilter := c.Query("status", "all")
 	if statusFilter != "all" {
@@ -164,9 +198,6 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		}
 		t.Matches = filtered
 	}
-
-	players, _ := h.leaderboardUC.ExecuteSingles(c.Context())
-	divisions, _ := h.divisionUC.GetAll(c.Context())
 
 	// Build the view model for the bracket rendering
 	vm := BuildTournamentViewModel(t, divisions)
@@ -186,7 +217,6 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	}
 
 	// Fetch Participant PINs
-	snapshots, _ := h.getByID.GetSnapshots(c.Context(), id)
 	playerPins := make(map[string]string)
 	for _, snap := range snapshots {
 		playerPins[snap.PlayerID] = snap.Pin
@@ -205,14 +235,32 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 
 func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
 	id := c.Params("id")
-	t, err := h.getByID.Execute(c.Context(), id)
-	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	
+	type result struct {
+		tournament *tournamentDomain.Tournament
+		err        error
+		players    any
 	}
-	players, _ := h.leaderboardUC.ExecuteSingles(c.Context())
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		res.tournament, res.err = h.getByID.Execute(c.Context(), id)
+	}()
+	go func() {
+		defer wg.Done()
+		res.players, _ = h.leaderboardUC.ExecuteSingles(c.Context())
+	}()
+	wg.Wait()
+
+	if res.err != nil {
+		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+	}
 	return c.Render("admin/partials/tournament-edit-form", fiber.Map{
-		"Tournament": t,
-		"Players":    players,
+		"Tournament": res.tournament,
+		"Players":    res.players,
 	})
 }
 
@@ -469,10 +517,31 @@ func (h *TournamentHandler) PublicList(c *fiber.Ctx) error {
 func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	lang := getLang(c)
 	id := c.Params("id")
-	t, err := h.getByID.Execute(c.Context(), id)
-	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	
+	type result struct {
+		tournament *tournamentDomain.Tournament
+		err        error
+		divisions  []*divisionDomain.Division
 	}
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		res.tournament, res.err = h.getByID.Execute(c.Context(), id)
+	}()
+	go func() {
+		defer wg.Done()
+		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
+	wg.Wait()
+
+	if res.err != nil {
+		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+	}
+	t := res.tournament
+	divisions := res.divisions
 
 	statusFilter := c.Query("status", "all")
 	if statusFilter != "all" {
@@ -484,8 +553,6 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 		}
 		t.Matches = filtered
 	}
-
-	divisions, _ := h.divisionUC.GetAll(c.Context())
 
 	vm := BuildTournamentViewModel(t, divisions)
 	vm.IsPublic = true
@@ -740,11 +807,31 @@ func matchExists(matches []tournamentDomain.Match, p1ID, p2ID string) bool {
 
 func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 	id := c.Params("id")
-	t, err := h.getByID.Execute(c.Context(), id)
-	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	
+	type result struct {
+		tournament *tournamentDomain.Tournament
+		err        error
+		divisions  []*divisionDomain.Division
 	}
-	divs, _ := h.divisionUC.GetAll(c.Context())
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		res.tournament, res.err = h.getByID.Execute(c.Context(), id)
+	}()
+	go func() {
+		defer wg.Done()
+		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
+	wg.Wait()
+
+	if res.err != nil {
+		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+	}
+	t := res.tournament
+	divs := res.divisions
 	scheduled, inProgress, finished := buildBoardCards(t, divs)
 	tables := buildTables(t, "")
 	return c.Render("admin/tournament-board", fiber.Map{
@@ -758,11 +845,31 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 
 func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	id := c.Params("id")
-	t, err := h.getByID.Execute(c.Context(), id)
-	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	
+	type result struct {
+		tournament *tournamentDomain.Tournament
+		err        error
+		divisions  []*divisionDomain.Division
 	}
-	divs, _ := h.divisionUC.GetAll(c.Context())
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		res.tournament, res.err = h.getByID.Execute(c.Context(), id)
+	}()
+	go func() {
+		defer wg.Done()
+		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
+	wg.Wait()
+
+	if res.err != nil {
+		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+	}
+	t := res.tournament
+	divs := res.divisions
 	scheduled, inProgress, finished := buildBoardCards(t, divs)
 	tables := buildTables(t, "")
 	return c.Render("admin/partials/board-columns", fiber.Map{

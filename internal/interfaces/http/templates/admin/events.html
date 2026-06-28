@@ -18,7 +18,7 @@
     </header>
 
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
-        <table class="w-full text-left border-collapse">
+        <table class="w-full text-left border-collapse block sm:table sm:whitespace-nowrap">
             <thead class="hidden sm:table-header-group">
                 <tr class="bg-black/40 border-b border-white/10">
                     <th class="p-4 w-12"><input type="checkbox" id="select-all-events" hx-on:change="document.querySelectorAll('.event-checkbox').forEach(cb => cb.checked = this.checked)" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer"></th>
@@ -30,7 +30,7 @@
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Actions</th>
                 </tr>
             </thead>
-            <tbody id="event-list" class="divide-y divide-white/10">
+            <tbody id="event-list" class="divide-y divide-white/10 block sm:table-row-group">
                 {{range .Events}}
                 {{template "admin/partials/event-row" .}}
                 {{else}}

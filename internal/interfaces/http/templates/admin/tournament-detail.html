@@ -226,8 +226,8 @@
     {{$count := len $participants}}
     {{$teamCount := len .Tournament.Teams}}
     {{if or (gt $count 1) (gt $teamCount 1)}}
-    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar"
-         hx-get="/admin/tournaments/{{.Tournament.ID}}"
+    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar cursor-grab active:cursor-grabbing"
+         hx-get="/admin/tournaments/{{.Tournament.ID}}/board"
          hx-trigger="reload-bracket, reload-bracket from:body"
          hx-select="#bracket-container > *"
          hx-target="#bracket-container"
@@ -583,7 +583,7 @@
         const scoreUrl = window.location.origin + '/score/' + matchId;
         
         matchupEl.textContent = matchup;
-        imageEl.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(scoreUrl);
+        imageEl.src = '/qr?data=' + encodeURIComponent(scoreUrl);
         openBtn.href = scoreUrl;
         
         copyBtn.onclick = function() {
@@ -616,6 +616,9 @@ document.addEventListener('DOMContentLoaded', () => {
       let pos = { top: 0, left: 0, x: 0, y: 0 };
       
       const mouseDownHandler = function(e) {
+        if (e.target.closest('[draggable="true"]') || e.target.closest('button') || e.target.closest('a')) {
+          return; // Allow native interactions
+        }
         ele.style.cursor = 'grabbing';
         ele.style.userSelect = 'none';
         pos = {

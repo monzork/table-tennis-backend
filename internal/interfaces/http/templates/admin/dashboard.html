@@ -112,7 +112,7 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-[11px] font-bold tracking-tight">
+            <table class="w-full text-left border-collapse text-[11px] font-bold tracking-tight block sm:table sm:whitespace-nowrap">
                 <thead class="hidden sm:table-header-group">
                     <tr class="bg-white/5 text-gray-500 uppercase tracking-[0.2em] text-[9px] border-b border-white/10">
                         <th class="p-4">Event Name</th>
@@ -123,34 +123,34 @@
                         <th class="p-4 text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-white/5">
+                <tbody class="divide-y divide-white/5 block sm:table-row-group">
                     {{range .Events}}
-                    <tr class="hover:bg-white/[0.02] transition-colors flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-4 sm:p-0">
-                        <td class="block sm:table-cell p-0 sm:p-4 text-white uppercase text-xl sm:text-xs font-black mb-2 sm:mb-0">{{.Name}}</td>
-                        <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 mb-1 sm:mb-0">
+                    <tr class="hover:bg-white/[0.02] transition-colors flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-5 sm:p-0 relative gap-1.5 sm:gap-0">
+                        <td class="block sm:table-cell p-0 sm:p-4 text-white uppercase text-xl sm:text-xs font-black mb-1 sm:mb-0">{{.Name}}</td>
+                        <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
                             <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Division:</span>
-                            {{if .DivisionID}}
+                            <span>{{if .DivisionID}}
                                 <span class="bg-white/5 px-2.5 py-1 rounded-full text-[10px] border border-white/10 text-white">{{.DivisionID}}</span>
                             {{else}}
                                 <span class="text-gray-600 italic">No restrictions</span>
-                            {{end}}
+                            {{end}}</span>
                         </td>
-                        <td class="block sm:table-cell p-0 sm:p-4 text-left sm:text-center mb-1 sm:mb-0">
+                        <td class="block sm:table-cell p-0 sm:p-4 text-left sm:text-center mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
                             <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Auto-Elo:</span>
-                            {{if .SkipElo}}
+                            <span>{{if .SkipElo}}
                                 <span class="text-red-500 text-[10px] font-extrabold uppercase bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded">Bypassed</span>
                             {{else}}
                                 <span class="text-green-400 text-[10px] font-extrabold uppercase bg-green-400/10 border border-green-400/20 px-2 py-0.5 rounded">Enabled</span>
-                            {{end}}
+                            {{end}}</span>
                         </td>
-                        <td class="block sm:table-cell p-0 sm:p-4 text-left sm:text-center text-white tabular-nums mb-1 sm:mb-0">
-                            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Active Tournaments:</span>{{len .Tournaments}}
+                        <td class="block sm:table-cell p-0 sm:p-4 text-left sm:text-center text-white tabular-nums mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
+                            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Active Tournaments:</span><span>{{len .Tournaments}}</span>
                         </td>
-                        <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-medium font-mono mb-3 sm:mb-0">
-                            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Duration:</span>{{.StartDate.Format "Jan 02, 2006"}} - {{.EndDate.Format "Jan 02, 2006"}}
+                        <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-medium font-mono mb-3 sm:mb-0 flex justify-between items-center sm:table-cell">
+                            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Duration:</span><span>{{.StartDate.Format "Jan 02, 2006"}} - {{.EndDate.Format "Jan 02, 2006"}}</span>
                         </td>
-                        <td class="block sm:table-cell p-0 sm:p-4 text-left sm:text-right">
-                            <a href="/admin/events/{{.ID}}" class="text-red-500 hover:text-red-400 font-extrabold uppercase tracking-widest text-[10px]">Open Details →</a>
+                        <td class="block sm:table-cell p-0 sm:p-4 text-left sm:text-right mt-3 sm:mt-0 pt-4 sm:pt-0 border-t border-white/10 sm:border-t-0 w-full text-center sm:w-auto">
+                            <a href="/admin/events/{{.ID}}" class="inline-block text-red-500 hover:text-red-400 hover:bg-white/5 font-extrabold uppercase tracking-widest text-[10px] py-2 px-4 rounded w-full sm:w-auto sm:px-0 sm:py-0 border border-white/10 sm:border-0">Open Details →</a>
                         </td>
                     </tr>
                     {{else}}

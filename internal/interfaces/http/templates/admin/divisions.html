@@ -15,7 +15,7 @@
     </header>
 
     <div class="glass rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-        <table class="w-full text-left border-collapse">
+        <table class="w-full text-left border-collapse block sm:table sm:whitespace-nowrap">
             <thead class="hidden sm:table-header-group">
                 <tr class="bg-black/60 border-b border-white/10">
                     <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">Order</th>
@@ -25,7 +25,7 @@
                     <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody id="division-list" class="divide-y divide-white/5">
+            <tbody id="division-list" class="divide-y divide-white/5 block sm:table-row-group">
                 {{range .Divisions}}
                     {{template "admin/partials/division-row" .}}
                 {{else}}

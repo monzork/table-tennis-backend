@@ -1,26 +1,28 @@
-<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-4 sm:p-0 relative" id="division-{{.ID}}">
-    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 font-bold text-gray-400">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Order:</span>{{.DisplayOrder}}
+<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-5 sm:p-0 relative gap-1.5 sm:gap-0" id="division-{{.ID}}">
+    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 font-bold text-gray-400 flex justify-between items-center sm:table-cell mb-1 sm:mb-0">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Order:</span><span>{{.DisplayOrder}}</span>
     </td>
-    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 font-bold text-lg text-white" style="color: {{.Color}}">{{.Name}}</td>
-    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 text-gray-300 font-mono">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">ELO:</span>{{.MinElo}} - {{if .MaxElo}}{{.MaxElo}}{{else}}∞{{end}}
+    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 font-bold text-lg text-white mb-1 sm:mb-0" style="color: {{.Color}}">{{.Name}}</td>
+    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 text-gray-300 font-mono mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">ELO:</span><span>{{.MinElo}} - {{if .MaxElo}}{{.MaxElo}}{{else}}∞{{end}}</span>
     </td>
-    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 sm:text-center flex items-center mt-2 sm:mt-0">
+    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 sm:text-center flex items-center justify-between sm:justify-center mt-1 sm:mt-0 mb-3 sm:mb-0 w-full sm:table-cell">
         <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Color:</span>
         <div class="w-6 h-6 rounded-full shadow-sm border border-white/20 sm:mx-auto" style="background-color: {{.Color}};"></div>
     </td>
-    <td class="block sm:table-cell py-3 px-0 sm:py-4 sm:px-6 text-left sm:text-right space-x-3 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-        <button 
-            hx-get="/divisions/{{.ID}}/edit" 
-            hx-target="#division-modal-content"
-            hx-on:click="document.getElementById('divisionModal').classList.remove('hidden')"
-            class="text-gray-300 hover:text-white uppercase tracking-widest text-xs font-bold bg-white/5 sm:bg-transparent px-3 py-1 sm:p-0 rounded">Edit</button>
-        <button 
-            hx-delete="/divisions/{{.ID}}" 
-            hx-confirm="Delete this division?"
-            hx-target="#division-{{.ID}}" 
-            hx-swap="outerHTML"
-            class="text-red-400 hover:text-red-300 uppercase tracking-widest text-xs font-bold bg-white/5 sm:bg-transparent px-3 py-1 sm:p-0 rounded">Delete</button>
+    <td class="block sm:table-cell p-0 sm:py-4 sm:px-6 text-left sm:text-right mt-3 sm:mt-0 pt-4 sm:pt-0 border-t border-white/10 sm:border-t-0 w-full">
+        <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-between sm:justify-end w-full">
+            <button 
+                hx-get="/divisions/{{.ID}}/edit" 
+                hx-target="#division-modal-content"
+                hx-on:click="document.getElementById('divisionModal').classList.remove('hidden')"
+                class="flex-1 sm:flex-none text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 sm:py-1.5 rounded-lg transition-all">Edit</button>
+            <button 
+                hx-delete="/divisions/{{.ID}}" 
+                hx-confirm="Delete this division?"
+                hx-target="#division-{{.ID}}" 
+                hx-swap="outerHTML"
+                class="flex-1 sm:flex-none text-center text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-700 border border-red-900/50 hover:border-red-700 px-3 py-2 sm:py-1.5 rounded-lg transition-all">Delete</button>
+        </div>
     </td>
 </tr>

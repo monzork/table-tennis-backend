@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
@@ -114,16 +115,33 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 
 func (h *EventHandler) Detail(c *fiber.Ctx) error {
 	id := c.Params("id")
-	e, err := h.getByID.Execute(c.Context(), id)
-	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	
+	type result struct {
+		event     any
+		err       error
+		divisions any
+	}
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		res.event, res.err = h.getByID.Execute(c.Context(), id)
+	}()
+	go func() {
+		defer wg.Done()
+		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
+	wg.Wait()
+
+	if res.err != nil {
+		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
 	}
 
-	divisions, _ := h.divisionUC.GetAll(c.Context())
-
 	return c.Render("admin/event-detail", fiber.Map{
-		"Event":     e,
-		"Divisions": divisions,
+		"Event":     res.event,
+		"Divisions": res.divisions,
 	}, "layouts/admin")
 }
 
@@ -166,15 +184,33 @@ func (h *EventHandler) DeleteBulk(c *fiber.Ctx) error {
 func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 	lang := getLang(c)
 	id := c.Params("id")
-	e, err := h.getByID.Execute(c.Context(), id)
-	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	
+	type result struct {
+		event     any
+		err       error
+		divisions any
 	}
-	divisions, _ := h.divisionUC.GetAll(c.Context())
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		res.event, res.err = h.getByID.Execute(c.Context(), id)
+	}()
+	go func() {
+		defer wg.Done()
+		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
+	wg.Wait()
+
+	if res.err != nil {
+		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+	}
 
 	return c.Render("public/event-detail", merge(tMap(lang), fiber.Map{
-		"Event":     e,
-		"Divisions": divisions,
+		"Event":     res.event,
+		"Divisions": res.divisions,
 		"Type":      "Tournaments", // highlight tournaments tab in layout
 	}), "layouts/public")
 }

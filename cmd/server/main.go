@@ -22,6 +22,7 @@ import (
 
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/infrastructure/identity"
+	qrinfra "table-tennis-backend/internal/infrastructure/qrcode"
 	"table-tennis-backend/internal/infrastructure/security"
 
 	"github.com/gofiber/fiber/v2"
@@ -108,6 +109,9 @@ func main() {
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
 	selfRegisterUC := tournament.NewSelfRegisterUseCase(tournamentRepo, playerRepo)
 	publicHandler := handler.NewPublicHandler(playerUC, selfRegisterUC)
+
+	qrGenerator := qrinfra.NewGoQRCodeGenerator()
+	qrHandler := handler.NewQRHandler(qrGenerator)
 
 	adminRepo := bun.NewAdminRepository(bun.DB)
 
@@ -276,6 +280,9 @@ func main() {
 	// QR-code score entry — shareable per-match URL
 	app.Get("/score/:matchId", matchHandler.ShowMatchScorePage)
 	app.Post("/score/:matchId/verify", matchHandler.ValidateMatchPIN)
+
+	// QR Code generation endpoint
+	app.Get("/qr", qrHandler.Generate)
 
 	// Admin Score Form (read-only partial — no auth needed, no sensitive data)
 	app.Get("/admin/matches/score/form", matchHandler.ShowScoreForm)

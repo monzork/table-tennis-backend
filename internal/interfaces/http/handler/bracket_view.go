@@ -153,6 +153,10 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 	// Valid divisions for tournament type
 	var validDivs []*division.Division
 	for _, d := range divs {
+		if !t.SkipElo && d.MinElo == 0 && d.MaxElo == nil {
+			// Skip "0-infinite" divisions (like 'No Division') for Elo tournaments
+			continue
+		}
 		if d.Category == "both" || d.Category == t.Type {
 			validDivs = append(validDivs, d)
 		}

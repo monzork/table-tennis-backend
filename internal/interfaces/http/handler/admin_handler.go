@@ -6,6 +6,7 @@ import (
 	"table-tennis-backend/internal/application/player"
 	"table-tennis-backend/internal/application/tournament"
 	"table-tennis-backend/internal/application/division"
+	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	eventUC "table-tennis-backend/internal/application/event"
@@ -45,16 +46,43 @@ func NewAdminHandler(
 }
 
 func (h *AdminHandler) Dashboard(c *fiber.Ctx) error {
-	events, _ := h.eventGetAll.Execute(c.Context())
-	tournaments, _ := h.getTournaments.Execute(c.Context())
-	players, _ := h.leaderboard.ExecuteSingles(c.Context())
-	divisions, _ := h.divisionUC.GetAll(c.Context())
+	type result struct {
+		events      any
+		tournaments any
+		players     any
+		divisions   any
+	}
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(4)
+
+	go func() {
+		defer wg.Done()
+		e, _ := h.eventGetAll.Execute(c.Context())
+		res.events = e
+	}()
+	go func() {
+		defer wg.Done()
+		t, _ := h.getTournaments.Execute(c.Context())
+		res.tournaments = t
+	}()
+	go func() {
+		defer wg.Done()
+		p, _ := h.leaderboard.ExecuteSingles(c.Context())
+		res.players = p
+	}()
+	go func() {
+		defer wg.Done()
+		d, _ := h.divisionUC.GetAll(c.Context())
+		res.divisions = d
+	}()
+	wg.Wait()
 
 	return c.Render("admin/dashboard", fiber.Map{
-		"Events":      events,
-		"Tournaments": tournaments,
-		"Players":     players,
-		"Divisions":   divisions,
+		"Events":      res.events,
+		"Tournaments": res.tournaments,
+		"Players":     res.players,
+		"Divisions":   res.divisions,
 	}, "layouts/admin")
 }
 
@@ -70,24 +98,70 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
-	players, _ := h.leaderboard.ExecuteSingles(c.Context())
-	tourneys, _ := h.getTournaments.Execute(c.Context())
-	divisions, _ := h.divisionUC.GetAll(c.Context())
+	type result struct {
+		players     any
+		tournaments any
+		divisions   any
+	}
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	go func() {
+		defer wg.Done()
+		p, _ := h.leaderboard.ExecuteSingles(c.Context())
+		res.players = p
+	}()
+	go func() {
+		defer wg.Done()
+		t, _ := h.getTournaments.Execute(c.Context())
+		res.tournaments = t
+	}()
+	go func() {
+		defer wg.Done()
+		d, _ := h.divisionUC.GetAll(c.Context())
+		res.divisions = d
+	}()
+	wg.Wait()
+
 	return c.Render("admin/tournaments", fiber.Map{
-		"Players":     players,
-		"Tournaments": tourneys,
-		"Divisions":   divisions,
+		"Players":     res.players,
+		"Tournaments": res.tournaments,
+		"Divisions":   res.divisions,
 	}, "layouts/admin")
 }
 
 func (h *AdminHandler) Events(c *fiber.Ctx) error {
-	events, _ := h.eventGetAll.Execute(c.Context())
-	divisions, _ := h.divisionUC.GetAll(c.Context())
-	players, _ := h.leaderboard.ExecuteSingles(c.Context())
+	type result struct {
+		events    any
+		divisions any
+		players   any
+	}
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	go func() {
+		defer wg.Done()
+		e, _ := h.eventGetAll.Execute(c.Context())
+		res.events = e
+	}()
+	go func() {
+		defer wg.Done()
+		d, _ := h.divisionUC.GetAll(c.Context())
+		res.divisions = d
+	}()
+	go func() {
+		defer wg.Done()
+		p, _ := h.leaderboard.ExecuteSingles(c.Context())
+		res.players = p
+	}()
+	wg.Wait()
+
 	return c.Render("admin/events", fiber.Map{
-		"Events":    events,
-		"Divisions": divisions,
-		"Players":   players,
+		"Events":    res.events,
+		"Divisions": res.divisions,
+		"Players":   res.players,
 	}, "layouts/admin")
 }
 func (h *AdminHandler) Divisions(c *fiber.Ctx) error {

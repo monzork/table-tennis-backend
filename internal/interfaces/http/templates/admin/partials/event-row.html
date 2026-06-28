@@ -1,9 +1,9 @@
 {{define "admin/partials/event-row"}}
-<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-4 sm:p-0 relative" id="event-{{.ID}}">
-    <td class="block sm:table-cell p-0 sm:p-4 w-auto sm:w-12 mb-2 sm:mb-0">
-        <div class="flex items-center gap-2">
+<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-5 sm:p-0 relative gap-1.5 sm:gap-0" id="event-{{.ID}}">
+    <td class="block sm:table-cell p-0 sm:p-4 w-auto sm:w-12 mb-1 sm:mb-0">
+        <div class="flex items-center gap-2 bg-white/5 sm:bg-transparent px-3 py-2 sm:p-0 rounded border border-white/10 sm:border-0 mb-2 sm:mb-0">
             <input type="checkbox" name="ids" value="{{.ID}}" class="event-checkbox accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
-            <span class="sm:hidden text-xs text-gray-500 font-bold uppercase tracking-widest">Select</span>
+            <span class="sm:hidden text-xs text-gray-500 font-bold uppercase tracking-widest">Select Event</span>
         </div>
     </td>
     <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0">
@@ -18,8 +18,8 @@
             </div>
         </div>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 capitalize tracking-widest text-xs mb-1 sm:mb-0">
-        <div class="flex items-center gap-2">
+    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 capitalize tracking-widest text-xs mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
+        <div class="flex items-center gap-2 justify-between w-full sm:justify-start">
             <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500">Division:</span>
             {{if .SkipElo}}
             <span class="px-2.5 py-1 rounded bg-white/5 border border-white/5 text-gray-500 font-bold">—</span>
@@ -28,18 +28,18 @@
             {{end}}
         </div>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 capitalize tracking-widest text-xs font-bold mb-1 sm:mb-0">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Categories:</span>{{len .Tournaments}} Categories
+    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 capitalize tracking-widest text-xs font-bold mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Categories:</span><span>{{len .Tournaments}} Categories</span>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-mono text-xs mb-1 sm:mb-0">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Start Date:</span>{{.StartDate.Format "Jan 02, 2006"}}
+    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-mono text-xs mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Start Date:</span><span>{{.StartDate.Format "Jan 02, 2006"}}</span>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-mono text-xs mb-3 sm:mb-0">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">End Date:</span>{{.EndDate.Format "Jan 02, 2006"}}
+    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-mono text-xs mb-3 sm:mb-0 flex justify-between items-center sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">End Date:</span><span>{{.EndDate.Format "Jan 02, 2006"}}</span>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4">
-        <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-start sm:justify-end">
-            <a href="/admin/events/{{.ID}}" class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-all text-center flex-1 sm:flex-none">
+    <td class="block sm:table-cell p-0 sm:p-4 mt-3 sm:mt-0 pt-4 sm:pt-0 border-t border-white/10 sm:border-t-0 w-full sm:w-auto">
+        <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-between sm:justify-end w-full">
+            <a href="/admin/events/{{.ID}}" class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 sm:py-1.5 rounded-lg transition-all text-center flex-1 sm:flex-none">
                 Manage
             </a>
             <button 
@@ -47,7 +47,7 @@
                 hx-confirm="Delete this parent event? Child tournaments will NOT be deleted, but they will be unlinked."
                 hx-target="closest tr" 
                 hx-swap="outerHTML swap:0.5s"
-                class="text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-700 border border-red-900/50 hover:border-red-700 px-3 py-1.5 rounded-lg transition-all flex-1 sm:flex-none">
+                class="text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-700 border border-red-900/50 hover:border-red-700 px-3 py-2 sm:py-1.5 rounded-lg transition-all flex-1 sm:flex-none text-center">
                 Delete
             </button>
         </div>

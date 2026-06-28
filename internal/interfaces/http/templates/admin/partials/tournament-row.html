@@ -1,7 +1,7 @@
 {{define "admin/partials/tournament-row"}}
-<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-4 sm:p-0 relative" id="tournament-{{.ID}}">
+<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-5 sm:p-0 relative gap-1 sm:gap-0" id="tournament-{{.ID}}">
     <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0">
-        <div class="flex flex-col">
+        <div class="flex flex-col gap-1 sm:gap-0">
             <span class="font-bold uppercase text-white tracking-widest text-lg sm:text-base">{{.Name}}</span>
             {{if eq .Status "finished"}}
             <div class="flex gap-1.5 items-center mt-1">
@@ -19,18 +19,18 @@
             {{end}}
         </div>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0 text-gray-400 capitalize tracking-widest text-xs">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Type:</span>{{.Type}} / {{.Format}}
+    <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0 text-gray-400 capitalize tracking-widest text-xs flex justify-between sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Type:</span><span>{{.Type}} / {{.Format}}</span>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0 text-gray-400 font-mono text-xs">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Start:</span>{{.StartDate.Format "Jan 02, 2006"}}
+    <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0 text-gray-400 font-mono text-xs flex justify-between sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Start:</span><span>{{.StartDate.Format "Jan 02, 2006"}}</span>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 mb-3 sm:mb-0 text-gray-400 font-mono text-xs">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">End:</span>{{.EndDate.Format "Jan 02, 2006"}}
+    <td class="block sm:table-cell p-0 sm:p-4 mb-3 sm:mb-0 text-gray-400 font-mono text-xs flex justify-between sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">End:</span><span>{{.EndDate.Format "Jan 02, 2006"}}</span>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4">
-        <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-end sm:justify-start">
-            <a href="/admin/tournaments/{{.ID}}" class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-all">
+    <td class="block sm:table-cell p-0 sm:p-4 mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-white/10 sm:border-t-0 w-full sm:w-auto">
+        <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-between sm:justify-end w-full">
+            <a href="/admin/tournaments/{{.ID}}" class="flex-1 sm:flex-none text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 sm:py-1.5 rounded-lg transition-all">
                 View
             </a>
             <button 
@@ -38,7 +38,7 @@
                 hx-confirm="Delete this tournament and all its data?"
                 hx-target="closest tr" 
                 hx-swap="outerHTML swap:0.5s"
-                class="text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-700 border border-red-900/50 hover:border-red-700 px-3 py-1.5 rounded-lg transition-all">
+                class="flex-1 sm:flex-none text-center text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-700 border border-red-900/50 hover:border-red-700 px-3 py-2 sm:py-1.5 rounded-lg transition-all">
                 Delete
             </button>
         </div>

@@ -1,19 +1,19 @@
 {{define "admin/partials/player-row"}}
-<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-4 sm:p-0 relative" id="player-{{.ID}}">
-    <td class="block sm:table-cell p-0 sm:p-4 font-semibold text-xl sm:text-base mb-2 sm:mb-0">{{.FirstNameWithSecond}} <span class="uppercase font-bold">{{.LastNameWithSecond}}</span></td>
+<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-5 sm:p-0 relative gap-1 sm:gap-0" id="player-{{.ID}}">
+    <td class="block sm:table-cell p-0 sm:p-4 font-semibold text-xl sm:text-base mb-1 sm:mb-0">{{.FirstNameWithSecond}} <span class="uppercase font-bold">{{.LastNameWithSecond}}</span></td>
     <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-mono text-xs mb-1 sm:mb-0"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">National ID:</span>{{if .NationalID}}{{.NationalID}}{{else}}-{{end}}</td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 mb-1 sm:mb-0"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Nationality:</span>{{.Country}}</td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 mb-1 sm:mb-0"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Department:</span>{{.Department}}</td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 mb-2 sm:mb-0"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Gender:</span>{{.Gender}}</td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-white font-bold mb-1 sm:mb-0"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Singles Elo:</span>{{.SinglesElo}}</td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-white font-bold mb-3 sm:mb-0"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Doubles Elo:</span>{{.DoublesElo}}</td>
-    <td class="block sm:table-cell p-0 sm:p-4">
-        <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-start sm:justify-end">
+    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 mb-1 sm:mb-0 flex justify-between sm:table-cell"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Nationality:</span><span>{{.Country}}</span></td>
+    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 mb-1 sm:mb-0 flex justify-between sm:table-cell"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Department:</span><span>{{.Department}}</span></td>
+    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 mb-1 sm:mb-0 flex justify-between sm:table-cell"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Gender:</span><span>{{.Gender}}</span></td>
+    <td class="block sm:table-cell p-0 sm:p-4 text-white font-bold mb-1 sm:mb-0 flex justify-between sm:table-cell items-center"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Singles Elo:</span><span class="bg-white/10 sm:bg-transparent px-2 py-0.5 sm:px-0 sm:py-0 rounded">{{.SinglesElo}}</span></td>
+    <td class="block sm:table-cell p-0 sm:p-4 text-white font-bold mb-3 sm:mb-0 flex justify-between sm:table-cell items-center"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Doubles Elo:</span><span class="bg-white/10 sm:bg-transparent px-2 py-0.5 sm:px-0 sm:py-0 rounded">{{.DoublesElo}}</span></td>
+    <td class="block sm:table-cell p-0 sm:p-4 mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-white/10 sm:border-t-0 w-full sm:w-auto">
+        <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-between sm:justify-end w-full">
             <button 
                 hx-get="/players/{{.ID}}/edit" 
                 hx-target="#edit-modal-content"
                 hx-on:click="document.getElementById('edit-player-modal').classList.remove('hidden')"
-                class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-all flex-1 sm:flex-none">
+                class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 sm:py-1.5 rounded-lg transition-all flex-1 sm:flex-none text-center">
                 Edit
             </button>
             <button 
@@ -21,7 +21,7 @@
                 hx-confirm="Are you sure you want to delete this athlete?"
                 hx-target="closest tr" 
                 hx-swap="outerHTML swap:0.5s"
-                class="text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-700 border border-red-900/50 hover:border-red-700 px-3 py-1.5 rounded-lg transition-all flex-1 sm:flex-none">
+                class="text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-700 border border-red-900/50 hover:border-red-700 px-3 py-2 sm:py-1.5 rounded-lg transition-all flex-1 sm:flex-none text-center">
                 Delete
             </button>
         </div>
