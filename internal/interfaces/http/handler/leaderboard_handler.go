@@ -3,6 +3,7 @@ package handler
 import (
 	"sort"
 	"strings"
+	"sync"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/leaderboard"
 	divisionDomain "table-tennis-backend/internal/domain/division"
@@ -37,14 +38,27 @@ type DivisionGroupView struct {
 }
 
 func (h *LeaderboardHandler) getGroupedPlayers(c *fiber.Ctx, rankType string) ([]DivisionGroup, error) {
-	players, err := h.getUC.Execute(c.Context(), rankType)
-	if err != nil {
-		return nil, err
-	}
+	var players []*player.Player
+	var divisions []*divisionDomain.Division
+	var pErr, dErr error
+	var wg sync.WaitGroup
 
-	divisions, err := h.divisionUC.GetAll(c.Context())
-	if err != nil {
-		return nil, err
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		players, pErr = h.getUC.Execute(c.Context(), rankType)
+	}()
+	go func() {
+		defer wg.Done()
+		divisions, dErr = h.divisionUC.GetAll(c.Context())
+	}()
+	wg.Wait()
+
+	if pErr != nil {
+		return nil, pErr
+	}
+	if dErr != nil {
+		return nil, dErr
 	}
 
 	var groups []DivisionGroup
@@ -73,14 +87,27 @@ func (h *LeaderboardHandler) getGroupedPlayers(c *fiber.Ctx, rankType string) ([
 }
 
 func (h *LeaderboardHandler) getGroupedPlayersByGender(c *fiber.Ctx, rankType string, gender string) ([]DivisionGroup, error) {
-	players, err := h.getUC.ExecuteByGender(c.Context(), rankType, gender)
-	if err != nil {
-		return nil, err
-	}
+	var players []*player.Player
+	var divisions []*divisionDomain.Division
+	var pErr, dErr error
+	var wg sync.WaitGroup
 
-	divisions, err := h.divisionUC.GetAll(c.Context())
-	if err != nil {
-		return nil, err
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		players, pErr = h.getUC.ExecuteByGender(c.Context(), rankType, gender)
+	}()
+	go func() {
+		defer wg.Done()
+		divisions, dErr = h.divisionUC.GetAll(c.Context())
+	}()
+	wg.Wait()
+
+	if pErr != nil {
+		return nil, pErr
+	}
+	if dErr != nil {
+		return nil, dErr
 	}
 
 	var groups []DivisionGroup
@@ -148,14 +175,27 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 	divFilter := c.Query("division")
 	sortOrder := c.Query("sort", "points_desc")
 
-	players, err := h.getUC.ExecuteByGender(c.Context(), rankType, gender)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
+	var players []*player.Player
+	var divisions []*divisionDomain.Division
+	var pErr, dErr error
+	var wg sync.WaitGroup
 
-	divisions, err := h.divisionUC.GetAll(c.Context())
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		players, pErr = h.getUC.ExecuteByGender(c.Context(), rankType, gender)
+	}()
+	go func() {
+		defer wg.Done()
+		divisions, dErr = h.divisionUC.GetAll(c.Context())
+	}()
+	wg.Wait()
+
+	if pErr != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, pErr.Error())
+	}
+	if dErr != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, dErr.Error())
 	}
 
 	// 1. Filter by Search Query (Name, Country, or Department)

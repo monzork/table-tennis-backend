@@ -227,7 +227,7 @@
     {{$teamCount := len .Tournament.Teams}}
     {{if or (gt $count 1) (gt $teamCount 1)}}
     <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar cursor-grab active:cursor-grabbing"
-         hx-get="/admin/tournaments/{{.Tournament.ID}}/board"
+         hx-get="/admin/tournaments/{{.Tournament.ID}}"
          hx-trigger="reload-bracket, reload-bracket from:body"
          hx-select="#bracket-container > *"
          hx-target="#bracket-container"
