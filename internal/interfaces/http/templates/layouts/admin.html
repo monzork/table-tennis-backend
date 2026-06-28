@@ -137,16 +137,19 @@
         body:has(#match-type-selector option[value="doubles"]:checked) #teamB-player2 {
             display: block !important;
         }
+        
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
     <nav class="glass border-b border-white/10 sticky top-0 z-50">
-        <div class="container mx-auto px-6 h-16 flex items-center justify-between">
+        <div class="container mx-auto px-4 sm:px-6 h-auto sm:h-16 py-3 sm:py-0 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
             <div class="flex items-center gap-2">
                 <div class="w-12 h-8 bg-white rounded flex items-center justify-center font-bold text-black tracking-tighter text-xs">CLUB</div>
                 <span class="text-xl font-extrabold uppercase tracking-widest text-white/90">Admin</span>
             </div>
-            <div class="flex gap-6 font-semibold text-sm tracking-wider uppercase text-gray-400 items-center">
+            <div class="flex gap-4 sm:gap-6 font-semibold text-xs sm:text-sm tracking-wider uppercase text-gray-400 items-center overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar justify-start sm:justify-end shrink-0">
                 <a href="/admin" class="hover:text-white transition-colors proj-hide">{{index .T "nav.dashboard"}}</a>
                 <a href="/admin/players" class="hover:text-white transition-colors proj-hide">{{index .T "nav.players"}}</a>
                 <a href="/admin/events" class="hover:text-white transition-colors proj-hide">{{index .T "nav.events"}}</a>

@@ -7,29 +7,35 @@
     <div class="glass rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
-                <thead>
+                <thead class="hidden sm:table-header-group">
                     <tr class="bg-black/40 border-b border-white/10 text-gray-400 uppercase text-[10px] sm:text-xs tracking-wider font-bold">
                         <th class="p-4 sm:p-6">{{index .T "tourneys.col_name"}}</th>
                         <th class="p-4 sm:p-6">{{index .T "tourneys.col_type"}}</th>
                         <th class="p-4 sm:p-6">{{index .T "tourneys.col_category"}}</th>
-                        <th class="p-4 sm:p-6 hidden sm:table-cell">{{index .T "tourneys.col_dates"}}</th>
+                        <th class="p-4 sm:p-6">{{index .T "tourneys.col_dates"}}</th>
                         <th class="p-4 sm:p-6 text-right">{{index .T "tourneys.col_bracket"}}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/10 text-sm sm:text-base">
                     {{range .Tournaments}}
-                    <tr class="hover:bg-white/5 transition-colors">
-                        <td class="p-4 sm:p-6 font-semibold">
+                    <tr class="hover:bg-white/5 transition-colors flex flex-col sm:table-row p-4 sm:p-0">
+                        <td class="block sm:table-cell p-0 sm:p-6 font-semibold mb-2 sm:mb-0 text-xl sm:text-base">
                             {{if .EventID}}
                             <a href="/events/{{.EventID}}" class="block text-[8px] sm:text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider mb-1">{{index $.T "tourneys.part_of"}}</a>
                             {{end}}
                             {{.Name}}
                         </td>
-                        <td class="p-4 sm:p-6 text-gray-400 capitalize">{{.Type}}</td>
-                        <td class="p-4 sm:p-6 text-gray-400 capitalize">{{.EventCategory}}</td>
-                        <td class="p-4 sm:p-6 text-gray-400 hidden sm:table-cell font-mono text-xs">{{.StartDate.Format "Jan 02, 2006"}} - {{.EndDate.Format "Jan 02, 2006"}}</td>
-                        <td class="p-4 sm:p-6 text-right">
-                            <a href="/tournaments/{{.ID}}" class="inline-block bg-white hover:bg-gray-200 text-black font-extrabold py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-[10px] sm:text-xs shadow">
+                        <td class="block sm:table-cell p-0 sm:p-6 text-gray-400 capitalize mb-1 sm:mb-0">
+                            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{index $.T "tourneys.col_type"}}:</span>{{.Type}}
+                        </td>
+                        <td class="block sm:table-cell p-0 sm:p-6 text-gray-400 capitalize mb-1 sm:mb-0">
+                            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{index $.T "tourneys.col_category"}}:</span>{{.EventCategory}}
+                        </td>
+                        <td class="block sm:table-cell p-0 sm:p-6 text-gray-400 font-mono text-xs mb-3 sm:mb-0">
+                            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{index $.T "tourneys.col_dates"}}:</span>{{.StartDate.Format "Jan 02, 2006"}} - {{.EndDate.Format "Jan 02, 2006"}}
+                        </td>
+                        <td class="block sm:table-cell p-0 sm:p-6 text-left sm:text-right">
+                            <a href="/tournaments/{{.ID}}" class="inline-block bg-white hover:bg-gray-200 text-black font-extrabold py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-[10px] sm:text-xs shadow mt-2 sm:mt-0 w-full sm:w-auto text-center">
                                 {{index $.T "tourneys.view_bracket"}}
                             </a>
                         </td>

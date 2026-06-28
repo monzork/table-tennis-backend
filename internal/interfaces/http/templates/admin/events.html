@@ -1,10 +1,10 @@
 <div class="space-y-8 animate-fade-in text-white/90">
-    <header class="flex justify-between items-center">
+    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
         <div>
-            <h1 class="text-4xl font-extrabold tracking-tight uppercase">Grand Events <span class="text-white">.</span></h1>
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight uppercase">Grand Events <span class="text-white">.</span></h1>
             <p class="text-gray-400 mt-1">Manage Multi-Bracket Division Tournaments</p>
         </div>
-        <div class="flex gap-3 items-center">
+        <div class="flex flex-wrap sm:flex-nowrap gap-3 items-center w-full sm:w-auto">
             <button id="bulk-delete-btn" 
                     hx-post="/events/bulk-delete" 
                     hx-include=".event-checkbox" 
@@ -19,7 +19,7 @@
 
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
         <table class="w-full text-left border-collapse">
-            <thead>
+            <thead class="hidden sm:table-header-group">
                 <tr class="bg-black/40 border-b border-white/10">
                     <th class="p-4 w-12"><input type="checkbox" id="select-all-events" hx-on:change="document.querySelectorAll('.event-checkbox').forEach(cb => cb.checked = this.checked)" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer"></th>
                     <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Name</th>
@@ -53,7 +53,7 @@
         <form hx-post="/events" hx-target="#event-list" hx-swap="beforeend" 
               hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-event-modal').classList.add('hidden'); this.reset(); document.getElementById('empty-state')?.remove(); }"
               class="space-y-6">
-            <div class="grid grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div class="space-y-2">
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
                     <input type="text" name="name" placeholder="e.g., Spring Championship 2026" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
@@ -338,7 +338,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-6 pt-4 border-t border-white/5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-white/5">
                 <div class="space-y-2">
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Start Date</label>
                     <input type="date" name="startDate" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all [color-scheme:dark]">

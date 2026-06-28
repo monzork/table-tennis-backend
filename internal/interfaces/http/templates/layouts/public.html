@@ -21,6 +21,10 @@
 
         /* Hide admin elements on public views */
         .proj-hide { display: none !important; }
+        
+        /* Hide scrollbar for nav */
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col font-sans antialiased text-gray-200">
@@ -33,26 +37,26 @@
                     <span class="text-[9px] sm:text-xs text-gray-400 font-bold uppercase tracking-widest">Global Rankings</span>
                 </div>
             </div>
-            <div class="flex flex-wrap items-center justify-center sm:justify-end gap-4 sm:gap-6">
+            <div class="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-end gap-4 sm:gap-6 w-full sm:w-auto mt-2 sm:mt-0 pb-2 sm:pb-0 overflow-x-auto hide-scrollbar">
                 <!-- Main nav -->
-                <div class="flex gap-4 sm:gap-6 font-bold text-[11px] sm:text-sm tracking-widest uppercase text-gray-400">
-                    <a href="/rankings/singles" class="hover:text-white transition-colors pb-1 {{if eq .Type "Singles"}}text-white border-b-2 border-white{{end}}">
+                <div class="flex flex-nowrap gap-4 sm:gap-6 font-bold text-[11px] sm:text-sm tracking-widest uppercase text-gray-400 min-w-max">
+                    <a href="/rankings/singles" class="shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Singles"}}text-white border-b-2 border-white{{end}}">
                         {{index .T "nav.singles"}}
                     </a>
-                    <a href="/rankings/doubles" class="hover:text-white transition-colors pb-1 {{if eq .Type "Doubles"}}text-white border-b-2 border-white{{end}}">
+                    <a href="/rankings/doubles" class="shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Doubles"}}text-white border-b-2 border-white{{end}}">
                         {{index .T "nav.doubles"}}
                     </a>
-                    <a href="/tournaments" class="hover:text-white transition-colors pb-1 {{if eq .Type "Tournaments"}}text-white border-b-2 border-white{{end}}">
+                    <a href="/tournaments" class="shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Tournaments"}}text-white border-b-2 border-white{{end}}">
                         {{index .T "nav.tournaments"}}
                     </a>
-                    <a href="/tournaments/register" class="hover:text-white transition-colors pb-1 flex items-center gap-1.5">
+                    <a href="/tournaments/register" class="shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1.5">
                         <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
                         {{index .T "nav.register"}}
                     </a>
                 </div>
 
                 <!-- Language switcher -->
-                <div class="flex items-center gap-1 bg-white/5 rounded-full border border-white/10 p-1">
+                <div class="flex shrink-0 items-center gap-1 bg-white/5 rounded-full border border-white/10 p-1">
                     <a href="/lang/en"
                        class="lang-btn px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "en"}}active{{end}}"
                        title="English">

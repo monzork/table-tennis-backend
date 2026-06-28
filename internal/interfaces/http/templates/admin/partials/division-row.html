@@ -1,23 +1,26 @@
-<tr class="hover:bg-white/5 transition-colors group" id="division-{{.ID}}">
-    <td class="py-4 px-6 font-bold text-gray-400">{{.DisplayOrder}}</td>
-    <td class="py-4 px-6 font-bold text-lg text-white" style="color: {{.Color}}">{{.Name}}</td>
-    <td class="py-4 px-6 text-gray-300 font-mono">
-        {{.MinElo}} - {{if .MaxElo}}{{.MaxElo}}{{else}}∞{{end}}
+<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-4 sm:p-0 relative" id="division-{{.ID}}">
+    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 font-bold text-gray-400">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Order:</span>{{.DisplayOrder}}
     </td>
-    <td class="py-4 px-6 text-center">
-        <div class="w-6 h-6 rounded-full mx-auto shadow-sm border border-white/20" style="background-color: {{.Color}};"></div>
+    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 font-bold text-lg text-white" style="color: {{.Color}}">{{.Name}}</td>
+    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 text-gray-300 font-mono">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">ELO:</span>{{.MinElo}} - {{if .MaxElo}}{{.MaxElo}}{{else}}∞{{end}}
     </td>
-    <td class="py-4 px-6 text-right space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
+    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 sm:text-center flex items-center mt-2 sm:mt-0">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Color:</span>
+        <div class="w-6 h-6 rounded-full shadow-sm border border-white/20 sm:mx-auto" style="background-color: {{.Color}};"></div>
+    </td>
+    <td class="block sm:table-cell py-3 px-0 sm:py-4 sm:px-6 text-left sm:text-right space-x-3 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
         <button 
             hx-get="/divisions/{{.ID}}/edit" 
             hx-target="#division-modal-content"
             hx-on:click="document.getElementById('divisionModal').classList.remove('hidden')"
-            class="text-gray-300 hover:text-white uppercase tracking-widest text-xs font-bold">Edit</button>
+            class="text-gray-300 hover:text-white uppercase tracking-widest text-xs font-bold bg-white/5 sm:bg-transparent px-3 py-1 sm:p-0 rounded">Edit</button>
         <button 
             hx-delete="/divisions/{{.ID}}" 
             hx-confirm="Delete this division?"
             hx-target="#division-{{.ID}}" 
             hx-swap="outerHTML"
-            class="text-gray-500 hover:text-white uppercase tracking-widest text-xs font-bold">Delete</button>
+            class="text-red-400 hover:text-red-300 uppercase tracking-widest text-xs font-bold bg-white/5 sm:bg-transparent px-3 py-1 sm:p-0 rounded">Delete</button>
     </td>
 </tr>

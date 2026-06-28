@@ -1,9 +1,14 @@
 {{define "admin/partials/match-row"}}
-<tr class="hover:bg-white/5 transition-colors group match-log-row" id="match-row-{{.ID}}" data-status="{{.Status}}">
-    <td class="p-4 text-xs font-mono text-gray-500" title="{{.TournamentID}}">{{.TournamentID}}</td>
-    <td class="p-4 text-gray-300 capitalize">{{.MatchType}}</td>
+<tr class="hover:bg-white/5 transition-colors group match-log-row flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-4 sm:p-0 relative" id="match-row-{{.ID}}" data-status="{{.Status}}">
+    <td class="block sm:table-cell p-0 sm:p-4 text-xs font-mono text-gray-500 mb-1 sm:mb-0" title="{{.TournamentID}}">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Match ID:</span>{{.TournamentID}}
+    </td>
+    <td class="block sm:table-cell p-0 sm:p-4 text-gray-300 capitalize mb-1 sm:mb-0">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Type:</span>{{.MatchType}}
+    </td>
     
-    <td class="p-4">
+    <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">Player(s) A:</span>
         {{range $index, $p := .TeamA}}
             <div class="{{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
                 {{$p.FirstName}} <span class="uppercase font-bold">{{$p.LastName}}</span>
@@ -11,7 +16,8 @@
         {{end}}
     </td>
     
-    <td class="p-4">
+    <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">Player(s) B:</span>
         {{range $index, $p := .TeamB}}
             <div class="{{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
                 {{$p.FirstName}} <span class="uppercase font-bold">{{$p.LastName}}</span>
@@ -19,7 +25,8 @@
         {{end}}
     </td>
 
-    <td class="p-4">
+    <td class="block sm:table-cell p-0 sm:p-4 mb-3 sm:mb-0">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Status:</span>
         {{if eq .Status "finished"}}
             <span class="px-2 py-1 rounded bg-white/10 text-white text-xs font-bold uppercase tracking-wider border border-white/20">Finished</span>
         {{else if eq .Status "in_progress"}}
@@ -29,22 +36,22 @@
         {{end}}
     </td>
 
-    <td class="p-4">
+    <td class="block sm:table-cell p-0 sm:p-4">
         {{if eq .Status "in_progress"}}
             <div class="flex flex-col gap-1.5">
                 <form hx-post="/matches/finish" hx-swap="outerHTML" hx-target="#match-row-{{.ID}}" class="flex gap-2">
                     <input type="hidden" name="matchId" value="{{.ID}}">
-                    <select name="winnerTeam" class="bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white uppercase" required>
+                    <select name="winnerTeam" class="flex-1 sm:flex-none bg-black/50 border border-white/10 rounded px-2 py-2 sm:py-1 text-xs text-white uppercase" required>
                         <option value="" disabled selected>Winner</option>
                         <option value="A">Team A</option>
                         <option value="B">Team B</option>
                     </select>
-                    <button type="submit" class="bg-white hover:bg-gray-200 text-black font-bold py-1 px-3 text-xs rounded transition-all uppercase tracking-wider">Finish</button>
+                    <button type="submit" class="bg-white hover:bg-gray-200 text-black font-bold py-2 sm:py-1 px-4 sm:px-3 text-xs rounded transition-all uppercase tracking-wider">Finish</button>
                 </form>
                 {{if .Pin}}
                 <button type="button" data-match-id="{{.ID}}" data-matchup="{{range $i, $p := .TeamA}}{{if $i}} & {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}} vs {{range $i, $p := .TeamB}}{{if $i}} & {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
                         onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup)"
-                        class="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-indigo-400 hover:text-indigo-300 transition-colors"
+                        class="inline-flex items-center justify-center sm:justify-start gap-1.5 text-[9px] font-bold uppercase tracking-wider text-indigo-400 hover:text-indigo-300 transition-colors bg-white/5 sm:bg-transparent py-2 sm:py-0 rounded mt-1 sm:mt-0"
                         title="Share QR score link">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
                     Share QR
@@ -52,7 +59,7 @@
                 {{end}}
             </div>
         {{else if eq .Status "scheduled"}}
-            <button hx-post="/matches/{{.ID}}/start" hx-swap="outerHTML" hx-target="#match-row-{{.ID}}" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
+            <button hx-post="/matches/{{.ID}}/start" hx-swap="outerHTML" hx-target="#match-row-{{.ID}}" class="w-full sm:w-auto bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
                 Start Match
             </button>
         {{end}}

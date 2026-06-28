@@ -1,8 +1,8 @@
 {{define "admin/partials/tournament-row"}}
-<tr class="hover:bg-white/5 transition-colors group" id="tournament-{{.ID}}">
-    <td class="p-4">
+<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-4 sm:p-0 relative" id="tournament-{{.ID}}">
+    <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0">
         <div class="flex flex-col">
-            <span class="font-bold uppercase text-white tracking-widest">{{.Name}}</span>
+            <span class="font-bold uppercase text-white tracking-widest text-lg sm:text-base">{{.Name}}</span>
             {{if eq .Status "finished"}}
             <div class="flex gap-1.5 items-center mt-1">
                 <span class="text-[8px] font-black uppercase tracking-tighter text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Finished</span>
@@ -19,11 +19,17 @@
             {{end}}
         </div>
     </td>
-    <td class="p-4 text-gray-400 capitalize tracking-widest text-xs">{{.Type}} / {{.Format}}</td>
-    <td class="p-4 text-gray-400 font-mono text-xs">{{.StartDate.Format "Jan 02, 2006"}}</td>
-    <td class="p-4 text-gray-400 font-mono text-xs">{{.EndDate.Format "Jan 02, 2006"}}</td>
-    <td class="p-4">
-        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+    <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0 text-gray-400 capitalize tracking-widest text-xs">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Type:</span>{{.Type}} / {{.Format}}
+    </td>
+    <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0 text-gray-400 font-mono text-xs">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Start:</span>{{.StartDate.Format "Jan 02, 2006"}}
+    </td>
+    <td class="block sm:table-cell p-0 sm:p-4 mb-3 sm:mb-0 text-gray-400 font-mono text-xs">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">End:</span>{{.EndDate.Format "Jan 02, 2006"}}
+    </td>
+    <td class="block sm:table-cell p-0 sm:p-4">
+        <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-end sm:justify-start">
             <a href="/admin/tournaments/{{.ID}}" class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-all">
                 View
             </a>
