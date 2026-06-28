@@ -8,6 +8,10 @@ This project goes beyond a simple internal tool, offering an immersive, WTT-bran
 
 - **Multi-Format Tournaments**: Supports creating and managing `singles`, `doubles`, and `teams` events.
 - **Dynamic Elo Rating System**: Players have independent and tracked `Singles` and `Doubles` Elo ratings. The system automatically calculates and records rating changes when matches are finished (using paired team averages for doubles).
+- **Internationalization (i18n)**: Fully translated interfaces to support international table tennis communities and events.
+- **Secure Score Verification**: Features a player-linked PIN system for verifying match score entries.
+- **Tournament Table Management**: Enforces strict exclusivity for "in_progress" matches on assigned tables with real-time UI status updates to prevent double-booking.
+- **Interactive UI**: Drag-and-drop UI for organizing players in tournament groups seamlessly.
 - **Premium User Interface**: Built with Tailwind CSS, utilizing glassmorphism, WTT aesthetic (red, black, and gold theme), and seamless micro-interactions without page reloads using **HTMX**.
 - **Admin Dashboard**: A secure internal hub for managing the entire ecosystem (Players, Events, Scorekeeping).
 - **Public Rankings**: A stunning, auto-updating global leaderboard separating men's/women's singles and doubles players by their Elo points natively styled like official broadcast templates.

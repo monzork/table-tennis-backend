@@ -260,7 +260,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 	})
 
 	// 4. Group and Rank
-	isDivisional := sortOrder == "points_desc" && query == "" && (divFilter == "" || divFilter == "all")
+	isDivisional := sortOrder == "points_desc" && query == "" && (divFilter == "" || divFilter == "all") && len(divisions) > 0
 	isMixed := gender == ""
 
 	var menGroups []DivisionGroupView

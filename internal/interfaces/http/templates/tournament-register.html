@@ -4,10 +4,10 @@
     <div class="mb-12 text-center space-y-3">
         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
             <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            {{index .T "tourney_reg.open_label"}}
+            {{t .T "tourney_reg.open_label"}}
         </div>
-        <h1 class="text-5xl font-extrabold uppercase tracking-tighter">{{index .T "tourney_reg.title"}}</h1>
-        <p class="text-gray-400 font-bold uppercase tracking-widest text-xs">{{index .T "tourney_reg.subtitle"}}</p>
+        <h1 class="text-5xl font-extrabold uppercase tracking-tighter">{{t .T "tourney_reg.title"}}</h1>
+        <p class="text-gray-400 font-bold uppercase tracking-widest text-xs">{{t .T "tourney_reg.subtitle"}}</p>
     </div>
 
     {{if .Error}}
@@ -42,19 +42,19 @@
             <!-- Meta info -->
             <div class="grid grid-cols-2 gap-3 relative z-10">
                 <div class="bg-white/5 rounded-xl p-3">
-                    <p class="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">{{index $.T "tourney_reg.starts"}}</p>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">{{t $.T "tourney_reg.starts"}}</p>
                     <p class="text-sm font-bold text-white">{{.StartDate.Format "Jan 02, 2006"}}</p>
                 </div>
                 <div class="bg-white/5 rounded-xl p-3">
-                    <p class="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">{{index $.T "tourney_reg.ends"}}</p>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">{{t $.T "tourney_reg.ends"}}</p>
                     <p class="text-sm font-bold text-white">{{.EndDate.Format "Jan 02, 2006"}}</p>
                 </div>
                 <div class="bg-white/5 rounded-xl p-3">
-                    <p class="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">{{index $.T "tourney_reg.type"}}</p>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">{{t $.T "tourney_reg.type"}}</p>
                     <p class="text-sm font-bold text-white capitalize">{{.Format}}</p>
                 </div>
                 <div class="bg-white/5 rounded-xl p-3">
-                    <p class="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">{{index $.T "tourney_reg.participants"}}</p>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">{{t $.T "tourney_reg.participants"}}</p>
                     <p class="text-sm font-bold text-white">{{len .Participants}}</p>
                 </div>
             </div>
@@ -70,11 +70,11 @@
 
             <div class="relative z-10">
                 <div class="mb-8">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{{index .T "tourney_reg.form_title"}}</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{{t .T "tourney_reg.form_title"}}</p>
                     <h2 class="text-2xl font-extrabold uppercase tracking-tight" id="selected-tourney-name">
                         {{if .SelectedTournament}}{{(index .Tournaments 0).Name}}{{end}}
                     </h2>
-                    <p class="text-gray-500 text-sm mt-1">{{index .T "tourney_reg.form_subtitle"}}</p>
+                    <p class="text-gray-500 text-sm mt-1">{{t .T "tourney_reg.form_subtitle"}}</p>
                 </div>
 
                 <form action="/tournaments/register" method="POST" class="space-y-6">
@@ -85,12 +85,12 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div class="space-y-2">
-                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.first_name"}}</label>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{t .T "tourney_reg.first_name"}}</label>
                             <input type="text" name="firstName" required placeholder="John"
                                    class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
                         </div>
                         <div class="space-y-2">
-                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.second_name"}}</label>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{t .T "tourney_reg.second_name"}}</label>
                             <input type="text" name="secondName" placeholder="Carlos"
                                    class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
                         </div>
@@ -98,12 +98,12 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div class="space-y-2">
-                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.last_name"}}</label>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{t .T "tourney_reg.last_name"}}</label>
                             <input type="text" name="lastName" required placeholder="Doe"
                                    class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
                         </div>
                         <div class="space-y-2">
-                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.second_last_name"}}</label>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{t .T "tourney_reg.second_last_name"}}</label>
                             <input type="text" name="secondLastName" placeholder="Gomez"
                                    class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
                         </div>
@@ -111,23 +111,23 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div class="space-y-2">
-                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.birthdate"}}</label>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{t .T "tourney_reg.birthdate"}}</label>
                             <input type="date" name="birthdate" required
                                    class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all [color-scheme:dark] text-base sm:text-sm">
                         </div>
                         <div class="space-y-2">
-                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.gender"}}</label>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{t .T "tourney_reg.gender"}}</label>
                             <select name="gender" required
                                     class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all appearance-none text-base sm:text-sm">
-                                <option value="M">{{index .T "tourney_reg.gender_male"}}</option>
-                                <option value="F">{{index .T "tourney_reg.gender_female"}}</option>
+                                <option value="M">{{t .T "tourney_reg.gender_male"}}</option>
+                                <option value="F">{{t .T "tourney_reg.gender_female"}}</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div class="space-y-2">
-                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.country_label"}}</label>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{t .T "tourney_reg.country_label"}}</label>
                             <select id="tourney-reg-country" name="country" required
                                     hx-get="/players/department-input?theme=register"
                                     hx-trigger="change"
@@ -145,14 +145,14 @@
                     </div>
 
                     <div class="space-y-2">
-                        <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{index .T "tourney_reg.whatsapp"}}</label>
-                        <input type="text" name="whatsAppNumber" placeholder="{{index .T "tourney_reg.whatsapp_ph"}}"
+                        <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">{{t .T "tourney_reg.whatsapp"}}</label>
+                        <input type="text" name="whatsAppNumber" placeholder="{{t .T "tourney_reg.whatsapp_ph"}}"
                                class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white transition-all text-base sm:text-sm">
                     </div>
 
                     <button type="submit"
                             class="w-full bg-white hover:bg-gray-200 text-black font-black py-5 rounded-2xl transition-all uppercase tracking-[0.2em] shadow-lg transform hover:-translate-y-1 active:scale-95">
-                        {{index .T "tourney_reg.submit_btn"}}
+                        {{t .T "tourney_reg.submit_btn"}}
                     </button>
                 </form>
             </div>
@@ -167,14 +167,14 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
         </div>
-        <p class="text-gray-500 font-bold uppercase tracking-widest text-sm">{{index .T "tourney_reg.no_open"}}</p>
+        <p class="text-gray-500 font-bold uppercase tracking-widest text-sm">{{t .T "tourney_reg.no_open"}}</p>
     </div>
     {{end}}
 
     <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mt-10 text-gray-500 text-[10px] font-bold uppercase tracking-widest">
-        <a href="/rankings/singles" class="hover:text-white transition-colors">{{index .T "tourney_reg.back"}}</a>
+        <a href="/rankings/singles" class="hover:text-white transition-colors">{{t .T "tourney_reg.back"}}</a>
         <span class="hidden sm:inline text-white/10">|</span>
-        <a href="/tournaments" class="hover:text-white transition-colors">{{index .T "tourney_reg.view_tournaments"}} →</a>
+        <a href="/tournaments" class="hover:text-white transition-colors">{{t .T "tourney_reg.view_tournaments"}} →</a>
     </div>
 </div>
 

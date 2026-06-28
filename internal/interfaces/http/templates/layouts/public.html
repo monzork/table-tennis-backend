@@ -41,17 +41,17 @@
                 <!-- Main nav -->
                 <div class="flex flex-nowrap gap-4 sm:gap-6 font-bold text-[11px] sm:text-sm tracking-widest uppercase text-gray-400 min-w-max">
                     <a href="/rankings/singles" class="shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Singles"}}text-white border-b-2 border-white{{end}}">
-                        {{index .T "nav.singles"}}
+                        {{t .T "nav.singles"}}
                     </a>
                     <a href="/rankings/doubles" class="shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Doubles"}}text-white border-b-2 border-white{{end}}">
-                        {{index .T "nav.doubles"}}
+                        {{t .T "nav.doubles"}}
                     </a>
                     <a href="/tournaments" class="shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Tournaments"}}text-white border-b-2 border-white{{end}}">
-                        {{index .T "nav.tournaments"}}
+                        {{t .T "nav.tournaments"}}
                     </a>
                     <a href="/tournaments/register" class="shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1.5">
                         <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                        {{index .T "nav.register"}}
+                        {{t .T "nav.register"}}
                     </a>
                 </div>
 
@@ -75,7 +75,7 @@
         {{embed}}
     </main>
     <footer class="border-t border-white/10 py-8 text-center text-gray-600 text-xs font-bold tracking-widest uppercase mt-12 bg-black/40">
-        {{index .T "footer.copy"}}
+        {{t .T "footer.copy"}}
     </footer>
 </body>
 </html>

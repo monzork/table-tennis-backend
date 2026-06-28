@@ -340,9 +340,28 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 
 	// ── 5. Assemble participants ────────────────────────────────────────────
 	var participantPlayers []*player.Player
+	// Also build a snapshot Elo lookup keyed by player UUID for use in groups/teams.
+	snapshotSinglesElo := make(map[uuid.UUID]int16, len(partModels))
+	snapshotDoublesElo := make(map[uuid.UUID]int16, len(partModels))
 	for _, pt := range partModels {
 		if pm, ok := playerCache[pt.PlayerID]; ok {
-			participantPlayers = append(participantPlayers, toPlayer(pm))
+			p := toPlayer(pm)
+			// Use the Elo snapshot from when the player registered for this tournament.
+			// This ensures division grouping reflects their Elo at registration time,
+			// not their current (potentially updated) Elo.
+			if pt.EloBeforeSingles != nil {
+				p.SinglesElo = *pt.EloBeforeSingles
+				snapshotSinglesElo[pt.PlayerID] = *pt.EloBeforeSingles
+			} else {
+				snapshotSinglesElo[pt.PlayerID] = pm.SinglesElo
+			}
+			if pt.EloBeforeDoubles != nil {
+				p.DoublesElo = *pt.EloBeforeDoubles
+				snapshotDoublesElo[pt.PlayerID] = *pt.EloBeforeDoubles
+			} else {
+				snapshotDoublesElo[pt.PlayerID] = pm.DoublesElo
+			}
+			participantPlayers = append(participantPlayers, p)
 		}
 	}
 
@@ -383,19 +402,34 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		var groupPlayers []*player.Player
 		for _, gp := range gpByGroup[gm.ID] {
 			if pm, ok := playerCache[gp.PlayerID]; ok {
-				groupPlayers = append(groupPlayers, toPlayer(pm))
+				p := toPlayer(pm)
+				// Use snapshot Elo for display consistency with division grouping.
+				if snap, ok := snapshotSinglesElo[gp.PlayerID]; ok {
+					p.SinglesElo = snap
+				}
+				if snap, ok := snapshotDoublesElo[gp.PlayerID]; ok {
+					p.DoublesElo = snap
+				}
+				groupPlayers = append(groupPlayers, p)
 			} else if isTeamType {
-				// For doubles/teams, group participants use team IDs
+				// For doubles/teams, group participants use team IDs.
+				// Avg Elo is computed from each team member's snapshot Elo.
 				if tm, ok := teamMap[gp.PlayerID]; ok {
 					avgElo := int16(1000)
 					tps := tpByTeam[tm.ID]
 					if len(tps) > 0 {
 						sum := int32(0)
 						for _, tp := range tps {
-							if pm, ok := playerCache[tp.PlayerID]; ok {
-								if model.Type == "doubles" || model.Type == "mixed_doubles" {
+							if model.Type == "doubles" || model.Type == "mixed_doubles" {
+								if snap, ok := snapshotDoublesElo[tp.PlayerID]; ok {
+									sum += int32(snap)
+								} else if pm, ok := playerCache[tp.PlayerID]; ok {
 									sum += int32(pm.DoublesElo)
-								} else {
+								}
+							} else {
+								if snap, ok := snapshotSinglesElo[tp.PlayerID]; ok {
+									sum += int32(snap)
+								} else if pm, ok := playerCache[tp.PlayerID]; ok {
 									sum += int32(pm.SinglesElo)
 								}
 							}

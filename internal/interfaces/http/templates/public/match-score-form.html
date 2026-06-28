@@ -1,10 +1,10 @@
-<h2 class="text-xl font-extrabold uppercase mb-1 tracking-tighter">Update <span class="text-white">Score</span></h2>
+<h2 class="text-xl font-extrabold uppercase mb-1 tracking-tighter">{{t .T "score_pub.title"}} <span class="text-white">{{t .T "score_pub.score"}}</span></h2>
 <p class="text-xs text-gray-500 mb-4 font-mono">
     {{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}
     {{if .IsDoubles}}
     <br/>
     <span class="text-gray-400 font-sans mt-1.5 block leading-relaxed">
-        <span class="text-white/60">Players:</span> {{.PlayerANames}} <span class="text-white/30">vs</span> {{.PlayerBNames}}
+        <span class="text-white/60">{{t .T "score_pub.players"}}</span> {{.PlayerANames}} <span class="text-white/30">vs</span> {{.PlayerBNames}}
     </span>
     {{end}}
 </p>
@@ -29,7 +29,7 @@
     <div class="space-y-2 mb-4">
         {{range .Sets}}
         <div class="flex items-center gap-3">
-            <span class="text-[10px] font-bold text-gray-500 w-10 text-right uppercase tracking-widest">Set {{.Number}}</span>
+            <span class="text-[10px] font-bold text-gray-500 w-10 text-right uppercase tracking-widest">{{t .T "score_pub.set"}} {{.Number}}</span>
             <input name="scores[]_a" type="number" min="0" max="99" placeholder="A" value="{{.ScoreA}}"
                 class="flex-1 bg-white/[0.04] border border-white/10 rounded-xl p-3 text-white text-center text-xl font-black focus:outline-none focus:border-white/30 transition-colors">
             <span class="text-gray-600 font-bold text-lg">–</span>
@@ -45,11 +45,11 @@
         <button type="button" 
             onclick="document.getElementById('public-score-modal').classList.add('hidden')"
             class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-bold py-4 rounded-2xl transition-all uppercase tracking-widest text-xs">
-            Cancel
+            {{t .T "score_pub.cancel"}}
         </button>
         <button type="submit" 
             class="flex-[2] bg-white hover:bg-gray-100 text-black font-black py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg text-xs">
-            Submit Scores
+            {{t .T "score_pub.submit"}}
         </button>
     </div>
 </form>

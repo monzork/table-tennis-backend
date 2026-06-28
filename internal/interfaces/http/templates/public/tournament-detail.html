@@ -48,18 +48,18 @@
         <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
       </div>
       {{else}}
-      <p class="text-sm text-gray-600">No participants registered.</p>
+      <p class="text-sm text-gray-600">{{t .T "pub_detail.no_parts"}}</p>
       {{end}}
     </div>
   </section>
 
   {{/* Bracket/Groups Draw Area */}}
   <section class="space-y-6">
-    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Tournament Draw</h2>
+    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "pub_detail.draw_title"}}</h2>
     {{$count := len .Tournament.Participants}}
     {{$teamCount := len .Tournament.Teams}}
     {{if or (gt $count 1) (gt $teamCount 1)}}
-    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar cursor-grab active:cursor-grabbing"
+    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar"
          hx-get="/tournaments/{{.Tournament.ID}}"
          hx-trigger="reload-bracket, reload-bracket from:body"
          hx-select="#bracket-container > *"
@@ -69,7 +69,7 @@
     </div>
     {{else}}
     <div class="glass rounded-2xl border border-white/10 p-8 text-center text-gray-600">
-      <p class="text-sm">Bracket will generate after participants are added.</p>
+      <p class="text-sm">{{t .T "pub_detail.no_bracket"}}</p>
     </div>
     {{end}}
   </section>
@@ -82,41 +82,41 @@
            hx-target="this"
            hx-swap="outerHTML">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Encounter Match List</h2>
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "pub_detail.match_title"}}</h2>
       <select name="status"
               hx-get="/tournaments/{{.Tournament.ID}}"
               hx-target="#public-matches-tbody"
               hx-select="#public-matches-tbody"
               hx-trigger="change"
               class="w-full sm:w-auto bg-white/5 border border-white/10 rounded-full px-4 py-2 sm:py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-300 hover:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-white">
-        <option value="all" {{if eq .StatusFilter "all"}}selected{{end}}>{{index .T "status.all"}}</option>
-        <option value="scheduled" {{if eq .StatusFilter "scheduled"}}selected{{end}}>{{index .T "status.scheduled"}}</option>
-        <option value="in_progress" {{if eq .StatusFilter "in_progress"}}selected{{end}}>{{index .T "status.in_progress"}}</option>
-        <option value="finished" {{if eq .StatusFilter "finished"}}selected{{end}}>{{index .T "status.finished"}}</option>
+        <option value="all" {{if eq .StatusFilter "all"}}selected{{end}}>{{t .T "status.all"}}</option>
+        <option value="scheduled" {{if eq .StatusFilter "scheduled"}}selected{{end}}>{{t .T "status.scheduled"}}</option>
+        <option value="in_progress" {{if eq .StatusFilter "in_progress"}}selected{{end}}>{{t .T "status.in_progress"}}</option>
+        <option value="finished" {{if eq .StatusFilter "finished"}}selected{{end}}>{{t .T "status.finished"}}</option>
       </select>
     </div>
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
       <table class="w-full text-left border-collapse text-xs font-medium">
         <thead class="hidden sm:table-header-group">
           <tr class="bg-black/40 border-b border-white/10 text-gray-400 uppercase text-[9px] tracking-wider">
-            <th class="p-4 text-left">Type</th>
-            <th class="p-4 text-left">Player(s) A</th>
-            <th class="p-4 text-left">Player(s) B</th>
-            <th class="p-4 text-left">Status</th>
-            <th class="p-4 text-right">Actions</th>
+            <th class="p-4 text-left">{{t .T "pub_detail.col_type"}}</th>
+            <th class="p-4 text-left">{{t .T "pub_detail.col_player_a"}}</th>
+            <th class="p-4 text-left">{{t .T "pub_detail.col_player_b"}}</th>
+            <th class="p-4 text-left">{{t .T "pub_detail.col_status"}}</th>
+            <th class="p-4 text-right">{{t .T "pub_detail.col_actions"}}</th>
           </tr>
         </thead>
         <tbody id="public-matches-tbody" class="divide-y divide-white/10">
           {{range .Tournament.Matches}}
           <tr class="hover:bg-white/5 transition-colors flex flex-col sm:table-row p-4 sm:p-0 border-b border-white/10 sm:border-b-0">
             <td class="block sm:table-cell p-0 sm:p-4 text-gray-300 capitalize mb-1 sm:mb-0">
-              <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Type:</span>{{.MatchType}}
+              <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "pub_detail.mob_type"}}</span>{{.MatchType}}
               {{if .TableNumber}}
               <div class="inline-block sm:block text-[9px] text-yellow-400 font-bold font-mono mt-1 sm:mt-1 ml-2 sm:ml-0">TABLE {{.TableNumber}}</div>
               {{end}}
             </td>
             <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0">
-                <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">Player(s) A:</span>
+                <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">{{t .T "pub_detail.mob_player_a"}}</span>
                 {{range .TeamA}}
                     <div class="{{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
                         {{.FirstNameWithSecond}} <span class="uppercase font-bold">{{.LastNameWithSecond}}</span>
@@ -124,7 +124,7 @@
                 {{end}}
             </td>
             <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0">
-                <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">Player(s) B:</span>
+                <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">{{t .T "pub_detail.mob_player_b"}}</span>
                 {{range .TeamB}}
                     <div class="{{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
                         {{.FirstNameWithSecond}} <span class="uppercase font-bold">{{.LastNameWithSecond}}</span>
@@ -132,13 +132,13 @@
                 {{end}}
             </td>
             <td class="block sm:table-cell p-0 sm:p-4 mb-3 sm:mb-0">
-                <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Status:</span>
+                <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "pub_detail.mob_status"}}</span>
                 {{if eq .Status "finished"}}
-                    <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">{{index $.T "status.finished"}}</span>
+                    <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
                 {{else if eq .Status "in_progress"}}
-                    <span class="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">{{index $.T "status.in_progress"}}</span>
+                    <span class="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
                 {{else}}
-                    <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">{{index $.T "status.scheduled"}}</span>
+                    <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
                 {{end}}
             </td>
             <td class="block sm:table-cell p-0 sm:p-4 text-left sm:text-right">
@@ -146,21 +146,21 @@
                 <button hx-post="/public/matches/{{.ID}}/start?tournamentId={{$.Tournament.ID}}"
                         hx-swap="none"
                         class="w-full sm:w-auto bg-white hover:bg-gray-200 text-black text-[10px] font-bold py-2 sm:py-1.5 px-3 rounded-full transition-all uppercase tracking-wider">
-                  Start
+                  {{t .T "pub_detail.start"}}
                 </button>
               {{else if eq .Status "in_progress"}}
                 <button hx-get="/public/matches/score/form?matchId={{.ID}}&tournamentId={{$.Tournament.ID}}&stage={{.Stage}}&bestOf=5"
                         hx-target="#public-score-modal-content"
                         hx-on:click="document.getElementById('public-score-modal').classList.remove('hidden')"
                         class="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-400 text-black text-[10px] font-bold py-2 sm:py-1.5 px-3 rounded-full transition-all uppercase tracking-wider">
-                  Score
+                  {{t .T "pub_detail.score"}}
                 </button>
               {{end}}
             </td>
           </tr>
           {{else}}
           <tr>
-            <td colspan="5" class="p-8 text-center text-gray-500">No matches scheduled yet.</td>
+            <td colspan="5" class="p-8 text-center text-gray-500">{{t .T "pub_detail.no_matches"}}</td>
           </tr>
           {{end}}
         </tbody>

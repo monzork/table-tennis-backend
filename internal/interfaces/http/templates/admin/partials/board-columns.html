@@ -4,18 +4,18 @@
 {{/* ── Table Availability Panel ── */}}
 <div class="mb-6 glass rounded-3xl border border-white/10 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-club-panel/30 backdrop-blur-md">
   <div>
-    <h3 class="text-xs font-black uppercase tracking-widest text-gray-400">{{index $.T "board.table_status"}}</h3>
-    <p class="text-[11px] text-gray-500 mt-1">{{index $.T "board.table_desc"}}</p>
+    <h3 class="text-xs font-black uppercase tracking-widest text-gray-400">{{t $.T "board.table_status"}}</h3>
+    <p class="text-[11px] text-gray-500 mt-1">{{t $.T "board.table_desc"}}</p>
   </div>
   <div class="flex flex-wrap gap-2.5">
     {{range .Tables}}
     <div class="flex items-center gap-2 px-3.5 py-2 rounded-2xl border transition-all duration-300 {{if .IsUsed}}bg-red-500/10 border-red-500/30 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.07)]{{else}}bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.07)]{{end}}">
       <span class="w-1.5 h-1.5 rounded-full {{if .IsUsed}}bg-red-500 animate-pulse{{else}}bg-emerald-500{{end}}"></span>
-      <span class="text-xs font-black font-mono">{{index $.T "board.table"}} {{.Number}}</span>
-      <span class="text-[9px] uppercase tracking-wider font-bold opacity-80">{{if .IsUsed}}{{index $.T "board.occupied"}}{{else}}{{index $.T "board.available"}}{{end}}</span>
+      <span class="text-xs font-black font-mono">{{t $.T "board.table"}} {{.Number}}</span>
+      <span class="text-[9px] uppercase tracking-wider font-bold opacity-80">{{if .IsUsed}}{{t $.T "board.occupied"}}{{else}}{{t $.T "board.available"}}{{end}}</span>
     </div>
     {{else}}
-    <div class="text-[11px] italic text-gray-600">{{index $.T "board.no_tables"}}</div>
+    <div class="text-[11px] italic text-gray-600">{{t $.T "board.no_tables"}}</div>
     {{end}}
   </div>
 </div>
@@ -26,7 +26,7 @@
   <div class="flex flex-col gap-3">
     <div class="flex items-center gap-2 mb-1">
       <span class="w-2 h-2 rounded-full bg-gray-500"></span>
-      <h2 class="text-[10px] font-black uppercase tracking-widest text-gray-400">{{index $.T "board.scheduled"}}</h2>
+      <h2 class="text-[10px] font-black uppercase tracking-widest text-gray-400">{{t $.T "board.scheduled"}}</h2>
       <span class="ml-auto text-[10px] font-bold text-gray-600 tabular-nums">{{len .Scheduled}}</span>
     </div>
     {{range .Scheduled}}
@@ -38,7 +38,7 @@
           <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
           {{end}}
         </div>
-        {{if .TableNumber}}<span class="text-[9px] font-bold text-yellow-400 font-mono">{{index $.T "board.table"}} {{.TableNumber}}</span>{{end}}
+        {{if .TableNumber}}<span class="text-[9px] font-bold text-yellow-400 font-mono">{{t $.T "board.table"}} {{.TableNumber}}</span>{{end}}
       </div>
       <div class="space-y-1.5">
         <div class="flex items-center gap-2 bg-white/5 border border-white/5 rounded-xl px-3 py-2">
@@ -54,33 +54,33 @@
         {{if .MatchID}}
         <form hx-post="/matches/{{.MatchID}}/start" hx-swap="none" class="flex gap-1.5 items-center w-full">
           <select name="tableNumber" class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
-            <option value="">{{index $.T "board.auto"}}</option>
+            <option value="">{{t $.T "board.auto"}}</option>
             {{range $.Tables}}
               <option value="{{.Number}}" {{if .IsUsed}}disabled class="text-gray-500 bg-black"{{else}}class="text-white bg-black"{{end}}>
-                T{{.Number}} {{if .IsUsed}}{{index $.T "board.used"}}{{else}}{{index $.T "board.free"}}{{end}}
+                T{{.Number}} {{if .IsUsed}}{{t $.T "board.used"}}{{else}}{{t $.T "board.free"}}{{end}}
               </option>
             {{end}}
           </select>
           <button
             type="submit"
             class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 transition-all">
-            {{index $.T "board.start"}}
+            {{t $.T "board.start"}}
           </button>
         </form>
         {{else}}
         <form hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}&stage={{.Stage}}" hx-swap="none" class="flex gap-1.5 items-center w-full">
           <select name="tableNumber" class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
-            <option value="">{{index $.T "board.auto"}}</option>
+            <option value="">{{t $.T "board.auto"}}</option>
             {{range $.Tables}}
               <option value="{{.Number}}" {{if .IsUsed}}disabled class="text-gray-500 bg-black"{{else}}class="text-white bg-black"{{end}}>
-                T{{.Number}} {{if .IsUsed}}{{index $.T "board.used"}}{{else}}{{index $.T "board.free"}}{{end}}
+                T{{.Number}} {{if .IsUsed}}{{t $.T "board.used"}}{{else}}{{t $.T "board.free"}}{{end}}
               </option>
             {{end}}
           </select>
           <button
             type="submit"
             class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 transition-all">
-            {{index $.T "board.start"}}
+            {{t $.T "board.start"}}
           </button>
         </form>
         {{end}}
@@ -88,7 +88,7 @@
           <button
             class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-2 transition-all"
             onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
-            {{index $.T "board.score"}}
+            {{t $.T "board.score"}}
           </button>
           {{if .MatchID}}
           <button type="button"
@@ -102,7 +102,7 @@
       </div>
     </div>
     {{else}}
-    <div class="glass rounded-2xl border border-white/5 border-dashed p-6 text-center text-gray-600 text-[11px] italic">{{index $.T "board.no_scheduled"}}</div>
+    <div class="glass rounded-2xl border border-white/5 border-dashed p-6 text-center text-gray-600 text-[11px] italic">{{t $.T "board.no_scheduled"}}</div>
     {{end}}
   </div>
 
@@ -110,7 +110,7 @@
   <div class="flex flex-col gap-3">
     <div class="flex items-center gap-2 mb-1">
       <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
-      <h2 class="text-[10px] font-black uppercase tracking-widest text-yellow-400">{{index $.T "board.in_progress"}}</h2>
+      <h2 class="text-[10px] font-black uppercase tracking-widest text-yellow-400">{{t $.T "board.in_progress"}}</h2>
       <span class="ml-auto text-[10px] font-bold text-gray-600 tabular-nums">{{len .InProgress}}</span>
     </div>
     {{range .InProgress}}
@@ -122,7 +122,7 @@
           <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
           {{end}}
         </div>
-        {{if .TableNumber}}<span class="text-[9px] font-bold text-yellow-400 font-mono">{{index $.T "board.table"}} {{.TableNumber}}</span>{{else}}<span class="text-[9px] text-gray-600 font-mono">{{index $.T "board.no_table"}}</span>{{end}}
+        {{if .TableNumber}}<span class="text-[9px] font-bold text-yellow-400 font-mono">{{t $.T "board.table"}} {{.TableNumber}}</span>{{else}}<span class="text-[9px] text-gray-600 font-mono">{{t $.T "board.no_table"}}</span>{{end}}
       </div>
       <div class="space-y-1.5">
         <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
@@ -144,7 +144,7 @@
         <button
           class="flex-1 text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-2 transition-all"
           onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
-          {{index $.T "board.edit_score"}}
+          {{t $.T "board.edit_score"}}
         </button>
         {{if .MatchID}}
         <button type="button"
@@ -157,7 +157,7 @@
       </div>
     </div>
     {{else}}
-    <div class="glass rounded-2xl border border-yellow-500/10 border-dashed p-6 text-center text-gray-600 text-[11px] italic">{{index $.T "board.no_in_progress"}}</div>
+    <div class="glass rounded-2xl border border-yellow-500/10 border-dashed p-6 text-center text-gray-600 text-[11px] italic">{{t $.T "board.no_in_progress"}}</div>
     {{end}}
   </div>
 
@@ -165,7 +165,7 @@
   <div class="flex flex-col gap-3">
     <div class="flex items-center gap-2 mb-1">
       <span class="w-2 h-2 rounded-full bg-green-400"></span>
-      <h2 class="text-[10px] font-black uppercase tracking-widest text-green-400">{{index $.T "board.finished"}}</h2>
+      <h2 class="text-[10px] font-black uppercase tracking-widest text-green-400">{{t $.T "board.finished"}}</h2>
       <span class="ml-auto text-[10px] font-bold text-gray-600 tabular-nums">{{len .Finished}}</span>
     </div>
     {{range .Finished}}
@@ -177,7 +177,7 @@
           <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
           {{end}}
         </div>
-        {{if .TableNumber}}<span class="text-[9px] text-gray-600 font-mono">{{index $.T "board.table"}} {{.TableNumber}}</span>{{end}}
+        {{if .TableNumber}}<span class="text-[9px] text-gray-600 font-mono">{{t $.T "board.table"}} {{.TableNumber}}</span>{{end}}
       </div>
       <div class="space-y-1.5">
         <div class="flex items-center gap-2 px-3 py-2 rounded-xl border {{if gt .ScoreA .ScoreB}}bg-green-400/10 border-green-400/20{{else}}bg-white/5 border-white/5{{end}}">
@@ -192,11 +192,11 @@
       <button
         class="proj-hide w-full text-[9px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-400 border border-white/5 hover:border-white/10 rounded-lg py-1.5 transition-all mt-1"
         onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
-        {{index $.T "board.edit"}}
+        {{t $.T "board.edit"}}
       </button>
     </div>
     {{else}}
-    <div class="glass rounded-2xl border border-green-500/5 border-dashed p-6 text-center text-gray-600 text-[11px] italic">{{index $.T "board.no_finished"}}</div>
+    <div class="glass rounded-2xl border border-green-500/5 border-dashed p-6 text-center text-gray-600 text-[11px] italic">{{t $.T "board.no_finished"}}</div>
     {{end}}
   </div>
 

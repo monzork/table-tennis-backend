@@ -201,6 +201,18 @@ func main() {
 	engine.AddFunc("nicaraguaDepartments", func() []string {
 		return handler.NicaraguaDepartments
 	})
+	// t(tmap, key) — shorthand for {{index .T "key"}} usable as {{t .T "key"}}
+	engine.AddFunc("t", func(tmap map[string]string, key string) string {
+		if tmap != nil {
+			if v, ok := tmap[key]; ok {
+				return v
+			}
+		}
+		if v, ok := i18n.Translations["en"][key]; ok {
+			return v
+		}
+		return key
+	})
 	app := fiber.New(fiber.Config{
 		Views:             engine,
 		PassLocalsToViews: true,

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Match Score Entry</title>
+  <title>{{t .T "pin.score_entry"}}</title>
   <meta name="description" content="Enter the match PIN to submit scores for this table tennis match."/>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -262,7 +262,7 @@
     <!-- Logo -->
     <div class="logo">
       <div class="logo-icon">🏓</div>
-      <span class="logo-text">Score Entry</span>
+      <span class="logo-text">{{t .T "pin.score_entry"}}</span>
     </div>
 
     <!-- Match Info -->
@@ -279,18 +279,18 @@
       {{end}}
       <div>
         {{if eq .Status "in_progress"}}
-        <span class="status-badge status-in_progress">● Live</span>
+        <span class="status-badge status-in_progress">{{t .T "pin.status_live"}}</span>
         {{else if eq .Status "scheduled"}}
-        <span class="status-badge status-scheduled">⏳ Scheduled</span>
+        <span class="status-badge status-scheduled">{{t .T "pin.status_scheduled"}}</span>
         {{else if eq .Status "finished"}}
-        <span class="status-badge status-finished">✓ Finished</span>
+        <span class="status-badge status-finished">{{t .T "pin.status_finished"}}</span>
         {{end}}
       </div>
     </div>
 
     <!-- PIN Entry -->
     <div id="pin-section">
-      <label class="pin-label">Enter Match PIN</label>
+      <label class="pin-label">{{t .T "pin.enter_pin"}}</label>
 
       <form id="pin-form"
             hx-post="/score/{{.MatchID}}/verify"
@@ -305,13 +305,13 @@
         </div>
 
         <button type="submit" class="submit-btn" id="verify-btn" disabled>
-          Verify PIN →
+          {{t .T "pin.verify_btn"}}
         </button>
       </form>
 
       <div id="score-form-area"></div>
 
-      <p class="hint">Ask the match official for the 4-digit PIN</p>
+      <p class="hint">{{t .T "pin.hint"}}</p>
     </div>
   </div>
 

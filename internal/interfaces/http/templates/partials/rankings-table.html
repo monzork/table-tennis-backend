@@ -64,12 +64,12 @@
                         <div class="text-xl font-black italic text-white tracking-tight leading-none">
                             {{if eq $.RankType "doubles"}}{{.DoublesElo}}{{else}}{{.SinglesElo}}{{end}}
                         </div>
-                        <div class="text-[9px] font-bold uppercase tracking-widest text-gray-500 mt-0.5">pts</div>
+                        <div class="text-[9px] font-bold uppercase tracking-widest text-gray-500 mt-0.5">{{t $.T "rankings_table.pts"}}</div>
                     </div>
                 </div>
             </td>
         </tr>
     {{end}}
 {{else}}
-    <tr><td colspan="4" class="p-12 text-center text-gray-500 italic font-light tracking-wider">No matching players found.</td></tr>
+    <tr><td colspan="4" class="p-12 text-center text-gray-500 italic font-light tracking-wider">{{t $.T "rankings_table.no_match"}}</td></tr>
 {{end}}

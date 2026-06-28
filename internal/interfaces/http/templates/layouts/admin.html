@@ -151,15 +151,15 @@
                 <span class="text-xl font-extrabold uppercase tracking-widest text-white/90">Admin</span>
             </div>
             <div class="flex gap-4 sm:gap-6 font-semibold text-xs sm:text-sm tracking-wider uppercase text-gray-400 items-center overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar justify-start sm:justify-end shrink-0">
-                <a href="/admin" class="hover:text-white transition-colors proj-hide">{{index .T "nav.dashboard"}}</a>
-                <a href="/admin/players" class="hover:text-white transition-colors proj-hide">{{index .T "nav.players"}}</a>
-                <a href="/admin/events" class="hover:text-white transition-colors proj-hide">{{index .T "nav.events"}}</a>
-                <a href="/admin/tournaments" class="hover:text-white transition-colors proj-hide">{{index .T "nav.tournaments"}}</a>
-                <a href="/admin/divisions" class="hover:text-white transition-colors proj-hide">{{index .T "nav.divisions"}}</a>
+                <a href="/admin" class="hover:text-white transition-colors proj-hide">{{t .T "nav.dashboard"}}</a>
+                <a href="/admin/players" class="hover:text-white transition-colors proj-hide">{{t .T "nav.players"}}</a>
+                <a href="/admin/events" class="hover:text-white transition-colors proj-hide">{{t .T "nav.events"}}</a>
+                <a href="/admin/tournaments" class="hover:text-white transition-colors proj-hide">{{t .T "nav.tournaments"}}</a>
+                <a href="/admin/divisions" class="hover:text-white transition-colors proj-hide">{{t .T "nav.divisions"}}</a>
                 <span class="w-px h-6 bg-white/20 mx-2 proj-hide"></span>
-                <a href="/rankings/singles" class="hover:text-white transition-colors text-gray-300 proj-hide" target="_blank">{{index .T "nav.public_rankings"}}</a>
+                <a href="/rankings/singles" class="hover:text-white transition-colors text-gray-300 proj-hide" target="_blank">{{t .T "nav.public_rankings"}}</a>
                 <form method="POST" action="/admin/logout" class="ml-2 proj-hide">
-                    <button type="submit" class="hover:text-white transition-colors uppercase tracking-wider font-semibold text-gray-400 text-sm">{{index .T "nav.logout"}}</button>
+                    <button type="submit" class="hover:text-white transition-colors uppercase tracking-wider font-semibold text-gray-400 text-sm">{{t .T "nav.logout"}}</button>
                 </form>
 
                 <!-- ── Language Switcher ── -->
@@ -189,7 +189,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                     </svg>
-                    <span id="theme-label">{{index .T "nav.projector"}}</span>
+                    <span id="theme-label">{{t .T "nav.projector"}}</span>
                 </button>
             </div>
         </div>

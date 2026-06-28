@@ -19,6 +19,7 @@ type TournamentViewModel struct {
 	Format     string
 	Divisions  []DivisionView
 	IsPublic   bool
+	T          map[string]string
 }
 
 type DivisionView struct {
@@ -83,12 +84,13 @@ type MatchSlot struct {
 	Player *player.Player
 }
 
-func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Division) *TournamentViewModel {
+func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Division, tmap map[string]string) *TournamentViewModel {
 	vm := &TournamentViewModel{
 		Tournament: t,
 		Type:       t.Type,
 		Format:     t.Format,
 		Divisions:  []DivisionView{},
+		T:          tmap,
 	}
 
 	var participants []*player.Player

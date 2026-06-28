@@ -52,11 +52,13 @@ func NewDivision(id, name string, displayOrder int, minElo int16, maxElo *int16,
 }
 
 // ContainsElo checks if a given ELO rating falls within this division's range.
+// MinElo is inclusive, MaxElo is exclusive — so a player at exactly MaxElo
+// belongs to the next (higher) division whose MinElo equals this MaxElo.
 func (d *Division) ContainsElo(elo int16) bool {
 	if elo < d.MinElo {
 		return false
 	}
-	if d.MaxElo != nil && elo > *d.MaxElo {
+	if d.MaxElo != nil && elo >= *d.MaxElo {
 		return false
 	}
 	return true

@@ -4,17 +4,17 @@
         <div class="space-y-4">
             <h2 class="text-2xl font-black uppercase tracking-wider italic text-white flex items-center gap-2">
                 <span class="w-2.5 h-7 bg-white rounded-md"></span>
-                {{if eq .RankType "doubles"}}{{index .T "rankings.mens_doubles"}}{{else}}{{index .T "rankings.mens_singles"}}{{end}}
+                {{if eq .RankType "doubles"}}{{t .T "rankings.mens_doubles"}}{{else}}{{t .T "rankings.mens_singles"}}{{end}}
             </h2>
             <div class="glass rounded-2xl overflow-hidden overflow-x-auto border border-white/10 shadow-2xl relative">
                 <div class="absolute inset-0 bg-gradient-to-b from-white/3 to-transparent pointer-events-none"></div>
                 <table class="w-full text-left border-collapse relative z-10">
                     <thead class="hidden sm:table-header-group">
                         <tr class="bg-black/60 border-b border-white/15">
-                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest w-20 text-center">{{index .T "rankings.col_rank"}}</th>
-                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest">{{index .T "rankings.col_player"}}</th>
-                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-center">{{index .T "rankings.col_assoc"}}</th>
-                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-right pr-6">{{index .T "rankings.col_points"}}</th>
+                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest w-20 text-center">{{t .T "rankings.col_rank"}}</th>
+                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest">{{t .T "rankings.col_player"}}</th>
+                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-center">{{t .T "rankings.col_assoc"}}</th>
+                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-right pr-6">{{t .T "rankings.col_points"}}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
@@ -28,17 +28,17 @@
         <div class="space-y-4">
             <h2 class="text-2xl font-black uppercase tracking-wider italic text-white flex items-center gap-2">
                 <span class="w-2.5 h-7 bg-white rounded-md"></span>
-                {{if eq .RankType "doubles"}}{{index .T "rankings.womens_doubles"}}{{else}}{{index .T "rankings.womens_singles"}}{{end}}
+                {{if eq .RankType "doubles"}}{{t .T "rankings.womens_doubles"}}{{else}}{{t .T "rankings.womens_singles"}}{{end}}
             </h2>
             <div class="glass rounded-2xl overflow-hidden overflow-x-auto border border-white/10 shadow-2xl relative">
                 <div class="absolute inset-0 bg-gradient-to-b from-white/3 to-transparent pointer-events-none"></div>
                 <table class="w-full text-left border-collapse relative z-10">
                     <thead class="hidden sm:table-header-group">
                         <tr class="bg-black/60 border-b border-white/15">
-                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest w-20 text-center">{{index .T "rankings.col_rank"}}</th>
-                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest">{{index .T "rankings.col_player"}}</th>
-                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-center">{{index .T "rankings.col_assoc"}}</th>
-                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-right pr-6">{{index .T "rankings.col_points"}}</th>
+                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest w-20 text-center">{{t .T "rankings.col_rank"}}</th>
+                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest">{{t .T "rankings.col_player"}}</th>
+                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-center">{{t .T "rankings.col_assoc"}}</th>
+                            <th class="py-4 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-right pr-6">{{t .T "rankings.col_points"}}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
@@ -55,10 +55,10 @@
         <table class="w-full text-left border-collapse relative z-10">
             <thead class="hidden sm:table-header-group">
                 <tr class="bg-black/60 border-b border-white/15">
-                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest w-24 text-center">{{index .T "rankings.col_rank"}}</th>
-                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest">{{index .T "rankings.col_player"}}</th>
-                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-center">{{index .T "rankings.col_assoc"}}</th>
-                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-right pr-8">{{index .T "rankings.col_points"}}</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest w-24 text-center">{{t .T "rankings.col_rank"}}</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest">{{t .T "rankings.col_player"}}</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-center">{{t .T "rankings.col_assoc"}}</th>
+                    <th class="py-6 px-4 font-bold text-gray-300 uppercase text-xs tracking-widest text-right pr-8">{{t .T "rankings.col_points"}}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-white/5">

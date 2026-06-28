@@ -200,7 +200,8 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	}
 
 	// Build the view model for the bracket rendering
-	vm := BuildTournamentViewModel(t, divisions)
+	tmap, _ := c.Locals("T").(map[string]string)
+	vm := BuildTournamentViewModel(t, divisions, tmap)
 
 	// Calculate available participants (those not in any team)
 	var availableParticipants []*player.Player
@@ -554,7 +555,8 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 		t.Matches = filtered
 	}
 
-	vm := BuildTournamentViewModel(t, divisions)
+	tmap, _ := c.Locals("T").(map[string]string)
+	vm := BuildTournamentViewModel(t, divisions, tmap)
 	vm.IsPublic = true
 
 	return c.Render("public/tournament-detail", merge(tMap(lang), fiber.Map{
@@ -688,7 +690,7 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 	}
 
 	// 2. Identify virtual matches that should be scheduled based on the format
-	vm := BuildTournamentViewModel(t, divs)
+	vm := BuildTournamentViewModel(t, divs, nil)
 	for _, dv := range vm.Divisions {
 		if vm.Format == "round_robin" {
 			for _, mv := range dv.RoundRobinMatches {
