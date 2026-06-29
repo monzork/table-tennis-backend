@@ -39,7 +39,7 @@ func (r *EventRepository) Save(ctx context.Context, e *event.Event) error {
 	model := &EventModel{
 		ID:         id,
 		Name:       e.Name,
-		DivisionID: e.DivisionID,
+		DivisionIDs: e.DivisionIDs,
 		SkipElo:    e.SkipElo,
 		StartDate:  e.StartDate,
 		EndDate:    e.EndDate,
@@ -77,7 +77,7 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 	return &event.Event{
 		ID:          model.ID.String(),
 		Name:        model.Name,
-		DivisionID:  model.DivisionID,
+		DivisionIDs:  model.DivisionIDs,
 		SkipElo:     model.SkipElo,
 		StartDate:   model.StartDate,
 		EndDate:     model.EndDate,
@@ -103,7 +103,7 @@ func (r *EventRepository) GetByIDDeep(ctx context.Context, idStr string) (*event
 	return &event.Event{
 		ID:          model.ID.String(),
 		Name:        model.Name,
-		DivisionID:  model.DivisionID,
+		DivisionIDs:  model.DivisionIDs,
 		SkipElo:     model.SkipElo,
 		StartDate:   model.StartDate,
 		EndDate:     model.EndDate,
@@ -274,7 +274,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 		events[i] = &event.Event{
 			ID:          m.ID.String(),
 			Name:        m.Name,
-			DivisionID:  m.DivisionID,
+			DivisionIDs:  m.DivisionIDs,
 			SkipElo:     m.SkipElo,
 			StartDate:   m.StartDate,
 			EndDate:     m.EndDate,
@@ -293,13 +293,13 @@ func (r *EventRepository) Update(ctx context.Context, e *event.Event) error {
 	model := &EventModel{
 		ID:         id,
 		Name:       e.Name,
-		DivisionID: e.DivisionID,
+		DivisionIDs: e.DivisionIDs,
 		SkipElo:    e.SkipElo,
 		StartDate:  e.StartDate,
 		EndDate:    e.EndDate,
 		NumTables:  e.NumTables,
 	}
-	_, err = r.db.NewUpdate().Model(model).WherePK().Column("name", "division_id", "skip_elo", "start_date", "end_date", "num_tables").Exec(ctx)
+	_, err = r.db.NewUpdate().Model(model).WherePK().Column("name", "division_ids", "skip_elo", "start_date", "end_date", "num_tables").Exec(ctx)
 	return err
 }
 

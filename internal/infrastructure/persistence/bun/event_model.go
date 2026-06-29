@@ -11,9 +11,9 @@ type EventModel struct {
 	bun.BaseModel `bun:"table:events"`
 
 	ID         uuid.UUID  `bun:"id,pk,type:uuid"`
-	Name       string     `bun:"name,notnull"`
-	DivisionID string     `bun:"division_id,notnull"`
-	SkipElo    bool       `bun:"skip_elo,notnull,default:false"`
+	Name        string     `bun:"name,notnull"`
+	DivisionIDs []string   `bun:"division_ids,array"`
+	SkipElo     bool       `bun:"skip_elo,notnull,default:false"`
 	StartDate  time.Time  `bun:"start_date,notnull"`
 	EndDate    time.Time  `bun:"end_date,notnull"`
 	NumTables  int        `bun:"num_tables,notnull,default:4"`

@@ -505,7 +505,7 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, erro
 	return matches, nil
 }
 
-func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID uuid.UUID) ([]int, error) {
+func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error) {
 	var tids []uuid.UUID
 	err := r.db.NewSelect().
 		Model((*TournamentModel)(nil)).
@@ -535,7 +535,7 @@ func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID 
 	return occupied, nil
 }
 
-func (r *MatchRepository) GetOccupiedTablesByTournament(ctx context.Context, tournamentID uuid.UUID) ([]int, error) {
+func (r *MatchRepository) GetOccupiedTablesByTournament(ctx context.Context, tournamentID string) ([]int, error) {
 	var activeMatches []MatchModel
 	err := r.db.NewSelect().
 		Model(&activeMatches).

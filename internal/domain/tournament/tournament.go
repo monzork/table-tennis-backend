@@ -560,4 +560,6 @@ type MatchRepository interface {
 	CountFinishedMatches(ctx context.Context, tournamentID string) (int, error)
 	GetAll(ctx context.Context) ([]*Match, error)
 	UpdateScore(ctx context.Context, id string, sets []MatchSet, stageRule StageRule) error
+	GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error)
+	GetOccupiedTablesByTournament(ctx context.Context, tournamentID string) ([]int, error)
 }

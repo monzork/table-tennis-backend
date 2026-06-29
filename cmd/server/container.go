@@ -80,6 +80,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		assignPlayerToTeamUC,
 		removePlayerFromTeamUC,
 		getTournamentsUC,
+		tournament.NewGetOccupiedTablesUseCase(matchRepo),
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
 	exportEventPdfUC := tournament.NewExportEventPdfUseCase(tournamentRepo, eventRepo)

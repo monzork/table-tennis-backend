@@ -45,9 +45,17 @@ func NewEventHandler(
 func (h *EventHandler) Create(c *fiber.Ctx) error {
 	name := c.FormValue("name")
 	skipElo := c.FormValue("skipElo") == "on"
-	divisionID := c.FormValue("divisionId")
+	var divisionIDs []string
+	for _, rawId := range c.Request().PostArgs().PeekMulti("divisionIds[]") {
+		divisionIDs = append(divisionIDs, string(rawId))
+	}
+	if len(divisionIDs) == 0 {
+		if divID := c.FormValue("divisionId"); divID != "" {
+			divisionIDs = append(divisionIDs, divID)
+		}
+	}
 	if skipElo {
-		divisionID = "none"
+		divisionIDs = []string{"none"}
 	}
 	startDate := c.FormValue("startDate")
 	endDate := c.FormValue("endDate")
@@ -98,7 +106,7 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 	}
 
 	e, err := h.createUC.Execute(
-		c.Context(), name, divisionID, skipElo, startDate, endDate,
+		c.Context(), name, divisionIDs, skipElo, startDate, endDate,
 		singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen,
 		existingTournamentIDs,
 	)

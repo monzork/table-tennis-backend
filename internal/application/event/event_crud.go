@@ -42,7 +42,7 @@ func NewCreateEventUseCase(
 func (uc *CreateEventUseCase) Execute(
 	ctx context.Context,
 	name string,
-	divisionID string,
+	divisionIDs []string,
 	skipElo bool,
 	startDateStr, endDateStr string,
 	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen CategoryConfig,
@@ -57,17 +57,21 @@ func (uc *CreateEventUseCase) Execute(
 		return nil, err
 	}
 
-	e, err := eventDomain.NewEvent(idgen.Generate(), name, divisionID, skipElo, start, end)
+	e, err := eventDomain.NewEvent(idgen.Generate(), name, divisionIDs, skipElo, start, end)
 	if err != nil {
 		return nil, err
 	}
 
-	var div *divisionDomain.Division
-	if !skipElo && divisionID != "" {
-		var err error
-		div, err = uc.divisionRepo.GetById(ctx, divisionID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch division: %w", err)
+	var divs []*divisionDomain.Division
+	if !skipElo && len(divisionIDs) > 0 {
+		for _, did := range divisionIDs {
+			if did != "" && did != "none" {
+				div, err := uc.divisionRepo.GetById(ctx, did)
+				if err != nil {
+					return nil, fmt.Errorf("failed to fetch division: %w", err)
+				}
+				divs = append(divs, div)
+			}
 		}
 	}
 
@@ -117,12 +121,19 @@ func (uc *CreateEventUseCase) Execute(
 			if gender != "" && p.Gender != gender {
 				continue
 			}
-			if !skipElo && div != nil {
+			if !skipElo && len(divs) > 0 {
 				eloVal := p.SinglesElo
 				if isDoubles {
 					eloVal = p.DoublesElo
 				}
-				if !div.ContainsElo(int16(eloVal)) {
+				matched := false
+				for _, div := range divs {
+					if div.ContainsElo(int16(eloVal)) {
+						matched = true
+						break
+					}
+				}
+				if !matched {
 					continue
 				}
 			}
@@ -132,8 +143,15 @@ func (uc *CreateEventUseCase) Execute(
 	}
 
 	getNameWithDiv := func(suffix string) string {
-		if div != nil {
-			return fmt.Sprintf("%s - %s (%s)", e.Name, suffix, div.Name)
+		if len(divs) > 0 {
+			divNames := ""
+			for i, d := range divs {
+				if i > 0 {
+					divNames += ", "
+				}
+				divNames += d.Name
+			}
+			return fmt.Sprintf("%s - %s (%s)", e.Name, suffix, divNames)
 		}
 		return fmt.Sprintf("%s - %s", e.Name, suffix)
 	}

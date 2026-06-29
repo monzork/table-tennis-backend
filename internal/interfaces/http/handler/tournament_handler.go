@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -31,6 +32,7 @@ type TournamentHandler struct {
 	assignPlayerToTeamUC *tournament.AssignPlayerToTeamUseCase
 	removePlayerFromTeamUC *tournament.RemovePlayerFromTeamUseCase
 	getTournamentsUC *tournament.GetTournamentsUseCase
+	getOccupiedTablesUC *tournament.GetOccupiedTablesUseCase
 }
 
 func NewTournamentHandler(
@@ -49,6 +51,7 @@ func NewTournamentHandler(
 	assignPlayerToTeamUC *tournament.AssignPlayerToTeamUseCase,
 	removePlayerFromTeamUC *tournament.RemovePlayerFromTeamUseCase,
 	getTournamentsUC *tournament.GetTournamentsUseCase,
+	getOccupiedTablesUC *tournament.GetOccupiedTablesUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:      createUC,
@@ -66,6 +69,7 @@ func NewTournamentHandler(
 		assignPlayerToTeamUC: assignPlayerToTeamUC,
 		removePlayerFromTeamUC: removePlayerFromTeamUC,
 		getTournamentsUC: getTournamentsUC,
+		getOccupiedTablesUC: getOccupiedTablesUC,
 	}
 }
 
@@ -641,7 +645,12 @@ type TableVM struct {
 	IsUsed bool
 }
 
-func buildTables(t *tournamentDomain.Tournament, excludeMatchID string) []TableVM {
+func (h *TournamentHandler) getOccupiedTables(ctx context.Context, t *tournamentDomain.Tournament) []int {
+	occupiedList, _ := h.getOccupiedTablesUC.Execute(ctx, t)
+	return occupiedList
+}
+
+func buildTables(t *tournamentDomain.Tournament, excludeMatchID string, globalOccupied []int) []TableVM {
 	var tables []TableVM
 	if t == nil || t.NumTables <= 0 {
 		return tables
@@ -653,6 +662,9 @@ func buildTables(t *tournamentDomain.Tournament, excludeMatchID string) []TableV
 				used[*m.TableNumber] = true
 			}
 		}
+	}
+	for _, occ := range globalOccupied {
+		used[occ] = true
 	}
 	for i := 1; i <= t.NumTables; i++ {
 		tables = append(tables, TableVM{
@@ -969,7 +981,7 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 	t := res.tournament
 	divs := res.divisions
 	scheduled, inProgress, finished := buildBoardCards(t, divs)
-	tables := buildTables(t, "")
+	tables := buildTables(t, "", h.getOccupiedTables(c.Context(), t))
 	
 	uniqueDivsMap := make(map[string]bool)
 	for _, c := range scheduled { if c.DivisionName != "" { uniqueDivsMap[c.DivisionName] = true } }
@@ -1033,7 +1045,7 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	t := res.tournament
 	divs := res.divisions
 	scheduled, inProgress, finished := buildBoardCards(t, divs)
-	tables := buildTables(t, "")
+	tables := buildTables(t, "", h.getOccupiedTables(c.Context(), t))
 
 	q := strings.ToLower(c.Query("q"))
 	var selectedDivs []string

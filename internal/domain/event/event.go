@@ -9,7 +9,7 @@ import (
 
 var (
 	ErrInvalidEventName  = errors.New("event name is required")
-	ErrInvalidDivisionID = errors.New("division ID is required")
+	ErrInvalidDivisionIDs = errors.New("at least one division ID is required")
 	ErrInvalidEventDates = errors.New("event end date must be after start date")
 )
 
@@ -25,7 +25,7 @@ type Repository interface {
 type Event struct {
 	ID          string
 	Name        string
-	DivisionID  string
+	DivisionIDs []string
 	SkipElo     bool
 	StartDate   time.Time
 	EndDate     time.Time
@@ -33,12 +33,12 @@ type Event struct {
 	Tournaments []*tournament.Tournament
 }
 
-func NewEvent(id string, name string, divisionID string, skipElo bool, start, end time.Time) (*Event, error) {
+func NewEvent(id string, name string, divisionIDs []string, skipElo bool, start, end time.Time) (*Event, error) {
 	if name == "" {
 		return nil, ErrInvalidEventName
 	}
-	if !skipElo && divisionID == "" {
-		return nil, ErrInvalidDivisionID
+	if !skipElo && len(divisionIDs) == 0 {
+		return nil, ErrInvalidDivisionIDs
 	}
 	if end.Before(start) {
 		return nil, ErrInvalidEventDates
@@ -47,7 +47,7 @@ func NewEvent(id string, name string, divisionID string, skipElo bool, start, en
 	return &Event{
 		ID:          id,
 		Name:        name,
-		DivisionID:  divisionID,
+		DivisionIDs: divisionIDs,
 		SkipElo:     skipElo,
 		StartDate:   start,
 		EndDate:     end,
