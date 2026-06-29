@@ -198,15 +198,14 @@ func (uc *CreateEventUseCase) Execute(
 		return nil, err
 	}
 
+	var validTournamentIDs []string
 	for _, tID := range existingTournamentIDs {
-		if tID == "" {
-			continue
+		if tID != "" {
+			validTournamentIDs = append(validTournamentIDs, tID)
 		}
-		t, err := uc.tournamentRepo.GetByID(ctx, tID)
-		if err == nil {
-			t.EventID = &e.ID
-			_ = uc.tournamentRepo.Update(ctx, t)
-		}
+	}
+	if len(validTournamentIDs) > 0 {
+		_ = uc.tournamentRepo.UpdateEventIDBulk(ctx, validTournamentIDs, e.ID)
 	}
 
 	// Reload the event with loaded tournaments

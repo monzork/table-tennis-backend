@@ -1515,3 +1515,32 @@ func (r *TournamentRepository) GetOfficials(ctx context.Context, tournamentID st
 	}
 	return snapshots, nil
 }
+
+func (r *TournamentRepository) UpdateEventIDBulk(ctx context.Context, tournamentIDs []string, eventID string) error {
+	if len(tournamentIDs) == 0 {
+		return nil
+	}
+
+	var uuids []uuid.UUID
+	for _, idStr := range tournamentIDs {
+		if u, err := uuid.Parse(idStr); err == nil {
+			uuids = append(uuids, u)
+		}
+	}
+	if len(uuids) == 0 {
+		return nil
+	}
+
+	eventUUID, err := uuid.Parse(eventID)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.NewUpdate().
+		Model((*TournamentModel)(nil)).
+		Set("event_id = ?", eventUUID).
+		Where("id IN (?)", uuids).
+		Exec(ctx)
+
+	return err
+}
