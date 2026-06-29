@@ -78,6 +78,9 @@ func (uc *CreateEventUseCase) Execute(
 	// Collect all unique player IDs across all categories and batch-load them
 	allIDSet := make(map[string]bool)
 	for _, cfg := range []CategoryConfig{singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen} {
+		if !cfg.Auto {
+			continue
+		}
 		for _, idStr := range cfg.PlayerIDs {
 			if idStr != "" {
 				allIDSet[idStr] = true

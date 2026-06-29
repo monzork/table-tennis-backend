@@ -86,7 +86,7 @@
                                 <span class="text-xs font-bold text-white">♂ Singles</span>
                                 <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Men</span>
                             </div>
-                            <input type="checkbox" name="autoSinglesMen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                            <input type="checkbox" name="autoSinglesMen" checked onchange="toggleCategory(this, 'SinglesMen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
@@ -123,7 +123,7 @@
                                 <span class="text-xs font-bold text-white">♀ Singles</span>
                                 <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Women</span>
                             </div>
-                            <input type="checkbox" name="autoSinglesWomen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                            <input type="checkbox" name="autoSinglesWomen" checked onchange="toggleCategory(this, 'SinglesWomen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
@@ -160,7 +160,7 @@
                                 <span class="text-xs font-bold text-white">♂ Doubles</span>
                                 <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Men</span>
                             </div>
-                            <input type="checkbox" name="autoDoublesMen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                            <input type="checkbox" name="autoDoublesMen" checked onchange="toggleCategory(this, 'DoublesMen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
@@ -197,7 +197,7 @@
                                 <span class="text-xs font-bold text-white">♀ Doubles</span>
                                 <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Women</span>
                             </div>
-                            <input type="checkbox" name="autoDoublesWomen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                            <input type="checkbox" name="autoDoublesWomen" checked onchange="toggleCategory(this, 'DoublesWomen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
@@ -234,7 +234,7 @@
                                 <span class="text-xs font-bold text-white">⚤ Doubles</span>
                                 <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Mixed</span>
                             </div>
-                            <input type="checkbox" name="autoDoublesMixed" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                            <input type="checkbox" name="autoDoublesMixed" checked onchange="toggleCategory(this, 'DoublesMixed')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
@@ -269,7 +269,7 @@
                                 <span class="text-xs font-bold text-white">👥 Teams</span>
                                 <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Men</span>
                             </div>
-                            <input type="checkbox" name="autoTeamsMen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                            <input type="checkbox" name="autoTeamsMen" checked onchange="toggleCategory(this, 'TeamsMen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
@@ -306,7 +306,7 @@
                                 <span class="text-xs font-bold text-white">👥 Teams</span>
                                 <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Women</span>
                             </div>
-                            <input type="checkbox" name="autoTeamsWomen" checked class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                            <input type="checkbox" name="autoTeamsWomen" checked onchange="toggleCategory(this, 'TeamsWomen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
@@ -366,3 +366,19 @@
 
 <!-- Toast Container -->
 <div id="toast-container" class="fixed top-6 right-6 z-[250] space-y-3 pointer-events-none"></div>
+
+<script>
+function toggleCategory(checkbox, catName) {
+    const card = document.getElementById('card' + catName);
+    if (!card) return;
+    const elements = card.querySelectorAll('select, input[type="number"]');
+    elements.forEach(el => {
+        el.disabled = !checkbox.checked;
+    });
+    if (checkbox.checked) {
+        card.classList.remove('opacity-40', 'grayscale');
+    } else {
+        card.classList.add('opacity-40', 'grayscale');
+    }
+}
+</script>
