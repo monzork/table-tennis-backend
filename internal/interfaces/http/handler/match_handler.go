@@ -693,15 +693,15 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 
 		// Fallbacks & combining player names
 		if p1A != nil {
-			playerANames = p1A.FullName()
+			playerANames = p1A.FirstNameWithSecond() + " " + p1A.LastNameWithSecond()
 			if p2A != nil {
-				playerANames += " & " + p2A.FullName()
+				playerANames += " & " + p2A.FirstNameWithSecond() + " " + p2A.LastNameWithSecond()
 			}
 		}
 		if p1B != nil {
-			playerBNames = p1B.FullName()
+			playerBNames = p1B.FirstNameWithSecond() + " " + p1B.LastNameWithSecond()
 			if p2B != nil {
-				playerBNames += " & " + p2B.FullName()
+				playerBNames += " & " + p2B.FirstNameWithSecond() + " " + p2B.LastNameWithSecond()
 			}
 		}
 
@@ -720,21 +720,21 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		// Singles flow
 		if p1Id != "" {
 			if p, err := h.playerRepo.GetById(c.Context(), p1Id); err == nil {
-				playerAName = p.FullName()
+				playerAName = p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
 			}
 		} else if existingMatch != nil {
 			if p, err := h.playerRepo.GetById(c.Context(), existingMatch.TeamAPlayer1ID.String()); err == nil {
-				playerAName = p.FullName()
+				playerAName = p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
 			}
 		}
 
 		if p2Id != "" {
 			if p, err := h.playerRepo.GetById(c.Context(), p2Id); err == nil {
-				playerBName = p.FullName()
+				playerBName = p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
 			}
 		} else if existingMatch != nil {
 			if p, err := h.playerRepo.GetById(c.Context(), existingMatch.TeamBPlayer1ID.String()); err == nil {
-				playerBName = p.FullName()
+				playerBName = p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
 			}
 		}
 	}
