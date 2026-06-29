@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="{{if .Lang}}{{.Lang}}{{else}}en{{end}}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{t .T "table.no_active_match"}} — {{t .T "table.title"}} {{.TableNumber}}</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/dist/tailwind.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #08090c;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --accent: #ffffff;
+      --accent-muted: rgba(255,255,255,0.5);
+      --warning: #fbbf24;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: #fff;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 90% 90%, rgba(20,184,166,0.08), transparent);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem 2rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 2rem;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .status-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1.5rem;
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+    }
+
+    .title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(to right, #fff, rgba(255,255,255,0.7));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .table-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 1.5rem;
+      font-size: 0.75rem;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #fbbf24;
+      background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.2);
+      border-radius: 8px;
+      padding: 6px 16px;
+    }
+
+    .message {
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+
+    .refresh-btn {
+      width: 100%;
+      padding: 1rem;
+      border-radius: 14px;
+      background: #fff;
+      color: #000;
+      font-size: 0.875rem;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .refresh-btn:hover { background: #e5e7eb; }
+    .refresh-btn:active { transform: scale(0.98); }
+
+    .lang-switcher {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      display: flex;
+      gap: 0.5rem;
+      z-index: 10;
+    }
+    .lang-btn {
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 0.25rem 0.5rem;
+      border-radius: 1rem;
+      text-decoration: none;
+      color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: all 0.2s ease;
+    }
+    .lang-btn.active {
+      color: #fff;
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(255,255,255,0.4);
+    }
+  </style>
+</head>
+<body>
+  <!-- Language Switcher -->
+  <div class="lang-switcher">
+    <a href="/lang/en" class="lang-btn {{if eq .Lang "en"}}active{{end}}">EN</a>
+    <a href="/lang/es" class="lang-btn {{if eq .Lang "es"}}active{{end}}">ES</a>
+  </div>
+
+  <div class="card">
+    <!-- Logo -->
+    <div class="logo">
+      <div class="logo-icon">🏓</div>
+      <span class="logo-text">Score Entry</span>
+    </div>
+
+    <!-- Status Icon -->
+    <div class="status-icon">🏓</div>
+
+    <!-- Table Badge -->
+    <div>
+      <div class="table-badge">
+        {{t .T "table.title"}} {{.TableNumber}}
+      </div>
+    </div>
+
+    <!-- Title -->
+    <h1 class="title">{{t .T "table.no_active_match"}}</h1>
+
+    <!-- Message -->
+    <p class="message">
+      {{t .T "table.no_active_match_desc"}}<br/>
+      <span class="text-xs text-white/40 mt-2 block">{{t .T "table.waiting_desc"}}</span>
+    </p>
+
+    <!-- Refresh Button -->
+    <button onclick="window.location.reload()" class="refresh-btn">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"/>
+      </svg>
+      {{t .T "table.refresh_btn"}}
+    </button>
+  </div>
+</body>
+</html>

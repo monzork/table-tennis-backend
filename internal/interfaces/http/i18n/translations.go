@@ -178,6 +178,13 @@ var Translations = map[string]map[string]string{
 		"pin.status_scheduled":    "⏳ Scheduled",
 		"pin.status_finished":     "✓ Finished",
 
+		// Table Status (public)
+		"table.title":             "Table",
+		"table.no_active_match":   "No Active Match",
+		"table.no_active_match_desc": "There is currently no match in progress on this table.",
+		"table.waiting_desc":      "Please wait for the tournament organizer to assign and start a match here.",
+		"table.refresh_btn":       "Check Again",
+
 		// Score form (public)
 		"score_pub.title":         "Update",
 		"score_pub.score":         "Score",
@@ -408,6 +415,13 @@ var Translations = map[string]map[string]string{
 		"pin.status_live":         "● En Vivo",
 		"pin.status_scheduled":    "⏳ Programado",
 		"pin.status_finished":     "✓ Finalizado",
+
+		// Table Status (public)
+		"table.title":             "Mesa",
+		"table.no_active_match":   "Sin Partido Activo",
+		"table.no_active_match_desc": "Actualmente no hay ningún partido en progreso en esta mesa.",
+		"table.waiting_desc":      "Por favor, espera a que el organizador del torneo asigne e inicie un partido aquí.",
+		"table.refresh_btn":       "Verificar de Nuevo",
 
 		// Score form (public)
 		"score_pub.title":         "Actualizar",

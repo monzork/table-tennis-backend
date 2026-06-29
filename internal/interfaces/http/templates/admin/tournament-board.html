@@ -127,17 +127,22 @@
     htmx.ajax('GET', url, { target: '#score-modal-body', swap: 'innerHTML' });
   }
 
-  function showQRCodeModal(matchId, matchup) {
+  function showQRCodeModal(matchId, matchup, tableNumber, tournamentId) {
     const modal = document.getElementById('qr-modal');
     const matchupEl = document.getElementById('qr-matchup');
     const imageEl = document.getElementById('qr-image');
     const copyBtn = document.getElementById('qr-copy-btn');
     const openBtn = document.getElementById('qr-open-btn');
 
-    const scoreUrl = window.location.origin + '/score/' + matchId;
+    let scoreUrl;
+    if (tableNumber && tableNumber !== "" && tableNumber !== "null" && tableNumber !== "undefined" && tournamentId) {
+      scoreUrl = window.location.origin + '/score/t/' + tournamentId + '/table/' + tableNumber;
+    } else {
+      scoreUrl = window.location.origin + '/score/' + matchId;
+    }
 
-    matchupEl.textContent = matchup;
-    imageEl.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(scoreUrl);
+    matchupEl.textContent = matchup + (tableNumber ? ' (Table ' + tableNumber + ')' : '');
+    imageEl.src = '/qr?data=' + encodeURIComponent(scoreUrl);
     openBtn.href = scoreUrl;
 
     copyBtn.onclick = function () {

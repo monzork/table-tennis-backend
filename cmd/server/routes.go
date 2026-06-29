@@ -77,6 +77,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 
 	// QR-code score entry — shareable per-match URL
 	app.Get("/score/:matchId", c.MatchHandler.ShowMatchScorePage)
+	app.Get("/score/t/:tournamentId/table/:tableNumber", c.MatchHandler.ShowTableScorePage)
 	app.Post("/score/:matchId/verify", c.MatchHandler.ValidateMatchPIN)
 
 	// QR Code generation endpoint

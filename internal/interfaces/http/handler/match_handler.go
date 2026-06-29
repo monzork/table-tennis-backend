@@ -2067,12 +2067,79 @@ func (h *MatchHandler) ShowMatchScorePage(c *fiber.Ctx) error {
 		playerBName = p.FullName()
 	}
 
+	lang := getLang(c)
+	tMap := make(map[string]string)
+	for k := range i18n.Translations[lang] {
+		tMap[k] = i18n.T(lang, k)
+	}
+
 	return c.Render("public/match-pin-entry", fiber.Map{
 		"MatchID":     matchIDStr,
 		"PlayerA":     playerAName,
 		"PlayerB":     playerBName,
 		"TableNumber": m.TableNumber,
 		"Status":      m.Status,
+		"T":           tMap,
+		"Lang":        lang,
+	})
+}
+
+// ShowTableScorePage renders the standalone public score page for a table.
+// Accessed via /score/table/:tableNumber (shareable table QR-code URL).
+// If an active match (in_progress) is found on the table, it renders the PIN entry page.
+// Otherwise, it renders the table-no-match page.
+func (h *MatchHandler) ShowTableScorePage(c *fiber.Ctx) error {
+	tournamentIDStr := c.Params("tournamentId")
+	tournamentUUID, err := uuid.Parse(tournamentIDStr)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid tournament ID")
+	}
+
+	tableNumberStr := c.Params("tableNumber")
+	tableNumber, err := strconv.Atoi(tableNumberStr)
+	if err != nil || tableNumber <= 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid table number")
+	}
+
+	// Query for an in_progress match on this table within the specific tournament
+	var m bun.MatchModel
+	err = h.matchRepo.DB().NewSelect().Model(&m).
+		Where("tournament_id = ? AND status = 'in_progress' AND table_number = ?", tournamentUUID, tableNumber).
+		Limit(1).
+		Scan(c.Context())
+
+	lang := getLang(c)
+	tMap := make(map[string]string)
+	for k := range i18n.Translations[lang] {
+		tMap[k] = i18n.T(lang, k)
+	}
+
+	if err != nil {
+		// No match is in progress on this table.
+		return c.Render("public/table-no-match", fiber.Map{
+			"TableNumber": tableNumber,
+			"T":           tMap,
+			"Lang":        lang,
+		})
+	}
+
+	// Load player names
+	playerAName, playerBName := "Player A", "Player B"
+	if p, err := h.playerRepo.GetById(c.Context(), m.TeamAPlayer1ID.String()); err == nil {
+		playerAName = p.FullName()
+	}
+	if p, err := h.playerRepo.GetById(c.Context(), m.TeamBPlayer1ID.String()); err == nil {
+		playerBName = p.FullName()
+	}
+
+	return c.Render("public/match-pin-entry", fiber.Map{
+		"MatchID":     m.ID.String(),
+		"PlayerA":     playerAName,
+		"PlayerB":     playerBName,
+		"TableNumber": m.TableNumber,
+		"Status":      m.Status,
+		"T":           tMap,
+		"Lang":        lang,
 	})
 }
 
