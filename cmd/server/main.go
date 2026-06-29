@@ -219,6 +219,7 @@ func main() {
 	})
 
 	app.Static("/static", "./static")
+	app.Static("/open_tdm.jpeg", "./open_tdm.jpeg")
 	
 	// Global Translation Middleware
 	app.Use(func(c *fiber.Ctx) error {

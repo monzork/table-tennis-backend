@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Club Admin Portal</title>
+    <title>Open TDM Nicaragua Admin Portal</title>
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://unpkg.com/htmx.org@1.9.3/dist/ext/ws.js"></script>
     <link href="/static/dist/tailwind.css?v=3" rel="stylesheet">
@@ -146,9 +146,14 @@
 <body class="min-h-screen flex flex-col">
     <nav class="glass border-b border-white/10 sticky top-0 z-50">
         <div class="container mx-auto px-4 sm:px-6 h-auto sm:h-16 py-3 sm:py-0 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
-            <div class="flex items-center gap-2">
-                <div class="w-12 h-8 bg-white rounded flex items-center justify-center font-bold text-black tracking-tighter text-xs">CLUB</div>
-                <span class="text-xl font-extrabold uppercase tracking-widest text-white/90">Admin</span>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded flex items-center justify-center overflow-hidden">
+                    <img src="/open_tdm.jpeg" alt="Logo" class="w-full h-full object-cover">
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-lg font-extrabold uppercase tracking-widest text-white/90 leading-none">Open TDM Nicaragua</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">Admin Portal</span>
+                </div>
             </div>
             <div class="flex gap-4 sm:gap-6 font-semibold text-xs sm:text-sm tracking-wider uppercase text-gray-400 items-center overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar justify-start sm:justify-end shrink-0">
                 <a href="/admin" class="hover:text-white transition-colors proj-hide">{{t .T "nav.dashboard"}}</a>
