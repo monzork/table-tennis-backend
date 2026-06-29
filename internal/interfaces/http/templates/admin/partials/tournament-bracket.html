@@ -189,7 +189,11 @@
         <div class="w-full mt-8 border-t border-white/10 pt-10">
           <h3 class="proj-section-title text-lg font-black uppercase text-white tracking-widest mb-8 text-center">{{t $.T "bracket.knockout_phase"}}</h3>
           {{if and .AllGroupsFinished (gt (len .Groups) 0)}}
-            <div class="flex gap-8 min-w-max px-2 py-4 overflow-x-auto justify-center items-center">
+            <div class="block sm:hidden mb-8 text-center glass rounded-2xl p-6 border border-white/5">
+               <div class="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2">📱 Mobile Optimized View</div>
+               <p class="text-xs text-gray-400">The visual bracket tree is best viewed on larger screens. Please scroll down to the <strong class="text-white">Match List</strong> to see your upcoming games.</p>
+            </div>
+            <div class="hidden sm:flex gap-8 min-w-max px-2 py-4 overflow-x-auto justify-center items-center">
               {{range $ri, $round := .KnockoutRoundsLeft}}
               <div class="flex flex-col gap-0 bracket-round">
                  <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
@@ -558,7 +562,11 @@
         </div>
       {{end}}
 
-      <div class="flex gap-8 min-w-max px-2 py-4 overflow-x-auto justify-center items-center">
+      <div class="block sm:hidden mb-8 text-center glass rounded-2xl p-6 border border-white/5">
+         <div class="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2">📱 Mobile Optimized View</div>
+         <p class="text-xs text-gray-400">The visual bracket tree is best viewed on larger screens. Please scroll down to the <strong class="text-white">Match List</strong> to see your upcoming games.</p>
+      </div>
+      <div class="hidden sm:flex gap-8 min-w-max px-2 py-4 overflow-x-auto justify-center items-center">
         {{range $ri, $round := .KnockoutRoundsLeft}}
               <div class="flex flex-col gap-0 bracket-round">
                  <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>

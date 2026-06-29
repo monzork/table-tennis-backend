@@ -40,46 +40,49 @@
 </head>
 <body class="min-h-screen flex flex-col font-sans antialiased text-gray-200">
     <nav class="border-b border-white/10 sticky top-0 z-50 bg-black/80 backdrop-blur-md">
-        <div class="container mx-auto px-4 sm:px-6 py-4 sm:py-0 h-auto sm:h-20 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded flex items-center justify-center overflow-hidden">
-                    <img src="/open_tdm.jpeg" alt="Logo" class="w-full h-full object-cover">
+        <div class="container mx-auto px-4 sm:px-6 h-auto sm:h-20 flex flex-col sm:flex-row justify-center sm:justify-between items-stretch sm:items-center">
+            
+            <!-- Logo & Lang Switcher Row (Mobile) -->
+            <div class="flex items-center justify-between py-3 sm:py-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded flex items-center justify-center overflow-hidden">
+                        <img src="/open_tdm.jpeg" alt="Logo" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-base sm:text-xl font-extrabold uppercase tracking-widest text-white leading-tight">Open TDM</span>
+                        <span class="text-[8px] sm:text-xs text-gray-400 font-bold uppercase tracking-widest">Global Rankings</span>
+                    </div>
                 </div>
-                <div class="flex flex-col">
-                    <span class="text-lg sm:text-xl font-extrabold uppercase tracking-widest text-white leading-tight">Open TDM Nicaragua</span>
-                    <span class="text-[9px] sm:text-xs text-gray-400 font-bold uppercase tracking-widest">Global Rankings</span>
+                
+                <!-- Language switcher (Mobile Right) -->
+                <div class="flex sm:hidden shrink-0 items-center gap-1 bg-white/5 rounded-full border border-white/10 p-1">
+                    <a href="/lang/en" class="lang-btn px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "en"}}active{{end}}">EN</a>
+                    <a href="/lang/es" class="lang-btn px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "es"}}active{{end}}">ES</a>
                 </div>
             </div>
-            <div class="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-end gap-4 sm:gap-6 w-full sm:w-auto mt-2 sm:mt-0 pb-2 sm:pb-0 overflow-x-auto hide-scrollbar">
-                <!-- Main nav -->
-                <div class="flex flex-nowrap gap-4 sm:gap-6 font-bold text-[11px] sm:text-sm tracking-widest uppercase text-gray-400 min-w-max">
-                    <a href="/rankings/singles" class="shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Singles"}}text-white border-b-2 border-white{{end}}">
+
+            <!-- Main Nav & Desktop Lang Switcher -->
+            <div class="flex items-center justify-start sm:justify-end gap-6 pb-3 sm:pb-0 overflow-x-auto hide-scrollbar w-full sm:w-auto snap-x">
+                <div class="flex flex-nowrap gap-5 sm:gap-6 font-bold text-[11px] sm:text-sm tracking-widest uppercase text-gray-400 min-w-max px-1">
+                    <a href="/rankings/singles" class="snap-start shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Singles"}}text-white border-b-2 border-white{{end}}">
                         {{t .T "nav.singles"}}
                     </a>
-                    <a href="/rankings/doubles" class="shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Doubles"}}text-white border-b-2 border-white{{end}}">
+                    <a href="/rankings/doubles" class="snap-start shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Doubles"}}text-white border-b-2 border-white{{end}}">
                         {{t .T "nav.doubles"}}
                     </a>
-                    <a href="/tournaments" class="shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Tournaments"}}text-white border-b-2 border-white{{end}}">
+                    <a href="/tournaments" class="snap-start shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Tournaments"}}text-white border-b-2 border-white{{end}}">
                         {{t .T "nav.tournaments"}}
                     </a>
-                    <a href="/tournaments/register" class="shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1.5">
+                    <a href="/tournaments/register" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1.5">
                         <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
                         {{t .T "nav.register"}}
                     </a>
                 </div>
 
-                <!-- Language switcher -->
-                <div class="flex shrink-0 items-center gap-1 bg-white/5 rounded-full border border-white/10 p-1">
-                    <a href="/lang/en"
-                       class="lang-btn px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "en"}}active{{end}}"
-                       title="English">
-                        EN
-                    </a>
-                    <a href="/lang/es"
-                       class="lang-btn px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "es"}}active{{end}}"
-                       title="Español">
-                        ES
-                    </a>
+                <!-- Language switcher (Desktop) -->
+                <div class="hidden sm:flex shrink-0 items-center gap-1 bg-white/5 rounded-full border border-white/10 p-1">
+                    <a href="/lang/en" class="lang-btn px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "en"}}active{{end}}">EN</a>
+                    <a href="/lang/es" class="lang-btn px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-transparent text-gray-400 hover:text-white {{if eq .Lang "es"}}active{{end}}">ES</a>
                 </div>
             </div>
         </div>
