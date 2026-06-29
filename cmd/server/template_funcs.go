@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"table-tennis-backend/internal/interfaces/http/handler"
@@ -47,6 +48,7 @@ var countriesList = []CountryInfo{
 
 func SetupTemplateEngine() *html.Engine {
 	engine := html.New("./internal/interfaces/http/templates", ".html")
+	engine.Reload(os.Getenv("DATABASE_URL") == "")
 	engine.AddFunc("countries", func() []CountryInfo {
 		return countriesList
 	})
