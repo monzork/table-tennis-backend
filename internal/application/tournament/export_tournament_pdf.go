@@ -42,7 +42,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 	pdf.SetHeaderFunc(func() {
 		pdf.Image(imagePath, 15, 10, 25, 0, false, "", 0, "")
 		pdf.SetY(17)
-		pdf.SetX(45)
+		pdf.SetX(48)
 		pdf.SetFont("Arial", "B", 14)
 		pdf.CellFormat(0, 10, tr("TORNEO TENIS DE MESA - "+strings.ToUpper(t.Name)), "", 1, "L", false, 0, "")
 		pdf.SetDrawColor(200, 200, 200)
@@ -482,6 +482,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 
 		for _, br := range brackets {
 			pdf.AddPageFormat("L", gofpdf.SizeType{Wd: 210, Ht: 297})
+			pdf.SetMargins(15, 42, 15)
 
 			pdf.SetFont("Arial", "B", 12)
 			pdf.CellFormat(0, 8, tr("VISUAL BRACKET - "+strings.ToUpper(br.Name)), "", 1, "C", false, 0, "")
@@ -662,6 +663,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 	// 4. DETAILED MATCH RESULTS
 	if len(t.Matches) > 0 {
 		pdf.AddPageFormat("P", gofpdf.SizeType{Wd: 210, Ht: 297})
+		pdf.SetMargins(15, 42, 15)
 		writeHeader("DETAILED MATCH RESULTS")
 
 		pdf.SetFont("Arial", "B", 8)
