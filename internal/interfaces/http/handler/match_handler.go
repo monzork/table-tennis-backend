@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
+	"table-tennis-backend/internal/interfaces/http/i18n"
 )
 
 type MatchHandler struct {
@@ -443,6 +444,12 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 			}
 	}
 
+	lang := getLang(c)
+	tMap := make(map[string]string)
+	for k := range i18n.Translations["en"] {
+		tMap[k] = i18n.T(lang, k)
+	}
+
 	if isTeams {
 		playerNames := make(map[string]string)
 		var playerModels []bun.PlayerModel
@@ -572,6 +579,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 				return 0
 			}(),
 			"Tables":       buildTables(tourney, matchID),
+			"T":            tMap,
 		})
 	}
 
@@ -789,6 +797,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		"Status":       matchStatus,
 		"Participants": participants,
 		"Tables":       buildTables(tourney, matchID),
+		"T":            tMap,
 	})
 }
 

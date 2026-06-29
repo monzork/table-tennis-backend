@@ -29,7 +29,7 @@
     <div class="space-y-2 mb-4">
         {{range .Sets}}
         <div class="flex items-center gap-3">
-            <span class="text-[10px] font-bold text-gray-500 w-10 text-right uppercase tracking-widest">{{t .T "score_pub.set"}} {{.Number}}</span>
+            <span class="text-[10px] font-bold text-gray-500 w-10 text-right uppercase tracking-widest">{{t $.T "score_pub.set"}} {{.Number}}</span>
             <input name="scores[]_a" type="number" min="0" max="99" placeholder="A" value="{{.ScoreA}}"
                 class="flex-1 bg-white/[0.04] border border-white/10 rounded-xl p-3 text-white text-center text-xl font-black focus:outline-none focus:border-white/30 transition-colors">
             <span class="text-gray-600 font-bold text-lg">–</span>

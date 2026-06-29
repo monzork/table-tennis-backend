@@ -351,6 +351,25 @@
         }
       });
 
+      digit.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+        const numbers = pastedData.replace(/\D/g, '').split('');
+        if (numbers.length > 0) {
+          let currIndex = index;
+          while (numbers.length > 0 && currIndex < digits.length) {
+            digits[currIndex].value = numbers.shift();
+            currIndex++;
+          }
+          updatePIN();
+          const focusIndex = Math.min(currIndex, digits.length - 1);
+          digits[focusIndex].focus();
+          if (pinValue.value.length === 4) {
+            verifyBtn.click();
+          }
+        }
+      });
+
       digit.addEventListener('focus', () => digit.select());
     });
 
