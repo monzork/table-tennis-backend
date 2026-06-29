@@ -313,6 +313,12 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 			ptsA = rpA.DoublesElo
 			ptsB = rpB.DoublesElo
 		}
+		if ptsA == ptsB {
+			if sortOrder == "points_asc" {
+				return rpA.Rank > rpB.Rank
+			}
+			return rpA.Rank < rpB.Rank
+		}
 		if sortOrder == "points_asc" {
 			return ptsA < ptsB
 		}
