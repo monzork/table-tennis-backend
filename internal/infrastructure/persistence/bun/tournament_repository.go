@@ -1315,3 +1315,53 @@ func (r *TournamentRepository) GetParticipantOrOfficialByPIN(ctx context.Context
 
 	return "", fmt.Errorf("no participant or official found with the given PIN")
 }
+
+func (r *TournamentRepository) AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return err
+	}
+	pID, err := uuid.Parse(playerID)
+	if err != nil {
+		return err
+	}
+	official := &TournamentOfficialModel{
+		TournamentID: tID,
+		PlayerID:     pID,
+		Pin:          pin,
+	}
+	_, err = r.db.NewInsert().Model(official).On("CONFLICT (tournament_id, player_id) DO UPDATE").Set("pin = EXCLUDED.pin").Exec(ctx)
+	return err
+}
+
+func (r *TournamentRepository) RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return err
+	}
+	pID, err := uuid.Parse(playerID)
+	if err != nil {
+		return err
+	}
+	_, err = r.db.NewDelete().Model((*TournamentOfficialModel)(nil)).Where("tournament_id = ? AND player_id = ?", tID, pID).Exec(ctx)
+	return err
+}
+
+func (r *TournamentRepository) GetOfficials(ctx context.Context, tournamentID string) ([]tournamentDomain.ParticipantSnapshot, error) {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return nil, err
+	}
+	var officials []TournamentOfficialModel
+	if err := r.db.NewSelect().Model(&officials).Where("tournament_id = ?", tID).Scan(ctx); err != nil {
+		return nil, err
+	}
+	var snapshots []tournamentDomain.ParticipantSnapshot
+	for _, o := range officials {
+		snapshots = append(snapshots, tournamentDomain.ParticipantSnapshot{
+			PlayerID: o.PlayerID.String(),
+			Pin:      o.Pin,
+		})
+	}
+	return snapshots, nil
+}

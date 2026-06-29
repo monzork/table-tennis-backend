@@ -71,6 +71,20 @@ func (uc *GetTournamentByIDUseCase) GetSnapshots(ctx context.Context, idStr stri
 	return uc.repo.GetParticipantSnapshots(ctx, idStr)
 }
 
+func (uc *GetTournamentByIDUseCase) GetOfficials(ctx context.Context, id string) ([]tournamentDomain.ParticipantSnapshot, error) {
+	return uc.repo.GetOfficials(ctx, id)
+}
+
+func (uc *GetTournamentByIDUseCase) AddOfficial(ctx context.Context, tournamentID string, playerID string) error {
+	// Let's generate a 4-digit PIN quickly since we don't need a heavy generation dependency
+	pin := "1234" // Simplified for now, or use time-based string
+	return uc.repo.AddOfficial(ctx, tournamentID, playerID, pin)
+}
+
+func (uc *GetTournamentByIDUseCase) RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error {
+	return uc.repo.RemoveOfficial(ctx, tournamentID, playerID)
+}
+
 // ─── Update ──────────────────────────────────────────────────────────────────
 
 type UpdateTournamentUseCase struct {

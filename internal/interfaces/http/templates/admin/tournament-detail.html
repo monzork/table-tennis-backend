@@ -107,6 +107,33 @@
     </div>
   </section>
 
+  {{/* ── Officials ─────────────────────────────────────────── */}}
+  <section class="space-y-3">
+    <div class="flex justify-between items-center">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Officials / Referees</h2>
+      <button hx-on:click="document.getElementById('add-official-modal').classList.remove('hidden')" class="text-xs font-bold uppercase tracking-wider text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-all">
+        + Add Official
+      </button>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {{range .Officials}}
+        {{$officialId := .PlayerID}}
+        {{$officialPin := .Pin}}
+        {{range $.Players}}
+          {{if eq .ID $officialId}}
+          <div class="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
+            <span class="text-base font-semibold text-yellow-400">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+            <span class="ml-2 text-[9px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 rounded font-mono" title="Official PIN">{{$officialPin}}</span>
+            <button hx-delete="/admin/tournaments/{{$.Tournament.ID}}/officials/{{.ID}}" hx-confirm="Remove this official?" class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold ml-2">✕</button>
+          </div>
+          {{end}}
+        {{end}}
+      {{else}}
+        <p class="text-sm text-gray-600">No officials assigned. Only participants can score matches.</p>
+      {{end}}
+    </div>
+  </section>
+
   {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}
   {{/* ── Team Management ────────────────────────────────────────── */}}
   <section class="space-y-4">
@@ -195,6 +222,30 @@
     </div>
   </div>
   {{end}}
+
+  <!-- Add Official Modal -->
+  <div id="add-official-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] transition-all">
+    <div class="bg-club-panel border border-white/10 p-6 rounded-2xl max-w-sm w-full relative shadow-2xl">
+      <button hx-on:click="document.getElementById('add-official-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+      <h3 class="text-xl font-extrabold uppercase mb-4 tracking-tighter">Add Official</h3>
+      <form hx-post="/admin/tournaments/{{.Tournament.ID}}/officials" class="space-y-4" hx-on:submit="document.getElementById('add-official-modal').classList.add('hidden')">
+        <div class="space-y-2">
+          <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Select Player</label>
+          <select name="playerId" required class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+            <option value="" disabled selected hidden>Choose an Official...</option>
+            {{range .Players}}
+            <option value="{{.ID}}">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
+            {{end}}
+          </select>
+        </div>
+        <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+          Assign Official
+        </button>
+      </form>
+    </div>
+  </div>
 
   {{/* ── Match Rules ──────────────────────────────────────────── */}}
   {{if .Tournament.StageRules}}

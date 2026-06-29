@@ -172,6 +172,8 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	admin.Delete("/tournaments/:id/teams/:teamId", c.TournamentHandler.DeleteTeam)
 	admin.Post("/tournaments/:id/teams/:teamId/players", c.TournamentHandler.AssignPlayerToTeam)
 	admin.Delete("/tournaments/:id/teams/:teamId/players/:playerId", c.TournamentHandler.RemovePlayerFromTeam)
+	admin.Post("/tournaments/:id/officials", c.TournamentHandler.AddOfficial)
+	admin.Delete("/tournaments/:id/officials/:playerId", c.TournamentHandler.RemoveOfficial)
 	admin.Post("/tournaments/:id/move-player", c.TournamentHandler.MovePlayer)
 
 	// Events API

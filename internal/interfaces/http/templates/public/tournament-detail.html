@@ -119,9 +119,15 @@
                             <span class="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-mono">T-{{.TableNumber}}</span>
                         {{end}}
                     </div>
-                    <div>
+                    <div class="flex flex-col items-end gap-1">
                         {{if eq .Status "finished"}}
                             <span class="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[9px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
+                            {{if .RefereeID}}
+                              {{$refName := index $.RefereeNames .RefereeID}}
+                              {{if $refName}}
+                                <span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">Updated by: {{$refName}}</span>
+                              {{end}}
+                            {{end}}
                         {{else if eq .Status "in_progress"}}
                             <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
                         {{else}}
@@ -164,13 +170,21 @@
 
             {{/* Desktop Status */}}
             <td class="hidden sm:table-cell p-4">
-                {{if eq .Status "finished"}}
-                    <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
-                {{else if eq .Status "in_progress"}}
-                    <span class="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
-                {{else}}
-                    <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
-                {{end}}
+                <div class="flex flex-col items-start gap-1">
+                  {{if eq .Status "finished"}}
+                      <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
+                      {{if .RefereeID}}
+                        {{$refName := index $.RefereeNames .RefereeID}}
+                        {{if $refName}}
+                          <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">Updated by: {{$refName}}</span>
+                        {{end}}
+                      {{end}}
+                  {{else if eq .Status "in_progress"}}
+                      <span class="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
+                  {{else}}
+                      <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
+                  {{end}}
+                </div>
             </td>
 
             {{/* Actions */}}

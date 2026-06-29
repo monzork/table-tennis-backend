@@ -543,6 +543,9 @@ type Repository interface {
 	RemovePlayerFromTeam(ctx context.Context, teamID string, playerID string) error
 	GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]ParticipantSnapshot, error)
 	GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error)
+	AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error
+	RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error
+	GetOfficials(ctx context.Context, tournamentID string) ([]ParticipantSnapshot, error)
 }
 
 type MatchRepository interface {

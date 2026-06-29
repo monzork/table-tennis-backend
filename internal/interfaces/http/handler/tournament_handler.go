@@ -159,10 +159,11 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		players    any
 		divisions  []*divisionDomain.Division
 		snapshots  []tournamentDomain.ParticipantSnapshot
+		officials  []tournamentDomain.ParticipantSnapshot
 	}
 	var res result
 	var wg sync.WaitGroup
-	wg.Add(4)
+	wg.Add(5)
 
 	go func() {
 		defer wg.Done()
@@ -179,6 +180,13 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	go func() {
 		defer wg.Done()
 		res.snapshots, _ = h.getByID.GetSnapshots(c.Context(), id)
+	}()
+	go func() {
+		defer wg.Done()
+		// Since we don't have a specific usecase for officials yet, we use a quick workaround.
+		// A cleaner architecture would be to inject the repo into getByID or create a new usecase.
+		// I will create getByID.GetOfficials() below.
+		res.officials, _ = h.getByID.GetOfficials(c.Context(), id)
 	}()
 	wg.Wait()
 
@@ -233,7 +241,39 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		"AvailableParticipants": availableParticipants,
 		"StatusFilter":          statusFilter,
 		"PlayerPins":            playerPins,
+		"Officials":             res.officials,
 	}, "layouts/admin")
+}
+
+func (h *TournamentHandler) AddOfficial(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	var body struct {
+		PlayerID string `form:"playerId"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	if err := h.getByID.AddOfficial(c.Context(), tournamentID, body.PlayerID); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/tournaments/%s", tournamentID))
+}
+
+func (h *TournamentHandler) RemoveOfficial(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	playerID := c.Params("playerId")
+	if err := h.getByID.RemoveOfficial(c.Context(), tournamentID, playerID); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/tournaments/%s", tournamentID))
 }
 
 func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
@@ -526,10 +566,11 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 		tournament *tournamentDomain.Tournament
 		err        error
 		divisions  []*divisionDomain.Division
+		players    any
 	}
 	var res result
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
@@ -538,6 +579,10 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	go func() {
 		defer wg.Done()
 		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
+	go func() {
+		defer wg.Done()
+		res.players, _ = h.leaderboardUC.ExecuteSingles(c.Context())
 	}()
 	wg.Wait()
 
@@ -562,12 +607,28 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	vm := BuildTournamentViewModel(t, divisions, tmap)
 	vm.IsPublic = true
 
+	// Build a map of Referee IDs to Names
+	refereeNames := make(map[string]string)
+	if allPlayers, ok := res.players.([]*player.Player); ok {
+		for _, m := range t.Matches {
+			if m.RefereeID != nil {
+				for _, p := range allPlayers {
+					if p.ID == *m.RefereeID {
+						refereeNames[*m.RefereeID] = p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
+						break
+					}
+				}
+			}
+		}
+	}
+
 	return c.Render("public/tournament-detail", merge(tMap(lang), fiber.Map{
 		"Tournament":       t,
 		"Divisions":        divisions,
 		"BracketViewModel": vm,
 		"Type":             "Tournaments",
 		"StatusFilter":     statusFilter,
+		"RefereeNames":     refereeNames,
 	}), "layouts/public")
 }
 
