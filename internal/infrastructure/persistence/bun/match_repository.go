@@ -381,37 +381,89 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, erro
 		return nil, err
 	}
 
+	if len(models) == 0 {
+		return nil, nil
+	}
+
+	// 1. Collect all unique player IDs and match IDs
+	playerIDSet := make(map[uuid.UUID]bool)
+	matchIDs := make([]uuid.UUID, len(models))
+	for i, m := range models {
+		matchIDs[i] = m.ID
+		playerIDSet[m.TeamAPlayer1ID] = true
+		playerIDSet[m.TeamBPlayer1ID] = true
+		if m.TeamAPlayer2ID != nil {
+			playerIDSet[*m.TeamAPlayer2ID] = true
+		}
+		if m.TeamBPlayer2ID != nil {
+			playerIDSet[*m.TeamBPlayer2ID] = true
+		}
+	}
+
+	// 2. Batch-load all players in a single query
+	playerIDs := make([]uuid.UUID, 0, len(playerIDSet))
+	for pid := range playerIDSet {
+		playerIDs = append(playerIDs, pid)
+	}
+
+	playerCache := make(map[uuid.UUID]*player.Player)
+	if len(playerIDs) > 0 {
+		var playerModels []PlayerModel
+		if err := r.db.NewSelect().Model(&playerModels).Where("id IN (?)", bun.In(playerIDs)).Scan(ctx); err == nil {
+			for _, pm := range playerModels {
+				playerCache[pm.ID] = &player.Player{
+					ID:             pm.ID.String(),
+					FirstName:      pm.FirstName,
+					SecondName:     pm.SecondName,
+					LastName:       pm.LastName,
+					SecondLastName: pm.SecondLastName,
+					Birthdate:      pm.Birthdate,
+					Gender:         pm.Gender,
+					SinglesElo:     pm.SinglesElo,
+					DoublesElo:     pm.DoublesElo,
+					Country:        pm.Country,
+					Department:     pm.Department,
+					WhatsAppNumber: pm.WhatsAppNumber,
+					NationalID:     pm.NationalID,
+				}
+			}
+		}
+	}
+
+	// 3. Batch-load all match sets in a single query
+	var setModels []MatchSetModel
+	setsByMatch := make(map[string][]tournament.MatchSet)
+	if err := r.db.NewSelect().Model(&setModels).Where("match_id IN (?)", bun.In(matchIDs)).Order("set_number ASC").Scan(ctx); err == nil {
+		for _, sm := range setModels {
+			setsByMatch[sm.MatchID] = append(setsByMatch[sm.MatchID], tournament.MatchSet{
+				Number: sm.SetNumber,
+				ScoreA: sm.ScoreA,
+				ScoreB: sm.ScoreB,
+			})
+		}
+	}
+
+	// 4. Assemble the domain matches
 	matches := make([]*tournament.Match, 0, len(models))
 	for _, m := range models {
 		teamA := []*player.Player{}
-		if p, err := r.playerRepo.GetById(ctx, m.TeamAPlayer1ID.String()); err == nil {
+		if p, ok := playerCache[m.TeamAPlayer1ID]; ok {
 			teamA = append(teamA, p)
 		}
 		if m.TeamAPlayer2ID != nil {
-			if p, err := r.playerRepo.GetById(ctx, m.TeamAPlayer2ID.String()); err == nil {
+			if p, ok := playerCache[*m.TeamAPlayer2ID]; ok {
 				teamA = append(teamA, p)
 			}
 		}
 
 		teamB := []*player.Player{}
-		if p, err := r.playerRepo.GetById(ctx, m.TeamBPlayer1ID.String()); err == nil {
+		if p, ok := playerCache[m.TeamBPlayer1ID]; ok {
 			teamB = append(teamB, p)
 		}
 		if m.TeamBPlayer2ID != nil {
-			if p, err := r.playerRepo.GetById(ctx, m.TeamBPlayer2ID.String()); err == nil {
+			if p, ok := playerCache[*m.TeamBPlayer2ID]; ok {
 				teamB = append(teamB, p)
 			}
-		}
-
-		var sets []tournament.MatchSet
-		var setModels []MatchSetModel
-		_ = r.db.NewSelect().Model(&setModels).Where("match_id = ?", m.ID.String()).Order("set_number ASC").Scan(ctx)
-		for _, sm := range setModels {
-			sets = append(sets, tournament.MatchSet{
-				Number: sm.SetNumber,
-				ScoreA: sm.ScoreA,
-				ScoreB: sm.ScoreB,
-			})
 		}
 
 		wt := ""
@@ -438,7 +490,7 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, erro
 			TeamB:        teamB,
 			Status:       m.Status,
 			WinnerTeam:   wt,
-			Sets:         sets,
+			Sets:         setsByMatch[m.ID.String()],
 			TeamMatchID:  teamMatchIDPtr,
 			Stage:        m.Stage,
 			UpdatedAt:    m.UpdatedAt,
