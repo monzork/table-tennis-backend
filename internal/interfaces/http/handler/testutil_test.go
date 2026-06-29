@@ -25,6 +25,7 @@ import (
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
 	securityInfra "table-tennis-backend/internal/infrastructure/security"
 	"table-tennis-backend/internal/interfaces/http/handler"
+	"table-tennis-backend/internal/interfaces/http/i18n"
 	"table-tennis-backend/internal/interfaces/http/middleware"
 )
 
@@ -210,6 +211,17 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	})
 	engine.AddFunc("nicaraguaDepartments", func() []string {
 		return handler.NicaraguaDepartments
+	})
+	engine.AddFunc("t", func(tmap map[string]string, key string) string {
+		if tmap != nil {
+			if v, ok := tmap[key]; ok {
+				return v
+			}
+		}
+		if v, ok := i18n.Translations["en"][key]; ok {
+			return v
+		}
+		return key
 	})
 	app := fiber.New(fiber.Config{
 		Views:             engine,

@@ -37,7 +37,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 	}
 
 	// Create a tournament that is open for registration
-	tourney, err := tournamentDomain.NewTournament(uuid.New().String(), "Open Championship", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, nil)
+	tourney, err := tournamentDomain.NewTournament(uuid.New().String(), "Open Championship", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, nil, false)
 	if err != nil {
 		t.Fatalf("failed to create tournament: %v", err)
 	}

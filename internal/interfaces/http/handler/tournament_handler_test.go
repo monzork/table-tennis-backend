@@ -129,7 +129,7 @@ func TestTournamentHandler(t *testing.T) {
 	})
 	
 	t.Run("Delete Tournament", func(t *testing.T) {
-		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Temp", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, nil)
+		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Temp", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, nil, false)
 		tournamentRepo.Save(ctx, tourney)
 
 		req := httptest.NewRequest("DELETE", fmt.Sprintf("/tournaments/%s", tourney.ID), nil)
