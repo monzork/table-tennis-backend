@@ -502,6 +502,8 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 				wt = *sm.WinnerTeam
 			}
 
+			alignA, alignB := getSubMatchAlignments(sm.RoundNumber, teamFormat)
+
 			matchesVM = append(matchesVM, map[string]interface{}{
 				"ID":             sm.ID.String(),
 				"RoundNumber":    sm.RoundNumber,
@@ -513,6 +515,8 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 				"Status":         sm.Status,
 				"PlayerAName":    pAName,
 				"PlayerBName":    pBName,
+				"AlignmentA":     alignA,
+				"AlignmentB":     alignB,
 				"ScoreA":         winsA,
 				"ScoreB":         winsB,
 				"WinnerTeam":     wt,
@@ -1650,6 +1654,8 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, tourna
 		TeamBPlayer2ID string
 		PlayerAName    string
 		PlayerBName    string
+		AlignmentA     string
+		AlignmentB     string
 		ScoreA         int
 		ScoreB         int
 		Status         string
@@ -1699,6 +1705,8 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, tourna
 			wt = *sm.WinnerTeam
 		}
 
+		alignA, alignB := getSubMatchAlignments(sm.RoundNumber, teamFormat)
+
 		subMatchVMs = append(subMatchVMs, SubMatchVM{
 			ID:             sm.ID.String(),
 			MatchType:      sm.MatchType,
@@ -1709,6 +1717,8 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, tourna
 			TeamBPlayer2ID: teamBP2Str,
 			PlayerAName:    pAName,
 			PlayerBName:    pBName,
+			AlignmentA:     alignA,
+			AlignmentB:     alignB,
 			ScoreA:         winsA,
 			ScoreB:         winsB,
 			Status:         sm.Status,
@@ -2229,5 +2239,40 @@ func (h *MatchHandler) ValidateMatchPIN(c *fiber.Ctx) error {
 		"TableNumber":  m.TableNumber,
 		"Pin":          submittedPin, // pass validated PIN so form can re-submit
 	})
+}
+
+func getSubMatchAlignments(roundNumber int, teamFormat string) (string, string) {
+	if teamFormat == "" {
+		teamFormat = "olympic"
+	}
+	if teamFormat == "olympic" {
+		switch roundNumber {
+		case 1:
+			return "A & B", "X & Y"
+		case 2:
+			return "C", "Z"
+		case 3:
+			return "A", "X"
+		case 4:
+			return "B", "Y"
+		case 5:
+			return "C", "X"
+		}
+	} else {
+		// Corbillon or other format
+		switch roundNumber {
+		case 1:
+			return "A", "X"
+		case 2:
+			return "B", "Y"
+		case 3:
+			return "C", "Z"
+		case 4:
+			return "A", "Y"
+		case 5:
+			return "B", "X"
+		}
+	}
+	return "", ""
 }
 

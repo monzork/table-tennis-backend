@@ -125,7 +125,7 @@
             <div class="mt-2 space-y-1">
                 <div class="flex justify-between items-center text-xs">
                     <span class="font-bold {{if eq .WinnerTeam "A"}}text-green-400{{else}}text-white/80{{end}}">
-                        {{.PlayerAName}}
+                        {{.PlayerAName}} {{if .AlignmentA}}<span class="text-gray-500 text-[10px]">({{.AlignmentA}})</span>{{end}}
                     </span>
                     <span class="font-mono text-gray-400 font-bold">
                         {{.ScoreA}}
@@ -133,7 +133,7 @@
                 </div>
                 <div class="flex justify-between items-center text-xs">
                     <span class="font-bold {{if eq .WinnerTeam "B"}}text-green-400{{else}}text-white/80{{end}}">
-                        {{.PlayerBName}}
+                        {{.PlayerBName}} {{if .AlignmentB}}<span class="text-gray-500 text-[10px]">({{.AlignmentB}})</span>{{end}}
                     </span>
                     <span class="font-mono text-gray-400 font-bold">
                         {{.ScoreB}}

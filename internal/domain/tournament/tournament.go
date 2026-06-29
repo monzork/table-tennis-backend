@@ -57,6 +57,7 @@ type Match struct {
 	RefereeID    *string
 	TableNumber  *int
 	Pin          string
+	RoundNumber  int
 }
 
 type MatchSet struct {

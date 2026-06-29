@@ -569,6 +569,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 			RefereeID:    refereeIDPtr,
 			TableNumber:  mm.TableNumber,
 			Pin:          mm.Pin,
+			RoundNumber:  mm.RoundNumber,
 		}
 
 		// For parent team matches (MatchType=teams, no TeamMatchID), compute sub-match wins

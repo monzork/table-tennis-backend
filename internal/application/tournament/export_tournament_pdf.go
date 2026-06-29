@@ -330,6 +330,9 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 			} else if m.Status == "in_progress" {
 				scoreStr = tr("In Progress")
 			}
+			if m.TableNumber != nil {
+				scoreStr += fmt.Sprintf(" (Table %d)", *m.TableNumber)
+			}
 
 			pdf.CellFormat(30, 8, tr("Group Stage"), "1", 0, "C", false, 0, "")
 
@@ -370,6 +373,9 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				scoreStr = fmt.Sprintf("%d - %d", m.ScoreA(), m.ScoreB())
 			} else if m.Status == "in_progress" {
 				scoreStr = tr("In Progress")
+			}
+			if m.TableNumber != nil {
+				scoreStr += fmt.Sprintf(" (Table %d)", *m.TableNumber)
 			}
 
 			stageText := getTournamentStageHeader(strings.ToLower(m.Stage))
@@ -704,6 +710,9 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				} else {
 					resStr = tr("Scheduled")
 				}
+				if m.TableNumber != nil {
+					resStr += fmt.Sprintf(" (T. %d)", *m.TableNumber)
+				}
 				pdf.CellFormat(29, 8, resStr, "1", 1, "C", true, 0, "")
 
 				// Render Sub-matches (normal, white background)
@@ -713,7 +722,16 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 					}
 
 					subNameA, subNameB := getMatchPlayerNames(sub)
-					subMatchupStr := "  - " + truncateStr(subNameA, 22) + " vs " + truncateStr(subNameB, 22)
+					alignA, alignB := getSubMatchAlignments(sub.RoundNumber, t.TeamFormat)
+					dispA := truncateStr(subNameA, 18)
+					dispB := truncateStr(subNameB, 18)
+					if alignA != "" {
+						dispA += " (" + alignA + ")"
+					}
+					if alignB != "" {
+						dispB += " (" + alignB + ")"
+					}
+					subMatchupStr := "  - " + dispA + " vs " + dispB
 
 					pdf.SetFont("Arial", "", 8)
 					pdf.CellFormat(60, 8, tr(subMatchupStr), "1", 0, "L", false, 0, "")
@@ -738,6 +756,9 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 						subResStr = tr("In Progress")
 					} else {
 						subResStr = tr("Scheduled")
+					}
+					if sub.TableNumber != nil {
+						subResStr += fmt.Sprintf(" (T. %d)", *sub.TableNumber)
 					}
 					pdf.CellFormat(29, 8, subResStr, "1", 1, "C", false, 0, "")
 				}
@@ -773,6 +794,9 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 					resStr = tr("In Progress")
 				} else {
 					resStr = tr("Scheduled")
+				}
+				if m.TableNumber != nil {
+					resStr += fmt.Sprintf(" (T. %d)", *m.TableNumber)
 				}
 				pdf.CellFormat(29, 8, resStr, "1", 1, "C", false, 0, "")
 			}
@@ -1071,6 +1095,41 @@ func buildPdfBracketRounds(t *tournamentDomain.Tournament, players []*player.Pla
 	}
 
 	return rounds
+}
+
+func getSubMatchAlignments(roundNumber int, teamFormat string) (string, string) {
+	if teamFormat == "" {
+		teamFormat = "olympic"
+	}
+	if teamFormat == "olympic" {
+		switch roundNumber {
+		case 1:
+			return "A & B", "X & Y"
+		case 2:
+			return "C", "Z"
+		case 3:
+			return "A", "X"
+		case 4:
+			return "B", "Y"
+		case 5:
+			return "C", "X"
+		}
+	} else {
+		// Corbillon or other format
+		switch roundNumber {
+		case 1:
+			return "A", "X"
+		case 2:
+			return "B", "Y"
+		case 3:
+			return "C", "Z"
+		case 4:
+			return "A", "Y"
+		case 5:
+			return "B", "X"
+		}
+	}
+	return "", ""
 }
 
 
