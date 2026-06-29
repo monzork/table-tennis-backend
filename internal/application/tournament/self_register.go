@@ -58,6 +58,7 @@ func (uc *SelfRegisterUseCase) Execute(
 	whatsAppNumber string,
 	birthdateStr string,
 	gender string,
+	nationalID string,
 ) (*tournamentDomain.Tournament, string, error) {
 	firstName = strings.TrimSpace(firstName)
 	lastName = strings.TrimSpace(lastName)
@@ -109,7 +110,7 @@ func (uc *SelfRegisterUseCase) Execute(
 			}
 		}
 
-		newPlayer, err := playerDomain.NewPlayer(idgen.Generate(), firstName, lastName, birthdate, gender, countryUpper, strings.TrimSpace(department), "")
+		newPlayer, err := playerDomain.NewPlayer(idgen.Generate(), firstName, lastName, birthdate, gender, countryUpper, strings.TrimSpace(department), strings.TrimSpace(nationalID))
 		if err != nil {
 			return nil, "", fmt.Errorf("failed to create new player: %w", err)
 		}

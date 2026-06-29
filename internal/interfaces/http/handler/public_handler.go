@@ -117,6 +117,7 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 		Department     string `form:"department"`
 		Gender         string `form:"gender"`
 		WhatsAppNumber string `form:"whatsAppNumber"`
+		NationalID     string `form:"nationalId"`
 		Honeypot       string `form:"website"` // Honeypot field
 	}
 
@@ -142,7 +143,7 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 		body.Country,
 		body.Department,
 		body.WhatsAppNumber,
-		"", // National ID
+		body.NationalID,
 		500, // Default starting elo
 		500,
 	)
@@ -217,6 +218,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 		WhatsAppNumber string `form:"whatsAppNumber"`
 		Birthdate      string `form:"birthdate"`
 		Gender         string `form:"gender"`
+		NationalID     string `form:"nationalId"`
 		Honeypot       string `form:"website"`
 	}
 	if err := c.BodyParser(&body); err != nil {
@@ -243,6 +245,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 		body.WhatsAppNumber,
 		body.Birthdate,
 		body.Gender,
+		body.NationalID,
 	)
 
 	if err != nil {
