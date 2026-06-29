@@ -142,61 +142,57 @@ func (uc *CreateEventUseCase) Execute(
 		return players
 	}
 
-	getNameWithDiv := func(suffix string) string {
-		if len(divs) > 0 {
-			divNames := ""
-			for i, d := range divs {
-				if i > 0 {
-					divNames += ", "
-				}
-				divNames += d.Name
-			}
-			return fmt.Sprintf("%s - %s (%s)", e.Name, suffix, divNames)
+	processCategory := func(cfg CategoryConfig, suffix, tType, categoryGender string, isDoubles bool) {
+		if !cfg.Auto {
+			return
 		}
-		return fmt.Sprintf("%s - %s", e.Name, suffix)
+		
+		allCatPlayers := getPlayers(cfg.PlayerIDs, categoryGender, isDoubles)
+		if len(allCatPlayers) == 0 {
+			return
+		}
+
+		if skipElo || len(divs) == 0 {
+			tName := fmt.Sprintf("%s - %s", e.Name, suffix)
+			if categoryGender == "men" || categoryGender == "women" {
+			   // fallback in case I used lowercase men/women instead of M/F, wait, categoryGender is M/F, but for category we pass men/women, wait!
+			}
+			catArg := categoryGender
+			if categoryGender == "M" { catArg = "men" } else if categoryGender == "F" { catArg = "women" } else { catArg = "open" }
+			_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, allCatPlayers)
+		} else {
+			// Group by division
+			for _, div := range divs {
+				var divPlayers []*playerDomain.Player
+				for _, p := range allCatPlayers {
+					eloVal := p.SinglesElo
+					if isDoubles {
+						eloVal = p.DoublesElo
+					}
+					if div.ContainsElo(int16(eloVal)) {
+						divPlayers = append(divPlayers, p)
+					}
+				}
+				
+				if len(divPlayers) > 0 {
+					tName := fmt.Sprintf("%s - %s (%s)", e.Name, suffix, div.Name)
+					catArg := categoryGender
+					if categoryGender == "M" { catArg = "men" } else if categoryGender == "F" { catArg = "women" } else { catArg = "open" }
+					_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, divPlayers)
+				}
+			}
+		}
 	}
 
-	if singlesMen.Auto {
-		players := getPlayers(singlesMen.PlayerIDs, "M", false)
-		tName := getNameWithDiv("Men's Singles")
-		_ = createSubTourney(tName, "singles", singlesMen.Format, "men", singlesMen.GroupPassCount, players)
-	}
+	processCategory(singlesMen, "Men's Singles", "singles", "M", false)
+	processCategory(singlesWomen, "Women's Singles", "singles", "F", false)
+	processCategory(doublesMen, "Men's Doubles", "doubles", "M", true)
+	processCategory(doublesWomen, "Women's Doubles", "doubles", "F", true)
+	processCategory(doublesMixed, "Mixed Doubles", "doubles", "", true)
+	processCategory(teamsMen, "Men's Teams", "teams", "M", false)
+	processCategory(teamsWomen, "Women's Teams", "teams", "F", false)
 
-	if singlesWomen.Auto {
-		players := getPlayers(singlesWomen.PlayerIDs, "F", false)
-		tName := getNameWithDiv("Women's Singles")
-		_ = createSubTourney(tName, "singles", singlesWomen.Format, "women", singlesWomen.GroupPassCount, players)
-	}
 
-	if doublesMen.Auto {
-		players := getPlayers(doublesMen.PlayerIDs, "M", true)
-		tName := getNameWithDiv("Men's Doubles")
-		_ = createSubTourney(tName, "doubles", doublesMen.Format, "men", doublesMen.GroupPassCount, players)
-	}
-
-	if doublesWomen.Auto {
-		players := getPlayers(doublesWomen.PlayerIDs, "F", true)
-		tName := getNameWithDiv("Women's Doubles")
-		_ = createSubTourney(tName, "doubles", doublesWomen.Format, "women", doublesWomen.GroupPassCount, players)
-	}
-
-	if doublesMixed.Auto {
-		players := getPlayers(doublesMixed.PlayerIDs, "", true)
-		tName := getNameWithDiv("Mixed Doubles")
-		_ = createSubTourney(tName, "doubles", doublesMixed.Format, "open", doublesMixed.GroupPassCount, players)
-	}
-
-	if teamsMen.Auto {
-		players := getPlayers(teamsMen.PlayerIDs, "M", false)
-		tName := getNameWithDiv("Men's Teams")
-		_ = createSubTourney(tName, "teams", teamsMen.Format, "men", teamsMen.GroupPassCount, players)
-	}
-
-	if teamsWomen.Auto {
-		players := getPlayers(teamsWomen.PlayerIDs, "F", false)
-		tName := getNameWithDiv("Women's Teams")
-		_ = createSubTourney(tName, "teams", teamsWomen.Format, "women", teamsWomen.GroupPassCount, players)
-	}
 
 	if err := uc.eventRepo.Save(ctx, e); err != nil {
 		return nil, err
