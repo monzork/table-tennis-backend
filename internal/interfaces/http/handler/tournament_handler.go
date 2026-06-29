@@ -25,7 +25,6 @@ type TournamentHandler struct {
 	finishUC      *tournament.FinishTournamentUseCase
 	exportUC      *tournament.ExportTournamentReportUseCase
 	exportPdfUC   *tournament.ExportTournamentPdfUseCase
-	exportAllPdfUC *tournament.ExportAllTournamentsPdfUseCase
 	movePlayerUC  *tournament.MovePlayerUseCase
 	createTeamUC  *tournament.CreateTeamUseCase
 	deleteTeamUC  *tournament.DeleteTeamUseCase
@@ -44,7 +43,6 @@ func NewTournamentHandler(
 	finishUC *tournament.FinishTournamentUseCase,
 	exportUC *tournament.ExportTournamentReportUseCase,
 	exportPdfUC *tournament.ExportTournamentPdfUseCase,
-	exportAllPdfUC *tournament.ExportAllTournamentsPdfUseCase,
 	movePlayerUC *tournament.MovePlayerUseCase,
 	createTeamUC *tournament.CreateTeamUseCase,
 	deleteTeamUC *tournament.DeleteTeamUseCase,
@@ -62,7 +60,6 @@ func NewTournamentHandler(
 		finishUC:      finishUC,
 		exportUC:      exportUC,
 		exportPdfUC:   exportPdfUC,
-		exportAllPdfUC: exportAllPdfUC,
 		movePlayerUC:  movePlayerUC,
 		createTeamUC:  createTeamUC,
 		deleteTeamUC:  deleteTeamUC,
@@ -441,17 +438,6 @@ func (h *TournamentHandler) ExportPDF(c *fiber.Ctx) error {
 
 	c.Set("Content-Type", "application/pdf")
 	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"tournament_report_%s.pdf\"", idStr))
-	return c.Send(pdfBytes)
-}
-
-func (h *TournamentHandler) ExportAllPDF(c *fiber.Ctx) error {
-	pdfBytes, err := h.exportAllPdfUC.Execute(c.Context())
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	c.Set("Content-Type", "application/pdf")
-	c.Set("Content-Disposition", "attachment; filename=\"all_tournaments_report.pdf\"")
 	return c.Send(pdfBytes)
 }
 

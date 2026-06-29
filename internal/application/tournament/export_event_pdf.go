@@ -9,21 +9,24 @@ import (
 
 	"github.com/jung-kurt/gofpdf"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
+	eventDomain "table-tennis-backend/internal/domain/event"
 )
 
-type ExportAllTournamentsPdfUseCase struct {
+type ExportEventPdfUseCase struct {
 	tournamentRepo *bun.TournamentRepository
+	eventRepo      eventDomain.Repository
 }
 
-func NewExportAllTournamentsPdfUseCase(tournamentRepo *bun.TournamentRepository) *ExportAllTournamentsPdfUseCase {
-	return &ExportAllTournamentsPdfUseCase{tournamentRepo: tournamentRepo}
+func NewExportEventPdfUseCase(tournamentRepo *bun.TournamentRepository, eventRepo eventDomain.Repository) *ExportEventPdfUseCase {
+	return &ExportEventPdfUseCase{tournamentRepo: tournamentRepo, eventRepo: eventRepo}
 }
 
-func (uc *ExportAllTournamentsPdfUseCase) Execute(ctx context.Context) ([]byte, error) {
-	tournamentsList, err := uc.tournamentRepo.GetAll(ctx)
+func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([]byte, error) {
+	e, err := uc.eventRepo.GetByIDDeep(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
+	tournamentsList := e.Tournaments
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.SetMargins(15, 15, 15)
@@ -39,10 +42,10 @@ func (uc *ExportAllTournamentsPdfUseCase) Execute(ctx context.Context) ([]byte, 
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Arial", "B", 24)
 	pdf.Ln(10)
-	pdf.CellFormat(0, 12, "GLOBAL TOURNAMENTS REPORT", "", 1, "C", false, 0, "")
+	pdf.CellFormat(0, 12, strings.ToUpper(e.Name), "", 1, "C", false, 0, "")
 	
 	pdf.SetFont("Arial", "I", 12)
-	pdf.CellFormat(0, 8, "Official Series Event & Bracket Records", "", 1, "C", false, 0, "")
+	pdf.CellFormat(0, 8, "Grand Event & Sub-Tournament Records", "", 1, "C", false, 0, "")
 
 	// Date and Summary Info
 	pdf.SetTextColor(50, 50, 50)
@@ -56,7 +59,7 @@ func (uc *ExportAllTournamentsPdfUseCase) Execute(ctx context.Context) ([]byte, 
 	pdf.CellFormat(60, 8, "Date Generated:", "", 0, "L", false, 0, "")
 	pdf.CellFormat(0, 8, time.Now().Format("January 02, 2006 at 15:04 PM"), "", 1, "L", false, 0, "")
 
-	pdf.CellFormat(60, 8, "Total Events Run:", "", 0, "L", false, 0, "")
+	pdf.CellFormat(60, 8, "Total Sub-Tournaments:", "", 0, "L", false, 0, "")
 	pdf.CellFormat(0, 8, fmt.Sprintf("%d Tournaments", len(tournamentsList)), "", 1, "L", false, 0, "")
 
 	var activeCount, finishedCount int
@@ -81,13 +84,7 @@ func (uc *ExportAllTournamentsPdfUseCase) Execute(ctx context.Context) ([]byte, 
 	// --- 2. INDIVIDUAL TOURNAMENT SECTIONS ---
 	pdf.SetTextColor(0, 0, 0)
 	
-	for _, briefT := range tournamentsList {
-		// Load complete tournament details (matches, participants, teams)
-		t, err := uc.tournamentRepo.GetByID(ctx, briefT.ID)
-		if err != nil {
-			continue // skip gracefully if one tournament fails to load
-		}
-
+	for _, t := range tournamentsList {
 		pdf.AddPage()
 
 		// Tournament Title Block

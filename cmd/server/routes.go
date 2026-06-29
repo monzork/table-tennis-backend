@@ -199,5 +199,5 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	api.Delete("/divisions/:id", c.DivisionHandler.Delete)
 
 	// Reports API
-	admin.Get("/reports/all-tournaments/pdf", c.TournamentHandler.ExportAllPDF)
+	admin.Get("/events/:id/export/pdf", c.EventHandler.ExportEventPDF)
 }

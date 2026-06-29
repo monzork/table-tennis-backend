@@ -879,7 +879,7 @@ func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
 	return tx.Commit()
 }
 
-func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UUID) ([]*tournament.Tournament, error) {
+func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, deep bool) ([]*tournament.Tournament, error) {
 	var models []TournamentModel
 	if err := r.db.NewSelect().Model(&models).Where("event_id = ?", eventID).Order("start_date DESC").Scan(ctx); err != nil {
 		return nil, err
@@ -966,6 +966,151 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 		tpByTeam[tp.TeamID] = append(tpByTeam[tp.TeamID], tp)
 	}
 
+	// For doubles/teams, build a reverse map: player ID → team ID
+	playerToTeam := make(map[uuid.UUID]uuid.UUID)
+	teamMap := make(map[uuid.UUID]*TeamModel)
+	for _, tm := range allTeamModels {
+		tmCopy := tm
+		teamMap[tm.ID] = &tmCopy
+		for _, tp := range tpByTeam[tm.ID] {
+			playerToTeam[tp.PlayerID] = tm.ID
+		}
+	}
+
+	matchesByTournament := make(map[uuid.UUID][]tournament.Match)
+	if deep {
+		// ── Batch-load matches and sets ──────────────────────────────────
+		var matchModels []MatchModel
+		if len(tournamentIDs) > 0 {
+			_ = r.db.NewSelect().Model(&matchModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Scan(ctx)
+		}
+
+		matchIDs := make([]uuid.UUID, len(matchModels))
+		for i, mm := range matchModels {
+			matchIDs[i] = mm.ID
+		}
+		var allSetModels []MatchSetModel
+		if len(matchIDs) > 0 {
+			_ = r.db.NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("match_id", "set_number ASC").Scan(ctx)
+		}
+		setsByMatch := make(map[string][]MatchSetModel)
+		for _, sm := range allSetModels {
+			setsByMatch[sm.MatchID] = append(setsByMatch[sm.MatchID], sm)
+		}
+
+		for _, mm := range matchModels {
+			wt := ""
+			if mm.WinnerTeam != nil {
+				wt = *mm.WinnerTeam
+			}
+
+			var sets []tournament.MatchSet
+			for _, sm := range setsByMatch[mm.ID.String()] {
+				sets = append(sets, tournament.MatchSet{
+					Number: sm.SetNumber,
+					ScoreA: sm.ScoreA,
+					ScoreB: sm.ScoreB,
+				})
+			}
+
+			teamAID := mm.TeamAPlayer1ID
+			teamBID := mm.TeamBPlayer1ID
+			// In events, some tournaments might be team type and some singles
+			var tType string
+			for _, tm := range models {
+				if tm.ID == mm.TournamentID {
+					tType = tm.Type
+					break
+				}
+			}
+			isTeamType := tType == "doubles" || tType == "mixed_doubles" || tType == "teams"
+
+			if isTeamType && mm.TeamMatchID == nil {
+				if tid, ok := playerToTeam[mm.TeamAPlayer1ID]; ok {
+					teamAID = tid
+				}
+				if tid, ok := playerToTeam[mm.TeamBPlayer1ID]; ok {
+					teamBID = tid
+				}
+			}
+
+			teamAPlayer := &player.Player{ID: teamAID.String()}
+			teamBPlayer := &player.Player{ID: teamBID.String()}
+			if isTeamType {
+				if tm, ok := teamMap[teamAID]; ok {
+					teamAPlayer.FirstName = tm.Name
+				} else if pm, ok := playerCache[teamAID]; ok {
+					teamAPlayer.FirstName = pm.FirstName
+					teamAPlayer.LastName = pm.LastName
+				}
+				if tm, ok := teamMap[teamBID]; ok {
+					teamBPlayer.FirstName = tm.Name
+				} else if pm, ok := playerCache[teamBID]; ok {
+					teamBPlayer.FirstName = pm.FirstName
+					teamBPlayer.LastName = pm.LastName
+				}
+			} else {
+				if pm, ok := playerCache[teamAID]; ok {
+					teamAPlayer.FirstName = pm.FirstName
+					teamAPlayer.LastName = pm.LastName
+				}
+				if pm, ok := playerCache[teamBID]; ok {
+					teamBPlayer.FirstName = pm.FirstName
+					teamBPlayer.LastName = pm.LastName
+				}
+			}
+
+			var teamMatchIDPtr *string
+			if mm.TeamMatchID != nil {
+				s := mm.TeamMatchID.String()
+				teamMatchIDPtr = &s
+			}
+
+			var refereeIDPtr *string
+			if mm.RefereeID != nil {
+				s := mm.RefereeID.String()
+				refereeIDPtr = &s
+			}
+
+			m := tournament.Match{
+				ID:           mm.ID.String(),
+				TournamentID: mm.TournamentID.String(),
+				MatchType:    mm.MatchType,
+				Status:       mm.Status,
+				WinnerTeam:   wt,
+				TeamA:        []*player.Player{teamAPlayer},
+				TeamB:        []*player.Player{teamBPlayer},
+				Sets:         sets,
+				TeamMatchID:  teamMatchIDPtr,
+				Stage:        mm.Stage,
+				UpdatedAt:    mm.UpdatedAt,
+				RefereeID:    refereeIDPtr,
+				TableNumber:  mm.TableNumber,
+				Pin:          mm.Pin,
+				RoundNumber:  mm.RoundNumber,
+			}
+
+			// Virtual set for parent team matches
+			if mm.MatchType == "teams" && mm.TeamMatchID == nil {
+				subWinsA, subWinsB := 0, 0
+				for _, other := range matchModels {
+					if other.TeamMatchID == nil || other.TeamMatchID.String() != mm.ID.String() {
+						continue
+					}
+					if other.Status == "finished" && other.WinnerTeam != nil {
+						if *other.WinnerTeam == "A" {
+							subWinsA++
+						} else if *other.WinnerTeam == "B" {
+							subWinsB++
+						}
+					}
+				}
+				m.Sets = []tournament.MatchSet{{Number: 1, ScoreA: subWinsA, ScoreB: subWinsB}}
+			}
+			matchesByTournament[mm.TournamentID] = append(matchesByTournament[mm.TournamentID], m)
+		}
+	}
+
 	// Assemble tournaments
 	tournaments := make([]*tournament.Tournament, len(models))
 	for i, m := range models {
@@ -998,6 +1143,11 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 			eventIDPtr = &s
 		}
 
+		matches := matchesByTournament[m.ID]
+		if matches == nil {
+			matches = []tournament.Match{}
+		}
+
 		tournaments[i] = &tournament.Tournament{
 			ID:               m.ID.String(),
 			Name:             m.Name,
@@ -1014,7 +1164,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 			WinnerName:       m.WinnerName,
 			Participants:     participantPlayers,
 			Rules:            []tournament.Rule{},
-			Matches:          []tournament.Match{},
+			Matches:          matches,
 			Teams:            teams,
 			TeamFormat:       m.TeamFormat,
 			NumTables:        m.NumTables,

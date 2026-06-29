@@ -7,6 +7,7 @@ import (
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
+	"table-tennis-backend/internal/application/tournament"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -18,6 +19,7 @@ type EventHandler struct {
 	deleteUC      *event.DeleteEventUseCase
 	divisionUC    *division.DivisionUseCase
 	leaderboardUC *leaderboard.GetLeaderboardUseCase
+	exportPdfUC   *tournament.ExportEventPdfUseCase
 }
 
 func NewEventHandler(
@@ -27,6 +29,7 @@ func NewEventHandler(
 	deleteUC *event.DeleteEventUseCase,
 	divisionUC *division.DivisionUseCase,
 	leaderboardUC *leaderboard.GetLeaderboardUseCase,
+	exportPdfUC *tournament.ExportEventPdfUseCase,
 ) *EventHandler {
 	return &EventHandler{
 		createUC:      createUC,
@@ -35,6 +38,7 @@ func NewEventHandler(
 		deleteUC:      deleteUC,
 		divisionUC:    divisionUC,
 		leaderboardUC: leaderboardUC,
+		exportPdfUC:   exportPdfUC,
 	}
 }
 
@@ -219,4 +223,16 @@ func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 		"Divisions": res.divisions,
 		"Type":      "Tournaments", // highlight tournaments tab in layout
 	}), "layouts/public")
+}
+
+func (h *EventHandler) ExportEventPDF(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	pdfBytes, err := h.exportPdfUC.Execute(c.Context(), idStr)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	c.Set("Content-Type", "application/pdf")
+	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"event_report_%s.pdf\"", idStr))
+	return c.Send(pdfBytes)
 }

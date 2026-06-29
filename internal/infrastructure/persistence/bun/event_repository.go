@@ -72,7 +72,33 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 		return nil, err
 	}
 
-	tourneys, _ := r.tournamentRepo.GetByEventID(ctx, id)
+	tourneys, _ := r.tournamentRepo.GetByEventID(ctx, id, false)
+
+	return &event.Event{
+		ID:          model.ID.String(),
+		Name:        model.Name,
+		DivisionID:  model.DivisionID,
+		SkipElo:     model.SkipElo,
+		StartDate:   model.StartDate,
+		EndDate:     model.EndDate,
+		NumTables:   model.NumTables,
+		Tournaments: tourneys,
+	}, nil
+}
+
+func (r *EventRepository) GetByIDDeep(ctx context.Context, idStr string) (*event.Event, error) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, err
+	}
+
+	model := new(EventModel)
+	err = r.db.NewSelect().Model(model).Where("id = ?", id).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tourneys, _ := r.tournamentRepo.GetByEventID(ctx, id, true)
 
 	return &event.Event{
 		ID:          model.ID.String(),

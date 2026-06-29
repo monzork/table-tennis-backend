@@ -58,7 +58,6 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
 	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
 	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo)
-	exportAllTournamentsPdfUC := tournament.NewExportAllTournamentsPdfUseCase(tournamentRepo)
 	movePlayerUC := tournament.NewMovePlayerUseCase(tournamentRepo)
 	createTeamUC := tournament.NewCreateTeamUseCase(tournamentRepo)
 	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
@@ -75,7 +74,6 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		finishTournamentUC,
 		exportTournamentUC,
 		exportTournamentPdfUC,
-		exportAllTournamentsPdfUC,
 		movePlayerUC,
 		createTeamUC,
 		deleteTeamUC,
@@ -84,11 +82,12 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		getTournamentsUC,
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
+	exportEventPdfUC := tournament.NewExportEventPdfUseCase(tournamentRepo, eventRepo)
 	createEventUC := event.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
 	getEventByIDUC := event.NewGetEventByIDUseCase(eventRepo)
 	getAllEventsUC := event.NewGetAllEventsUseCase(eventRepo)
 	deleteEventUC := event.NewDeleteEventUseCase(eventRepo)
-	eventHandler := handler.NewEventHandler(createEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC)
+	eventHandler := handler.NewEventHandler(createEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
 
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
