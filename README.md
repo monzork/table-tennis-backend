@@ -45,29 +45,24 @@ This project goes beyond a simple internal tool, offering an immersive, WTT-bran
 | `GET` | `/admin` | Root admin portal hub and navigation. |
 | `GET` | `/admin/players` | Table of all registered athletes, along with a form to add a new player. |
 | `GET` | `/admin/tournaments` | List of all system tournaments along with an event creation form. |
-| `GET` | `/admin/matches` | Scorekeeping panel to generate multi-format matches, assign teams, and record winners. |
+| `GET` | `/admin/events` | List of system events. |
+| `GET` | `/admin/divisions` | List of system divisions. |
 
 ### API / form-action Endpoints (Used via HTMX)
 | Method | Route | Payload Type | Description |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/players` | Form/JSON | Registers a new athlete (`firstName`, `lastName`, `birthdate`, `gender`, `country`). Returns an HTML table row. |
-| `POST` | `/tournaments` | Form/JSON | Creates an event (`name`, `type`, `startDate`, `endDate`). Returns an HTML table row. |
-| `POST` | `/matches/create` | Form/JSON | Drafts an active match assigning players to `Team A` & `Team B`. Supports array input for doubles. Returns an HTML table row. |
+| `POST` | `/players` | Form/JSON | Registers a new athlete. Returns an HTML table row. |
+| `POST` | `/tournaments` | Form/JSON | Creates an event. Returns an HTML table row. |
+| `POST` | `/matches/create` | Form/JSON | Drafts an active match assigning players to `Team A` & `Team B`. |
 | `POST` | `/matches/finish` | Form/JSON | Concludes a match via `winnerTeam` selection. Triggers automatic Elo calculations and persists. |
 
 ## Quick Start
 
 1. **Verify Dependencies**: Make sure Go (1.20+) and SQLite3 are installed on your machine.
-2. **Apply DB Migrations**:
-   Run the SQL scripts to build the WTT-flavored schema.
-   ```bash
-   rm -f table_tennis.db
-   sqlite3 table_tennis.db < cmd/migrations/001_initial.sql
-   sqlite3 table_tennis.db < cmd/migrations/002_wtt_features.sql
-   ```
-3. **Run the Server**:
+2. **Run the Server**:
+   The app will automatically run migrations via Bun on startup.
    ```bash
    go run ./cmd/server
    ```
-4. Access the App: 
+3. Access the App: 
    Open `http://localhost:8080/admin` in your browser.

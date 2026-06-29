@@ -206,18 +206,7 @@ func (t *Tournament) AutoAssignGroups() error {
 	if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
 		units = make([]*player.Player, len(t.Teams))
 		for i, team := range t.Teams {
-			avgElo := int16(1000)
-			if len(team.Players) > 0 {
-				sum := int32(0)
-				for _, p := range team.Players {
-					if t.Type == "doubles" || t.Type == "mixed_doubles" {
-						sum += int32(p.DoublesElo)
-					} else {
-						sum += int32(p.SinglesElo)
-					}
-				}
-				avgElo = int16(sum / int32(len(team.Players)))
-			}
+			avgElo := team.AverageElo(t.Type)
 			units[i] = &player.Player{
 				ID:         team.ID,
 				FirstName:  team.Name,
@@ -314,18 +303,7 @@ func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
 	if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
 		units = make([]*player.Player, len(t.Teams))
 		for i, team := range t.Teams {
-			avgElo := int16(1000)
-			if len(team.Players) > 0 {
-				sum := int32(0)
-				for _, p := range team.Players {
-					if t.Type == "doubles" || t.Type == "mixed_doubles" {
-						sum += int32(p.DoublesElo)
-					} else {
-						sum += int32(p.SinglesElo)
-					}
-				}
-				avgElo = int16(sum / int32(len(team.Players)))
-			}
+			avgElo := team.AverageElo(t.Type)
 			units[i] = &player.Player{
 				ID:         team.ID,
 				FirstName:  team.Name,
@@ -456,18 +434,7 @@ func (t *Tournament) MovePlayer(playerID string, targetGroupID string, targetInd
 			return errors.New("team is not registered in this tournament")
 		}
 
-		avgElo := int16(1000)
-		if len(foundTeam.Players) > 0 {
-			sum := int32(0)
-			for _, p := range foundTeam.Players {
-				if t.Type == "doubles" || t.Type == "mixed_doubles" {
-					sum += int32(p.DoublesElo)
-				} else {
-					sum += int32(p.SinglesElo)
-				}
-			}
-			avgElo = int16(sum / int32(len(foundTeam.Players)))
-		}
+		avgElo := foundTeam.AverageElo(t.Type)
 		movingPlayer = &player.Player{
 			ID:         foundTeam.ID,
 			FirstName:  foundTeam.Name,
