@@ -308,10 +308,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 	}
 
 	lang := getLang(c)
-	tMap := make(map[string]string)
-	for k := range i18n.Translations["en"] {
-		tMap[k] = i18n.T(lang, k)
-	}
+	tMap := i18n.PrecomputedMaps[lang]
 
 	data := fiber.Map{
 		"Groups":       groups,

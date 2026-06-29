@@ -212,15 +212,18 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []
 
 	// Replace sets
 	tx.NewDelete().TableExpr("match_sets").Where("match_id = ?", id).Exec(ctx)
-	for _, s := range sets {
-		setModel := &MatchSetModel{
-			ID:        uuid.New().String(),
-			MatchID:   id.String(),
-			SetNumber: s.Number,
-			ScoreA:    s.ScoreA,
-			ScoreB:    s.ScoreB,
+	if len(sets) > 0 {
+		setModels := make([]MatchSetModel, len(sets))
+		for i, s := range sets {
+			setModels[i] = MatchSetModel{
+				ID:        uuid.New().String(),
+				MatchID:   id.String(),
+				SetNumber: s.Number,
+				ScoreA:    s.ScoreA,
+				ScoreB:    s.ScoreB,
+			}
 		}
-		if _, err := tx.NewInsert().Model(setModel).Exec(ctx); err != nil {
+		if _, err := tx.NewInsert().Model(&setModels).Exec(ctx); err != nil {
 			return err
 		}
 	}
@@ -409,7 +412,7 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, erro
 	playerCache := make(map[uuid.UUID]*player.Player)
 	if len(playerIDs) > 0 {
 		var playerModels []PlayerModel
-		if err := r.db.NewSelect().Model(&playerModels).Where("id IN (?)", bun.In(playerIDs)).Scan(ctx); err == nil {
+		if err := r.db.NewSelect().Model(&playerModels).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx); err == nil {
 			for _, pm := range playerModels {
 				playerCache[pm.ID] = &player.Player{
 					ID:             pm.ID.String(),
@@ -433,7 +436,7 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, erro
 	// 3. Batch-load all match sets in a single query
 	var setModels []MatchSetModel
 	setsByMatch := make(map[string][]tournament.MatchSet)
-	if err := r.db.NewSelect().Model(&setModels).Where("match_id IN (?)", bun.In(matchIDs)).Order("set_number ASC").Scan(ctx); err == nil {
+	if err := r.db.NewSelect().Model(&setModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("set_number ASC").Scan(ctx); err == nil {
 		for _, sm := range setModels {
 			setsByMatch[sm.MatchID] = append(setsByMatch[sm.MatchID], tournament.MatchSet{
 				Number: sm.SetNumber,
@@ -517,7 +520,7 @@ func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID 
 	err = r.db.NewSelect().
 		Model(&activeMatches).
 		Where("status = 'in_progress' AND table_number IS NOT NULL").
-		Where("tournament_id IN (?)", bun.In(tids)).
+		Where("tournament_id IN (?)", bun.List(tids)).
 		Scan(ctx)
 	if err != nil {
 		return nil, err

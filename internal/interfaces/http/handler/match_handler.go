@@ -445,10 +445,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 	}
 
 	lang := getLang(c)
-	tMap := make(map[string]string)
-	for k := range i18n.Translations["en"] {
-		tMap[k] = i18n.T(lang, k)
-	}
+	tMap := i18n.PrecomputedMaps[lang]
 
 	if isTeams {
 		playerNames := make(map[string]string)
@@ -2078,10 +2075,7 @@ func (h *MatchHandler) ShowMatchScorePage(c *fiber.Ctx) error {
 	}
 
 	lang := getLang(c)
-	tMap := make(map[string]string)
-	for k := range i18n.Translations[lang] {
-		tMap[k] = i18n.T(lang, k)
-	}
+	tMap := i18n.PrecomputedMaps[lang]
 
 	return c.Render("public/match-pin-entry", fiber.Map{
 		"MatchID":     matchIDStr,
@@ -2119,10 +2113,7 @@ func (h *MatchHandler) ShowTableScorePage(c *fiber.Ctx) error {
 		Scan(c.Context())
 
 	lang := getLang(c)
-	tMap := make(map[string]string)
-	for k := range i18n.Translations[lang] {
-		tMap[k] = i18n.T(lang, k)
-	}
+	tMap := i18n.PrecomputedMaps[lang]
 
 	if err != nil {
 		// No match is in progress on this table.

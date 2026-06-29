@@ -56,6 +56,15 @@ func (m *mockTournamentRepository) GetParticipantSnapshots(ctx context.Context, 
 func (m *mockTournamentRepository) GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error) {
 	return "", nil
 }
+func (m *mockTournamentRepository) AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error {
+	return nil
+}
+func (m *mockTournamentRepository) RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error {
+	return nil
+}
+func (m *mockTournamentRepository) GetOfficials(ctx context.Context, tournamentID string) ([]tournamentDomain.ParticipantSnapshot, error) {
+	return nil, nil
+}
 
 func TestExportTournamentPdf_Execute(t *testing.T) {
 	// Create mock tournament data with Spanish letters in names

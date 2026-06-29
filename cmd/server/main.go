@@ -95,11 +95,7 @@ func main() {
 		if lang != "es" && lang != "en" {
 			lang = "en"
 		}
-		m := make(map[string]string)
-		for k := range i18n.Translations["en"] {
-			m[k] = i18n.T(lang, k)
-		}
-		ctx.Locals("T", m)
+		ctx.Locals("T", i18n.PrecomputedMaps[lang])
 		ctx.Locals("Lang", lang)
 		return ctx.Next()
 	})

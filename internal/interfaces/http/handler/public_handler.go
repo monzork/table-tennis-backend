@@ -61,12 +61,8 @@ func (h *PublicHandler) SetLang(c *fiber.Ctx) error {
 
 // tMap builds a fiber.Map with all translated strings under key "T".
 func tMap(lang string) fiber.Map {
-	m := make(map[string]string)
-	for k := range i18n.Translations["en"] {
-		m[k] = i18n.T(lang, k)
-	}
 	return fiber.Map{
-		"T":    m,
+		"T":    i18n.PrecomputedMaps[lang],
 		"Lang": lang,
 	}
 }

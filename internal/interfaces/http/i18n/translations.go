@@ -499,3 +499,22 @@ func T(locale, key string) string {
 	}
 	return key
 }
+
+// PrecomputedMaps holds pre-built translation maps for each supported language to optimize runtime lookups.
+var PrecomputedMaps map[string]map[string]string
+
+func init() {
+	PrecomputedMaps = make(map[string]map[string]string)
+	locales := []string{"en", "es"}
+	for _, lang := range locales {
+		m := make(map[string]string)
+		for k := range Translations["en"] {
+			m[k] = T(lang, k)
+		}
+		for k := range Translations[lang] {
+			m[k] = T(lang, k)
+		}
+		PrecomputedMaps[lang] = m
+	}
+}
+

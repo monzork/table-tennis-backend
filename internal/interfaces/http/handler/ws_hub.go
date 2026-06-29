@@ -46,9 +46,18 @@ func (h *BracketHub) Broadcast(tournamentID string, event map[string]string) {
 	}
 	h.mu.RLock()
 	conns := h.clients[tournamentID]
+	if len(conns) == 0 {
+		h.mu.RUnlock()
+		return
+	}
+	// Copy connections to a slice under the lock
+	targets := make([]*fiberws.Conn, 0, len(conns))
+	for conn := range conns {
+		targets = append(targets, conn)
+	}
 	h.mu.RUnlock()
 
-	for conn := range conns {
+	for _, conn := range targets {
 		conn.WriteMessage(1, payload) // 1 = TextMessage
 	}
 }

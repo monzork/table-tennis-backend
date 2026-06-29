@@ -77,6 +77,18 @@ func (m *mockMovePlayerRepository) GetParticipantOrOfficialByPIN(ctx context.Con
 	return "", nil
 }
 
+func (m *mockMovePlayerRepository) AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error {
+	return nil
+}
+
+func (m *mockMovePlayerRepository) RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error {
+	return nil
+}
+
+func (m *mockMovePlayerRepository) GetOfficials(ctx context.Context, tournamentID string) ([]tournamentDomain.ParticipantSnapshot, error) {
+	return nil, nil
+}
+
 func TestMovePlayerUseCase_Execute(t *testing.T) {
 	pID := uuid.New().String()
 	p := &player.Player{ID: pID, FirstName: "Kevin", LastName: "Muñoz", SinglesElo: 2400}

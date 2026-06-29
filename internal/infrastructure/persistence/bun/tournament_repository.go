@@ -285,7 +285,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 
 	var allGPModels []GroupParticipantModel
 	if len(groupIDs) > 0 {
-		_ = r.db.NewSelect().Model(&allGPModels).Where("group_id IN (?)", bun.In(groupIDs)).Order("group_id", "position ASC").Scan(ctx)
+		_ = r.db.NewSelect().Model(&allGPModels).Where("group_id IN (?)", bun.List(groupIDs)).Order("group_id", "position ASC").Scan(ctx)
 	}
 
 	for _, gp := range allGPModels {
@@ -306,7 +306,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 
 	var allTPModels []TeamPlayerModel
 	if len(teamIDs) > 0 {
-		_ = r.db.NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.In(teamIDs)).Scan(ctx)
+		_ = r.db.NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.List(teamIDs)).Scan(ctx)
 	}
 
 	for _, tp := range allTPModels {
@@ -322,7 +322,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 	playerCache := make(map[uuid.UUID]*PlayerModel)
 	if len(playerIDs) > 0 {
 		var allPlayers []PlayerModel
-		_ = r.db.NewSelect().Model(&allPlayers).Where("id IN (?)", bun.In(playerIDs)).Scan(ctx)
+		_ = r.db.NewSelect().Model(&allPlayers).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx)
 		for i := range allPlayers {
 			playerCache[allPlayers[i].ID] = &allPlayers[i]
 		}
@@ -472,7 +472,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 	}
 	var allSetModels []MatchSetModel
 	if len(matchIDs) > 0 {
-		_ = r.db.NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.In(matchIDs)).Order("match_id", "set_number ASC").Scan(ctx)
+		_ = r.db.NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("match_id", "set_number ASC").Scan(ctx)
 	}
 	setsByMatch := make(map[string][]MatchSetModel)
 	for _, sm := range allSetModels {
@@ -896,11 +896,11 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 
 	// Batch-load all participants for all tournaments in this event
 	var allPartModels []TournamentParticipantModel
-	_ = r.db.NewSelect().Model(&allPartModels).Where("tournament_id IN (?)", bun.In(tournamentIDs)).Scan(ctx)
+	_ = r.db.NewSelect().Model(&allPartModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Scan(ctx)
 
 	// Batch-load all teams for all tournaments
 	var allTeamModels []TeamModel
-	_ = r.db.NewSelect().Model(&allTeamModels).Where("tournament_id IN (?)", bun.In(tournamentIDs)).Order("name ASC").Scan(ctx)
+	_ = r.db.NewSelect().Model(&allTeamModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Order("name ASC").Scan(ctx)
 
 	teamIDs := make([]uuid.UUID, len(allTeamModels))
 	for i, tm := range allTeamModels {
@@ -910,7 +910,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	// Batch-load all team players
 	var allTPModels []TeamPlayerModel
 	if len(teamIDs) > 0 {
-		_ = r.db.NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.In(teamIDs)).Scan(ctx)
+		_ = r.db.NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.List(teamIDs)).Scan(ctx)
 	}
 
 	// Collect all player IDs needed
@@ -930,7 +930,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	playerCache := make(map[uuid.UUID]*PlayerModel)
 	if len(playerIDs) > 0 {
 		var allPlayers []PlayerModel
-		_ = r.db.NewSelect().Model(&allPlayers).Where("id IN (?)", bun.In(playerIDs)).Scan(ctx)
+		_ = r.db.NewSelect().Model(&allPlayers).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx)
 		for i := range allPlayers {
 			playerCache[allPlayers[i].ID] = &allPlayers[i]
 		}
@@ -1347,7 +1347,7 @@ func (r *TournamentRepository) RemoveOfficial(ctx context.Context, tournamentID 
 	return err
 }
 
-func (r *TournamentRepository) GetOfficials(ctx context.Context, tournamentID string) ([]tournamentDomain.ParticipantSnapshot, error) {
+func (r *TournamentRepository) GetOfficials(ctx context.Context, tournamentID string) ([]tournament.ParticipantSnapshot, error) {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return nil, err
@@ -1356,9 +1356,9 @@ func (r *TournamentRepository) GetOfficials(ctx context.Context, tournamentID st
 	if err := r.db.NewSelect().Model(&officials).Where("tournament_id = ?", tID).Scan(ctx); err != nil {
 		return nil, err
 	}
-	var snapshots []tournamentDomain.ParticipantSnapshot
+	var snapshots []tournament.ParticipantSnapshot
 	for _, o := range officials {
-		snapshots = append(snapshots, tournamentDomain.ParticipantSnapshot{
+		snapshots = append(snapshots, tournament.ParticipantSnapshot{
 			PlayerID: o.PlayerID.String(),
 			Pin:      o.Pin,
 		})

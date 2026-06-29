@@ -159,7 +159,7 @@ func (r *PlayerRepository) GetByIDs(ctx context.Context, ids []string) ([]*playe
 		return nil, nil
 	}
 	var models []PlayerModel
-	err := r.db.NewSelect().Model(&models).Where("id IN (?)", bun.In(uids)).Scan(ctx)
+	err := r.db.NewSelect().Model(&models).Where("id IN (?)", bun.List(uids)).Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -192,18 +192,13 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 	if len(players) == 0 {
 		return nil
 	}
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	for _, p := range players {
+	models := make([]PlayerModel, len(players))
+	for i, p := range players {
 		id, err := uuid.Parse(p.ID)
 		if err != nil {
 			return err
 		}
-		model := &PlayerModel{
+		models[i] = PlayerModel{
 			ID:             id,
 			FirstName:      p.FirstName,
 			SecondName:     p.SecondName,
@@ -218,15 +213,12 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 			WhatsAppNumber: p.WhatsAppNumber,
 			NationalID:     p.NationalID,
 		}
-
-		_, err = tx.NewInsert().Model(model).
-			On("CONFLICT (id) DO UPDATE").
-			Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id").
-			Exec(ctx)
-		if err != nil {
-			return err
-		}
 	}
-	return tx.Commit()
+
+	_, err := r.db.NewInsert().Model(&models).
+		On("CONFLICT (id) DO UPDATE").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id").
+		Exec(ctx)
+	return err
 }
 
