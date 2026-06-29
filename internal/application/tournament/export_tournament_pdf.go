@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jung-kurt/gofpdf"
 	"table-tennis-backend/internal/domain/player"
@@ -104,16 +105,15 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 		return nameA, nameB
 	}
 
-	getCountryCode := func(country string) string {
-		c := strings.TrimSpace(country)
-		if c == "" {
-			return "UNK"
+	loc, _ := time.LoadLocation("America/Managua")
+	formatTime := func(tVal time.Time, isDate bool) string {
+		if loc != nil {
+			tVal = tVal.In(loc)
 		}
-		runes := []rune(c)
-		if len(runes) > 3 {
-			c = string(runes[:3])
+		if isDate {
+			return tVal.Format("02-Jan")
 		}
-		return strings.ToUpper(c)
+		return tVal.Format("15:04")
 	}
 
 	// 1. FINAL STANDINGS / PLACINGS
@@ -121,25 +121,25 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 		first, second, third := getTournamentPlaces(t)
 		if first != "" || second != "" || third != "" {
 			pdf.AddPage()
-			writeHeader("FINAL STANDINGS / PLACINGS")
+			writeHeader("POSICIONES FINALES")
 
 			pdf.SetFillColor(245, 247, 250) // clean light grey background
 			pdf.SetFont("Arial", "B", 10)
-			pdf.CellFormat(0, 8, tr("  FINAL STANDINGS / PLACINGS"), "1", 1, "L", true, 0, "")
+			pdf.CellFormat(0, 8, tr("  POSICIONES FINALES"), "1", 1, "L", true, 0, "")
 
 			pdf.SetFont("Arial", "", 9)
 			if first != "" {
-				pdf.CellFormat(45, 7, tr("  1st Place (Champion):"), "1", 0, "L", false, 0, "")
+				pdf.CellFormat(45, 7, tr("  1er Lugar (Campeón):"), "1", 0, "L", false, 0, "")
 				pdf.SetFont("Arial", "B", 9)
 				pdf.CellFormat(0, 7, tr("  "+strings.ToUpper(first)), "1", 1, "L", false, 0, "")
 				pdf.SetFont("Arial", "", 9)
 			}
 			if second != "" {
-				pdf.CellFormat(45, 7, tr("  2nd Place:"), "1", 0, "L", false, 0, "")
+				pdf.CellFormat(45, 7, tr("  2do Lugar:"), "1", 0, "L", false, 0, "")
 				pdf.CellFormat(0, 7, tr("  "+strings.ToUpper(second)), "1", 1, "L", false, 0, "")
 			}
 			if third != "" {
-				pdf.CellFormat(45, 7, tr("  3rd Place:"), "1", 0, "L", false, 0, "")
+				pdf.CellFormat(45, 7, tr("  3er Lugar:"), "1", 0, "L", false, 0, "")
 				pdf.CellFormat(0, 7, tr("  "+strings.ToUpper(third)), "1", 1, "L", false, 0, "")
 			}
 		}
@@ -148,7 +148,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 	// 2. PARTICIPANTS LIST (SINGLE TABLE)
 	if len(t.Participants) > 0 {
 		pdf.AddPage()
-		writeHeader(fmt.Sprintf("ENTRIES LIST - %d PLAYERS", len(t.Participants)))
+		writeHeader(fmt.Sprintf("LISTA DE INSCRITOS - %d JUGADORES", len(t.Participants)))
 
 		var mens, womens []*player.Player
 		for _, p := range t.Participants {
@@ -160,25 +160,27 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 		}
 
 		pdf.SetFont("Arial", "B", 10)
-		pdf.CellFormat(20, 8, "Nr", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(110, 8, "NAME", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(50, 8, tr("ASSOC."), "1", 1, "C", false, 0, "")
+		pdf.CellFormat(30, 8, "Elo", "1", 0, "C", false, 0, "")
+		pdf.CellFormat(150, 8, tr("NOMBRE"), "1", 1, "C", false, 0, "")
 
 		// Men List
 		if len(mens) > 0 {
 			pdf.SetFillColor(240, 240, 240)
 			pdf.SetFont("Arial", "B", 9)
-			pdf.CellFormat(180, 8, tr("  MALE PARTICIPANTS / VARONES"), "1", 1, "L", true, 0, "")
+			pdf.CellFormat(180, 8, tr("  PARTICIPANTES MASCULINOS / VARONES"), "1", 1, "L", true, 0, "")
 
 			pdf.SetFont("Arial", "", 10)
-			for i, p := range mens {
-				country := strings.TrimSpace(p.Country)
-				if country == "" {
-					country = "UNKNOWN"
+			for _, p := range mens {
+				elo := p.SinglesElo
+				if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
+					elo = p.DoublesElo
 				}
-				pdf.CellFormat(20, 8, fmt.Sprintf("%d", 101+i), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(110, 8, tr(formatPlayerName(p)), "1", 0, "L", false, 0, "")
-				pdf.CellFormat(50, 8, tr(getCountryCode(country)), "1", 1, "C", false, 0, "")
+				fullName := p.FirstNameWithSecond()
+				if strings.TrimSpace(p.LastName) != "(Team)" && strings.TrimSpace(p.LastName) != "" {
+					fullName += " " + p.LastNameWithSecond()
+				}
+				pdf.CellFormat(30, 8, fmt.Sprintf("%d", elo), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(150, 8, tr(fullName), "1", 1, "L", false, 0, "")
 			}
 		}
 
@@ -186,17 +188,20 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 		if len(womens) > 0 {
 			pdf.SetFillColor(240, 240, 240)
 			pdf.SetFont("Arial", "B", 9)
-			pdf.CellFormat(180, 8, tr("  FEMALE PARTICIPANTS / DAMAS"), "1", 1, "L", true, 0, "")
+			pdf.CellFormat(180, 8, tr("  PARTICIPANTES FEMENINOS / DAMAS"), "1", 1, "L", true, 0, "")
 
 			pdf.SetFont("Arial", "", 10)
-			for i, p := range womens {
-				country := strings.TrimSpace(p.Country)
-				if country == "" {
-					country = "UNKNOWN"
+			for _, p := range womens {
+				elo := p.SinglesElo
+				if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
+					elo = p.DoublesElo
 				}
-				pdf.CellFormat(20, 8, fmt.Sprintf("%d", 301+i), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(110, 8, tr(formatPlayerName(p)), "1", 0, "L", false, 0, "")
-				pdf.CellFormat(50, 8, tr(getCountryCode(country)), "1", 1, "C", false, 0, "")
+				fullName := p.FirstNameWithSecond()
+				if strings.TrimSpace(p.LastName) != "(Team)" && strings.TrimSpace(p.LastName) != "" {
+					fullName += " " + p.LastNameWithSecond()
+				}
+				pdf.CellFormat(30, 8, fmt.Sprintf("%d", elo), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(150, 8, tr(fullName), "1", 1, "L", false, 0, "")
 			}
 		}
 	}
@@ -252,7 +257,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 
 		if len(groupStages) > 0 {
 			pdf.AddPage()
-			writeHeader("GROUP STANDINGS / TABLAS DE POSICIONES DE GRUPOS")
+			writeHeader("TABLAS DE POSICIONES DE GRUPOS")
 
 			for _, gs := range groupStages {
 				pdf.SetFont("Arial", "B", 10)
@@ -292,21 +297,21 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				// --- PART A: Match Schedule (Left, width 42mm) ---
 				pdf.SetFont("Arial", "B", 7)
 				pdf.SetFillColor(254, 254, 212) // yellow header
-				pdf.CellFormat(12, 5, "Day", "1", 0, "C", true, 0, "")
-				pdf.CellFormat(11, 5, "Time", "1", 0, "C", true, 0, "")
-				pdf.CellFormat(9, 5, "Table", "1", 0, "C", true, 0, "")
-				pdf.CellFormat(10, 5, "Match", "1", 1, "C", true, 0, "")
+				pdf.CellFormat(12, 5, tr("Día"), "1", 0, "C", true, 0, "")
+				pdf.CellFormat(11, 5, tr("Hora"), "1", 0, "C", true, 0, "")
+				pdf.CellFormat(9, 5, tr("Mesa"), "1", 0, "C", true, 0, "")
+				pdf.CellFormat(10, 5, tr("Part."), "1", 1, "C", true, 0, "")
 
 				pdf.SetFont("Arial", "", 7)
 				for i := 0; i < len(gs.Players); i++ {
 					// Draw up to 6 matches or len(gMatches) rows
 					if i < len(gMatches) {
 						m := gMatches[i]
-						dStr := t.StartDate.Format("02-Jan")
+						dStr := formatTime(t.StartDate, true)
 						tStr := "10:00"
 						if m.UpdatedAt != nil {
-							dStr = m.UpdatedAt.Format("02-Jan")
-							tStr = m.UpdatedAt.Format("15:04")
+							dStr = formatTime(*m.UpdatedAt, true)
+							tStr = formatTime(*m.UpdatedAt, false)
 						}
 						tblStr := "-"
 						if m.TableNumber != nil {
@@ -360,20 +365,8 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 					pdf.Text(pdf.GetX(), pdf.GetY() + 2.5, fmt.Sprintf("%d", rowIdx+1))
 					
 					pdf.SetX(startX + 6)
-					pdf.SetTextColor(220, 100, 0) // orange bib
-					bibStr := ""
-					if num, ok := playerNumberMap[p1.ID]; ok {
-						bibStr = fmt.Sprintf("%d", num)
-					}
-					pdf.Text(pdf.GetX(), pdf.GetY() + 2.5, bibStr)
-
-					pdf.SetX(startX + 12)
 					pdf.SetTextColor(0, 0, 0) // black name
-					pdf.Text(pdf.GetX(), pdf.GetY() + 2.5, tr(truncateStr(formatPlayerName(p1), 18)))
-
-					pdf.SetX(startX + 45)
-					pdf.SetTextColor(120, 120, 120) // gray country
-					pdf.Text(pdf.GetX(), pdf.GetY() + 2.5, getCountryCode(p1.Country))
+					pdf.Text(pdf.GetX(), pdf.GetY() + 2.5, tr(truncateStr(formatPlayerName(p1), 25)))
 
 					pdf.SetTextColor(0, 0, 0)
 					pdf.SetXY(startX + 55, currY)
@@ -409,7 +402,7 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				pdf.SetXY(15 + 42 + 5 + 55 + float64(n)*8 + 5, startY)
 				pdf.SetFont("Arial", "B", 7)
 				pdf.SetFillColor(254, 254, 212)
-				pdf.CellFormat(11, 5, "Points", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(11, 5, tr("Puntos"), "1", 0, "C", true, 0, "")
 				pdf.CellFormat(10, 5, "Pos.", "1", 1, "C", true, 0, "")
 
 				for _, p := range gs.Players {
@@ -477,28 +470,28 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 
 	if len(groupMatches) > 0 {
 		pdf.AddPage()
-		writeHeader("GROUP STAGE MATCHES")
+		writeHeader("PARTIDOS FASE DE GRUPOS")
 
 		pdf.SetFont("Arial", "B", 10)
-		pdf.CellFormat(30, 8, tr("Stage"), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(55, 8, tr("Team A"), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(55, 8, tr("Team B"), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(40, 8, tr("Score"), "1", 1, "C", false, 0, "")
+		pdf.CellFormat(30, 8, tr("Fase"), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(55, 8, tr("Equipo A"), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(55, 8, tr("Equipo B"), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(40, 8, tr("Resultado"), "1", 1, "C", false, 0, "")
 
 		pdf.SetFont("Arial", "", 9)
 		for _, m := range groupMatches {
 			nameA, nameB := getMatchPlayerNames(m)
-			scoreStr := tr("Scheduled")
+			scoreStr := tr("Programado")
 			if m.Status == "finished" {
 				scoreStr = fmt.Sprintf("%d - %d", m.ScoreA(), m.ScoreB())
 			} else if m.Status == "in_progress" {
-				scoreStr = tr("In Progress")
+				scoreStr = tr("En Juego")
 			}
 			if m.TableNumber != nil {
-				scoreStr += fmt.Sprintf(" (Table %d)", *m.TableNumber)
+				scoreStr += fmt.Sprintf(" (Mesa %d)", *m.TableNumber)
 			}
 
-			pdf.CellFormat(30, 8, tr("Group Stage"), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(30, 8, tr("Fase de Grupos"), "1", 0, "C", false, 0, "")
 
 			if m.Status == "finished" && m.WinnerTeam == "A" {
 				pdf.SetFont("Arial", "B", 9)
@@ -521,25 +514,25 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 
 	if len(drawMatches) > 0 {
 		pdf.AddPage()
-		writeHeader("THE DRAW (KNOCKOUT)")
+		writeHeader("LLAVES (ELIMINATORIA)")
 
 		pdf.SetFont("Arial", "B", 10)
-		pdf.CellFormat(30, 8, tr("Stage"), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(55, 8, tr("Team A"), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(55, 8, tr("Team B"), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(40, 8, tr("Score"), "1", 1, "C", false, 0, "")
+		pdf.CellFormat(30, 8, tr("Fase"), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(55, 8, tr("Equipo A"), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(55, 8, tr("Equipo B"), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(40, 8, tr("Resultado"), "1", 1, "C", false, 0, "")
 
 		pdf.SetFont("Arial", "", 9)
 		for _, m := range drawMatches {
 			nameA, nameB := getMatchPlayerNames(m)
-			scoreStr := tr("Scheduled")
+			scoreStr := tr("Programado")
 			if m.Status == "finished" {
 				scoreStr = fmt.Sprintf("%d - %d", m.ScoreA(), m.ScoreB())
 			} else if m.Status == "in_progress" {
-				scoreStr = tr("In Progress")
+				scoreStr = tr("En Juego")
 			}
 			if m.TableNumber != nil {
-				scoreStr += fmt.Sprintf(" (Table %d)", *m.TableNumber)
+				scoreStr += fmt.Sprintf(" (Mesa %d)", *m.TableNumber)
 			}
 
 			stageText := getTournamentStageHeader(strings.ToLower(m.Stage))
@@ -722,18 +715,11 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 			}
 			pdf.SetTextColor(0, 0, 0)
 
-			getBracketPlayerText := func(sp *pdfMatchSlot) (string, string, string) {
+			getBracketPlayerText := func(sp *pdfMatchSlot) string {
 				if sp == nil || sp.Player == nil {
-					return "", "TBD", ""
+					return "TBD"
 				}
-				p := sp.Player
-				numStr := ""
-				if num, ok := playerNumberMap[p.ID]; ok {
-					numStr = fmt.Sprintf("%d", num)
-				}
-				name := strings.ToUpper(formatPlayerName(p))
-				cc := getCountryCode(p.Country)
-				return numStr, name, cc
+				return strings.ToUpper(formatPlayerName(sp.Player))
 			}
 
 			for r, round := range rounds {
@@ -760,22 +746,13 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 						pdf.SetFont("Arial", "B", 6)
 						pdf.SetTextColor(0, 0, 0)
 						champName := "TBD"
-						var champNum, champCC string
 						if m.Player1 != nil && m.Player1.Player != nil {
 							champName = strings.ToUpper(formatPlayerName(m.Player1.Player))
-							if num, ok := playerNumberMap[m.Player1.Player.ID]; ok {
-								champNum = fmt.Sprintf("%d", num)
-							}
-							champCC = getCountryCode(m.Player1.Player.Country)
 						}
 						
 						// Print champion text
-						pdf.SetTextColor(220, 100, 0) // orange for bib
-						pdf.Text(x+2, y+boxH/2+1, champNum)
 						pdf.SetTextColor(0, 0, 0) // black name
-						pdf.Text(x+8, y+boxH/2+1, tr("🏆 "+truncateStr(champName, 14)))
-						pdf.SetTextColor(120, 120, 120) // gray country
-						pdf.Text(x+boxW-8, y+boxH/2+1, champCC)
+						pdf.Text(x+2, y+boxH/2+1, tr("🏆 "+truncateStr(champName, 22)))
 
 						if finalScore != "" {
 							pdf.SetFont("Arial", "", 5)
@@ -801,26 +778,18 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 						}
 					}
 
-					p1Num, p1Name, p1CC := getBracketPlayerText(m.Player1)
-					p2Num, p2Name, p2CC := getBracketPlayerText(m.Player2)
+					p1Name := getBracketPlayerText(m.Player1)
+					p2Name := getBracketPlayerText(m.Player2)
 
 					// Print Player 1 text
 					pdf.SetFont("Arial", p1Bold, 6)
-					pdf.SetTextColor(220, 100, 0) // orange for bib
-					pdf.Text(x+2, y+4, p1Num)
 					pdf.SetTextColor(0, 0, 0) // black
-					pdf.Text(x+8, y+4, tr(truncateStr(p1Name, 15)))
-					pdf.SetTextColor(120, 120, 120) // gray for country
-					pdf.Text(x+boxW-8, y+4, p1CC)
+					pdf.Text(x+2, y+4, tr(truncateStr(p1Name, 22)))
 
 					// Print Player 2 text
 					pdf.SetFont("Arial", p2Bold, 6)
-					pdf.SetTextColor(220, 100, 0) // orange for bib
-					pdf.Text(x+2, y+10, p2Num)
 					pdf.SetTextColor(0, 0, 0) // black
-					pdf.Text(x+8, y+10, tr(truncateStr(p2Name, 15)))
-					pdf.SetTextColor(120, 120, 120) // gray for country
-					pdf.Text(x+boxW-8, y+10, p2CC)
+					pdf.Text(x+2, y+10, tr(truncateStr(p2Name, 22)))
 				}
 
 				if r < numRounds-1 {
@@ -840,11 +809,11 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 							// Print match details above and score below the line
 							mForDetails := round.Matches[j]
 							if mForDetails.Match != nil {
-								dStr := t.StartDate.Format("02-Jan")
+								dStr := formatTime(t.StartDate, true)
 								tStr := "16:00"
 								if mForDetails.Match.UpdatedAt != nil {
-									dStr = mForDetails.Match.UpdatedAt.Format("02-Jan")
-									tStr = mForDetails.Match.UpdatedAt.Format("15:04")
+									dStr = formatTime(*mForDetails.Match.UpdatedAt, true)
+									tStr = formatTime(*mForDetails.Match.UpdatedAt, false)
 								}
 								tblStr := ""
 								if mForDetails.Match.TableNumber != nil {
@@ -884,18 +853,18 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 	if len(t.Matches) > 0 {
 		pdf.AddPageFormat("P", gofpdf.SizeType{Wd: 210, Ht: 297})
 		pdf.SetMargins(15, 52, 15)
-		writeHeader("DETAILED MATCH RESULTS")
+		writeHeader("RESULTADOS DETALLADOS DE PARTIDOS")
 
 		pdf.SetFont("Arial", "B", 8)
-		pdf.CellFormat(60, 8, tr("Matchup (PlayerA vs PlayerB)"), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(13, 8, "1st Set", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(13, 8, "2nd Set", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(13, 8, "3rd Set", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(13, 8, "4th Set", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(13, 8, "5th Set", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(13, 8, "6th Set", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(13, 8, "7th Set", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(29, 8, tr("Result"), "1", 1, "C", false, 0, "")
+		pdf.CellFormat(60, 8, tr("Enfrentamiento (Jugador A vs Jugador B)"), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(13, 8, "1er Set", "1", 0, "C", false, 0, "")
+		pdf.CellFormat(13, 8, "2do Set", "1", 0, "C", false, 0, "")
+		pdf.CellFormat(13, 8, "3er Set", "1", 0, "C", false, 0, "")
+		pdf.CellFormat(13, 8, "4to Set", "1", 0, "C", false, 0, "")
+		pdf.CellFormat(13, 8, "5to Set", "1", 0, "C", false, 0, "")
+		pdf.CellFormat(13, 8, "6to Set", "1", 0, "C", false, 0, "")
+		pdf.CellFormat(13, 8, "7mo Set", "1", 0, "C", false, 0, "")
+		pdf.CellFormat(29, 8, tr("Resultado"), "1", 1, "C", false, 0, "")
 
 		if t.Type == "teams" {
 			// Build player bib/dorsal number map
@@ -932,11 +901,11 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				}
 
 				// Date & Time from m.UpdatedAt or tournament dates
-				dateStr := t.StartDate.Format("02-Jan")
+				dateStr := formatTime(t.StartDate, true)
 				timeStr := "10:00" // Default or placeholder
 				if m.UpdatedAt != nil {
-					dateStr = m.UpdatedAt.Format("02-Jan")
-					timeStr = m.UpdatedAt.Format("15:04")
+					dateStr = formatTime(*m.UpdatedAt, true)
+					timeStr = formatTime(*m.UpdatedAt, false)
 				}
 
 				tableNumStr := "-"
@@ -946,15 +915,16 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 
 				// --- 1. HEADER ROW ---
 				// Event | Stage | Day | Time | Table
-				pdf.SetFont("Arial", "B", 8)
+				pdf.SetFont("Arial", "B", 7) // Use smaller font to fit names
 				pdf.SetFillColor(254, 254, 212) // beautiful light yellow/cream
 
-				pdf.CellFormat(50, 6, tr(" Event: ") + tr(truncateStr(t.Name, 22)), "1", 0, "L", true, 0, "")
+				pdf.CellFormat(70, 6, tr(" Evento: ") + tr(truncateStr(t.Name, 45)), "1", 0, "L", true, 0, "")
 				stageText := getTournamentStageHeader(strings.ToLower(m.Stage))
-				pdf.CellFormat(55, 6, tr(" Stage: ") + tr(truncateStr(stageText, 25)), "1", 0, "L", true, 0, "")
-				pdf.CellFormat(25, 6, tr(" Day: ") + dateStr, "1", 0, "L", true, 0, "")
-				pdf.CellFormat(25, 6, tr(" Time: ") + timeStr, "1", 0, "L", true, 0, "")
-				pdf.CellFormat(25, 6, tr(" Table: ") + tableNumStr, "1", 1, "L", true, 0, "")
+				pdf.CellFormat(45, 6, tr(" Fase: ") + tr(truncateStr(stageText, 25)), "1", 0, "L", true, 0, "")
+				pdf.CellFormat(25, 6, tr(" Día: ") + dateStr, "1", 0, "L", true, 0, "")
+				pdf.CellFormat(20, 6, tr(" Hora: ") + timeStr, "1", 0, "L", true, 0, "")
+				pdf.CellFormat(20, 6, tr(" Mesa: ") + tableNumStr, "1", 1, "L", true, 0, "")
+				pdf.SetFont("Arial", "B", 8)
 
 				// --- 2. TEAMS & SETS HEADER ROW ---
 				// Left: RUSIA   3 - 0   GRENADA
@@ -966,11 +936,11 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				matchupHeaderStr := fmt.Sprintf("%s   %d - %d   %s", strings.ToUpper(teamAName), m.ScoreA(), m.ScoreB(), strings.ToUpper(teamBName))
 				pdf.CellFormat(103, 6, tr(matchupHeaderStr), "1", 0, "C", true, 0, "")
 
-				pdf.CellFormat(11, 6, "1st", "1", 0, "C", true, 0, "")
-				pdf.CellFormat(11, 6, "2nd", "1", 0, "C", true, 0, "")
-				pdf.CellFormat(11, 6, "3rd", "1", 0, "C", true, 0, "")
-				pdf.CellFormat(11, 6, "4th", "1", 0, "C", true, 0, "")
-				pdf.CellFormat(11, 6, "5th", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(11, 6, "1ro", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(11, 6, "2do", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(11, 6, "3ro", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(11, 6, "4to", "1", 0, "C", true, 0, "")
+				pdf.CellFormat(11, 6, "5to", "1", 0, "C", true, 0, "")
 				pdf.CellFormat(11, 6, "Res.", "1", 0, "C", true, 0, "")
 				pdf.CellFormat(11, 6, "Total", "1", 1, "C", true, 0, "")
 
@@ -1084,35 +1054,21 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 					var pB1Name, pB2Name string
 					var pA1Let, pA2Let string
 					var pB1Let, pB2Let string
-					var pA1Num, pA2Num string
-					var pB1Num, pB2Num string
 
 					if len(sub.TeamA) > 0 {
 						pA1Name = formatPlayerName(sub.TeamA[0])
 						pA1Let = getPlayerLetter(sub.TeamA[0], false)
-						if num, ok := playerNumberMap[sub.TeamA[0].ID]; ok {
-							pA1Num = fmt.Sprintf("%d", num)
-						}
 						if len(sub.TeamA) > 1 {
 							pA2Name = formatPlayerName(sub.TeamA[1])
 							pA2Let = getPlayerLetter(sub.TeamA[1], false)
-							if num, ok := playerNumberMap[sub.TeamA[1].ID]; ok {
-								pA2Num = fmt.Sprintf("%d", num)
-							}
 						}
 					}
 					if len(sub.TeamB) > 0 {
 						pB1Name = formatPlayerName(sub.TeamB[0])
 						pB1Let = getPlayerLetter(sub.TeamB[0], true)
-						if num, ok := playerNumberMap[sub.TeamB[0].ID]; ok {
-							pB1Num = fmt.Sprintf("%d", num)
-						}
 						if len(sub.TeamB) > 1 {
 							pB2Name = formatPlayerName(sub.TeamB[1])
 							pB2Let = getPlayerLetter(sub.TeamB[1], true)
-							if num, ok := playerNumberMap[sub.TeamB[1].ID]; ok {
-								pB2Num = fmt.Sprintf("%d", num)
-							}
 						}
 					}
 
@@ -1149,24 +1105,15 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 
 					if isDoubles {
 						// Doubles Match: spans 2 rows of height 5.5mm each = 11mm total
+						matchup1 := fmt.Sprintf("(%s) %s vs (%s) %s", pA1Let, truncateStr(pA1Name, 20), pB1Let, truncateStr(pB1Name, 20))
+						matchup2 := fmt.Sprintf("(%s) %s vs (%s) %s", pA2Let, truncateStr(pA2Name, 20), pB2Let, truncateStr(pB2Name, 20))
+
 						// Line 1
-						pdf.CellFormat(8, 5.5, pA1Let, "LTR", 0, "C", false, 0, "")
-						pdf.CellFormat(10, 5.5, pA1Num, "LTR", 0, "C", false, 0, "")
-						pdf.CellFormat(33, 5.5, tr(truncateStr(pA1Name, 18)), "LTR", 0, "L", false, 0, "")
-						pdf.CellFormat(2, 5.5, "", "LTR", 0, "C", false, 0, "")
-						pdf.CellFormat(8, 5.5, pB1Let, "LTR", 0, "C", false, 0, "")
-						pdf.CellFormat(10, 5.5, pB1Num, "LTR", 0, "C", false, 0, "")
-						pdf.CellFormat(32, 5.5, tr(truncateStr(pB1Name, 18)), "LTR", 1, "L", false, 0, "")
+						pdf.CellFormat(103, 5.5, tr(matchup1), "1", 1, "C", false, 0, "")
 
 						// Line 2
 						pdf.SetX(startX)
-						pdf.CellFormat(8, 5.5, pA2Let, "LBR", 0, "C", false, 0, "")
-						pdf.CellFormat(10, 5.5, pA2Num, "LBR", 0, "C", false, 0, "")
-						pdf.CellFormat(33, 5.5, tr(truncateStr(pA2Name, 18)), "LBR", 0, "L", false, 0, "")
-						pdf.CellFormat(2, 5.5, "", "LBR", 0, "C", false, 0, "")
-						pdf.CellFormat(8, 5.5, pB2Let, "LBR", 0, "C", false, 0, "")
-						pdf.CellFormat(10, 5.5, pB2Num, "LBR", 0, "C", false, 0, "")
-						pdf.CellFormat(32, 5.5, tr(truncateStr(pB2Name, 18)), "LBR", 1, "L", false, 0, "")
+						pdf.CellFormat(103, 5.5, tr(matchup2), "1", 1, "C", false, 0, "")
 
 						// Set XY to right side columns at startY
 						pdf.SetXY(startX+103, startY)
@@ -1178,13 +1125,8 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 						pdf.CellFormat(11, 11, runningScoreStr, "1", 1, "C", false, 0, "")
 					} else {
 						// Singles Match: height 8mm
-						pdf.CellFormat(8, 8, pA1Let, "1", 0, "C", false, 0, "")
-						pdf.CellFormat(10, 8, pA1Num, "1", 0, "C", false, 0, "")
-						pdf.CellFormat(33, 8, tr(truncateStr(pA1Name, 18)), "1", 0, "L", false, 0, "")
-						pdf.CellFormat(2, 8, "", "1", 0, "C", false, 0, "")
-						pdf.CellFormat(8, 8, pB1Let, "1", 0, "C", false, 0, "")
-						pdf.CellFormat(10, 8, pB1Num, "1", 0, "C", false, 0, "")
-						pdf.CellFormat(32, 8, tr(truncateStr(pB1Name, 18)), "1", 0, "L", false, 0, "")
+						matchup := fmt.Sprintf("(%s) %s vs (%s) %s", pA1Let, truncateStr(pA1Name, 25), pB1Let, truncateStr(pB1Name, 25))
+						pdf.CellFormat(103, 8, tr(matchup), "1", 0, "C", false, 0, "")
 
 						for i := 0; i < 5; i++ {
 							pdf.CellFormat(11, 8, setScores[i], "1", 0, "C", false, 0, "")
@@ -1224,12 +1166,12 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 				if m.Status == "finished" {
 					resStr = fmt.Sprintf("%d - %d", m.ScoreA(), m.ScoreB())
 				} else if m.Status == "in_progress" {
-					resStr = tr("In Progress")
+					resStr = tr("En Juego")
 				} else {
-					resStr = tr("Scheduled")
+					resStr = tr("Programado")
 				}
 				if m.TableNumber != nil {
-					resStr += fmt.Sprintf(" (T. %d)", *m.TableNumber)
+					resStr += fmt.Sprintf(" (M. %d)", *m.TableNumber)
 				}
 				pdf.CellFormat(29, 8, resStr, "1", 1, "C", false, 0, "")
 			}
