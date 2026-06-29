@@ -9,7 +9,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Global PDF Report
             </a>
-            <button hx-on:click="document.getElementById('add-tournament-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Tournament</button>
+            <button onclick="openModal('add-tournament-modal')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Tournament</button>
         </div>
     </header>
 
@@ -36,15 +36,20 @@
 </div>
 
 <!-- Add Modal -->
-<div id="add-tournament-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] transition-all duration-300">
+<div id="add-tournament-modal"
+     class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] transition-all duration-300"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="add-tournament-modal-title"
+     aria-hidden="true">
     <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-2xl w-full relative shadow-2xl overflow-y-auto max-h-[90vh]">
-        <button hx-on:click="document.getElementById('add-tournament-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+        <button onclick="closeModal('add-tournament-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors" aria-label="Close dialog">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         
-        <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">New Event</span>.</h2>
+        <h2 id="add-tournament-modal-title" class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">New Event</span>.</h2>
         
-        <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" class="space-y-6" hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-tournament-modal').classList.add('hidden'); this.reset(); document.getElementById('selected-participants-hidden').innerHTML = ''; document.getElementById('new-players-list').innerHTML = ''; }" hx-on:submit="console.log('submitting tournament...')">
+        <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" class="space-y-6" hx-on::after-request="if(event.target === this && event.detail.successful) { closeModal('add-tournament-modal'); this.reset(); document.getElementById('selected-participants-hidden').innerHTML = ''; document.getElementById('new-players-list').innerHTML = ''; }" hx-on:submit="console.log('submitting tournament...')">
             <!-- Container for selected participant IDs -->
             <div id="selected-participants-hidden"></div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">

@@ -7,3 +7,6 @@ tailwindcss
 tailwindcss.exe
 handler.test
 cookies.txt
+/server
+*.test
+dist/

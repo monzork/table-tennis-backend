@@ -2,9 +2,10 @@ package bun
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"database/sql"
+	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
 
@@ -22,11 +23,14 @@ func NewTournamentRepository(db *bun.DB) *TournamentRepository {
 
 func (r *TournamentRepository) DB() *bun.DB { return r.db }
 
-// generateUniqueTournamentPIN generates a 4-digit PIN not already in usedPINs,
-// then adds it to the set to prevent future collisions within the same batch.
+// generateUniqueTournamentPIN generates a 4-digit PIN (1000-9999) using crypto/rand,
+// not already in usedPINs, then adds it to the set to prevent future collisions.
 func generateUniqueTournamentPIN(usedPINs map[string]bool) string {
+	var b [4]byte
 	for {
-		pin := fmt.Sprintf("%04d", rand.Intn(10000))
+		_, _ = cryptorand.Read(b[:])
+		pinVal := int(binary.BigEndian.Uint32(b[:]))%9000 + 1000
+		pin := fmt.Sprintf("%04d", pinVal)
 		if !usedPINs[pin] {
 			usedPINs[pin] = true
 			return pin

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open TDM Nicaragua Admin Portal</title>
+    <title>Open TDM Nicaragua — Admin Portal</title>
+    <meta name="robots" content="noindex, nofollow">
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://unpkg.com/htmx.org@1.9.3/dist/ext/ws.js"></script>
     <link href="/static/dist/tailwind.css?v=3" rel="stylesheet">
@@ -141,6 +142,31 @@
         
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* ── HTMX Loading Indicator ──────────────────────────────────────── */
+        #htmx-loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            background-size: 200% 100%;
+            animation: htmx-loading-bar 1.2s ease-in-out infinite;
+            z-index: 9999;
+        }
+        @keyframes htmx-loading-bar {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .htmx-request #htmx-loading,
+        .htmx-request#htmx-loading { display: block; }
+
+        /* Spinner for buttons / cards during HTMX requests */
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator,
+        .htmx-request.htmx-indicator { display: inline-block; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -200,90 +226,17 @@
         </div>
     </nav>
 
+    <!-- Global HTMX loading bar -->
+    <div id="htmx-loading" aria-hidden="true"></div>
+
+    <!-- Screen-reader announcement region -->
+    <div id="sr-announcements" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
     <main class="flex-grow container mx-auto px-6 py-10">
         {{embed}}
     </main>
 
-    <script>
-        // ── Theme Switcher ────────────────────────────────────────────────────
-        const THEME_KEY = 'club-theme';
-
-        function applyTheme(theme) {
-            const isProj = (theme === 'proj');
-            document.body.classList.toggle('proj', isProj);
-            document.getElementById('theme-label').textContent   = isProj ? '← Admin Mode' : 'Projector';
-            document.getElementById('theme-icon-proj').classList.toggle('hidden', !isProj);
-            document.getElementById('theme-icon-dark').classList.toggle('hidden',  isProj);
-        }
-
-        function toggleTheme() {
-            const next = document.body.classList.contains('proj') ? 'dark' : 'proj';
-            localStorage.setItem(THEME_KEY, next);
-            applyTheme(next);
-        }
-
-        // Restore saved preference immediately (before first paint)
-        applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
-    </script>
-    <script>
-        // Synchronise search/filter checked state for player selection cards
-        document.addEventListener('change', function(e) {
-            if (e.target.classList.contains('participant-checkbox')) {
-                const grid = e.target.closest('#player-selection-grid, #edit-player-selection-grid');
-                if (!grid) return;
-
-                const isEdit = grid.id === 'edit-player-selection-grid';
-                const containerId = isEdit ? 'edit-selected-participants-hidden' : 'selected-participants-hidden';
-                const container = document.getElementById(containerId);
-                if (!container) return;
-
-                const val = e.target.value;
-                const existing = container.querySelector(`input[value="${val}"]`);
-
-                if (e.target.checked) {
-                    if (!existing) {
-                        const hidden = document.createElement('input');
-                        hidden.type = 'hidden';
-                        hidden.name = 'participant_ids[]';
-                        hidden.value = val;
-                        container.appendChild(hidden);
-                    }
-                } else {
-                    if (existing) {
-                        existing.remove();
-                    }
-                }
-            }
-        });
-
-        document.addEventListener('htmx:afterSwap', function(e) {
-            const target = e.target;
-            if (target && (target.id === 'player-selection-grid' || target.id === 'edit-player-selection-grid')) {
-                const isEdit = target.id === 'edit-player-selection-grid';
-                const containerId = isEdit ? 'edit-selected-participants-hidden' : 'selected-participants-hidden';
-                const container = document.getElementById(containerId);
-                if (!container) return;
-
-                const checkboxes = target.querySelectorAll('.participant-checkbox');
-                checkboxes.forEach(cb => {
-                    const val = cb.value;
-                    const existing = container.querySelector(`input[value="${val}"]`);
-                    if (cb.checked) {
-                        if (!existing) {
-                            const hidden = document.createElement('input');
-                            hidden.type = 'hidden';
-                            hidden.name = 'participant_ids[]';
-                            hidden.value = val;
-                            container.appendChild(hidden);
-                        }
-                    } else {
-                        if (existing) {
-                            existing.remove();
-                        }
-                    }
-                });
-            }
-        });
-    </script>
+    <!-- External admin JS (cacheable) -->
+    <script src="/static/js/admin.js"></script>
 </body>
 </html>

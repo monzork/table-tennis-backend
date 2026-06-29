@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"os"
 
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
@@ -20,6 +19,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
+
 type Container struct {
 	PlayerHandler      *handler.PlayerHandler
 	TournamentHandler  *handler.TournamentHandler
@@ -33,7 +33,7 @@ type Container struct {
 	AdminHandler       *handler.AdminHandler
 }
 
-func NewContainer(store *session.Store) *Container {
+func NewContainer(store *session.Store, cfg Config) *Container {
 	playerRepo := bun.NewPlayerRepository(bun.DB)
 	playerUC := player.NewRegisterPlayerUseCase(playerRepo)
 	updatePlayerUC := player.NewUpdatePlayerUseCase(playerRepo)
@@ -112,14 +112,8 @@ func NewContainer(store *session.Store) *Container {
 	// Seed default admin if DB empty
 	count, _ := adminRepo.Count(context.Background())
 	if count == 0 {
-		user := os.Getenv("ADMIN_USERNAME")
-		pass := os.Getenv("ADMIN_PASSWORD")
-		if user == "" {
-			user = "admin"
-		}
-		if pass == "" {
-			pass = "password"
-		}
+		user := cfg.AdminUsername
+		pass := cfg.AdminPassword
 		hashed, err := hasher.Hash(pass)
 		if err == nil {
 			if a, err := adminDomain.NewAdmin(idgen.Generate(), user, hashed); err == nil {

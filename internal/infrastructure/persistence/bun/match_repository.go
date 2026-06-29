@@ -2,8 +2,9 @@ package bun
 
 import (
 	"context"
+	cryptorand "crypto/rand"
+	"encoding/binary"
 	"fmt"
-	"math/rand"
 
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
@@ -61,7 +62,10 @@ func (r *MatchRepository) DB() *bun.DB { return r.db }
 
 func (r *MatchRepository) GenerateUniquePin(ctx context.Context) string {
 	for {
-		pinVal := rand.Intn(9000) + 1000
+		var b [4]byte
+		_, _ = cryptorand.Read(b[:])
+		// Generate a 4-digit PIN (1000–9999) using crypto/rand
+		pinVal := int(binary.BigEndian.Uint32(b[:]))%9000 + 1000
 		pinStr := fmt.Sprintf("%d", pinVal)
 		count, err := r.db.NewSelect().
 			Model((*MatchModel)(nil)).

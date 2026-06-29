@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 — Page Not Found | Open TDM Nicaragua</title>
+    <link href="/static/dist/tailwind.css?v=3" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #0a0a0a; color: #fff; font-family: 'Outfit', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+    <div class="text-center space-y-6 px-6">
+        <div class="relative">
+            <span class="text-[10rem] sm:text-[14rem] font-black leading-none text-white/5 select-none">404</span>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <svg class="w-16 h-16 text-white/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h1 class="text-3xl sm:text-5xl font-black uppercase tracking-tight">Page Not Found</h1>
+            </div>
+        </div>
+        <p class="text-gray-500 text-lg max-w-md mx-auto">
+            {{if .Message}}{{.Message}}{{else}}The page you're looking for doesn't exist or has been moved.{{end}}
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+            <a href="/" class="bg-white hover:bg-gray-200 text-black font-bold py-3 px-8 rounded-full transition-all uppercase tracking-wider text-sm">
+                Go Home
+            </a>
+            <a href="/rankings/singles" class="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-full transition-all uppercase tracking-wider text-sm border border-white/10">
+                Rankings
+            </a>
+        </div>
+    </div>
+</body>
+</html>

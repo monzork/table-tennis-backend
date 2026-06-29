@@ -4,7 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}} — Open TDM Nicaragua</title>
-    <meta name="description" content="Official Open TDM Nicaragua rankings, athlete registration, and tournament management.">
+    <meta name="description" content="{{if .Description}}{{.Description}}{{else}}Official Open TDM Nicaragua rankings, athlete registration, and tournament management platform.{{end}}">
+    <!-- Open Graph -->
+    <meta property="og:title" content="{{.Title}} — Open TDM Nicaragua">
+    <meta property="og:description" content="{{if .Description}}{{.Description}}{{else}}Official Open TDM Nicaragua rankings, athlete registration, and tournament management platform.{{end}}">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/open_tdm.jpeg">
+    <meta property="og:site_name" content="Open TDM Nicaragua">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{.Title}} — Open TDM Nicaragua">
+    <meta name="twitter:description" content="{{if .Description}}{{.Description}}{{else}}Official Open TDM Nicaragua rankings, athlete registration, and tournament management platform.{{end}}">
+    <meta name="twitter:image" content="/open_tdm.jpeg">
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://unpkg.com/htmx.org@1.9.3/dist/ext/ws.js"></script>
     <link href="/static/dist/tailwind.css?v=3" rel="stylesheet">

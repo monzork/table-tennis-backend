@@ -6,9 +6,24 @@ import (
 	fiberws "github.com/gofiber/websocket/v2"
 	"time"
 	"table-tennis-backend/internal/interfaces/http/handler"
+	"table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
 func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
+	// ==========================================
+	// HEALTH CHECK
+	// ==========================================
+
+	app.Get("/health", func(ctx *fiber.Ctx) error {
+		if err := bun.DB.PingContext(ctx.Context()); err != nil {
+			return ctx.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status": "unhealthy",
+				"error":  err.Error(),
+			})
+		}
+		return ctx.JSON(fiber.Map{"status": "ok"})
+	})
+
 	// ==========================================
 	// PUBLIC ROUTES
 	// ==========================================
@@ -79,6 +94,12 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 
 	app.Use("/ws", func(ctx *fiber.Ctx) error {
 		if fiberws.IsWebSocketUpgrade(ctx) {
+			// Only allow same-origin or explicitly permitted origins
+			origin := ctx.Get("Origin")
+			host := ctx.Get("Host")
+			if origin != "" && origin != "http://"+host && origin != "https://"+host {
+				return ctx.Status(fiber.StatusForbidden).SendString("Cross-origin WebSocket connections not allowed")
+			}
 			ctx.Locals("allowed", true)
 			return ctx.Next()
 		}
@@ -90,8 +111,19 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	// AUTHENTICATION ROUTES
 	// ==========================================
 
+	loginLimiter := limiter.New(limiter.Config{
+		Max:        10,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(ctx *fiber.Ctx) string {
+			return ctx.IP()
+		},
+		LimitReached: func(ctx *fiber.Ctx) error {
+			return ctx.Status(fiber.StatusTooManyRequests).SendString("Too many login attempts. Please wait a minute.")
+		},
+	})
+
 	app.Get("/admin/login", c.AuthHandler.ShowLogin)
-	app.Post("/admin/login", c.AuthHandler.Login)
+	app.Post("/admin/login", loginLimiter, c.AuthHandler.Login)
 	app.Post("/admin/logout", c.AuthHandler.Logout)
 
 	// ==========================================
