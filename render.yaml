@@ -6,7 +6,7 @@ services:
     region: ohio
     dockerContext: .
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /admin/login
+    healthCheckPath: /health
     envVars:
       - key: PORT
         value: 8080
@@ -16,3 +16,5 @@ services:
         generateValue: true
       - key: ADMIN_PASSWORD
         generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true # 32+ byte random secret for session signing
