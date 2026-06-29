@@ -148,20 +148,18 @@ func (h *LeaderboardHandler) getGroupedPlayersByGender(c *fiber.Ctx, rankType st
 	return groups, nil
 }
 
-func groupAndRankPlayers(players []*player.Player, rankType string, isDivisional bool, divisions []*divisionDomain.Division) []DivisionGroupView {
+func groupPlayers(players []RankedPlayer, rankType string, isDivisional bool, divisions []*divisionDomain.Division) []DivisionGroupView {
 	var groups []DivisionGroupView
-	globalRank := 1
 	if isDivisional {
 		for _, div := range divisions {
 			var divPlayers []RankedPlayer
-			for _, p := range players {
-				elo := p.SinglesElo
+			for _, rp := range players {
+				elo := rp.SinglesElo
 				if rankType == "doubles" {
-					elo = p.DoublesElo
+					elo = rp.DoublesElo
 				}
 				if div.ContainsElo(elo) {
-					divPlayers = append(divPlayers, RankedPlayer{Player: p, Rank: globalRank})
-					globalRank++
+					divPlayers = append(divPlayers, rp)
 				}
 			}
 			if len(divPlayers) > 0 {
@@ -173,14 +171,9 @@ func groupAndRankPlayers(players []*player.Player, rankType string, isDivisional
 		}
 	} else {
 		// Flat list
-		var rankedPlayers []RankedPlayer
-		for _, p := range players {
-			rankedPlayers = append(rankedPlayers, RankedPlayer{Player: p, Rank: globalRank})
-			globalRank++
-		}
 		groups = []DivisionGroupView{{
 			Division: nil,
-			Players:  rankedPlayers,
+			Players:  players,
 		}}
 	}
 	return groups
@@ -222,24 +215,67 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 	}
 	divisions = filteredDivisions
 
+	isMixed := gender == ""
+
+	// 0. Pre-rank all players by absolute Elo
+	var preRankedPlayers []RankedPlayer
+	if isMixed {
+		var men, women []*player.Player
+		for _, p := range players {
+			if strings.ToUpper(p.Gender) == "M" {
+				men = append(men, p)
+			} else if strings.ToUpper(p.Gender) == "F" {
+				women = append(women, p)
+			}
+		}
+		sort.Slice(men, func(i, j int) bool {
+			if rankType == "doubles" {
+				return men[i].DoublesElo > men[j].DoublesElo
+			}
+			return men[i].SinglesElo > men[j].SinglesElo
+		})
+		for i, p := range men {
+			preRankedPlayers = append(preRankedPlayers, RankedPlayer{Player: p, Rank: i + 1})
+		}
+		sort.Slice(women, func(i, j int) bool {
+			if rankType == "doubles" {
+				return women[i].DoublesElo > women[j].DoublesElo
+			}
+			return women[i].SinglesElo > women[j].SinglesElo
+		})
+		for i, p := range women {
+			preRankedPlayers = append(preRankedPlayers, RankedPlayer{Player: p, Rank: i + 1})
+		}
+	} else {
+		sort.Slice(players, func(i, j int) bool {
+			if rankType == "doubles" {
+				return players[i].DoublesElo > players[j].DoublesElo
+			}
+			return players[i].SinglesElo > players[j].SinglesElo
+		})
+		for i, p := range players {
+			preRankedPlayers = append(preRankedPlayers, RankedPlayer{Player: p, Rank: i + 1})
+		}
+	}
+
 	// 1. Filter by Search Query (Name, Country, or Department)
-	var filteredPlayers []*player.Player
+	var filteredPlayers []RankedPlayer
 	if query != "" {
 		qUpper := strings.ToUpper(query)
-		for _, p := range players {
-			fullName := strings.ToUpper(p.FirstName + " " + p.LastName)
-			country := strings.ToUpper(p.Country)
-			dept := strings.ToUpper(p.Department)
+		for _, rp := range preRankedPlayers {
+			fullName := strings.ToUpper(rp.FirstName + " " + rp.LastName)
+			country := strings.ToUpper(rp.Country)
+			dept := strings.ToUpper(rp.Department)
 			if strings.Contains(fullName, qUpper) || strings.Contains(country, qUpper) || strings.Contains(dept, qUpper) {
-				filteredPlayers = append(filteredPlayers, p)
+				filteredPlayers = append(filteredPlayers, rp)
 			}
 		}
 	} else {
-		filteredPlayers = players
+		filteredPlayers = preRankedPlayers
 	}
 
 	// 2. Filter by Division
-	var finalPlayers []*player.Player
+	var finalPlayers []RankedPlayer
 	if divFilter != "" && divFilter != "all" {
 		var targetDiv *divisionDomain.Division
 		for _, d := range divisions {
@@ -249,13 +285,13 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 			}
 		}
 		if targetDiv != nil {
-			for _, p := range filteredPlayers {
-				elo := p.SinglesElo
+			for _, rp := range filteredPlayers {
+				elo := rp.SinglesElo
 				if rankType == "doubles" {
-					elo = p.DoublesElo
+					elo = rp.DoublesElo
 				}
 				if targetDiv.ContainsElo(elo) {
-					finalPlayers = append(finalPlayers, p)
+					finalPlayers = append(finalPlayers, rp)
 				}
 			}
 		} else {
@@ -267,15 +303,15 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 
 	// 3. Sort
 	sort.Slice(finalPlayers, func(i, j int) bool {
-		pA, pB := finalPlayers[i], finalPlayers[j]
+		rpA, rpB := finalPlayers[i], finalPlayers[j]
 		if sortOrder == "name_asc" {
-			return (pA.FirstName + pA.LastName) < (pB.FirstName + pB.LastName)
+			return (rpA.FirstName + rpA.LastName) < (rpB.FirstName + rpB.LastName)
 		}
-		ptsA := pA.SinglesElo
-		ptsB := pB.SinglesElo
+		ptsA := rpA.SinglesElo
+		ptsB := rpB.SinglesElo
 		if rankType == "doubles" {
-			ptsA = pA.DoublesElo
-			ptsB = pB.DoublesElo
+			ptsA = rpA.DoublesElo
+			ptsB = rpB.DoublesElo
 		}
 		if sortOrder == "points_asc" {
 			return ptsA < ptsB
@@ -283,28 +319,27 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 		return ptsA > ptsB // Default points_desc
 	})
 
-	// 4. Group and Rank
+	// 4. Group
 	isDivisional := sortOrder == "points_desc" && query == "" && (divFilter == "" || divFilter == "all") && len(divisions) > 0
-	isMixed := gender == ""
 
 	var menGroups []DivisionGroupView
 	var womenGroups []DivisionGroupView
 	var groups []DivisionGroupView
 
 	if isMixed {
-		var menPlayers []*player.Player
-		var womenPlayers []*player.Player
-		for _, p := range finalPlayers {
-			if strings.ToUpper(p.Gender) == "M" {
-				menPlayers = append(menPlayers, p)
-			} else if strings.ToUpper(p.Gender) == "F" {
-				womenPlayers = append(womenPlayers, p)
+		var menPlayers []RankedPlayer
+		var womenPlayers []RankedPlayer
+		for _, rp := range finalPlayers {
+			if strings.ToUpper(rp.Gender) == "M" {
+				menPlayers = append(menPlayers, rp)
+			} else if strings.ToUpper(rp.Gender) == "F" {
+				womenPlayers = append(womenPlayers, rp)
 			}
 		}
-		menGroups = groupAndRankPlayers(menPlayers, rankType, isDivisional, divisions)
-		womenGroups = groupAndRankPlayers(womenPlayers, rankType, isDivisional, divisions)
+		menGroups = groupPlayers(menPlayers, rankType, isDivisional, divisions)
+		womenGroups = groupPlayers(womenPlayers, rankType, isDivisional, divisions)
 	} else {
-		groups = groupAndRankPlayers(finalPlayers, rankType, isDivisional, divisions)
+		groups = groupPlayers(finalPlayers, rankType, isDivisional, divisions)
 	}
 
 	lang := getLang(c)

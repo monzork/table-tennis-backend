@@ -29,27 +29,29 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 	tournamentsList := e.Tournaments
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.SetMargins(15, 15, 15)
+	pdf.SetMargins(15, 52, 15)
 	pdf.SetAutoPageBreak(true, 15)
+
+	tr := pdf.UnicodeTranslatorFromDescriptor("")
+	imagePath := findHeaderImage()
+
+	pdf.SetHeaderFunc(func() {
+		pdf.Image(imagePath, 15, 10, 25, 0, false, "", 0, "")
+		pdf.SetY(17)
+		pdf.SetX(48)
+		pdf.SetFont("Arial", "B", 14)
+		pdf.CellFormat(0, 10, tr("EVENTO TENIS DE MESA - "+strings.ToUpper(e.Name)), "", 1, "L", false, 0, "")
+		pdf.SetDrawColor(200, 200, 200)
+		w, _ := pdf.GetPageSize()
+		pdf.Line(15, 45, w-15, 45)
+	})
 
 	// --- 1. COVER PAGE ---
 	pdf.AddPage()
-	pdf.SetFillColor(24, 24, 27) // sleek dark background accents
-	
-	// Draw a beautiful dark modern title header bar
-	pdf.Rect(0, 0, 210, 60, "F")
-	
-	pdf.SetTextColor(255, 255, 255)
-	pdf.SetFont("Arial", "B", 24)
-	pdf.Ln(10)
-	pdf.CellFormat(0, 12, strings.ToUpper(e.Name), "", 1, "C", false, 0, "")
-	
-	pdf.SetFont("Arial", "I", 12)
-	pdf.CellFormat(0, 8, "Grand Event & Sub-Tournament Records", "", 1, "C", false, 0, "")
 
 	// Date and Summary Info
 	pdf.SetTextColor(50, 50, 50)
-	pdf.Ln(25)
+	pdf.Ln(5)
 	
 	pdf.SetFont("Arial", "B", 14)
 	pdf.CellFormat(0, 10, "REPORT SUMMARY", "B", 1, "L", false, 0, "")
