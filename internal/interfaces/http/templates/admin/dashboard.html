@@ -129,8 +129,8 @@
                         <td class="block sm:table-cell p-0 sm:p-4 text-white uppercase text-xl sm:text-xs font-black mb-1 sm:mb-0">{{.Name}}</td>
                         <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
                             <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Division:</span>
-                            <span>{{if .DivisionID}}
-                                <span class="bg-white/5 px-2.5 py-1 rounded-full text-[10px] border border-white/10 text-white">{{.DivisionID}}</span>
+                            <span>{{if .DivisionIDs}}
+                                <span class="bg-white/5 px-2.5 py-1 rounded-full text-[10px] border border-white/10 text-white">{{len .DivisionIDs}} Divisions</span>
                             {{else}}
                                 <span class="text-gray-600 italic">No restrictions</span>
                             {{end}}</span>
