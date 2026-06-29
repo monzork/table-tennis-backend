@@ -37,6 +37,7 @@ type DivisionView struct {
 	Format            string
 	Standings         []PlayerStanding
 	RoundRobinMatches []MatchView
+	RoundRobinFinished bool
 
 	Groups            []GroupView
 	AllGroupsFinished bool
@@ -290,6 +291,14 @@ func buildDivisionView(t *tournament.Tournament, name, color string, minElo int1
 	if t.Format == "round_robin" {
 		dv.Standings = buildStandings(players, t.Matches)
 		dv.RoundRobinMatches = buildRRMatches(t, players, "group")
+		expectedMatches := len(players) * (len(players) - 1) / 2
+		finishedMatches := 0
+		for _, m := range t.Matches {
+			if m.Stage == "group" && m.Status == "finished" {
+				finishedMatches++
+			}
+		}
+		dv.RoundRobinFinished = expectedMatches > 0 && finishedMatches >= expectedMatches
 	} else if t.Format == "groups_elimination" {
 		dv.Groups, dv.AllGroupsFinished = buildGroupEliminationGroups(t, players)
 		
