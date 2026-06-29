@@ -14,6 +14,7 @@ import (
 	"table-tennis-backend/internal/interfaces/http/middleware"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/joho/godotenv"
 )
@@ -73,6 +74,11 @@ func main() {
 			return ctx.Status(code).Render("errors/500", fiber.Map{"Message": msg})
 		},
 	})
+
+	// Enable Gzip/Brotli compression for all text-based responses (HTML, CSS, JS, JSON)
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelBestSpeed,
+	}))
 
 	// Static files with caching headers
 	app.Static("/static", "./static", fiber.Static{
