@@ -67,6 +67,9 @@ type MatchSet struct {
 }
 
 func (m Match) ScoreA() int {
+	if m.MatchType == "teams" && m.TeamMatchID == nil && len(m.Sets) == 1 {
+		return m.Sets[0].ScoreA
+	}
 	score := 0
 	for _, s := range m.Sets {
 		if s.ScoreA > s.ScoreB {
@@ -77,6 +80,9 @@ func (m Match) ScoreA() int {
 }
 
 func (m Match) ScoreB() int {
+	if m.MatchType == "teams" && m.TeamMatchID == nil && len(m.Sets) == 1 {
+		return m.Sets[0].ScoreB
+	}
 	score := 0
 	for _, s := range m.Sets {
 		if s.ScoreB > s.ScoreA {
