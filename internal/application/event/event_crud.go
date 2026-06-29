@@ -46,6 +46,7 @@ func (uc *CreateEventUseCase) Execute(
 	skipElo bool,
 	startDateStr, endDateStr string,
 	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen CategoryConfig,
+	existingTournamentIDs []string,
 ) (*eventDomain.Event, error) {
 	start, err := time.Parse("2006-01-02", startDateStr)
 	if err != nil {
@@ -181,6 +182,17 @@ func (uc *CreateEventUseCase) Execute(
 
 	if err := uc.eventRepo.Save(ctx, e); err != nil {
 		return nil, err
+	}
+
+	for _, tID := range existingTournamentIDs {
+		if tID == "" {
+			continue
+		}
+		t, err := uc.tournamentRepo.GetByID(ctx, tID)
+		if err == nil {
+			t.EventID = &e.ID
+			_ = uc.tournamentRepo.Update(ctx, t)
+		}
 	}
 
 	// Reload the event with loaded tournaments

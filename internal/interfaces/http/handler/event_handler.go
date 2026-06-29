@@ -88,9 +88,15 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 	teamsMen := parseCategoryConfig("TeamsMen", "round_robin")
 	teamsWomen := parseCategoryConfig("TeamsWomen", "round_robin")
 
+	var existingTournamentIDs []string
+	for _, rawId := range c.Request().PostArgs().PeekMulti("existingTournamentIds[]") {
+		existingTournamentIDs = append(existingTournamentIDs, string(rawId))
+	}
+
 	e, err := h.createUC.Execute(
 		c.Context(), name, divisionID, skipElo, startDate, endDate,
 		singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen,
+		existingTournamentIDs,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())

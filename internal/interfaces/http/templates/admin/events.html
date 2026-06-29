@@ -336,6 +336,16 @@
                         </div>
                     </div>
                 </div>
+            <div class="space-y-2 pt-4 border-t border-white/5">
+                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Link Existing Standalone Tournaments (Optional)</label>
+                <select name="existingTournamentIds[]" multiple class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-32 custom-scrollbar">
+                    {{range $.Standalone}}
+                    <option value="{{.ID}}" class="py-2 px-3 hover:bg-white/10 rounded cursor-pointer mb-1">{{.Name}} ({{.Format}})</option>
+                    {{else}}
+                    <option disabled class="text-gray-500 italic">No standalone tournaments available</option>
+                    {{end}}
+                </select>
+                <p class="text-[10px] text-gray-500">Hold Ctrl/Cmd to select multiple. Selected tournaments will be added to this new event.</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-white/5">

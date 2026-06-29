@@ -133,13 +133,14 @@ func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 
 func (h *AdminHandler) Events(c *fiber.Ctx) error {
 	type result struct {
-		events    any
-		divisions any
-		players   any
+		events     any
+		divisions  any
+		players    any
+		standalone any
 	}
 	var res result
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(4)
 
 	go func() {
 		defer wg.Done()
@@ -156,12 +157,25 @@ func (h *AdminHandler) Events(c *fiber.Ctx) error {
 		p, _ := h.leaderboard.ExecuteSingles(c.Context())
 		res.players = p
 	}()
+	go func() {
+		defer wg.Done()
+		t, _ := h.getTournaments.Execute(c.Context())
+		var sa []any
+		// We use type assertion since it returns []*tournamentDomain.Tournament
+		for _, tourney := range t {
+			if tourney.EventID == nil || *tourney.EventID == "" {
+				sa = append(sa, tourney)
+			}
+		}
+		res.standalone = sa
+	}()
 	wg.Wait()
 
 	return c.Render("admin/events", fiber.Map{
-		"Events":    res.events,
-		"Divisions": res.divisions,
-		"Players":   res.players,
+		"Events":     res.events,
+		"Divisions":  res.divisions,
+		"Players":    res.players,
+		"Standalone": res.standalone,
 	}, "layouts/admin")
 }
 func (h *AdminHandler) Divisions(c *fiber.Ctx) error {
