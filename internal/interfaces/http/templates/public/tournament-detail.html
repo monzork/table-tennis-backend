@@ -44,7 +44,7 @@
         <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
           {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
         </div>
-        <span class="text-sm font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+        <span class="text-base font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
         <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
       </div>
       {{else}}
