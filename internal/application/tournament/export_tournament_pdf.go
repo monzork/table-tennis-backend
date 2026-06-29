@@ -675,38 +675,105 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 		pdf.CellFormat(13, 8, "7th Set", "1", 0, "C", false, 0, "")
 		pdf.CellFormat(29, 8, tr("Result"), "1", 1, "C", false, 0, "")
 
-		pdf.SetFont("Arial", "", 8)
-		for _, m := range t.Matches {
-			if m.TeamMatchID != nil {
-				continue
-			}
-			nameA, nameB := getMatchPlayerNames(m)
-			matchupStr := truncateStr(nameA, 15) + " vs " + truncateStr(nameB, 15)
-
-			pdf.CellFormat(60, 8, tr(matchupStr), "1", 0, "L", false, 0, "")
-
-			// Render sets
-			for setNum := 1; setNum <= 7; setNum++ {
-				var setScoreStr = "-"
-				for _, set := range m.Sets {
-					if set.Number == setNum {
-						setScoreStr = fmt.Sprintf("%d-%d", set.ScoreA, set.ScoreB)
-						break
-					}
+		if t.Type == "teams" {
+			for _, m := range t.Matches {
+				if m.TeamMatchID != nil {
+					continue
 				}
-				pdf.CellFormat(13, 8, setScoreStr, "1", 0, "C", false, 0, "")
-			}
+				nameA, nameB := getMatchPlayerNames(m)
+				matchupStr := truncateStr(nameA, 25) + " vs " + truncateStr(nameB, 25)
 
-			// Final result
-			resStr := ""
-			if m.Status == "finished" {
-				resStr = fmt.Sprintf("%d - %d", m.ScoreA(), m.ScoreB())
-			} else if m.Status == "in_progress" {
-				resStr = tr("In Progress")
-			} else {
-				resStr = tr("Scheduled")
+				// Render Team Match Row (bold, light gray background)
+				pdf.SetFont("Arial", "B", 8)
+				pdf.SetFillColor(240, 240, 240)
+				pdf.CellFormat(60, 8, tr(matchupStr), "1", 0, "L", true, 0, "")
+
+				// Sets for team matches are empty/dash
+				for setNum := 1; setNum <= 7; setNum++ {
+					pdf.CellFormat(13, 8, "-", "1", 0, "C", true, 0, "")
+				}
+
+				// Final result
+				resStr := ""
+				if m.Status == "finished" {
+					resStr = fmt.Sprintf("%d - %d", m.ScoreA(), m.ScoreB())
+				} else if m.Status == "in_progress" {
+					resStr = tr("In Progress")
+				} else {
+					resStr = tr("Scheduled")
+				}
+				pdf.CellFormat(29, 8, resStr, "1", 1, "C", true, 0, "")
+
+				// Render Sub-matches (normal, white background)
+				for _, sub := range t.Matches {
+					if sub.TeamMatchID == nil || *sub.TeamMatchID != m.ID {
+						continue
+					}
+
+					subNameA, subNameB := getMatchPlayerNames(sub)
+					subMatchupStr := "  - " + truncateStr(subNameA, 22) + " vs " + truncateStr(subNameB, 22)
+
+					pdf.SetFont("Arial", "", 8)
+					pdf.CellFormat(60, 8, tr(subMatchupStr), "1", 0, "L", false, 0, "")
+
+					// Render sets
+					for setNum := 1; setNum <= 7; setNum++ {
+						var setScoreStr = "-"
+						for _, set := range sub.Sets {
+							if set.Number == setNum {
+								setScoreStr = fmt.Sprintf("%d-%d", set.ScoreA, set.ScoreB)
+								break
+							}
+						}
+						pdf.CellFormat(13, 8, setScoreStr, "1", 0, "C", false, 0, "")
+					}
+
+					// Final result
+					subResStr := ""
+					if sub.Status == "finished" {
+						subResStr = fmt.Sprintf("%d - %d", sub.ScoreA(), sub.ScoreB())
+					} else if sub.Status == "in_progress" {
+						subResStr = tr("In Progress")
+					} else {
+						subResStr = tr("Scheduled")
+					}
+					pdf.CellFormat(29, 8, subResStr, "1", 1, "C", false, 0, "")
+				}
 			}
-			pdf.CellFormat(29, 8, resStr, "1", 1, "C", false, 0, "")
+		} else {
+			pdf.SetFont("Arial", "", 8)
+			for _, m := range t.Matches {
+				if m.TeamMatchID != nil {
+					continue
+				}
+				nameA, nameB := getMatchPlayerNames(m)
+				matchupStr := truncateStr(nameA, 15) + " vs " + truncateStr(nameB, 15)
+
+				pdf.CellFormat(60, 8, tr(matchupStr), "1", 0, "L", false, 0, "")
+
+				// Render sets
+				for setNum := 1; setNum <= 7; setNum++ {
+					var setScoreStr = "-"
+					for _, set := range m.Sets {
+						if set.Number == setNum {
+							setScoreStr = fmt.Sprintf("%d-%d", set.ScoreA, set.ScoreB)
+							break
+						}
+					}
+					pdf.CellFormat(13, 8, setScoreStr, "1", 0, "C", false, 0, "")
+				}
+
+				// Final result
+				resStr := ""
+				if m.Status == "finished" {
+					resStr = fmt.Sprintf("%d - %d", m.ScoreA(), m.ScoreB())
+				} else if m.Status == "in_progress" {
+					resStr = tr("In Progress")
+				} else {
+					resStr = tr("Scheduled")
+				}
+				pdf.CellFormat(29, 8, resStr, "1", 1, "C", false, 0, "")
+			}
 		}
 	}
 

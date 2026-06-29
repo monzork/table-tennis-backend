@@ -114,3 +114,82 @@ func TestExportTournamentPdf_Execute(t *testing.T) {
 		t.Error("expected non-empty PDF byte slice")
 	}
 }
+
+func TestExportTournamentPdf_Execute_Teams(t *testing.T) {
+	p1 := &player.Player{ID: uuid.New().String(), FirstName: "José", LastName: "Muñoz", Gender: "M", Country: "Nicaragua"}
+	p2 := &player.Player{ID: uuid.New().String(), FirstName: "María", LastName: "Gómez", Gender: "F", Country: "Spain"}
+
+	tournamentID := uuid.New().String()
+	teamMatchID := uuid.New().String()
+	subMatchID1 := uuid.New().String()
+	subMatchID2 := uuid.New().String()
+
+	tourney := &tournamentDomain.Tournament{
+		ID:           tournamentID,
+		Name:         "Copa de Equipos",
+		Type:         "teams",
+		Format:       "elimination",
+		Status:       "finished",
+		StartDate:    time.Now(),
+		EndDate:      time.Now().Add(24 * time.Hour),
+		Participants: []*player.Player{p1, p2},
+		Matches: []tournamentDomain.Match{
+			{
+				ID:         teamMatchID,
+				Stage:      "final",
+				Status:     "finished",
+				MatchType:  "teams",
+				TeamA:      []*player.Player{{ID: uuid.New().String(), FirstName: "Team A (Team)"}},
+				TeamB:      []*player.Player{{ID: uuid.New().String(), FirstName: "Team B (Team)"}},
+				WinnerTeam: "A",
+				Sets: []tournamentDomain.MatchSet{
+					{Number: 1, ScoreA: 3, ScoreB: 1}, // virtual set showing sub-match wins
+				},
+			},
+			{
+				ID:          subMatchID1,
+				TournamentID: tournamentID,
+				Stage:       "final",
+				Status:      "finished",
+				MatchType:   "singles",
+				TeamA:       []*player.Player{p1},
+				TeamB:       []*player.Player{p2},
+				WinnerTeam:  "A",
+				TeamMatchID:  &teamMatchID,
+				Sets: []tournamentDomain.MatchSet{
+					{Number: 1, ScoreA: 11, ScoreB: 8},
+					{Number: 2, ScoreA: 11, ScoreB: 9},
+					{Number: 3, ScoreA: 11, ScoreB: 5},
+				},
+			},
+			{
+				ID:          subMatchID2,
+				TournamentID: tournamentID,
+				Stage:       "final",
+				Status:      "finished",
+				MatchType:   "singles",
+				TeamA:       []*player.Player{p2},
+				TeamB:       []*player.Player{p1},
+				WinnerTeam:  "B",
+				TeamMatchID:  &teamMatchID,
+				Sets: []tournamentDomain.MatchSet{
+					{Number: 1, ScoreA: 5, ScoreB: 11},
+					{Number: 2, ScoreA: 7, ScoreB: 11},
+					{Number: 3, ScoreA: 9, ScoreB: 11},
+				},
+			},
+		},
+	}
+
+	repo := &mockTournamentRepository{t: tourney}
+	useCase := NewExportTournamentPdfUseCase(repo)
+
+	pdfBytes, err := useCase.Execute(context.Background(), tourney.ID)
+	if err != nil {
+		t.Fatalf("unexpected error exporting team PDF: %v", err)
+	}
+
+	if len(pdfBytes) == 0 {
+		t.Error("expected non-empty PDF byte slice for team tournament")
+	}
+}
