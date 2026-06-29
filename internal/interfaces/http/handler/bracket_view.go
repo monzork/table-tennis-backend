@@ -329,7 +329,7 @@ func buildDivisionView(t *tournament.Tournament, name, color string, minElo int1
 
 func splitKnockoutRounds(rounds []RoundView) (left, right, center []RoundView) {
 	for _, r := range rounds {
-		if r.Name == "🏆 Final" || r.Name == "Champion" {
+		if r.Name == "🏆 Final" || r.Name == "Champion" || r.Name == "🥉 3rd Place" {
 			center = append(center, r)
 		} else {
 			half := len(r.Matches) / 2
@@ -579,6 +579,8 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 
 	var rounds []RoundView
 	
+	var thirdPlaceP1, thirdPlaceP2 *MatchSlot
+	
 	for len(current) > 1 {
 		var next []Pair
 		var rvMatches []BracketMatchView
@@ -626,6 +628,40 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 					}
 				}
 				return unresolvedSlot
+			}
+
+			getLoser := func(m Pair) *MatchSlot {
+				if m.P1 == unresolvedSlot || m.P2 == unresolvedSlot {
+					return unresolvedSlot
+				}
+
+				v1 := m.P1 != nil && m.P1.Player != nil
+				v2 := m.P2 != nil && m.P2.Player != nil
+
+				if !v1 && !v2 { return nil }
+				if v1 && !v2 { return nil }
+				if !v1 && v2 { return nil }
+
+				for k := range t.Matches {
+					tm := t.Matches[k]
+					if tm.TeamMatchID != nil {
+						continue
+					}
+					if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
+						if (tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID) {
+							if tm.WinnerTeam == "A" { return m.P2 } else { return m.P1 }
+						}
+						if (tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID) {
+							if tm.WinnerTeam == "A" { return m.P1 } else { return m.P2 }
+						}
+					}
+				}
+				return unresolvedSlot
+			}
+
+			if rem == 2 && t.HasThirdPlaceMatch {
+				thirdPlaceP1 = getLoser(mLeft)
+				thirdPlaceP2 = getLoser(mRight)
 			}
 
 			next = append(next, Pair{P1: getWinner(mLeft), P2: getWinner(mRight)})
@@ -727,6 +763,37 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 				},
 			})
 		}
+	}
+	
+	if t.HasThirdPlaceMatch && (thirdPlaceP1 != nil || thirdPlaceP2 != nil) {
+		var thirdPlaceMatch *tournament.Match
+		if thirdPlaceP1 != unresolvedSlot && thirdPlaceP2 != unresolvedSlot && thirdPlaceP1 != nil && thirdPlaceP2 != nil && thirdPlaceP1.Player != nil && thirdPlaceP2.Player != nil {
+			for k := range t.Matches {
+				tm := t.Matches[k]
+				if tm.TeamMatchID != nil {
+					continue
+				}
+				if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
+					if (tm.TeamA[0].ID == thirdPlaceP1.Player.ID && tm.TeamB[0].ID == thirdPlaceP2.Player.ID) || (tm.TeamA[0].ID == thirdPlaceP2.Player.ID && tm.TeamB[0].ID == thirdPlaceP1.Player.ID) {
+						thirdPlaceMatch = &t.Matches[k]
+						break
+					}
+				}
+			}
+		}
+
+		rounds = append(rounds, RoundView{
+			Name: "🥉 3rd Place",
+			Matches: []BracketMatchView{
+				{
+					Player1: thirdPlaceP1,
+					Player2: thirdPlaceP2,
+					Match:   thirdPlaceMatch,
+					Stage:   "3rd_place",
+					BestOf:  getBestOfForStage(t, "3rd_place"),
+				},
+			},
+		})
 	}
 
 	return rounds

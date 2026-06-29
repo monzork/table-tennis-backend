@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"table-tennis-backend/internal/application/division"
@@ -135,12 +136,13 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	}
 
 	skipElo := c.FormValue("skipElo") == "on"
+	hasThirdPlaceMatch := c.FormValue("hasThirdPlaceMatch") == "on"
 	var eventID *string
 	if eIDStr := c.FormValue("eventId"); eIDStr != "" {
 		eventID = &eIDStr
 	}
 
-	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, skipElo, eventID, body.TeamFormat, body.NumTables)
+	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -330,6 +332,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	}
 
 	skipElo := c.FormValue("skipElo") == "on"
+	hasThirdPlaceMatch := c.FormValue("hasThirdPlaceMatch") == "on"
 	var eventID *string
 	if eIDStr := c.FormValue("eventId"); eIDStr != "" {
 		eventID = &eIDStr
@@ -338,7 +341,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	t, err := h.updateUC.Execute(
 		c.Context(), id, body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
 		body.RegistrationOpen, participantIDs, newPlayers, stageRules, body.GroupPassCount,
-		skipElo, eventID, body.TeamFormat, body.NumTables,
+		skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -583,6 +586,7 @@ type BoardCard struct {
 	ScoreB      int
 	Pin         string
 	GroupName   string
+	DivisionName string
 }
 
 type TableVM struct {
@@ -653,6 +657,35 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 		return ""
 	}
 
+	findDivisionName := func(playerID string) string {
+		if playerID == "" {
+			return ""
+		}
+		var targetPlayer *player.Player
+		for _, p := range t.Participants {
+			if p.ID == playerID {
+				targetPlayer = p
+				break
+			}
+		}
+		if targetPlayer == nil {
+			return ""
+		}
+		elo := targetPlayer.SinglesElo
+		if t.Type == "doubles" || t.Type == "mixed_doubles" {
+			elo = targetPlayer.DoublesElo
+		}
+		for _, d := range divs {
+			if d.MinElo == 0 && d.MaxElo == nil {
+				continue
+			}
+			if (d.Category == "both" || d.Category == t.Type) && elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
+				return d.Name
+			}
+		}
+		return "Open Bracket"
+	}
+
 	// 1. Process actual matches in database
 	for i := range t.Matches {
 		m := &t.Matches[i]
@@ -675,6 +708,12 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 			GroupName: func() string {
 				if len(m.TeamA) > 0 {
 					return findGroupName(m.TeamA[0].ID)
+				}
+				return ""
+			}(),
+			DivisionName: func() string {
+				if len(m.TeamA) > 0 {
+					return findDivisionName(m.TeamA[0].ID)
 				}
 				return ""
 			}(),
@@ -711,6 +750,7 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 							ScoreB:      0,
 							Pin:         "",
 							GroupName:   groupName,
+							DivisionName: dv.Name,
 						})
 					}
 				}
@@ -734,6 +774,7 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 								ScoreB:      0,
 								Pin:         "",
 								GroupName:   g.Name,
+								DivisionName: dv.Name,
 							})
 						}
 					}
@@ -758,6 +799,7 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 									ScoreB:      0,
 									Pin:         "",
 									GroupName:   "",
+									DivisionName: dv.Name,
 								})
 							}
 						}
@@ -783,6 +825,7 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 								ScoreB:      0,
 								Pin:         "",
 								GroupName:   "",
+								DivisionName: dv.Name,
 							})
 						}
 					}
@@ -790,6 +833,26 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 			}
 		}
 	}
+	
+	// Sort scheduled matches so oldest (first created) appear at the top.
+	// We can use MatchID as a proxy for creation time if it's sortable (e.g., UUID or sequential ID),
+	// or we can just leave the order since the original loop usually appends in order of creation.
+	// But to be explicit and allow players to rest, we can sort by MatchID length or alphabetically 
+	// assuming they are sequential. Actually, t.Matches is usually already ordered by DB creation.
+	// If the user wants oldest first, and we appended them sequentially, they might already be in order.
+	// But let's reverse them if they are newest-first, or just sort them by MatchID to be safe.
+	sort.Slice(scheduled, func(i, j int) bool {
+		// If MatchID is empty, it's a virtual match (from bracket/group). Put those at the end.
+		if scheduled[i].MatchID == "" && scheduled[j].MatchID != "" {
+			return false
+		}
+		if scheduled[i].MatchID != "" && scheduled[j].MatchID == "" {
+			return true
+		}
+		// Otherwise sort by MatchID
+		return scheduled[i].MatchID < scheduled[j].MatchID
+	})
+	
 	return
 }
 

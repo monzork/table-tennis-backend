@@ -170,6 +170,14 @@
                 </div>
             </div>
 
+            <div class="flex items-center gap-3 bg-black/20 p-4 rounded-xl border border-white/5">
+                <input type="checkbox" id="hasThirdPlaceMatch" name="hasThirdPlaceMatch" checked class="w-5 h-5 rounded border-white/10 bg-black/40 checked:bg-white text-black focus:ring-0 cursor-pointer">
+                <div>
+                    <label for="hasThirdPlaceMatch" class="text-sm font-bold uppercase tracking-wider text-white/90 cursor-pointer">Has 3rd Place Match</label>
+                    <p class="text-[10px] text-gray-500">If checked, a match for the third place will be automatically generated between semifinal losers.</p>
+                </div>
+            </div>
+
             <div id="group-pass-count-container" class="space-y-2">
                 <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Knockout Pass Count</label>
                 <input type="number" name="groupPassCount" value="2" min="1" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">

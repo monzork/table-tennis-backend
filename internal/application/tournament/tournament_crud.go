@@ -99,6 +99,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	skipElo bool, eventID *string,
 	teamFormat string,
 	numTables int,
+	hasThirdPlaceMatch bool,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -136,7 +137,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 		participants = append(participants, p)
 	}
 
-	t, err := tournamentDomain.NewTournament(idStr, name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, participants)
+	t, err := tournamentDomain.NewTournament(idStr, name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, participants, hasThirdPlaceMatch)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +146,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	t.EventID = eventID
 	t.TeamFormat = teamFormat
 	t.NumTables = numTables
+	t.HasThirdPlaceMatch = hasThirdPlaceMatch
 
 	// Preserve existing teams and conditionally preserve/regenerate groups
 	if existing, err := uc.repo.GetByID(ctx, idStr); err == nil {

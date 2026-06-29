@@ -95,7 +95,7 @@ func (uc *CreateEventUseCase) Execute(
 
 	// Helper to create a tournament under this event
 	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player) error {
-		t, err := tournamentDomain.NewTournament(idgen.Generate(), tName, tType, tFormat, category, start, end, []tournamentDomain.Rule{}, groupPassCount, players)
+		t, err := tournamentDomain.NewTournament(idgen.Generate(), tName, tType, tFormat, category, start, end, []tournamentDomain.Rule{}, groupPassCount, players, false)
 		if err != nil {
 			return err
 		}

@@ -40,6 +40,7 @@ func (uc *CreateTournamentUseCase) Execute(
 	eventID *string,
 	teamFormat string,
 	numTables int,
+	hasThirdPlaceMatch bool,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -94,7 +95,7 @@ func (uc *CreateTournamentUseCase) Execute(
 		}
 	}
 
-	t, err := tournamentDomain.NewTournament(idgen.Generate(), name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, filteredParticipants)
+	t, err := tournamentDomain.NewTournament(idgen.Generate(), name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, filteredParticipants, hasThirdPlaceMatch)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +157,7 @@ func (uc *CreateTournamentUseCase) Execute(
 		}
 
 		pairName := pairSuffix + " " + name
-		pairT, err := tournamentDomain.NewTournament(idgen.Generate(), pairName, tournamentType, format, pairCategory, start, end, []tournamentDomain.Rule{}, groupPassCount, pairParticipants)
+		pairT, err := tournamentDomain.NewTournament(idgen.Generate(), pairName, tournamentType, format, pairCategory, start, end, []tournamentDomain.Rule{}, groupPassCount, pairParticipants, hasThirdPlaceMatch)
 		if err == nil {
 			pairT.SkipElo = skipElo
 			pairT.EventID = eventID

@@ -25,6 +25,7 @@ type TournamentModel struct {
 	TeamFormat     string     `bun:"team_format,nullzero"`
 	WinnerName     string     `bun:"winner_name,nullzero"`
 	NumTables      int        `bun:"num_tables,notnull,default:0"`
+	HasThirdPlaceMatch bool       `bun:"has_third_place_match,notnull,default:false"`
 	CreatedAt        time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
 }

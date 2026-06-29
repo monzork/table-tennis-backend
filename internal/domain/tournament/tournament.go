@@ -31,7 +31,7 @@ type StageRule struct {
 // DefaultStageRules returns WTT-standard rules for all 6 stages.
 func DefaultStageRules(tournamentID string) []StageRule {
 	short := []string{"group", "r32", "r16"}
-	long := []string{"quarterfinal", "semifinal", "final"}
+	long := []string{"quarterfinal", "semifinal", "final", "3rd_place"}
 	rules := make([]StageRule, 0, 6)
 	for _, s := range short {
 		rules = append(rules, StageRule{ID: fmt.Sprintf("%s-%s", tournamentID, s), TournamentID: tournamentID, Stage: s, BestOf: 5, PointsToWin: 11, PointsMargin: 2})
@@ -115,9 +115,10 @@ type Tournament struct {
 	Teams        []*Team
 	TeamFormat   string // "olympic", "swaythling", or ""
 	NumTables    int
+	HasThirdPlaceMatch bool
 }
 
-func NewTournament(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player) (*Tournament, error) {
+func NewTournament(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Tournament, error) {
 	if end.Before(start) {
 		return nil, ErrInvalidDates
 	}
@@ -159,6 +160,7 @@ func NewTournament(id string, name string, tournamentType string, format string,
 		SkipElo:      false,
 		Teams:        []*Team{},
 		NumTables:    0,
+		HasThirdPlaceMatch: hasThirdPlaceMatch,
 	}
 	t.StageRules = DefaultStageRules(t.ID)
 

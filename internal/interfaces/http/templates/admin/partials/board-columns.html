@@ -34,6 +34,9 @@
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+          {{if .DivisionName}}
+          <span class="text-[9px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded font-mono">{{.DivisionName}}</span>
+          {{end}}
           {{if .GroupName}}
           <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
           {{end}}
@@ -118,6 +121,9 @@
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+          {{if .DivisionName}}
+          <span class="text-[9px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded font-mono">{{.DivisionName}}</span>
+          {{end}}
           {{if .GroupName}}
           <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
           {{end}}
@@ -173,6 +179,9 @@
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
+          {{if .DivisionName}}
+          <span class="text-[9px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded font-mono">{{.DivisionName}}</span>
+          {{end}}
           {{if .GroupName}}
           <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
           {{end}}

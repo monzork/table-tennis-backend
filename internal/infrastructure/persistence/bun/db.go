@@ -148,4 +148,7 @@ func Connect() {
 	_, _ = DB.NewRaw("UPDATE players SET department = NULL WHERE department = ''").Exec(context.Background())
 	_, _ = DB.NewRaw("UPDATE players SET whatsapp_number = NULL WHERE whatsapp_number = ''").Exec(context.Background())
 	_, _ = DB.NewRaw("UPDATE players SET national_id = NULL WHERE national_id = ''").Exec(context.Background())
+
+	// Add has_third_place_match if missing
+	_, _ = DB.NewRaw("ALTER TABLE tournaments ADD COLUMN has_third_place_match BOOLEAN NOT NULL DEFAULT false").Exec(context.Background())
 }
