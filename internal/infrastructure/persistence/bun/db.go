@@ -37,7 +37,7 @@ func Connect() {
 		
 		// Configure Connection Pool
 		sqldb.SetMaxOpenConns(25)
-		sqldb.SetMaxIdleConns(5)
+		sqldb.SetMaxIdleConns(25) // Match MaxOpenConns to avoid connection churn
 		sqldb.SetConnMaxLifetime(5 * time.Minute)
 		
 		bunDB = bun.NewDB(sqldb, pgdialect.New())
