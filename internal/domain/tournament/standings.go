@@ -8,6 +8,7 @@ import (
 )
 
 type PlayerStanding struct {
+	Rank          int
 	Player        *player.Player
 	Played        int
 	Wins          int
@@ -68,6 +69,9 @@ func BuildStandings(players []*player.Player, matches []Match) []PlayerStanding 
 		}
 	}
 
+	for i := range sortedStandings {
+		sortedStandings[i].Rank = i + 1
+	}
 	return sortedStandings
 }
 

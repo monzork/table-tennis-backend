@@ -616,6 +616,30 @@ func buildTables(t *tournamentDomain.Tournament, excludeMatchID string) []TableV
 	return tables
 }
 
+func filterBoardCards(cards []BoardCard, q string, divs []string) []BoardCard {
+    if q == "" && len(divs) == 0 {
+        return cards
+    }
+    
+    divMap := make(map[string]bool)
+    for _, d := range divs {
+        divMap[d] = true
+    }
+
+    var filtered []BoardCard
+    for _, card := range cards {
+        matchesSearch := q == "" || strings.Contains(strings.ToLower(card.PlayerAName), q) || 
+                         strings.Contains(strings.ToLower(card.PlayerBName), q) ||
+                         strings.Contains(strings.ToLower(card.GroupName), q)
+        matchesDiv := len(divMap) == 0 || divMap[card.DivisionName]
+        
+        if matchesSearch && matchesDiv {
+            filtered = append(filtered, card)
+        }
+    }
+    return filtered
+}
+
 func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Division) (scheduled, inProgress, finished []BoardCard) {
 	bestOfForStage := func(stage string) int {
 		for _, r := range t.StageRules {
@@ -899,12 +923,38 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 	divs := res.divisions
 	scheduled, inProgress, finished := buildBoardCards(t, divs)
 	tables := buildTables(t, "")
+	
+	uniqueDivsMap := make(map[string]bool)
+	for _, c := range scheduled { if c.DivisionName != "" { uniqueDivsMap[c.DivisionName] = true } }
+	for _, c := range inProgress { if c.DivisionName != "" { uniqueDivsMap[c.DivisionName] = true } }
+	for _, c := range finished { if c.DivisionName != "" { uniqueDivsMap[c.DivisionName] = true } }
+	var allDivs []string
+	for d := range uniqueDivsMap { allDivs = append(allDivs, d) }
+	sort.Strings(allDivs)
+
+	q := strings.ToLower(c.Query("q"))
+	var selectedDivs []string
+	for _, d := range c.Request().URI().QueryArgs().PeekMulti("div") {
+		selectedDivs = append(selectedDivs, string(d))
+	}
+	if c.Query("q") != "" || len(selectedDivs) > 0 {
+			scheduled = filterBoardCards(scheduled, q, selectedDivs)
+			inProgress = filterBoardCards(inProgress, q, selectedDivs)
+			finished = filterBoardCards(finished, q, selectedDivs)
+	}
+	
+	selectedDivsMap := make(map[string]bool)
+	for _, d := range selectedDivs { selectedDivsMap[d] = true }
+
 	return c.Render("admin/tournament-board", fiber.Map{
-		"Tournament": t,
-		"Scheduled":  scheduled,
-		"InProgress": inProgress,
-		"Finished":   finished,
-		"Tables":     tables,
+			"Tournament":   t,
+			"Scheduled":    scheduled,
+			"InProgress":   inProgress,
+			"Finished":     finished,
+			"Tables":       tables,
+			"AllDivisions": allDivs,
+			"QueryQ":       c.Query("q"),
+			"SelectedDivs": selectedDivsMap,
 	}, "layouts/admin")
 }
 
@@ -937,13 +987,26 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	divs := res.divisions
 	scheduled, inProgress, finished := buildBoardCards(t, divs)
 	tables := buildTables(t, "")
+
+	q := strings.ToLower(c.Query("q"))
+	var selectedDivs []string
+	for _, d := range c.Request().URI().QueryArgs().PeekMulti("div") {
+			selectedDivs = append(selectedDivs, string(d))
+	}
+
+	if c.Query("q") != "" || len(selectedDivs) > 0 {
+			scheduled = filterBoardCards(scheduled, q, selectedDivs)
+			inProgress = filterBoardCards(inProgress, q, selectedDivs)
+			finished = filterBoardCards(finished, q, selectedDivs)
+	}
+
 	return c.Render("admin/partials/board-columns", fiber.Map{
-		"Tournament": t,
-		"Scheduled":  scheduled,
-		"InProgress": inProgress,
-		"Finished":   finished,
-		"Tables":     tables,
-		"T":          c.Locals("T"),
-		"Lang":       c.Locals("Lang"),
+			"Tournament": t,
+			"Scheduled":  scheduled,
+			"InProgress": inProgress,
+			"Finished":   finished,
+			"Tables":     tables,
+			"T":          c.Locals("T"),
+			"Lang":       c.Locals("Lang"),
 	})
 }

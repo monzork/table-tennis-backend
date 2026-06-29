@@ -30,7 +30,11 @@
       <span class="ml-auto text-[10px] font-bold text-gray-600 tabular-nums">{{len .Scheduled}}</span>
     </div>
     {{range .Scheduled}}
-    <div class="glass rounded-2xl border border-white/10 p-4 flex flex-col gap-3 group">
+    <div class="board-card glass rounded-2xl border border-white/5 bg-black/20 p-4 flex flex-col gap-3"
+         data-player-a="{{.PlayerAName | lower}}"
+         data-player-b="{{.PlayerBName | lower}}"
+         data-group-name="{{.GroupName | lower}}"
+         data-division-name="{{.DivisionName | lower}}">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
@@ -117,7 +121,11 @@
       <span class="ml-auto text-[10px] font-bold text-gray-600 tabular-nums">{{len .InProgress}}</span>
     </div>
     {{range .InProgress}}
-    <div class="glass rounded-2xl border border-yellow-500/20 bg-yellow-400/5 p-4 flex flex-col gap-3">
+    <div class="board-card glass rounded-2xl border border-yellow-500/20 bg-yellow-400/5 p-4 flex flex-col gap-3"
+         data-player-a="{{.PlayerAName | lower}}"
+         data-player-b="{{.PlayerBName | lower}}"
+         data-group-name="{{.GroupName | lower}}"
+         data-division-name="{{.DivisionName | lower}}">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>
@@ -175,7 +183,11 @@
       <span class="ml-auto text-[10px] font-bold text-gray-600 tabular-nums">{{len .Finished}}</span>
     </div>
     {{range .Finished}}
-    <div class="glass rounded-2xl border border-green-500/10 bg-green-400/5 p-4 flex flex-col gap-2 opacity-80">
+    <div class="board-card glass rounded-2xl border border-green-500/10 bg-green-400/5 p-4 flex flex-col gap-2 opacity-80"
+         data-player-a="{{.PlayerAName | lower}}"
+         data-player-b="{{.PlayerBName | lower}}"
+         data-group-name="{{.GroupName | lower}}"
+         data-division-name="{{.DivisionName | lower}}">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded font-mono">{{if .Stage}}{{.Stage}}{{else}}custom{{end}}</span>

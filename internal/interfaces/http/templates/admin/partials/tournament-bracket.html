@@ -65,7 +65,7 @@
               {{range $idx, $s := .Standings}}
               <tr class="{{if lt $idx 2}}bg-white/[0.03]{{end}} hover:bg-white/[0.05] transition-colors group">
                 <td class="p-4 text-center font-black {{if eq $idx 0}}text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]{{else if eq $idx 1}}text-gray-300{{else if eq $idx 2}}text-amber-600{{else}}opacity-40{{end}}">
-                   {{if eq $idx 0}}🏆{{else}}{{/* index starting from 1 */}}#{{end}}
+                   {{if eq $idx 0}}🏆{{else}}#{{$s.Rank}}{{end}}
                 </td>
                 <td class="p-4">
                    <div class="flex flex-col">
@@ -161,7 +161,7 @@
                         class="hover:bg-white/5 transition-all duration-200"
                       {{end}}>
                       <td class="p-4 text-center font-black {{if eq $idx 0}}text-yellow-400{{else if eq $idx 1}}text-gray-300{{else}}opacity-40{{end}}">
-                         #{{$idx}}
+                         #{{$s.Rank}}
                       </td>
                       <td class="p-4 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
