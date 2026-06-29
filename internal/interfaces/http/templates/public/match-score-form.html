@@ -55,7 +55,7 @@
 </form>
 
 <script>
-document.getElementById('public-score-form').addEventListener('htmx:confirm', function(e) {
+document.getElementById('public-score-form').addEventListener('submit', function(e) {
     let setsA = 0; let setsB = 0;
     let inputsA = this.querySelectorAll('input[name=\'scores[]_a\']');
     let inputsB = this.querySelectorAll('input[name=\'scores[]_b\']');
@@ -85,9 +85,8 @@ document.getElementById('public-score-form').addEventListener('htmx:confirm', fu
         }
         msg += "?";
 
-        e.preventDefault();
-        if (confirm(msg)) {
-            e.detail.issueRequest(true);
+        if (!confirm(msg)) {
+            e.preventDefault();
         }
     }
 });
