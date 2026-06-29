@@ -106,6 +106,7 @@ func (uc *CreateEventUseCase) Execute(
 		}
 		t.EventID = &e.ID
 		t.SkipElo = skipElo
+		t.NumTables = e.NumTables
 		e.Tournaments = append(e.Tournaments, t)
 		return nil
 	}
