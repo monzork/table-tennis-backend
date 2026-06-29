@@ -35,20 +35,20 @@
 
   {{/* Participants */}}
   <section class="space-y-3">
-    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">
+    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest pl-1">
       {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}Player Pool{{else}}Participants{{end}}
     </h2>
-    <div class="flex flex-wrap gap-2">
+    <div class="flex overflow-x-auto gap-2 pb-2 sm:flex-wrap sm:pb-0 snap-x snap-mandatory px-1" style="scrollbar-width: none;">
       {{range .Tournament.Participants}}
-      <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+      <div class="flex-shrink-0 snap-start flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
         <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
           {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
         </div>
-        <span class="text-base font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+        <span class="text-sm sm:text-base font-semibold whitespace-nowrap">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
         <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
       </div>
       {{else}}
-      <p class="text-sm text-gray-600">{{t .T "pub_detail.no_parts"}}</p>
+      <p class="text-sm text-gray-600 pl-1">{{t .T "pub_detail.no_parts"}}</p>
       {{end}}
     </div>
   </section>
@@ -108,31 +108,62 @@
         </thead>
         <tbody id="public-matches-tbody" class="divide-y divide-white/10">
           {{range .Tournament.Matches}}
-          <tr class="hover:bg-white/5 transition-colors flex flex-col sm:table-row p-4 sm:p-0 border-b border-white/10 sm:border-b-0">
-            <td class="block sm:table-cell p-0 sm:p-4 text-gray-300 capitalize mb-1 sm:mb-0">
-              <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "pub_detail.mob_type"}}</span>{{.MatchType}}
+          <tr class="hover:bg-white/10 transition-colors flex flex-col sm:table-row p-4 sm:p-0 border-b border-white/5 sm:border-white/10 relative block w-full mb-3 sm:mb-0 bg-white/5 sm:bg-transparent rounded-2xl sm:rounded-none">
+            
+            {{/* Mobile header (Type & Status) */}}
+            <td class="block sm:hidden p-0 mb-3 border-b border-white/5 pb-3">
+                <div class="flex justify-between items-center">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                        {{.MatchType}}
+                        {{if .TableNumber}}
+                            <span class="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-mono">T-{{.TableNumber}}</span>
+                        {{end}}
+                    </div>
+                    <div>
+                        {{if eq .Status "finished"}}
+                            <span class="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[9px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
+                        {{else if eq .Status "in_progress"}}
+                            <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
+                        {{else}}
+                            <span class="px-2 py-0.5 rounded-full bg-white/5 text-gray-400 text-[9px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
+                        {{end}}
+                    </div>
+                </div>
+            </td>
+
+            {{/* Desktop Type */}}
+            <td class="hidden sm:table-cell p-4 text-gray-300 capitalize">
+              {{.MatchType}}
               {{if .TableNumber}}
-              <div class="inline-block sm:block text-[9px] text-yellow-400 font-bold font-mono mt-1 sm:mt-1 ml-2 sm:ml-0">TABLE {{.TableNumber}}</div>
+              <div class="text-[9px] text-yellow-400 font-bold font-mono mt-1">TABLE {{.TableNumber}}</div>
               {{end}}
             </td>
-            <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0">
-                <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">{{t .T "pub_detail.mob_player_a"}}</span>
+
+            {{/* Player A */}}
+            <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0 text-center sm:text-left">
                 {{range .TeamA}}
-                    <div class="{{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                    <div class="text-sm sm:text-xs {{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
                         {{.FirstNameWithSecond}} <span class="uppercase font-bold">{{.LastNameWithSecond}}</span>
                     </div>
                 {{end}}
             </td>
-            <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0">
-                <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">{{t .T "pub_detail.mob_player_b"}}</span>
+            
+            {{/* VS Badge for Mobile */}}
+            <td class="block sm:hidden p-0 mb-2 flex justify-center">
+                <span class="text-[10px] font-black italic text-gray-600 bg-black/40 px-2 py-0.5 rounded-full">VS</span>
+            </td>
+
+            {{/* Player B */}}
+            <td class="block sm:table-cell p-0 sm:p-4 mb-4 sm:mb-0 text-center sm:text-left">
                 {{range .TeamB}}
-                    <div class="{{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                    <div class="text-sm sm:text-xs {{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
                         {{.FirstNameWithSecond}} <span class="uppercase font-bold">{{.LastNameWithSecond}}</span>
                     </div>
                 {{end}}
             </td>
-            <td class="block sm:table-cell p-0 sm:p-4 mb-3 sm:mb-0">
-                <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "pub_detail.mob_status"}}</span>
+
+            {{/* Desktop Status */}}
+            <td class="hidden sm:table-cell p-4">
                 {{if eq .Status "finished"}}
                     <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
                 {{else if eq .Status "in_progress"}}
@@ -141,18 +172,20 @@
                     <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
                 {{end}}
             </td>
-            <td class="block sm:table-cell p-0 sm:p-4 text-left sm:text-right">
+
+            {{/* Actions */}}
+            <td class="block sm:table-cell p-0 sm:p-4 text-center sm:text-right w-full sm:w-auto">
               {{if eq .Status "scheduled"}}
                 <button hx-post="/public/matches/{{.ID}}/start?tournamentId={{$.Tournament.ID}}"
                         hx-swap="none"
-                        class="w-full sm:w-auto bg-white hover:bg-gray-200 text-black text-[10px] font-bold py-2 sm:py-1.5 px-3 rounded-full transition-all uppercase tracking-wider">
+                        class="w-full sm:w-auto bg-white hover:bg-gray-200 text-black text-[11px] sm:text-[10px] font-bold py-2.5 sm:py-1.5 px-4 rounded-xl sm:rounded-full transition-all uppercase tracking-wider shadow-lg shadow-white/10 active:scale-95">
                   {{t .T "pub_detail.start"}}
                 </button>
               {{else if eq .Status "in_progress"}}
                 <button hx-get="/public/matches/score/form?matchId={{.ID}}&tournamentId={{$.Tournament.ID}}&stage={{.Stage}}&bestOf=5"
                         hx-target="#public-score-modal-content"
                         hx-on:click="document.getElementById('public-score-modal').classList.remove('hidden')"
-                        class="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-400 text-black text-[10px] font-bold py-2 sm:py-1.5 px-3 rounded-full transition-all uppercase tracking-wider">
+                        class="w-full sm:w-auto bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black text-[11px] sm:text-[10px] font-bold py-2.5 sm:py-1.5 px-4 rounded-xl sm:rounded-full transition-all uppercase tracking-wider shadow-lg shadow-yellow-500/20 active:scale-95">
                   {{t .T "pub_detail.score"}}
                 </button>
               {{end}}
