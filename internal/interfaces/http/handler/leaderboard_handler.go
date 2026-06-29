@@ -61,6 +61,14 @@ func (h *LeaderboardHandler) getGroupedPlayers(c *fiber.Ctx, rankType string) ([
 		return nil, dErr
 	}
 
+	var filteredDivisions []*divisionDomain.Division
+	for _, d := range divisions {
+		if d.ID != "none" && d.Name != "No Division" {
+			filteredDivisions = append(filteredDivisions, d)
+		}
+	}
+	divisions = filteredDivisions
+
 	var groups []DivisionGroup
 	
 	for _, div := range divisions {
@@ -109,6 +117,14 @@ func (h *LeaderboardHandler) getGroupedPlayersByGender(c *fiber.Ctx, rankType st
 	if dErr != nil {
 		return nil, dErr
 	}
+
+	var filteredDivisions []*divisionDomain.Division
+	for _, d := range divisions {
+		if d.ID != "none" && d.Name != "No Division" {
+			filteredDivisions = append(filteredDivisions, d)
+		}
+	}
+	divisions = filteredDivisions
 
 	var groups []DivisionGroup
 	for _, div := range divisions {
@@ -197,6 +213,14 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 	if dErr != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, dErr.Error())
 	}
+
+	var filteredDivisions []*divisionDomain.Division
+	for _, d := range divisions {
+		if d.ID != "none" && d.Name != "No Division" {
+			filteredDivisions = append(filteredDivisions, d)
+		}
+	}
+	divisions = filteredDivisions
 
 	// 1. Filter by Search Query (Name, Country, or Department)
 	var filteredPlayers []*player.Player
