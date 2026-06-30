@@ -10,3 +10,4 @@ cookies.txt
 /server
 *.test
 dist/
+!static/dist/
