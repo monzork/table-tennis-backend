@@ -3,7 +3,7 @@
      hx-on::ws-open="const el = document.getElementById('public-ws-status'); if(el) { el.textContent = '🟢 Live'; el.className = 'px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-[11px] uppercase tracking-widest text-green-400 font-bold'; }"
      hx-on::ws-close="const el = document.getElementById('public-ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[11px] uppercase tracking-widest text-red-400 font-bold'; }"
      hx-on::ws-error="const el = document.getElementById('public-ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[11px] uppercase tracking-widest text-red-400 font-bold'; }"
-     hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); htmx.trigger('#match-list-container', 'reload-matches'); }">
+     hx-on::ws-before-message="try { const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); htmx.trigger('#match-list-container', 'reload-matches'); } } catch(e) {}">
   {{/* Header */}}
   <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4">
     <div>
