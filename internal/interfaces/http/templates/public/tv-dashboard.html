@@ -228,6 +228,7 @@
     <!-- Auto-Scroll Script -->
     <script>
         const scrollDirs = new Map();
+        const scrollPositions = new Map();
         
         setInterval(() => {
             document.querySelectorAll('.auto-scroll-container').forEach(el => {
@@ -239,7 +240,14 @@
                 // If paused, don't move
                 if (el.dataset.paused === 'true') return;
 
-                el.scrollTop += dir * 0.5; // Very slow, smooth scroll speed
+                let exactPos = scrollPositions.get(el);
+                if (exactPos === undefined) {
+                    exactPos = el.scrollTop;
+                }
+                
+                exactPos += dir * 0.5; // Very slow, smooth scroll speed
+                scrollPositions.set(el, exactPos);
+                el.scrollTop = Math.floor(exactPos);
                 
                 // Check if hit bottom
                 if (dir === 1 && el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {

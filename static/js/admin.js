@@ -329,6 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('[draggable="true"]') || e.target.closest('button') || e.target.closest('a')) {
           return;
         }
+        e.preventDefault(); // Prevent Firefox from starting native drag which gets the page stuck
         ele.style.cursor = 'grabbing';
         ele.style.userSelect = 'none';
         pos = {

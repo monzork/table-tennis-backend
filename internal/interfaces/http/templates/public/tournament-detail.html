@@ -253,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('[draggable="true"]') || e.target.closest('button') || e.target.closest('a')) {
           return; // Allow native interactions
         }
+        e.preventDefault(); // Prevent Firefox native drag
         ele.style.cursor = 'grabbing';
         ele.style.userSelect = 'none';
         pos = {
