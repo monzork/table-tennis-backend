@@ -22,6 +22,7 @@ import (
 	adminDomain "table-tennis-backend/internal/domain/admin"
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/infrastructure/identity"
+	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
 	securityInfra "table-tennis-backend/internal/infrastructure/security"
 	"table-tennis-backend/internal/interfaces/http/handler"
@@ -111,7 +112,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
 	finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
 	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
-	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo)
+	pdfGen := pdfinfra.NewGoFpdfGenerator()
+	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo, pdfGen)
 	movePlayerUC := tournament.NewMovePlayerUseCase(tournamentRepo)
 	createTeamUC := tournament.NewCreateTeamUseCase(tournamentRepo)
 	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
@@ -126,7 +128,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	)
 
 	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)
-	exportEventPdfUC := tournament.NewExportEventPdfUseCase(tournamentRepo, eventRepo)
+	exportEventPdfUC := tournament.NewExportEventPdfUseCase(eventRepo, pdfGen)
 	createEventUC := event.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
 	getEventByIDUC := event.NewGetEventByIDUseCase(eventRepo)
 	getAllEventsUC := event.NewGetAllEventsUseCase(eventRepo)
