@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV Dashboard - {{.Tournament.Name}}</title>
+    <title>{{t .T "tv.dashboard_title"}} - {{.Tournament.Name}}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
@@ -43,7 +43,7 @@
             <header class="flex items-center justify-between glass rounded-3xl p-6 shadow-2xl">
                 <div>
                     <h1 class="text-5xl font-extrabold uppercase tracking-tighter">{{.Tournament.Name}}<span class="text-blue-500">.</span></h1>
-                    <p class="text-gray-400 mt-2 font-mono uppercase tracking-widest text-sm">Live Tournament Dashboard</p>
+                    <p class="text-gray-400 mt-2 font-mono uppercase tracking-widest text-sm">{{t .T "tv.dashboard_title"}}</p>
                 </div>
                 <div class="flex items-center gap-4">
                     <span class="px-4 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full text-sm font-bold uppercase tracking-wider animate-pulse">
@@ -51,7 +51,7 @@
                     </span>
                     <div class="text-right">
                         <p class="text-2xl font-black">{{len .Tournament.Participants}}</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-widest">Players</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest">{{t .T "tv.players"}}</p>
                     </div>
                 </div>
             </header>
@@ -61,7 +61,7 @@
                 <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-blue-500/20">
                     <h2 class="text-2xl font-bold uppercase tracking-widest text-blue-400 mb-6 flex items-center gap-3">
                         <svg class="w-8 h-8 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Now Playing
+                        {{t .T "tv.now_playing"}}
                     </h2>
                     <div class="flex-1 overflow-hidden relative">
                         <div class="absolute inset-0 overflow-y-auto pr-2 space-y-4 auto-scroll-container">
@@ -72,12 +72,12 @@
                                     <div class="bg-black/50 border border-white/10 rounded-2xl p-5 flex items-center justify-between shadow-lg">
                                         {{if .TableNumber}}
                                             <div class="bg-blue-500 text-white rounded-xl w-14 h-14 flex flex-col items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
-                                                <span class="text-[9px] font-bold uppercase tracking-widest opacity-80">Table</span>
+                                                <span class="text-[9px] font-bold uppercase tracking-widest opacity-80">{{t $.T "tv.table"}}</span>
                                                 <span class="text-xl font-black">{{.TableNumber}}</span>
                                             </div>
                                         {{else}}
                                             <div class="bg-gray-800 text-gray-400 rounded-xl w-14 h-14 flex items-center justify-center shrink-0">
-                                                <span class="text-[9px] font-bold uppercase tracking-widest">TBD</span>
+                                                <span class="text-[9px] font-bold uppercase tracking-widest">{{t $.T "tv.tbd"}}</span>
                                             </div>
                                         {{end}}
                                         
@@ -90,7 +90,7 @@
                                             </div>
                                             
                                             <div class="px-4 flex flex-col items-center justify-center">
-                                                <span class="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1">VS</span>
+                                                <span class="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1">{{t $.T "tv.vs"}}</span>
                                                 <span class="px-1.5 py-0.5 rounded bg-white/5 text-[8px] uppercase tracking-widest text-gray-400">{{.MatchType}}</span>
                                             </div>
 
@@ -106,7 +106,7 @@
                             {{end}}
                             {{if eq $inProgress 0}}
                                 <div class="h-full flex items-center justify-center text-gray-500 text-lg uppercase tracking-widest font-bold">
-                                    No active matches
+                                    {{t .T "tv.no_active"}}
                                 </div>
                             {{end}}
                         </div>
@@ -117,7 +117,7 @@
                 <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-yellow-500/20">
                     <h2 class="text-2xl font-bold uppercase tracking-widest text-yellow-400 mb-6 flex items-center gap-3">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Up Next
+                        {{t .T "tv.up_next"}}
                     </h2>
                     <div class="flex-1 overflow-hidden relative">
                         <div class="absolute inset-0 overflow-y-auto pr-2 space-y-4 auto-scroll-container">
@@ -131,16 +131,16 @@
                                             <div class="flex justify-between items-center border-b border-white/5 pb-2">
                                                 <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">{{.MatchType}} • {{.Stage}}</span>
                                                 {{if .TableNumber}}
-                                                    <span class="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 text-[10px] font-bold uppercase tracking-widest border border-yellow-500/30">Table {{.TableNumber}}</span>
+                                                    <span class="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 text-[10px] font-bold uppercase tracking-widest border border-yellow-500/30">{{t $.T "tv.table"}} {{.TableNumber}}</span>
                                                 {{else}}
-                                                    <span class="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-white/10">Waiting</span>
+                                                    <span class="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-white/10">{{t $.T "tv.waiting"}}</span>
                                                 {{end}}
                                             </div>
                                             <div class="flex justify-between items-center text-lg">
                                                 <div class="w-[45%] text-right font-bold truncate text-gray-200">
                                                     {{range .TeamA}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
                                                 </div>
-                                                <div class="w-[10%] text-center text-xs font-black text-gray-600 italic">VS</div>
+                                                <div class="w-[10%] text-center text-xs font-black text-gray-600 italic">{{t $.T "tv.vs"}}</div>
                                                 <div class="w-[45%] text-left font-bold truncate text-gray-200">
                                                     {{range .TeamB}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
                                                 </div>
@@ -151,7 +151,7 @@
                             {{end}}
                             {{if eq $scheduledCount 0}}
                                 <div class="h-full flex items-center justify-center text-gray-500 text-lg uppercase tracking-widest font-bold text-center px-4">
-                                    No upcoming matches<br>ready to play
+                                    {{t .T "tv.no_upcoming" | safeHTML}}
                                 </div>
                             {{end}}
                         </div>
@@ -162,7 +162,7 @@
                 <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-green-500/10">
                     <h2 class="text-2xl font-bold uppercase tracking-widest text-green-400 mb-6 flex items-center gap-3">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Recent Results
+                        {{t .T "tv.recent_results"}}
                     </h2>
                     <div class="flex-1 overflow-hidden relative">
                         <div class="absolute inset-0 overflow-y-auto pr-2 space-y-3 auto-scroll-container">
@@ -189,7 +189,7 @@
                             {{end}}
                             {{if eq $finishedCount 0}}
                                 <div class="h-full flex items-center justify-center text-gray-600 text-lg uppercase tracking-widest font-bold">
-                                    No results yet
+                                    {{t .T "tv.no_results"}}
                                 </div>
                             {{end}}
                         </div>

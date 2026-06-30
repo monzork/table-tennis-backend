@@ -241,6 +241,20 @@ var Translations = map[string]map[string]string{
 		"bracket.elo":              "Elo",
 		"bracket.division":         "Division",
 
+		// TV Dashboard
+		"tv.dashboard_title": "Live Tournament Dashboard",
+		"tv.players":         "Players",
+		"tv.now_playing":     "Now Playing",
+		"tv.table":           "Table",
+		"tv.tbd":             "TBD",
+		"tv.vs":              "VS",
+		"tv.no_active":       "No active matches",
+		"tv.up_next":         "Up Next",
+		"tv.waiting":         "Waiting",
+		"tv.no_upcoming":     "No upcoming matches<br>ready to play",
+		"tv.recent_results":  "Recent Results",
+		"tv.no_results":      "No results yet",
+
 		// Footer
 		"footer.copy": "© 2026 Club Rankings System",
 	},
@@ -482,6 +496,20 @@ var Translations = map[string]map[string]string{
 		"bracket.tbd":              "Por Definir",
 		"bracket.elo":              "Elo",
 		"bracket.division":         "División",
+
+		// TV Dashboard
+		"tv.dashboard_title": "Tablero de Torneo en Vivo",
+		"tv.players":         "Jugadores",
+		"tv.now_playing":     "Jugando Ahora",
+		"tv.table":           "Mesa",
+		"tv.tbd":             "Por definir",
+		"tv.vs":              "VS",
+		"tv.no_active":       "No hay partidos activos",
+		"tv.up_next":         "Siguiente",
+		"tv.waiting":         "En Espera",
+		"tv.no_upcoming":     "No hay partidos listos<br>para jugar",
+		"tv.recent_results":  "Resultados Recientes",
+		"tv.no_results":      "Aún no hay resultados",
 
 		// Footer
 		"footer.copy": "© 2026 Sistema de Rankings del Club",
