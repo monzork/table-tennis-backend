@@ -51,7 +51,7 @@
   <div hx-ext="ws" ws-connect="/ws/brackets/{{.Tournament.ID}}"
     hx-on::ws-open="const el = document.getElementById('ws-status'); if(el) { el.textContent = '{{t .T "board.live"}}'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-green-400'; }"
     hx-on::ws-close="const el = document.getElementById('ws-status'); if(el) { el.textContent = '{{t .T "board.reconnecting"}}'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-red-400'; }"
-    hx-on::ws-before-message="const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('body', 'reload-board'); if (data.matchStatus === 'finished' && data.message) { showToast(data.message, 'success'); } } else if(data.event === 'referee_notification') { if (data.message) { showToast(data.message, 'info'); } }">
+    hx-on::ws-before-message="try { const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { if (data.matchStatus === 'finished' && data.message) { showToast(data.message, 'success'); } } else if(data.event === 'referee_notification') { if (data.message) { showToast(data.message, 'info'); } } } catch(e) { /* ignore non-json messages like HTML OOB swaps */ }">
 
     <div id="board-columns">
       {{template "admin/partials/board-columns" (dict "Tournament" .Tournament "Scheduled" .Scheduled "InProgress"

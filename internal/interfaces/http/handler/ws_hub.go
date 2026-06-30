@@ -44,6 +44,15 @@ func (h *BracketHub) Broadcast(tournamentID string, event map[string]string) {
 	if err != nil {
 		return
 	}
+	h.broadcastRaw(tournamentID, payload)
+}
+
+// BroadcastHTML sends a raw HTML string to all clients for HTMX out-of-band swaps.
+func (h *BracketHub) BroadcastHTML(tournamentID string, html string) {
+	h.broadcastRaw(tournamentID, []byte(html))
+}
+
+func (h *BracketHub) broadcastRaw(tournamentID string, payload []byte) {
 	h.mu.RLock()
 	conns := h.clients[tournamentID]
 	if len(conns) == 0 {
@@ -61,6 +70,7 @@ func (h *BracketHub) Broadcast(tournamentID string, event map[string]string) {
 		conn.WriteMessage(1, payload) // 1 = TextMessage
 	}
 }
+
 
 // WsBracketHandler is the Fiber handler for /ws/brackets/:tournamentId
 func WsBracketHandler(c *fiberws.Conn) {

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strconv"
@@ -61,18 +62,48 @@ func (h *MatchHandler) getOccupiedTables(ctx context.Context, t *tournament.Tour
 	return occupiedList
 }
 
-func (h *MatchHandler) broadcastToTournamentOrEvent(ctx context.Context, tournamentID string, eventData map[string]string) {
+func (h *MatchHandler) broadcastToTournamentOrEvent(c *fiber.Ctx, tournamentID string, eventData map[string]string) {
+	ctx := c.Context()
 	t, err := h.tournamentRepo.GetByID(ctx, tournamentID)
+	
+	var htmlStr string
+	if err == nil {
+		if matchID, ok := eventData["matchId"]; ok {
+			var matched *tournament.Match
+			for i := range t.Matches {
+				if t.Matches[i].ID == matchID {
+					matched = &t.Matches[i]
+					break
+				}
+			}
+			if matched != nil {
+				var buf bytes.Buffer
+				if err := c.App().Config().Views.Render(&buf, "admin/partials/match-row", matched, ""); err == nil {
+					searchStr := fmt.Sprintf(`id="match-row-%s"`, matched.ID)
+					replaceStr := fmt.Sprintf(`id="match-row-%s" hx-swap-oob="true"`, matched.ID)
+					htmlStr = strings.Replace(buf.String(), searchStr, replaceStr, 1)
+				}
+			}
+		}
+	}
+
+	broadcastFunc := func(tID string) {
+		GlobalBracketHub.Broadcast(tID, eventData)
+		if htmlStr != "" {
+			GlobalBracketHub.BroadcastHTML(tID, htmlStr)
+		}
+	}
+
 	if err == nil && t.EventID != nil {
 		eventUUID, _ := uuid.Parse(*t.EventID)
 		if tourneys, err := h.tournamentRepo.GetByEventID(ctx, eventUUID, false); err == nil {
 			for _, tourney := range tourneys {
-				GlobalBracketHub.Broadcast(tourney.ID, eventData)
+				broadcastFunc(tourney.ID)
 			}
 			return
 		}
 	}
-	GlobalBracketHub.Broadcast(tournamentID, eventData)
+	broadcastFunc(tournamentID)
 }
 
 func (h *MatchHandler) Create(c *fiber.Ctx) error {
@@ -287,7 +318,7 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 		}
 	}
 
-	h.broadcastToTournamentOrEvent(c.Context(), mModel.TournamentID.String(), map[string]string{
+	h.broadcastToTournamentOrEvent(c, mModel.TournamentID.String(), map[string]string{
 		"event":        "score_updated",
 		"tournamentId": mModel.TournamentID.String(),
 		"matchId":      body.MatchID,
@@ -1148,7 +1179,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		broadcastData["message"] = fmt.Sprintf("Match finished: %s", matchName)
 	}
 
-	h.broadcastToTournamentOrEvent(c.Context(), body.TournamentID, broadcastData)
+	h.broadcastToTournamentOrEvent(c, body.TournamentID, broadcastData)
 
 	// If this was a sub-match, return to the team matchup form instead of refreshing
 	mUUID, _ := uuid.Parse(matchID)
@@ -1502,7 +1533,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 				}
 			}
 
-			h.broadcastToTournamentOrEvent(c.Context(), body.TournamentID, map[string]string{
+			h.broadcastToTournamentOrEvent(c, body.TournamentID, map[string]string{
 				"event":   "referee_notification",
 				"message": fmt.Sprintf("%s marked match finished%s: %s", refName, tableInfo, winStr),
 			})
@@ -1559,7 +1590,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 		broadcastData["message"] = fmt.Sprintf("Match finished: %s", winStr)
 	}
 
-	h.broadcastToTournamentOrEvent(c.Context(), body.TournamentID, broadcastData)
+	h.broadcastToTournamentOrEvent(c, body.TournamentID, broadcastData)
 
 	if c.Get("HX-Request") != "" {
 		// Return a beautiful success component to replace the form out-of-band
@@ -2057,7 +2088,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 	}
 
 	// Broadcast real-time update to all bracket viewers for this tournament
-	h.broadcastToTournamentOrEvent(c.Context(), m.TournamentID.String(), map[string]string{
+	h.broadcastToTournamentOrEvent(c, m.TournamentID.String(), map[string]string{
 		"event":        "score_updated",
 		"tournamentId": m.TournamentID.String(),
 		"matchId":      m.ID.String(),
@@ -2113,7 +2144,7 @@ func (h *MatchHandler) Reset(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	h.broadcastToTournamentOrEvent(c.Context(), m.TournamentID.String(), map[string]string{
+	h.broadcastToTournamentOrEvent(c, m.TournamentID.String(), map[string]string{
 		"event":        "score_updated",
 		"tournamentId": m.TournamentID.String(),
 		"matchId":      m.ID.String(),
