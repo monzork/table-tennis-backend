@@ -17,22 +17,22 @@ import (
 )
 
 type TournamentHandler struct {
-	createUC      *tournament.CreateTournamentUseCase
-	getByID       *tournament.GetTournamentByIDUseCase
-	updateUC      *tournament.UpdateTournamentUseCase
-	deleteUC      *tournament.DeleteTournamentUseCase
-	leaderboardUC *leaderboard.GetLeaderboardUseCase
-	divisionUC    *division.DivisionUseCase
-	finishUC      *tournament.FinishTournamentUseCase
-	exportUC      *tournament.ExportTournamentReportUseCase
-	exportPdfUC   *tournament.ExportTournamentPdfUseCase
-	movePlayerUC  *tournament.MovePlayerUseCase
-	createTeamUC  *tournament.CreateTeamUseCase
-	deleteTeamUC  *tournament.DeleteTeamUseCase
-	assignPlayerToTeamUC *tournament.AssignPlayerToTeamUseCase
+	createUC               *tournament.CreateTournamentUseCase
+	getByID                *tournament.GetTournamentByIDUseCase
+	updateUC               *tournament.UpdateTournamentUseCase
+	deleteUC               *tournament.DeleteTournamentUseCase
+	leaderboardUC          *leaderboard.GetLeaderboardUseCase
+	divisionUC             *division.DivisionUseCase
+	finishUC               *tournament.FinishTournamentUseCase
+	exportUC               *tournament.ExportTournamentReportUseCase
+	exportPdfUC            *tournament.ExportTournamentPdfUseCase
+	movePlayerUC           *tournament.MovePlayerUseCase
+	createTeamUC           *tournament.CreateTeamUseCase
+	deleteTeamUC           *tournament.DeleteTeamUseCase
+	assignPlayerToTeamUC   *tournament.AssignPlayerToTeamUseCase
 	removePlayerFromTeamUC *tournament.RemovePlayerFromTeamUseCase
-	getTournamentsUC *tournament.GetTournamentsUseCase
-	getOccupiedTablesUC *tournament.GetOccupiedTablesUseCase
+	getTournamentsUC       *tournament.GetTournamentsUseCase
+	getOccupiedTablesUC    *tournament.GetOccupiedTablesUseCase
 }
 
 func NewTournamentHandler(
@@ -54,22 +54,22 @@ func NewTournamentHandler(
 	getOccupiedTablesUC *tournament.GetOccupiedTablesUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
-		createUC:      createUC,
-		getByID:       getByID,
-		updateUC:      updateUC,
-		deleteUC:      deleteUC,
-		leaderboardUC: leaderboardUC,
-		divisionUC:    divisionUC,
-		finishUC:      finishUC,
-		exportUC:      exportUC,
-		exportPdfUC:   exportPdfUC,
-		movePlayerUC:  movePlayerUC,
-		createTeamUC:  createTeamUC,
-		deleteTeamUC:  deleteTeamUC,
-		assignPlayerToTeamUC: assignPlayerToTeamUC,
+		createUC:               createUC,
+		getByID:                getByID,
+		updateUC:               updateUC,
+		deleteUC:               deleteUC,
+		leaderboardUC:          leaderboardUC,
+		divisionUC:             divisionUC,
+		finishUC:               finishUC,
+		exportUC:               exportUC,
+		exportPdfUC:            exportPdfUC,
+		movePlayerUC:           movePlayerUC,
+		createTeamUC:           createTeamUC,
+		deleteTeamUC:           deleteTeamUC,
+		assignPlayerToTeamUC:   assignPlayerToTeamUC,
 		removePlayerFromTeamUC: removePlayerFromTeamUC,
-		getTournamentsUC: getTournamentsUC,
-		getOccupiedTablesUC: getOccupiedTablesUC,
+		getTournamentsUC:       getTournamentsUC,
+		getOccupiedTablesUC:    getOccupiedTablesUC,
 	}
 }
 
@@ -153,7 +153,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 
 func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	type result struct {
 		tournament *tournamentDomain.Tournament
 		err        error
@@ -279,7 +279,7 @@ func (h *TournamentHandler) RemoveOfficial(c *fiber.Ctx) error {
 
 func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	type result struct {
 		tournament *tournamentDomain.Tournament
 		err        error
@@ -551,7 +551,7 @@ func (h *TournamentHandler) PublicList(c *fiber.Ctx) error {
 func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	lang := getLang(c)
 	id := c.Params("id")
-	
+
 	type result struct {
 		tournament *tournamentDomain.Tournament
 		err        error
@@ -624,19 +624,19 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 
 // BoardCard is a flattened match representation used by the kanban board.
 type BoardCard struct {
-	MatchID     string
-	Status      string
-	Stage       string
-	BestOf      int
-	PlayerAName string
-	PlayerBName string
-	P1Id        string
-	P2Id        string
-	TableNumber *int
-	ScoreA      int
-	ScoreB      int
-	Pin         string
-	GroupName   string
+	MatchID      string
+	Status       string
+	Stage        string
+	BestOf       int
+	PlayerAName  string
+	PlayerBName  string
+	P1Id         string
+	P2Id         string
+	TableNumber  *int
+	ScoreA       int
+	ScoreB       int
+	Pin          string
+	GroupName    string
 	DivisionName string
 }
 
@@ -676,27 +676,27 @@ func buildTables(t *tournamentDomain.Tournament, excludeMatchID string, globalOc
 }
 
 func filterBoardCards(cards []BoardCard, q string, divs []string) []BoardCard {
-    if q == "" && len(divs) == 0 {
-        return cards
-    }
-    
-    divMap := make(map[string]bool)
-    for _, d := range divs {
-        divMap[d] = true
-    }
+	if q == "" && len(divs) == 0 {
+		return cards
+	}
 
-    var filtered []BoardCard
-    for _, card := range cards {
-        matchesSearch := q == "" || strings.Contains(strings.ToLower(card.PlayerAName), q) || 
-                         strings.Contains(strings.ToLower(card.PlayerBName), q) ||
-                         strings.Contains(strings.ToLower(card.GroupName), q)
-        matchesDiv := len(divMap) == 0 || divMap[card.DivisionName]
-        
-        if matchesSearch && matchesDiv {
-            filtered = append(filtered, card)
-        }
-    }
-    return filtered
+	divMap := make(map[string]bool)
+	for _, d := range divs {
+		divMap[d] = true
+	}
+
+	var filtered []BoardCard
+	for _, card := range cards {
+		matchesSearch := q == "" || strings.Contains(strings.ToLower(card.PlayerAName), q) ||
+			strings.Contains(strings.ToLower(card.PlayerBName), q) ||
+			strings.Contains(strings.ToLower(card.GroupName), q)
+		matchesDiv := len(divMap) == 0 || divMap[card.DivisionName]
+
+		if matchesSearch && matchesDiv {
+			filtered = append(filtered, card)
+		}
+	}
+	return filtered
 }
 
 func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Division) (scheduled, inProgress, finished []BoardCard) {
@@ -820,19 +820,19 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 					if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID) {
 						groupName := findGroupName(mv.Player1.ID)
 						scheduled = append(scheduled, BoardCard{
-							MatchID:     "",
-							Status:      "scheduled",
-							Stage:       mv.Stage,
-							BestOf:      mv.BestOf,
-							PlayerAName: mv.Player1.FirstNameWithSecond() + " " + mv.Player1.LastNameWithSecond(),
-							PlayerBName: mv.Player2.FirstNameWithSecond() + " " + mv.Player2.LastNameWithSecond(),
-							P1Id:        mv.Player1.ID,
-							P2Id:        mv.Player2.ID,
-							TableNumber: nil,
-							ScoreA:      0,
-							ScoreB:      0,
-							Pin:         "",
-							GroupName:   groupName,
+							MatchID:      "",
+							Status:       "scheduled",
+							Stage:        mv.Stage,
+							BestOf:       mv.BestOf,
+							PlayerAName:  mv.Player1.FirstNameWithSecond() + " " + mv.Player1.LastNameWithSecond(),
+							PlayerBName:  mv.Player2.FirstNameWithSecond() + " " + mv.Player2.LastNameWithSecond(),
+							P1Id:         mv.Player1.ID,
+							P2Id:         mv.Player2.ID,
+							TableNumber:  nil,
+							ScoreA:       0,
+							ScoreB:       0,
+							Pin:          "",
+							GroupName:    groupName,
 							DivisionName: dv.Name,
 						})
 					}
@@ -844,19 +844,19 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 					if mv.Player1 != nil && mv.Player2 != nil {
 						if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID) {
 							scheduled = append(scheduled, BoardCard{
-								MatchID:     "",
-								Status:      "scheduled",
-								Stage:       mv.Stage,
-								BestOf:      mv.BestOf,
-								PlayerAName: mv.Player1.FirstNameWithSecond() + " " + mv.Player1.LastNameWithSecond(),
-								PlayerBName: mv.Player2.FirstNameWithSecond() + " " + mv.Player2.LastNameWithSecond(),
-								P1Id:        mv.Player1.ID,
-								P2Id:        mv.Player2.ID,
-								TableNumber: nil,
-								ScoreA:      0,
-								ScoreB:      0,
-								Pin:         "",
-								GroupName:   g.Name,
+								MatchID:      "",
+								Status:       "scheduled",
+								Stage:        mv.Stage,
+								BestOf:       mv.BestOf,
+								PlayerAName:  mv.Player1.FirstNameWithSecond() + " " + mv.Player1.LastNameWithSecond(),
+								PlayerBName:  mv.Player2.FirstNameWithSecond() + " " + mv.Player2.LastNameWithSecond(),
+								P1Id:         mv.Player1.ID,
+								P2Id:         mv.Player2.ID,
+								TableNumber:  nil,
+								ScoreA:       0,
+								ScoreB:       0,
+								Pin:          "",
+								GroupName:    g.Name,
 								DivisionName: dv.Name,
 							})
 						}
@@ -869,19 +869,19 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 						if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
 							if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID) {
 								scheduled = append(scheduled, BoardCard{
-									MatchID:     "",
-									Status:      "scheduled",
-									Stage:       bmv.Stage,
-									BestOf:      bmv.BestOf,
-									PlayerAName: bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
-									PlayerBName: bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
-									P1Id:        bmv.Player1.Player.ID,
-									P2Id:        bmv.Player2.Player.ID,
-									TableNumber: nil,
-									ScoreA:      0,
-									ScoreB:      0,
-									Pin:         "",
-									GroupName:   "",
+									MatchID:      "",
+									Status:       "scheduled",
+									Stage:        bmv.Stage,
+									BestOf:       bmv.BestOf,
+									PlayerAName:  bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
+									PlayerBName:  bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
+									P1Id:         bmv.Player1.Player.ID,
+									P2Id:         bmv.Player2.Player.ID,
+									TableNumber:  nil,
+									ScoreA:       0,
+									ScoreB:       0,
+									Pin:          "",
+									GroupName:    "",
 									DivisionName: dv.Name,
 								})
 							}
@@ -895,19 +895,19 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 					if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
 						if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID) {
 							scheduled = append(scheduled, BoardCard{
-								MatchID:     "",
-								Status:      "scheduled",
-								Stage:       bmv.Stage,
-								BestOf:      bmv.BestOf,
-								PlayerAName: bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
-								PlayerBName: bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
-								P1Id:        bmv.Player1.Player.ID,
-								P2Id:        bmv.Player2.Player.ID,
-								TableNumber: nil,
-								ScoreA:      0,
-								ScoreB:      0,
-								Pin:         "",
-								GroupName:   "",
+								MatchID:      "",
+								Status:       "scheduled",
+								Stage:        bmv.Stage,
+								BestOf:       bmv.BestOf,
+								PlayerAName:  bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
+								PlayerBName:  bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
+								P1Id:         bmv.Player1.Player.ID,
+								P2Id:         bmv.Player2.Player.ID,
+								TableNumber:  nil,
+								ScoreA:       0,
+								ScoreB:       0,
+								Pin:          "",
+								GroupName:    "",
 								DivisionName: dv.Name,
 							})
 						}
@@ -916,11 +916,11 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 			}
 		}
 	}
-	
+
 	// Sort scheduled matches so oldest (first created) appear at the top.
 	// We can use MatchID as a proxy for creation time if it's sortable (e.g., UUID or sequential ID),
 	// or we can just leave the order since the original loop usually appends in order of creation.
-	// But to be explicit and allow players to rest, we can sort by MatchID length or alphabetically 
+	// But to be explicit and allow players to rest, we can sort by MatchID length or alphabetically
 	// assuming they are sequential. Actually, t.Matches is usually already ordered by DB creation.
 	// If the user wants oldest first, and we appended them sequentially, they might already be in order.
 	// But let's reverse them if they are newest-first, or just sort them by MatchID to be safe.
@@ -935,7 +935,7 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 		// Otherwise sort by MatchID
 		return scheduled[i].MatchID < scheduled[j].MatchID
 	})
-	
+
 	return
 }
 
@@ -955,7 +955,7 @@ func matchExists(matches []tournamentDomain.Match, p1ID, p2ID string) bool {
 
 func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	type result struct {
 		tournament *tournamentDomain.Tournament
 		err        error
@@ -982,13 +982,27 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 	divs := res.divisions
 	scheduled, inProgress, finished := buildBoardCards(t, divs)
 	tables := buildTables(t, "", h.getOccupiedTables(c.Context(), t))
-	
+
 	uniqueDivsMap := make(map[string]bool)
-	for _, c := range scheduled { if c.DivisionName != "" { uniqueDivsMap[c.DivisionName] = true } }
-	for _, c := range inProgress { if c.DivisionName != "" { uniqueDivsMap[c.DivisionName] = true } }
-	for _, c := range finished { if c.DivisionName != "" { uniqueDivsMap[c.DivisionName] = true } }
+	for _, c := range scheduled {
+		if c.DivisionName != "" {
+			uniqueDivsMap[c.DivisionName] = true
+		}
+	}
+	for _, c := range inProgress {
+		if c.DivisionName != "" {
+			uniqueDivsMap[c.DivisionName] = true
+		}
+	}
+	for _, c := range finished {
+		if c.DivisionName != "" {
+			uniqueDivsMap[c.DivisionName] = true
+		}
+	}
 	var allDivs []string
-	for d := range uniqueDivsMap { allDivs = append(allDivs, d) }
+	for d := range uniqueDivsMap {
+		allDivs = append(allDivs, d)
+	}
 	sort.Strings(allDivs)
 
 	q := strings.ToLower(c.Query("q"))
@@ -997,29 +1011,31 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 		selectedDivs = append(selectedDivs, string(d))
 	}
 	if c.Query("q") != "" || len(selectedDivs) > 0 {
-			scheduled = filterBoardCards(scheduled, q, selectedDivs)
-			inProgress = filterBoardCards(inProgress, q, selectedDivs)
-			finished = filterBoardCards(finished, q, selectedDivs)
+		scheduled = filterBoardCards(scheduled, q, selectedDivs)
+		inProgress = filterBoardCards(inProgress, q, selectedDivs)
+		finished = filterBoardCards(finished, q, selectedDivs)
 	}
-	
+
 	selectedDivsMap := make(map[string]bool)
-	for _, d := range selectedDivs { selectedDivsMap[d] = true }
+	for _, d := range selectedDivs {
+		selectedDivsMap[d] = true
+	}
 
 	return c.Render("admin/tournament-board", fiber.Map{
-			"Tournament":   t,
-			"Scheduled":    scheduled,
-			"InProgress":   inProgress,
-			"Finished":     finished,
-			"Tables":       tables,
-			"AllDivisions": allDivs,
-			"QueryQ":       c.Query("q"),
-			"SelectedDivs": selectedDivsMap,
+		"Tournament":   t,
+		"Scheduled":    scheduled,
+		"InProgress":   inProgress,
+		"Finished":     finished,
+		"Tables":       tables,
+		"AllDivisions": allDivs,
+		"QueryQ":       c.Query("q"),
+		"SelectedDivs": selectedDivsMap,
 	}, "layouts/admin")
 }
 
 func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	type result struct {
 		tournament *tournamentDomain.Tournament
 		err        error
@@ -1050,22 +1066,22 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	q := strings.ToLower(c.Query("q"))
 	var selectedDivs []string
 	for _, d := range c.Request().URI().QueryArgs().PeekMulti("div") {
-			selectedDivs = append(selectedDivs, string(d))
+		selectedDivs = append(selectedDivs, string(d))
 	}
 
 	if c.Query("q") != "" || len(selectedDivs) > 0 {
-			scheduled = filterBoardCards(scheduled, q, selectedDivs)
-			inProgress = filterBoardCards(inProgress, q, selectedDivs)
-			finished = filterBoardCards(finished, q, selectedDivs)
+		scheduled = filterBoardCards(scheduled, q, selectedDivs)
+		inProgress = filterBoardCards(inProgress, q, selectedDivs)
+		finished = filterBoardCards(finished, q, selectedDivs)
 	}
 
 	return c.Render("admin/partials/board-columns", fiber.Map{
-			"Tournament": t,
-			"Scheduled":  scheduled,
-			"InProgress": inProgress,
-			"Finished":   finished,
-			"Tables":     tables,
-			"T":          c.Locals("T"),
-			"Lang":       c.Locals("Lang"),
+		"Tournament": t,
+		"Scheduled":  scheduled,
+		"InProgress": inProgress,
+		"Finished":   finished,
+		"Tables":     tables,
+		"T":          c.Locals("T"),
+		"Lang":       c.Locals("Lang"),
 	})
 }

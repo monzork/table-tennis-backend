@@ -19,7 +19,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
-
 type Container struct {
 	PlayerHandler      *handler.PlayerHandler
 	TournamentHandler  *handler.TournamentHandler

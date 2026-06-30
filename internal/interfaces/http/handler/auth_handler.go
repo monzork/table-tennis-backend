@@ -1,11 +1,11 @@
 package handler
 
 import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/session"
 	"table-tennis-backend/internal/domain/security"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	"table-tennis-backend/internal/interfaces/http/i18n"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
 type AuthHandler struct {

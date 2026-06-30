@@ -2169,9 +2169,23 @@ func (h *MatchHandler) ShowMatchScorePage(c *fiber.Ctx) error {
 // Otherwise, it renders the table-no-match page.
 func (h *MatchHandler) ShowTableScorePage(c *fiber.Ctx) error {
 	tournamentIDStr := c.Params("tournamentId")
-	tournamentUUID, err := uuid.Parse(tournamentIDStr)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid tournament ID")
+	eventIDStr := c.Params("eventId")
+
+	var err error
+	var tournamentUUID, eventUUID uuid.UUID
+
+	if tournamentIDStr != "" {
+		tournamentUUID, err = uuid.Parse(tournamentIDStr)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "Invalid tournament ID")
+		}
+	} else if eventIDStr != "" {
+		eventUUID, err = uuid.Parse(eventIDStr)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "Invalid event ID")
+		}
+	} else {
+		return fiber.NewError(fiber.StatusBadRequest, "Missing tournament or event ID")
 	}
 
 	tableNumberStr := c.Params("tableNumber")
@@ -2180,12 +2194,18 @@ func (h *MatchHandler) ShowTableScorePage(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid table number")
 	}
 
-	// Query for an in_progress match on this table within the specific tournament
+	// Query for an in_progress match on this table within the specific tournament or event
 	var m bun.MatchModel
-	err = h.matchRepo.DB().NewSelect().Model(&m).
-		Where("tournament_id = ? AND status = 'in_progress' AND table_number = ?", tournamentUUID, tableNumber).
-		Limit(1).
-		Scan(c.Context())
+	q := h.matchRepo.DB().NewSelect().Model(&m).
+		Where("status = 'in_progress' AND table_number = ?", tableNumber)
+
+	if tournamentIDStr != "" {
+		q.Where("tournament_id = ?", tournamentUUID)
+	} else if eventIDStr != "" {
+		q.Where("tournament_id IN (SELECT id FROM tournaments WHERE event_id = ?)", eventUUID)
+	}
+
+	err = q.Limit(1).Scan(c.Context())
 
 	lang := getLang(c)
 	tMap := i18n.PrecomputedMaps[lang]

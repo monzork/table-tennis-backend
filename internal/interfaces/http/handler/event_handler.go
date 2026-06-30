@@ -61,7 +61,7 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 	endDate := c.FormValue("endDate")
 
 	parseCategoryConfig := func(catKey string, defaultFormat string) event.CategoryConfig {
-		auto := c.FormValue("auto" + catKey) == "on"
+		auto := c.FormValue("auto"+catKey) == "on"
 		format := c.FormValue("format" + catKey)
 		if format == "" {
 			format = c.FormValue("format")
@@ -70,20 +70,20 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 			}
 		}
 		passCount := 2
-		fmt.Sscanf(c.FormValue("groupPassCount" + catKey), "%d", &passCount)
-		
+		fmt.Sscanf(c.FormValue("groupPassCount"+catKey), "%d", &passCount)
+
 		var ids []string
 		for _, rawId := range c.Request().PostArgs().PeekMulti("participantIds" + catKey + "[]") {
 			ids = append(ids, string(rawId))
 		}
-		
+
 		// Fallback to global player pool if specific category pool is empty
 		if len(ids) == 0 {
 			for _, rawId := range c.Request().PostArgs().PeekMulti("participant_ids[]") {
 				ids = append(ids, string(rawId))
 			}
 		}
-		
+
 		return event.CategoryConfig{
 			Auto:           auto,
 			Format:         format,
@@ -133,7 +133,7 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 
 func (h *EventHandler) Detail(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	type result struct {
 		event     any
 		err       error
@@ -202,7 +202,7 @@ func (h *EventHandler) DeleteBulk(c *fiber.Ctx) error {
 func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 	lang := getLang(c)
 	id := c.Params("id")
-	
+
 	type result struct {
 		event     any
 		err       error

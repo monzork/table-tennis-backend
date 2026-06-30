@@ -20,10 +20,10 @@ func NewDivisionHandler(uc *division.DivisionUseCase) *DivisionHandler {
 func (h *DivisionHandler) CreateOrUpdate(c *fiber.Ctx) error {
 	id := c.FormValue("id")
 	name := c.FormValue("name")
-	
+
 	order, _ := strconv.Atoi(c.FormValue("display_order"))
 	minElo, _ := strconv.Atoi(c.FormValue("min_elo"))
-	
+
 	maxEloStr := c.FormValue("max_elo")
 	var maxElo *int16
 	if strings.TrimSpace(maxEloStr) != "" {
@@ -49,7 +49,7 @@ func (h *DivisionHandler) CreateOrUpdate(c *fiber.Ctx) error {
 	// Actually, if it's new, we might not know the ID easily without refactoring UseCase.
 	// Let's just return a redirect or a signal to reload if new, or the partial if update.
 	// Better: just fetch all and return rows for simplicity.
-	
+
 	if id != "" {
 		d, _ := h.uc.GetById(c.Context(), id)
 		return c.Render("admin/partials/division-row", d)

@@ -24,7 +24,7 @@ func TestTournamentHandler(t *testing.T) {
 	loginReq := httptest.NewRequest("POST", "/admin/login", strings.NewReader("username=admin&password=password"))
 	loginReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	loginResp, _ := app.Test(loginReq)
-	
+
 	var sessionCookie string
 	for _, v := range loginResp.Header.Values("Set-Cookie") {
 		if strings.HasPrefix(v, "session_id=") {
@@ -35,7 +35,7 @@ func TestTournamentHandler(t *testing.T) {
 	ctx := context.Background()
 	playerRepo := bunRepo.NewPlayerRepository(db)
 	tournamentRepo := bunRepo.NewTournamentRepository(db)
-	
+
 	p1, _ := playerDomain.NewPlayer(uuid.New().String(), "Test", "Player1", time.Now(), "M", "", "", "")
 	playerRepo.Save(ctx, p1)
 
@@ -104,7 +104,7 @@ func TestTournamentHandler(t *testing.T) {
 		if resp.StatusCode != 200 {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
-		
+
 		if !strings.Contains(resp.Header.Get("Content-Type"), "text/csv") {
 			t.Errorf("expected text/csv Content-Type, got %v", resp.Header.Get("Content-Type"))
 		}
@@ -122,12 +122,12 @@ func TestTournamentHandler(t *testing.T) {
 		if resp.StatusCode != 200 {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
-		
+
 		if !strings.Contains(resp.Header.Get("Content-Type"), "application/pdf") {
 			t.Errorf("expected application/pdf Content-Type, got %v", resp.Header.Get("Content-Type"))
 		}
 	})
-	
+
 	t.Run("Delete Tournament", func(t *testing.T) {
 		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Temp", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, nil, false)
 		tournamentRepo.Save(ctx, tourney)

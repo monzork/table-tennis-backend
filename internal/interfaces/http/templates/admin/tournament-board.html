@@ -1,4 +1,4 @@
-<div class="space-y-6 text-white/90">
+<div class="space-y-6 text-white/90" data-event-id="{{if .Tournament.EventID}}{{.Tournament.EventID}}{{end}}">
 
   {{/* ── Header ── */}}
   <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -122,12 +122,13 @@
 <div id="toast-container" class="fixed top-6 right-6 z-[250] space-y-3 pointer-events-none"></div>
 
 <script>
+
   function openScoreModal(url) {
     document.getElementById('score-modal').classList.remove('hidden');
     htmx.ajax('GET', url, { target: '#score-modal-body', swap: 'innerHTML' });
   }
 
-  function showQRCodeModal(matchId, matchup, tableNumber, tournamentId) {
+  function showQRCodeModal(matchId, matchup, tableNumber, tournamentId, eventId) {
     const modal = document.getElementById('qr-modal');
     const matchupEl = document.getElementById('qr-matchup');
     const imageEl = document.getElementById('qr-image');
@@ -135,8 +136,14 @@
     const openBtn = document.getElementById('qr-open-btn');
 
     let scoreUrl;
-    if (tableNumber && tableNumber !== "" && tableNumber !== "null" && tableNumber !== "undefined" && tournamentId) {
-      scoreUrl = window.location.origin + '/score/t/' + tournamentId + '/table/' + tableNumber;
+    if (tableNumber && tableNumber !== "" && tableNumber !== "null" && tableNumber !== "undefined") {
+      if (eventId && eventId !== "" && eventId !== "null" && eventId !== "undefined") {
+        scoreUrl = window.location.origin + '/score/e/' + eventId + '/table/' + tableNumber;
+      } else if (tournamentId && tournamentId !== "" && tournamentId !== "null" && tournamentId !== "undefined") {
+        scoreUrl = window.location.origin + '/score/t/' + tournamentId + '/table/' + tableNumber;
+      } else {
+        scoreUrl = window.location.origin + '/score/' + matchId;
+      }
     } else {
       scoreUrl = window.location.origin + '/score/' + matchId;
     }

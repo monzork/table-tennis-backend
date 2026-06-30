@@ -226,7 +226,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 		Views:             engine,
 		PassLocalsToViews: true,
 	})
-	
+
 	// Global Translation Middleware for tests
 	app.Use(func(c *fiber.Ctx) error {
 		lang := c.Cookies("lang")
@@ -234,7 +234,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 			lang = "en"
 		}
 		c.Locals("Lang", lang)
-		
+
 		translations := make(map[string]string)
 		if lang == "es" {
 			translations = map[string]string{

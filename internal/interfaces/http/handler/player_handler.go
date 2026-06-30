@@ -126,7 +126,7 @@ func (h *PlayerHandler) Search(c *fiber.Ctx) error {
 
 func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
 	query := c.Query("q")
-	gender := c.Query("gender")        // optional: "M" or "F"
+	gender := c.Query("gender") // optional: "M" or "F"
 	category := c.Query("eventCategory")
 	if category == "men" {
 		gender = "M"

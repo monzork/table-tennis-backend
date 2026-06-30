@@ -48,7 +48,7 @@ func (h *PublicHandler) SetLang(c *fiber.Ctx) error {
 		Name:     "lang",
 		Value:    locale,
 		MaxAge:   60 * 60 * 24 * 365, // 1 year
-		HTTPOnly: false,               // JS can read for future use if needed
+		HTTPOnly: false,              // JS can read for future use if needed
 		SameSite: "Lax",
 	})
 	// Redirect back to the page the user was on

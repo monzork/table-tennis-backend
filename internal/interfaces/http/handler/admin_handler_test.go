@@ -36,7 +36,7 @@ func TestAdminHandler(t *testing.T) {
 
 		loginReq := httptest.NewRequest("POST", "/admin/login", strings.NewReader(data.Encode()))
 		loginReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		
+
 		loginResp, err := app.Test(loginReq)
 		if err != nil {
 			t.Fatalf("test request failed: %v", err)
@@ -56,7 +56,7 @@ func TestAdminHandler(t *testing.T) {
 		// 2. Access dashboard
 		req := httptest.NewRequest("GET", "/admin/", nil)
 		req.Header.Set("Cookie", sessionCookie)
-		
+
 		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("test request failed: %v", err)

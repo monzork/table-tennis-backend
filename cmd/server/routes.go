@@ -4,9 +4,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	fiberws "github.com/gofiber/websocket/v2"
-	"time"
-	"table-tennis-backend/internal/interfaces/http/handler"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
+	"table-tennis-backend/internal/interfaces/http/handler"
+	"time"
 )
 
 func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
@@ -78,6 +78,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	// QR-code score entry — shareable per-match URL
 	app.Get("/score/:matchId", c.MatchHandler.ShowMatchScorePage)
 	app.Get("/score/t/:tournamentId/table/:tableNumber", c.MatchHandler.ShowTableScorePage)
+	app.Get("/score/e/:eventId/table/:tableNumber", c.MatchHandler.ShowTableScorePage)
 	app.Post("/score/:matchId/verify", c.MatchHandler.ValidateMatchPIN)
 
 	// QR Code generation endpoint

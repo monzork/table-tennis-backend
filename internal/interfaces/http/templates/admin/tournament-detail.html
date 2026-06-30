@@ -6,7 +6,7 @@
   .fade-up { animation: fadeInUp 0.4s ease forwards; }
 </style>
 
-<div class="space-y-10 text-white/90 animate-fade-in">
+<div class="space-y-10 text-white/90 animate-fade-in" data-event-id="{{if .Tournament.EventID}}{{.Tournament.EventID}}{{end}}">
 
   {{/* ── Referee Alerts Container ── */}}
   <div id="referee-alerts-container" class="space-y-2"></div>
@@ -417,17 +417,14 @@
     // ── Drag & Drop ── JS reads data-* attributes at drop time → htmx.ajax() POST.
     // Server responds with HX-Trigger: reload-bracket → bracket reloads automatically.
 
-    let _draggedPlayerId = null;
-
     function onDragStart(event, playerId) {
-        _draggedPlayerId = playerId;
+        event.dataTransfer.setData('text/plain', playerId);
         event.dataTransfer.effectAllowed = 'move';
         event.currentTarget.classList.add('opacity-40');
     }
 
     function onDragEnd(event) {
         event.currentTarget.classList.remove('opacity-40');
-        _draggedPlayerId = null;
     }
 
     // ── Group-card / seeding-draw container drop zone ──
@@ -453,7 +450,7 @@
         el.classList.add('border-white/5');
         el.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
 
-        const playerId = _draggedPlayerId;
+        const playerId = event.dataTransfer.getData('text/plain');
         if (!playerId) return;
 
         const tournamentId = el.dataset.tournamentId;
@@ -490,7 +487,7 @@
         event.stopPropagation();
         el.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
 
-        const playerId = _draggedPlayerId;
+        const playerId = event.dataTransfer.getData('text/plain');
         if (!playerId) return;
 
         const tournamentId = el.dataset.tournamentId;
@@ -504,7 +501,7 @@
         });
     }
 
-    function showQRCodeModal(matchId, matchup, tableNumber, tournamentId) {
+    function showQRCodeModal(matchId, matchup, tableNumber, tournamentId, eventId) {
         const modal = document.getElementById('qr-modal');
         const matchupEl = document.getElementById('qr-matchup');
         const imageEl = document.getElementById('qr-image');
@@ -512,8 +509,14 @@
         const openBtn = document.getElementById('qr-open-btn');
         
         let scoreUrl;
-        if (tableNumber && tableNumber !== "" && tableNumber !== "null" && tableNumber !== "undefined" && tournamentId) {
-            scoreUrl = window.location.origin + '/score/t/' + tournamentId + '/table/' + tableNumber;
+        if (tableNumber && tableNumber !== "" && tableNumber !== "null" && tableNumber !== "undefined") {
+            if (eventId && eventId !== "" && eventId !== "null" && eventId !== "undefined") {
+                scoreUrl = window.location.origin + '/score/e/' + eventId + '/table/' + tableNumber;
+            } else if (tournamentId && tournamentId !== "" && tournamentId !== "null" && tournamentId !== "undefined") {
+                scoreUrl = window.location.origin + '/score/t/' + tournamentId + '/table/' + tableNumber;
+            } else {
+                scoreUrl = window.location.origin + '/score/' + matchId;
+            }
         } else {
             scoreUrl = window.location.origin + '/score/' + matchId;
         }

@@ -1,14 +1,14 @@
 package handler_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"mime/multipart"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
-	"bytes"
-	"mime/multipart"
 
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
 )
@@ -23,7 +23,7 @@ func TestPlayerHandler(t *testing.T) {
 	loginReq := httptest.NewRequest("POST", "/admin/login", strings.NewReader("username=admin&password=password"))
 	loginReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	loginResp, _ := app.Test(loginReq)
-	
+
 	var sessionCookie string
 	for _, v := range loginResp.Header.Values("Set-Cookie") {
 		if strings.HasPrefix(v, "session_id=") {

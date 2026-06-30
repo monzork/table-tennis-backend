@@ -34,6 +34,6 @@ func (h *QRHandler) Generate(c *fiber.Ctx) error {
 
 	c.Set("Content-Type", "image/png")
 	// Cache it for a while since it's static for the same URL
-	c.Set("Cache-Control", "public, max-age=31536000") 
+	c.Set("Cache-Control", "public, max-age=31536000")
 	return c.Send(pngBytes)
 }

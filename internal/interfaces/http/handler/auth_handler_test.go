@@ -32,7 +32,7 @@ func TestAuthHandler(t *testing.T) {
 
 		req := httptest.NewRequest("POST", "/admin/login", strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		
+
 		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("test request failed: %v", err)
@@ -55,7 +55,7 @@ func TestAuthHandler(t *testing.T) {
 
 		req := httptest.NewRequest("POST", "/admin/login", strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		
+
 		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("test request failed: %v", err)

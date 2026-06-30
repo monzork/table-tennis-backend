@@ -25,7 +25,7 @@ func TestMatchHandler(t *testing.T) {
 	loginReq := httptest.NewRequest("POST", "/admin/login", strings.NewReader("username=admin&password=password"))
 	loginReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	loginResp, _ := app.Test(loginReq)
-	
+
 	var sessionCookie string
 	for _, v := range loginResp.Header.Values("Set-Cookie") {
 		if strings.HasPrefix(v, "session_id=") {
@@ -38,7 +38,7 @@ func TestMatchHandler(t *testing.T) {
 	playerRepo := bunRepo.NewPlayerRepository(db)
 	tournamentRepo := bunRepo.NewTournamentRepository(db)
 	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
-	
+
 	p1, _ := playerDomain.NewPlayer(uuid.New().String(), "Alice", "Smith", time.Now(), "F", "", "", "")
 	p2, _ := playerDomain.NewPlayer(uuid.New().String(), "Bob", "Jones", time.Now(), "M", "", "", "")
 	playerRepo.Save(ctx, p1)
@@ -88,7 +88,7 @@ func TestMatchHandler(t *testing.T) {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
 	})
-	
+
 	t.Run("Invalid Score Update", func(t *testing.T) {
 		req := httptest.NewRequest("PUT", fmt.Sprintf("/matches/%s/score", uuid.New().String()), bytes.NewReader([]byte{}))
 		req.Header.Set("Cookie", sessionCookie)

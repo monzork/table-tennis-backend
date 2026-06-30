@@ -70,7 +70,7 @@ func (h *LeaderboardHandler) getGroupedPlayers(c *fiber.Ctx, rankType string) ([
 	divisions = filteredDivisions
 
 	var groups []DivisionGroup
-	
+
 	for _, div := range divisions {
 		var divPlayers []*player.Player
 		for _, p := range players {
@@ -82,7 +82,7 @@ func (h *LeaderboardHandler) getGroupedPlayers(c *fiber.Ctx, rankType string) ([
 				divPlayers = append(divPlayers, p)
 			}
 		}
-		
+
 		if len(divPlayers) > 0 {
 			groups = append(groups, DivisionGroup{
 				Division: div,

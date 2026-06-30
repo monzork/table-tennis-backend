@@ -32,11 +32,11 @@ type DivisionView struct {
 
 	// GroupID is the DB group ID for elimination-format seeding draw.
 	// Empty for rounds-robin / groups-elimination divisions.
-	GroupID           string
+	GroupID string
 
-	Format            string
-	Standings         []PlayerStanding
-	RoundRobinMatches []MatchView
+	Format             string
+	Standings          []PlayerStanding
+	RoundRobinMatches  []MatchView
 	RoundRobinFinished bool
 
 	Groups            []GroupView
@@ -301,7 +301,7 @@ func buildDivisionView(t *tournament.Tournament, name, color string, minElo int1
 		dv.RoundRobinFinished = expectedMatches > 0 && finishedMatches >= expectedMatches
 	} else if t.Format == "groups_elimination" {
 		dv.Groups, dv.AllGroupsFinished = buildGroupEliminationGroups(t, players)
-		
+
 		if dv.AllGroupsFinished {
 			var advancing []*player.Player
 			for _, g := range dv.Groups {
@@ -342,26 +342,21 @@ func splitKnockoutRounds(rounds []RoundView) (left, right, center []RoundView) {
 			center = append(center, r)
 		} else {
 			half := len(r.Matches) / 2
-			
+
 			leftRound := RoundView{Name: r.Name, Matches: r.Matches[:half]}
 			rightRound := RoundView{Name: r.Name, Matches: r.Matches[half:]}
-			
+
 			left = append(left, leftRound)
 			right = append(right, rightRound)
 		}
 	}
-	
+
 	for i, j := 0, len(right)-1; i < j; i, j = i+1, j-1 {
 		right[i], right[j] = right[j], right[i]
 	}
-	
+
 	return left, right, center
 }
-
-
-
-
-
 
 func buildStandings(players []*player.Player, matches []tournament.Match) []PlayerStanding {
 	return tournament.BuildStandings(players, matches)
@@ -429,7 +424,9 @@ func buildGroupEliminationGroups(t *tournament.Tournament, players []*player.Pla
 			expectedMatches := len(g.Players) * (len(g.Players) - 1) / 2
 			finished := 0
 			for _, m := range t.Matches {
-				if len(m.TeamA) == 0 || len(m.TeamB) == 0 { continue }
+				if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
+					continue
+				}
 				for _, p1 := range g.Players {
 					for _, p2 := range g.Players {
 						if p1.ID != p2.ID {
@@ -489,7 +486,9 @@ func buildGroupEliminationGroups(t *tournament.Tournament, players []*player.Pla
 		expectedMatches := len(gp) * (len(gp) - 1) / 2
 		finished := 0
 		for _, m := range t.Matches {
-            if len(m.TeamA) == 0 || len(m.TeamB) == 0 { continue }
+			if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
+				continue
+			}
 			for _, p1 := range gp {
 				for _, p2 := range gp {
 					if p1.ID != p2.ID {
@@ -503,7 +502,7 @@ func buildGroupEliminationGroups(t *tournament.Tournament, players []*player.Pla
 			}
 		}
 		finished = finished / 2
-		
+
 		isFinished := expectedMatches > 0 && finished >= expectedMatches
 		if !isFinished {
 			allFinished = false
@@ -575,7 +574,7 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 		if i+1 < len(arrangement) {
 			s2 = arrangement[i+1] - 1
 		}
-		
+
 		var p1, p2 *MatchSlot
 		if s1 >= 0 && s1 < len(players) {
 			p1 = &MatchSlot{Seed: s1 + 1, Player: players[s1]}
@@ -587,13 +586,13 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 	}
 
 	var rounds []RoundView
-	
+
 	var thirdPlaceP1, thirdPlaceP2 *MatchSlot
-	
+
 	for len(current) > 1 {
 		var next []Pair
 		var rvMatches []BracketMatchView
-		
+
 		stageNameCurrent := "r32"
 		rem := len(current)
 		if rem == 8 {
@@ -605,7 +604,7 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 		} else if rem == 1 {
 			stageNameCurrent = "final"
 		}
-		
+
 		for i := 0; i < len(current); i += 2 {
 			mLeft := current[i]
 			mRight := current[i+1]
@@ -618,9 +617,15 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 				v1 := m.P1 != nil && m.P1.Player != nil
 				v2 := m.P2 != nil && m.P2.Player != nil
 
-				if !v1 && !v2 { return nil }
-				if v1 && !v2 { return m.P1 }
-				if !v1 && v2 { return m.P2 }
+				if !v1 && !v2 {
+					return nil
+				}
+				if v1 && !v2 {
+					return m.P1
+				}
+				if !v1 && v2 {
+					return m.P2
+				}
 
 				for k := range t.Matches {
 					tm := t.Matches[k]
@@ -628,11 +633,19 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 						continue
 					}
 					if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
-						if (tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID) {
-							if tm.WinnerTeam == "A" { return m.P1 } else { return m.P2 }
+						if tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID {
+							if tm.WinnerTeam == "A" {
+								return m.P1
+							} else {
+								return m.P2
+							}
 						}
-						if (tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID) {
-							if tm.WinnerTeam == "A" { return m.P2 } else { return m.P1 }
+						if tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID {
+							if tm.WinnerTeam == "A" {
+								return m.P2
+							} else {
+								return m.P1
+							}
 						}
 					}
 				}
@@ -647,9 +660,15 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 				v1 := m.P1 != nil && m.P1.Player != nil
 				v2 := m.P2 != nil && m.P2.Player != nil
 
-				if !v1 && !v2 { return nil }
-				if v1 && !v2 { return nil }
-				if !v1 && v2 { return nil }
+				if !v1 && !v2 {
+					return nil
+				}
+				if v1 && !v2 {
+					return nil
+				}
+				if !v1 && v2 {
+					return nil
+				}
 
 				for k := range t.Matches {
 					tm := t.Matches[k]
@@ -657,11 +676,19 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 						continue
 					}
 					if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
-						if (tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID) {
-							if tm.WinnerTeam == "A" { return m.P2 } else { return m.P1 }
+						if tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID {
+							if tm.WinnerTeam == "A" {
+								return m.P2
+							} else {
+								return m.P1
+							}
 						}
-						if (tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID) {
-							if tm.WinnerTeam == "A" { return m.P1 } else { return m.P2 }
+						if tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID {
+							if tm.WinnerTeam == "A" {
+								return m.P1
+							} else {
+								return m.P2
+							}
 						}
 					}
 				}
@@ -695,21 +722,27 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 					}
 				}
 			}
-			
+
 			rvMatches = append(rvMatches, BracketMatchView{
 				Player1: p1,
 				Player2: p2,
-				Match: foundMatch,
-				Stage: stageNameCurrent,
-				BestOf: getBestOfForStage(t, stageNameCurrent),
+				Match:   foundMatch,
+				Stage:   stageNameCurrent,
+				BestOf:  getBestOfForStage(t, stageNameCurrent),
 			})
 		}
 
 		name := fmt.Sprintf("Round of %d", len(current)*2)
-		if len(current) == 4 { name = "Quarter-Finals" } else if len(current) == 2 { name = "Semi-Finals" } else if len(current) == 1 { name = "Final" }
-		
+		if len(current) == 4 {
+			name = "Quarter-Finals"
+		} else if len(current) == 2 {
+			name = "Semi-Finals"
+		} else if len(current) == 1 {
+			name = "Final"
+		}
+
 		rounds = append(rounds, RoundView{Name: name, Matches: rvMatches})
-		
+
 		current = next
 	}
 
@@ -737,9 +770,17 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 						// Only crown champion when the final match is actually finished
 						if tm.Status == "finished" {
 							if tm.WinnerTeam == "A" {
-								if tm.TeamA[0].ID == p1.Player.ID { champion = p1 } else { champion = p2 }
+								if tm.TeamA[0].ID == p1.Player.ID {
+									champion = p1
+								} else {
+									champion = p2
+								}
 							} else {
-								if tm.TeamB[0].ID == p1.Player.ID { champion = p1 } else { champion = p2 }
+								if tm.TeamB[0].ID == p1.Player.ID {
+									champion = p1
+								} else {
+									champion = p2
+								}
 							}
 						}
 						break
@@ -756,9 +797,9 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 				{
 					Player1: p1,
 					Player2: p2,
-					Match: finalMatch,
-					Stage: "final",
-					BestOf: getBestOfForStage(t, "final"),
+					Match:   finalMatch,
+					Stage:   "final",
+					BestOf:  getBestOfForStage(t, "final"),
 				},
 			},
 		})
@@ -773,7 +814,7 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 			})
 		}
 	}
-	
+
 	if t.HasThirdPlaceMatch && (thirdPlaceP1 != nil || thirdPlaceP2 != nil) {
 		var thirdPlaceMatch *tournament.Match
 		if thirdPlaceP1 != unresolvedSlot && thirdPlaceP2 != unresolvedSlot && thirdPlaceP1 != nil && thirdPlaceP2 != nil && thirdPlaceP1.Player != nil && thirdPlaceP2.Player != nil {

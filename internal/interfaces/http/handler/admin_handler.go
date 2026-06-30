@@ -1,21 +1,21 @@
 package handler
 
 import (
+	"sync"
+	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/application/player"
 	"table-tennis-backend/internal/application/tournament"
-	"table-tennis-backend/internal/application/division"
-	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	eventUC "table-tennis-backend/internal/application/event"
 )
 
 type AdminHandler struct {
-	playerUC     *player.RegisterPlayerUseCase
-	tournamentUC *tournament.CreateTournamentUseCase
-	matchCreate  *match.CreateMatchUseCase
+	playerUC       *player.RegisterPlayerUseCase
+	tournamentUC   *tournament.CreateTournamentUseCase
+	matchCreate    *match.CreateMatchUseCase
 	matchList      *match.GetMatchesUseCase
 	leaderboard    *leaderboard.GetLeaderboardUseCase
 	getTournaments *tournament.GetTournamentsUseCase
