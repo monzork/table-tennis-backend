@@ -13,11 +13,6 @@ RUN go mod download
 # Copy the rest of the application source code
 COPY . .
 
-# Download standalone Tailwind CLI and build the CSS
-RUN wget -qO tailwindcss-linux https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64 \
-    && chmod +x tailwindcss-linux \
-    && ./tailwindcss-linux -i ./static/src/tailwind.css -o ./static/dist/tailwind.css --minify
-
 # Build the binary
 # - CGO_ENABLED=0: safe because modernc.org/sqlite is a pure-Go driver
 # - trimpath: strips local file paths from the binary (security + reproducibility)
