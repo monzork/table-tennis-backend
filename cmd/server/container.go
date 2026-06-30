@@ -12,6 +12,7 @@ import (
 	adminDomain "table-tennis-backend/internal/domain/admin"
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
+	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
 	qrinfra "table-tennis-backend/internal/infrastructure/qrcode"
 	"table-tennis-backend/internal/infrastructure/security"
 	"table-tennis-backend/internal/interfaces/http/handler"
@@ -56,7 +57,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
 	finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
 	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
-	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo)
+	pdfGenerator := pdfinfra.NewGoFpdfGenerator()
+	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo, pdfGenerator)
 	movePlayerUC := tournament.NewMovePlayerUseCase(tournamentRepo)
 	createTeamUC := tournament.NewCreateTeamUseCase(tournamentRepo)
 	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
@@ -82,7 +84,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		tournament.NewGetOccupiedTablesUseCase(matchRepo),
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
-	exportEventPdfUC := tournament.NewExportEventPdfUseCase(tournamentRepo, eventRepo)
+	exportEventPdfUC := tournament.NewExportEventPdfUseCase(eventRepo, pdfGenerator)
 	createEventUC := event.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
 	getEventByIDUC := event.NewGetEventByIDUseCase(eventRepo)
 	getAllEventsUC := event.NewGetAllEventsUseCase(eventRepo)

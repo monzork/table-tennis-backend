@@ -136,9 +136,9 @@ func (uc *FinishTournamentUseCase) determineWinner(t *tournamentDomain.Tournamen
 		}
 		if finalMatch != nil && finalMatch.WinnerTeam != "" {
 			if finalMatch.WinnerTeam == "A" {
-				return getTeamDisplayName(finalMatch.TeamA, t.Type)
+				return tournamentDomain.GetTeamDisplayName(finalMatch.TeamA, t.Type)
 			} else if finalMatch.WinnerTeam == "B" {
-				return getTeamDisplayName(finalMatch.TeamB, t.Type)
+				return tournamentDomain.GetTeamDisplayName(finalMatch.TeamB, t.Type)
 			}
 		}
 	} else if t.Format == "round_robin" {
@@ -165,27 +165,10 @@ func (uc *FinishTournamentUseCase) determineWinner(t *tournamentDomain.Tournamen
 		if len(standings) == 0 {
 			return ""
 		}
-		return getTeamDisplayName([]*player.Player{standings[0].Player}, t.Type)
+		return tournamentDomain.GetTeamDisplayName([]*player.Player{standings[0].Player}, t.Type)
 	}
 
 	return ""
 }
 
-func getTeamDisplayName(team []*player.Player, tournamentType string) string {
-	if len(team) == 0 {
-		return "N/A"
-	}
-	if tournamentType == "teams" {
-		return team[0].FirstName
-	}
-	if len(team) == 1 {
-		if team[0].LastName == "" {
-			return team[0].FirstName
-		}
-		return team[0].FirstName + " " + team[0].LastName
-	}
-	if len(team) == 2 {
-		return team[0].FirstName + " " + team[0].LastName + " / " + team[1].FirstName + " " + team[1].LastName
-	}
-	return team[0].FirstName + " " + team[0].LastName
-}
+// local func deleted
