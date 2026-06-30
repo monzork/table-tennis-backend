@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Dashboard - {{.Tournament.Name}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Inter', system-ui, sans-serif;
+            overflow: hidden; /* Prevent manual scrolling on TV */
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-black text-white p-6" hx-ext="ws" ws-connect="/ws/brackets/{{.Tournament.ID}}"
+      hx-on::ws-before-message="try { const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('body', 'reload-tv'); } } catch(e) {}">
+
+    <div class="h-screen flex flex-col gap-6"
+         hx-get="/tournaments/{{.Tournament.ID}}/tv"
+         hx-trigger="reload-tv, every 30s"
+         hx-select="#tv-content"
+         hx-target="#tv-content"
+         hx-swap="outerHTML">
+         
+        <div id="tv-content" class="flex flex-col h-full gap-6">
+            <header class="flex items-center justify-between glass rounded-3xl p-6 shadow-2xl">
+                <div>
+                    <h1 class="text-5xl font-extrabold uppercase tracking-tighter">{{.Tournament.Name}}<span class="text-blue-500">.</span></h1>
+                    <p class="text-gray-400 mt-2 font-mono uppercase tracking-widest text-sm">Live Tournament Dashboard</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="px-4 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full text-sm font-bold uppercase tracking-wider animate-pulse">
+                        🔴 LIVE
+                    </span>
+                    <div class="text-right">
+                        <p class="text-2xl font-black">{{len .Tournament.Participants}}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest">Players</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 grid grid-cols-2 gap-6 overflow-hidden">
+                <!-- LEFT: IN PROGRESS -->
+                <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-blue-500/20">
+                    <h2 class="text-2xl font-bold uppercase tracking-widest text-blue-400 mb-6 flex items-center gap-3">
+                        <svg class="w-8 h-8 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Now Playing
+                    </h2>
+                    <div class="flex-1 overflow-hidden relative">
+                        <div class="absolute inset-0 overflow-y-auto pr-4 space-y-4" style="scrollbar-width: none;">
+                            {{$inProgress := 0}}
+                            {{range .Tournament.Matches}}
+                                {{if eq .Status "in_progress"}}
+                                    {{$inProgress = 1}}
+                                    <div class="bg-black/50 border border-white/10 rounded-2xl p-6 flex items-center justify-between shadow-lg">
+                                        {{if .TableNumber}}
+                                            <div class="bg-blue-500 text-white rounded-xl w-16 h-16 flex flex-col items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+                                                <span class="text-xs font-bold uppercase tracking-widest opacity-80">Table</span>
+                                                <span class="text-2xl font-black">{{.TableNumber}}</span>
+                                            </div>
+                                        {{else}}
+                                            <div class="bg-gray-800 text-gray-400 rounded-xl w-16 h-16 flex items-center justify-center shrink-0">
+                                                <span class="text-xs font-bold uppercase tracking-widest">TBD</span>
+                                            </div>
+                                        {{end}}
+                                        
+                                        <div class="flex-1 px-8 flex justify-between items-center">
+                                            <div class="flex flex-col items-end flex-1 text-right">
+                                                {{range .TeamA}}
+                                                    <span class="text-xl sm:text-2xl font-bold truncate max-w-[200px]">{{.FirstNameWithSecond}} <span class="uppercase">{{.LastNameWithSecond}}</span></span>
+                                                {{end}}
+                                                <span class="text-blue-400 font-black text-4xl mt-2">{{.ScoreA}}</span>
+                                            </div>
+                                            
+                                            <div class="px-6 flex flex-col items-center justify-center">
+                                                <span class="text-xs font-black uppercase tracking-widest text-gray-600 mb-1">VS</span>
+                                                <span class="px-2 py-0.5 rounded bg-white/5 text-[9px] uppercase tracking-widest text-gray-400">{{.MatchType}}</span>
+                                            </div>
+
+                                            <div class="flex flex-col items-start flex-1 text-left">
+                                                {{range .TeamB}}
+                                                    <span class="text-xl sm:text-2xl font-bold truncate max-w-[200px]">{{.FirstNameWithSecond}} <span class="uppercase">{{.LastNameWithSecond}}</span></span>
+                                                {{end}}
+                                                <span class="text-blue-400 font-black text-4xl mt-2">{{.ScoreB}}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {{end}}
+                            {{end}}
+                            {{if eq $inProgress 0}}
+                                <div class="h-full flex items-center justify-center text-gray-500 text-lg uppercase tracking-widest font-bold">
+                                    No active matches
+                                </div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: RECENT RESULTS -->
+                <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-green-500/10">
+                    <h2 class="text-2xl font-bold uppercase tracking-widest text-green-400 mb-6 flex items-center gap-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Recent Results
+                    </h2>
+                    <div class="flex-1 overflow-hidden relative">
+                        <div class="absolute inset-0 overflow-y-auto pr-4 space-y-3" style="scrollbar-width: none;">
+                            {{$finishedCount := 0}}
+                            {{range .Tournament.Matches}}
+                                {{if eq .Status "finished"}}
+                                    {{$finishedCount = 1}}
+                                    <div class="bg-black/30 border border-white/5 rounded-2xl p-4 flex justify-between items-center">
+                                        <div class="flex-1 flex justify-between items-center text-sm sm:text-base">
+                                            <div class="w-1/2 text-right pr-4 {{if eq .WinnerTeam "A"}}text-white font-extrabold{{else}}text-gray-500{{end}}">
+                                                {{range .TeamA}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
+                                            </div>
+                                            <div class="px-4 py-1 rounded-full bg-white/5 border border-white/10 font-black font-mono text-lg flex gap-2 shadow-inner">
+                                                <span class="{{if eq .WinnerTeam "A"}}text-green-400{{else}}text-gray-500{{end}}">{{.ScoreA}}</span>
+                                                <span class="text-gray-600">-</span>
+                                                <span class="{{if eq .WinnerTeam "B"}}text-green-400{{else}}text-gray-500{{end}}">{{.ScoreB}}</span>
+                                            </div>
+                                            <div class="w-1/2 text-left pl-4 {{if eq .WinnerTeam "B"}}text-white font-extrabold{{else}}text-gray-500{{end}}">
+                                                {{range .TeamB}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {{end}}
+                            {{end}}
+                            {{if eq $finishedCount 0}}
+                                <div class="h-full flex items-center justify-center text-gray-600 text-lg uppercase tracking-widest font-bold">
+                                    No results yet
+                                </div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -622,6 +622,49 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	}), "layouts/public")
 }
 
+func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
+	lang := getLang(c)
+	id := c.Params("id")
+
+	type result struct {
+		tournament *tournamentDomain.Tournament
+		err        error
+		divisions  []*divisionDomain.Division
+		players    any
+	}
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	go func() {
+		defer wg.Done()
+		res.tournament, res.err = h.getByID.Execute(c.Context(), id)
+	}()
+	go func() {
+		defer wg.Done()
+		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
+	go func() {
+		defer wg.Done()
+		res.players, _ = h.leaderboardUC.ExecuteSingles(c.Context())
+	}()
+	wg.Wait()
+
+	if res.err != nil {
+		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+	}
+	
+	tmap, _ := c.Locals("T").(map[string]string)
+	vm := BuildTournamentViewModel(res.tournament, res.divisions, tmap)
+	vm.IsPublic = true
+
+	return c.Render("public/tv-dashboard", merge(tMap(lang), fiber.Map{
+		"Tournament":       res.tournament,
+		"Divisions":        res.divisions,
+		"BracketViewModel": vm,
+	})) // No layout for TV
+}
+
 // BoardCard is a flattened match representation used by the kanban board.
 type BoardCard struct {
 	MatchID      string

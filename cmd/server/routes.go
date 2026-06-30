@@ -58,6 +58,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 
 	// Public Detail Views
 	app.Get("/tournaments/:id", c.TournamentHandler.PublicDetail)
+	app.Get("/tournaments/:id/tv", c.TournamentHandler.PublicTVDashboard)
 	app.Get("/events/:id", c.EventHandler.PublicDetail)
 
 	// User Registration
