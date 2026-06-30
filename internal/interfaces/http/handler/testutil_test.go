@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"html/template"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
@@ -223,6 +224,9 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 			return v
 		}
 		return key
+	})
+	engine.AddFunc("safeHTML", func(s string) template.HTML {
+		return template.HTML(s)
 	})
 	app := fiber.New(fiber.Config{
 		Views:             engine,
