@@ -122,30 +122,55 @@
                     <div class="flex-1 overflow-hidden relative">
                         <div class="absolute inset-0 overflow-y-auto pr-2 space-y-4 auto-scroll-container">
                             {{$scheduledCount := 0}}
+                            
+                            {{/* 1st Loop: Matches ASSIGNED to a table (Priority) */}}
                             {{range .Tournament.Matches}}
                                 {{if eq .Status "scheduled"}}
-                                    {{/* Only show matches where both players/teams are known */}}
                                     {{if and (gt (len .TeamA) 0) (gt (len .TeamB) 0)}}
-                                        {{$scheduledCount = 1}}
-                                        <div class="bg-yellow-500/5 border border-yellow-500/10 rounded-2xl p-5 flex flex-col gap-3 shadow-lg">
-                                            <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                                                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">{{.MatchType}} • {{.Stage}}</span>
-                                                {{if .TableNumber}}
-                                                    <span class="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 text-[10px] font-bold uppercase tracking-widest border border-yellow-500/30">{{t $.T "tv.table"}} {{.TableNumber}}</span>
-                                                {{else}}
+                                        {{if .TableNumber}}
+                                            {{$scheduledCount = 1}}
+                                            <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-5 flex flex-col gap-3 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                                                <div class="flex justify-between items-center border-b border-yellow-500/20 pb-2">
+                                                    <span class="text-[10px] font-bold uppercase tracking-widest text-yellow-400/80">{{.MatchType}} • {{.Stage}}</span>
+                                                    <span class="px-2 py-0.5 rounded bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest animate-pulse">{{t $.T "tv.table"}} {{.TableNumber}}</span>
+                                                </div>
+                                                <div class="flex justify-between items-center text-lg">
+                                                    <div class="w-[45%] text-right font-bold truncate text-white">
+                                                        {{range .TeamA}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
+                                                    </div>
+                                                    <div class="w-[10%] text-center text-xs font-black text-yellow-500 italic">{{t $.T "tv.vs"}}</div>
+                                                    <div class="w-[45%] text-left font-bold truncate text-white">
+                                                        {{range .TeamB}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {{end}}
+                                    {{end}}
+                                {{end}}
+                            {{end}}
+
+                            {{/* 2nd Loop: Matches WAITING for a table */}}
+                            {{range .Tournament.Matches}}
+                                {{if eq .Status "scheduled"}}
+                                    {{if and (gt (len .TeamA) 0) (gt (len .TeamB) 0)}}
+                                        {{if not .TableNumber}}
+                                            {{$scheduledCount = 1}}
+                                            <div class="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-3 shadow-lg opacity-70">
+                                                <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                                                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">{{.MatchType}} • {{.Stage}}</span>
                                                     <span class="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-white/10">{{t $.T "tv.waiting"}}</span>
-                                                {{end}}
-                                            </div>
-                                            <div class="flex justify-between items-center text-lg">
-                                                <div class="w-[45%] text-right font-bold truncate text-gray-200">
-                                                    {{range .TeamA}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
                                                 </div>
-                                                <div class="w-[10%] text-center text-xs font-black text-gray-600 italic">{{t $.T "tv.vs"}}</div>
-                                                <div class="w-[45%] text-left font-bold truncate text-gray-200">
-                                                    {{range .TeamB}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
+                                                <div class="flex justify-between items-center text-lg">
+                                                    <div class="w-[45%] text-right font-bold truncate text-gray-200">
+                                                        {{range .TeamA}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
+                                                    </div>
+                                                    <div class="w-[10%] text-center text-xs font-black text-gray-600 italic">{{t $.T "tv.vs"}}</div>
+                                                    <div class="w-[45%] text-left font-bold truncate text-gray-200">
+                                                        {{range .TeamB}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        {{end}}
                                     {{end}}
                                 {{end}}
                             {{end}}
