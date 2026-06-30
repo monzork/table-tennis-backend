@@ -620,6 +620,17 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, tr fu
 			writeHeader("TABLAS DE POSICIONES DE GRUPOS")
 
 			for _, gs := range groupStages {
+				// Check if there is enough space on the page for this group table
+				_, pageHeight := pdf.GetPageSize()
+				_, _, _, bottomMargin := pdf.GetMargins()
+				// Title (8) + Ln(2) = 10
+				// Header row (5) + n rows (n*5) = (n+1)*5
+				// Bottom margin padding (10)
+				reqHeight := 10.0 + float64(len(gs.Players)+1)*5.0 + 10.0
+				if pdf.GetY()+reqHeight > pageHeight-bottomMargin {
+					pdf.AddPage()
+				}
+
 				pdf.SetFont("Arial", "B", 10)
 				pdf.CellFormat(0, 8, tr(strings.ToUpper(gs.DivisionName)+" - "+strings.ToUpper(gs.GroupName)), "", 1, "L", false, 0, "")
 				pdf.Ln(2)
@@ -1483,8 +1494,18 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, tr fu
 					}
 
 					pdf.SetFont("Arial", "", 8)
-					startX, startY := pdf.GetXY()
 
+					reqHeightSub := 8.0
+					if isDoubles {
+						reqHeightSub = 11.0
+					}
+					_, pageHeight := pdf.GetPageSize()
+					_, _, _, bottomMargin := pdf.GetMargins()
+					if pdf.GetY()+reqHeightSub > pageHeight-bottomMargin {
+						pdf.AddPage()
+					}
+
+					startX, startY := pdf.GetXY()
 					if isDoubles {
 						// Doubles Match: spans 2 rows of height 5.5mm each = 11mm total
 						matchup1 := fmt.Sprintf("(%s) %s vs (%s) %s", pA1Let, truncateStr(pA1Name, 20), pB1Let, truncateStr(pB1Name, 20))

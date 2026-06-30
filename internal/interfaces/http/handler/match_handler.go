@@ -590,21 +590,35 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		squadAP1, squadAP2, squadAP3 := "", "", ""
 		squadBP1, squadBP2, squadBP3 := "", "", ""
 		if len(subMatches) > 0 {
-			// Prepopulate dropdown selections using standard olympic round 1 & 2
 			for _, sm := range subMatches {
-				if sm.RoundNumber == 1 {
-					squadAP1 = sm.TeamAPlayer1ID.String()
-					squadBP1 = sm.TeamBPlayer1ID.String()
-					if sm.TeamAPlayer2ID != nil {
-						squadAP2 = sm.TeamAPlayer2ID.String()
+				if teamFormat == "olympic" {
+					if sm.RoundNumber == 1 {
+						squadAP1 = sm.TeamAPlayer1ID.String()
+						squadBP1 = sm.TeamBPlayer1ID.String()
+						if sm.TeamAPlayer2ID != nil {
+							squadAP2 = sm.TeamAPlayer2ID.String()
+						}
+						if sm.TeamBPlayer2ID != nil {
+							squadBP2 = sm.TeamBPlayer2ID.String()
+						}
 					}
-					if sm.TeamBPlayer2ID != nil {
-						squadBP2 = sm.TeamBPlayer2ID.String()
+					if sm.RoundNumber == 2 {
+						squadAP3 = sm.TeamAPlayer1ID.String()
+						squadBP3 = sm.TeamBPlayer1ID.String()
 					}
-				}
-				if sm.RoundNumber == 2 {
-					squadAP3 = sm.TeamAPlayer1ID.String()
-					squadBP3 = sm.TeamBPlayer1ID.String()
+				} else {
+					if sm.RoundNumber == 1 {
+						squadAP1 = sm.TeamAPlayer1ID.String()
+						squadBP1 = sm.TeamBPlayer1ID.String()
+					}
+					if sm.RoundNumber == 2 {
+						squadAP2 = sm.TeamAPlayer1ID.String()
+						squadBP2 = sm.TeamBPlayer1ID.String()
+					}
+					if sm.RoundNumber == 3 {
+						squadAP3 = sm.TeamAPlayer1ID.String()
+						squadBP3 = sm.TeamBPlayer1ID.String()
+					}
 				}
 			}
 		}
