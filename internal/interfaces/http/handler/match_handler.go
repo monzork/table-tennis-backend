@@ -592,17 +592,14 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		if len(subMatches) > 0 {
 			for _, sm := range subMatches {
 				if teamFormat == "olympic" {
-					if sm.RoundNumber == 1 {
+					switch sm.RoundNumber {
+					case 3:
 						squadAP1 = sm.TeamAPlayer1ID.String()
 						squadBP1 = sm.TeamBPlayer1ID.String()
-						if sm.TeamAPlayer2ID != nil {
-							squadAP2 = sm.TeamAPlayer2ID.String()
-						}
-						if sm.TeamBPlayer2ID != nil {
-							squadBP2 = sm.TeamBPlayer2ID.String()
-						}
-					}
-					if sm.RoundNumber == 2 {
+					case 4:
+						squadAP2 = sm.TeamAPlayer1ID.String()
+						squadBP2 = sm.TeamBPlayer1ID.String()
+					case 2:
 						squadAP3 = sm.TeamAPlayer1ID.String()
 						squadBP3 = sm.TeamBPlayer1ID.String()
 					}
