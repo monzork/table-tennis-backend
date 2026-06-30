@@ -19,6 +19,14 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        /* Hide scrollbar for the auto-scrolling containers */
+        .auto-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        .auto-scroll-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body class="bg-black text-white p-6" hx-ext="ws" ws-connect="/ws/brackets/{{.Tournament.ID}}"
@@ -48,7 +56,7 @@
                 </div>
             </header>
 
-            <div class="flex-1 grid grid-cols-2 gap-6 overflow-hidden">
+            <div class="flex-1 grid grid-cols-3 gap-6 overflow-hidden">
                 <!-- LEFT: IN PROGRESS -->
                 <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-blue-500/20">
                     <h2 class="text-2xl font-bold uppercase tracking-widest text-blue-400 mb-6 flex items-center gap-3">
@@ -56,41 +64,41 @@
                         Now Playing
                     </h2>
                     <div class="flex-1 overflow-hidden relative">
-                        <div class="absolute inset-0 overflow-y-auto pr-4 space-y-4" style="scrollbar-width: none;">
+                        <div class="absolute inset-0 overflow-y-auto pr-2 space-y-4 auto-scroll-container">
                             {{$inProgress := 0}}
                             {{range .Tournament.Matches}}
                                 {{if eq .Status "in_progress"}}
                                     {{$inProgress = 1}}
-                                    <div class="bg-black/50 border border-white/10 rounded-2xl p-6 flex items-center justify-between shadow-lg">
+                                    <div class="bg-black/50 border border-white/10 rounded-2xl p-5 flex items-center justify-between shadow-lg">
                                         {{if .TableNumber}}
-                                            <div class="bg-blue-500 text-white rounded-xl w-16 h-16 flex flex-col items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
-                                                <span class="text-xs font-bold uppercase tracking-widest opacity-80">Table</span>
-                                                <span class="text-2xl font-black">{{.TableNumber}}</span>
+                                            <div class="bg-blue-500 text-white rounded-xl w-14 h-14 flex flex-col items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+                                                <span class="text-[9px] font-bold uppercase tracking-widest opacity-80">Table</span>
+                                                <span class="text-xl font-black">{{.TableNumber}}</span>
                                             </div>
                                         {{else}}
-                                            <div class="bg-gray-800 text-gray-400 rounded-xl w-16 h-16 flex items-center justify-center shrink-0">
-                                                <span class="text-xs font-bold uppercase tracking-widest">TBD</span>
+                                            <div class="bg-gray-800 text-gray-400 rounded-xl w-14 h-14 flex items-center justify-center shrink-0">
+                                                <span class="text-[9px] font-bold uppercase tracking-widest">TBD</span>
                                             </div>
                                         {{end}}
                                         
-                                        <div class="flex-1 px-8 flex justify-between items-center">
+                                        <div class="flex-1 px-4 flex justify-between items-center">
                                             <div class="flex flex-col items-end flex-1 text-right">
                                                 {{range .TeamA}}
-                                                    <span class="text-xl sm:text-2xl font-bold truncate max-w-[200px]">{{.FirstNameWithSecond}} <span class="uppercase">{{.LastNameWithSecond}}</span></span>
+                                                    <span class="text-lg font-bold truncate max-w-[150px]">{{.FirstNameWithSecond}} <span class="uppercase">{{.LastNameWithSecond}}</span></span>
                                                 {{end}}
-                                                <span class="text-blue-400 font-black text-4xl mt-2">{{.ScoreA}}</span>
+                                                <span class="text-blue-400 font-black text-3xl mt-1">{{.ScoreA}}</span>
                                             </div>
                                             
-                                            <div class="px-6 flex flex-col items-center justify-center">
-                                                <span class="text-xs font-black uppercase tracking-widest text-gray-600 mb-1">VS</span>
-                                                <span class="px-2 py-0.5 rounded bg-white/5 text-[9px] uppercase tracking-widest text-gray-400">{{.MatchType}}</span>
+                                            <div class="px-4 flex flex-col items-center justify-center">
+                                                <span class="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1">VS</span>
+                                                <span class="px-1.5 py-0.5 rounded bg-white/5 text-[8px] uppercase tracking-widest text-gray-400">{{.MatchType}}</span>
                                             </div>
 
                                             <div class="flex flex-col items-start flex-1 text-left">
                                                 {{range .TeamB}}
-                                                    <span class="text-xl sm:text-2xl font-bold truncate max-w-[200px]">{{.FirstNameWithSecond}} <span class="uppercase">{{.LastNameWithSecond}}</span></span>
+                                                    <span class="text-lg font-bold truncate max-w-[150px]">{{.FirstNameWithSecond}} <span class="uppercase">{{.LastNameWithSecond}}</span></span>
                                                 {{end}}
-                                                <span class="text-blue-400 font-black text-4xl mt-2">{{.ScoreB}}</span>
+                                                <span class="text-blue-400 font-black text-3xl mt-1">{{.ScoreB}}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -105,6 +113,51 @@
                     </div>
                 </div>
 
+                <!-- MIDDLE: UP NEXT -->
+                <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-yellow-500/20">
+                    <h2 class="text-2xl font-bold uppercase tracking-widest text-yellow-400 mb-6 flex items-center gap-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Up Next
+                    </h2>
+                    <div class="flex-1 overflow-hidden relative">
+                        <div class="absolute inset-0 overflow-y-auto pr-2 space-y-4 auto-scroll-container">
+                            {{$scheduledCount := 0}}
+                            {{range .Tournament.Matches}}
+                                {{if eq .Status "scheduled"}}
+                                    {{/* Only show matches where both players/teams are known */}}
+                                    {{if and (gt (len .TeamA) 0) (gt (len .TeamB) 0)}}
+                                        {{$scheduledCount = 1}}
+                                        <div class="bg-yellow-500/5 border border-yellow-500/10 rounded-2xl p-5 flex flex-col gap-3 shadow-lg">
+                                            <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                                                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">{{.MatchType}} • {{.Stage}}</span>
+                                                {{if .TableNumber}}
+                                                    <span class="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 text-[10px] font-bold uppercase tracking-widest border border-yellow-500/30">Table {{.TableNumber}}</span>
+                                                {{else}}
+                                                    <span class="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-white/10">Waiting</span>
+                                                {{end}}
+                                            </div>
+                                            <div class="flex justify-between items-center text-lg">
+                                                <div class="w-[45%] text-right font-bold truncate text-gray-200">
+                                                    {{range .TeamA}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
+                                                </div>
+                                                <div class="w-[10%] text-center text-xs font-black text-gray-600 italic">VS</div>
+                                                <div class="w-[45%] text-left font-bold truncate text-gray-200">
+                                                    {{range .TeamB}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {{end}}
+                                {{end}}
+                            {{end}}
+                            {{if eq $scheduledCount 0}}
+                                <div class="h-full flex items-center justify-center text-gray-500 text-lg uppercase tracking-widest font-bold text-center px-4">
+                                    No upcoming matches<br>ready to play
+                                </div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+
                 <!-- RIGHT: RECENT RESULTS -->
                 <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-green-500/10">
                     <h2 class="text-2xl font-bold uppercase tracking-widest text-green-400 mb-6 flex items-center gap-3">
@@ -112,22 +165,22 @@
                         Recent Results
                     </h2>
                     <div class="flex-1 overflow-hidden relative">
-                        <div class="absolute inset-0 overflow-y-auto pr-4 space-y-3" style="scrollbar-width: none;">
+                        <div class="absolute inset-0 overflow-y-auto pr-2 space-y-3 auto-scroll-container">
                             {{$finishedCount := 0}}
                             {{range .Tournament.Matches}}
                                 {{if eq .Status "finished"}}
                                     {{$finishedCount = 1}}
                                     <div class="bg-black/30 border border-white/5 rounded-2xl p-4 flex justify-between items-center">
                                         <div class="flex-1 flex justify-between items-center text-sm sm:text-base">
-                                            <div class="w-1/2 text-right pr-4 {{if eq .WinnerTeam "A"}}text-white font-extrabold{{else}}text-gray-500{{end}}">
+                                            <div class="w-1/2 text-right pr-4 {{if eq .WinnerTeam "A"}}text-white font-extrabold{{else}}text-gray-500{{end}} truncate">
                                                 {{range .TeamA}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
                                             </div>
-                                            <div class="px-4 py-1 rounded-full bg-white/5 border border-white/10 font-black font-mono text-lg flex gap-2 shadow-inner">
+                                            <div class="px-3 py-1 rounded-full bg-white/5 border border-white/10 font-black font-mono text-base flex gap-2 shadow-inner shrink-0">
                                                 <span class="{{if eq .WinnerTeam "A"}}text-green-400{{else}}text-gray-500{{end}}">{{.ScoreA}}</span>
                                                 <span class="text-gray-600">-</span>
                                                 <span class="{{if eq .WinnerTeam "B"}}text-green-400{{else}}text-gray-500{{end}}">{{.ScoreB}}</span>
                                             </div>
-                                            <div class="w-1/2 text-left pl-4 {{if eq .WinnerTeam "B"}}text-white font-extrabold{{else}}text-gray-500{{end}}">
+                                            <div class="w-1/2 text-left pl-4 {{if eq .WinnerTeam "B"}}text-white font-extrabold{{else}}text-gray-500{{end}} truncate">
                                                 {{range .TeamB}}{{.FirstNameWithSecond}} {{.LastNameWithSecond}}{{end}}
                                             </div>
                                         </div>
@@ -146,5 +199,37 @@
             </div>
         </div>
     </div>
+
+    <!-- Auto-Scroll Script -->
+    <script>
+        const scrollDirs = new Map();
+        
+        setInterval(() => {
+            document.querySelectorAll('.auto-scroll-container').forEach(el => {
+                // If content fits without scrolling, do nothing
+                if (el.scrollHeight <= el.clientHeight) return;
+                
+                let dir = scrollDirs.get(el) || 1;
+                
+                // If paused, don't move
+                if (el.dataset.paused === 'true') return;
+
+                el.scrollTop += dir * 0.5; // Very slow, smooth scroll speed
+                
+                // Check if hit bottom
+                if (dir === 1 && el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
+                    scrollDirs.set(el, -1);
+                    el.dataset.paused = 'true';
+                    setTimeout(() => { el.dataset.paused = 'false'; }, 4000); // Wait 4 seconds at bottom
+                } 
+                // Check if hit top
+                else if (dir === -1 && el.scrollTop <= 0) {
+                    scrollDirs.set(el, 1);
+                    el.dataset.paused = 'true';
+                    setTimeout(() => { el.dataset.paused = 'false'; }, 4000); // Wait 4 seconds at top
+                }
+            });
+        }, 20); // 50fps smooth scrolling
+    </script>
 </body>
 </html>
