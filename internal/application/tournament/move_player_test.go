@@ -41,6 +41,10 @@ func (m *mockMovePlayerRepository) UpdateGroups(ctx context.Context, t *tourname
 	return m.updErr
 }
 
+func (m *mockMovePlayerRepository) UpdateEventIDBulk(ctx context.Context, tournamentIDs []string, eventID string) error {
+	return nil
+}
+
 func (m *mockMovePlayerRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }

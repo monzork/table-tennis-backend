@@ -26,6 +26,9 @@ func (m *mockTournamentRepository) GetAll(ctx context.Context) ([]*tournamentDom
 func (m *mockTournamentRepository) Update(ctx context.Context, t *tournamentDomain.Tournament) error {
 	return nil
 }
+func (m *mockTournamentRepository) UpdateEventIDBulk(ctx context.Context, tournamentIDs []string, eventID string) error {
+	return nil
+}
 func (m *mockTournamentRepository) UpdateGroups(ctx context.Context, t *tournamentDomain.Tournament) error {
 	return nil
 }
