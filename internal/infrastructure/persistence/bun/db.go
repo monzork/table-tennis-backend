@@ -34,12 +34,12 @@ func Connect() {
 
 		// Use PostgreSQL if DATABASE_URL is present
 		sqldb = sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
-		
+
 		// Configure Connection Pool
 		sqldb.SetMaxOpenConns(25)
 		sqldb.SetMaxIdleConns(25) // Match MaxOpenConns to avoid connection churn
 		sqldb.SetConnMaxLifetime(5 * time.Minute)
-		
+
 		bunDB = bun.NewDB(sqldb, pgdialect.New())
 	} else {
 		// Fallback to SQLite (local development)

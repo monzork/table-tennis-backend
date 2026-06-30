@@ -6,6 +6,7 @@ import (
 	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
+	"table-tennis-backend/internal/infrastructure/pin"
 	"time"
 )
 
@@ -76,9 +77,18 @@ func (uc *GetTournamentByIDUseCase) GetOfficials(ctx context.Context, id string)
 }
 
 func (uc *GetTournamentByIDUseCase) AddOfficial(ctx context.Context, tournamentID string, playerID string) error {
-	// Let's generate a 4-digit PIN quickly since we don't need a heavy generation dependency
-	pin := "1234" // Simplified for now, or use time-based string
-	return uc.repo.AddOfficial(ctx, tournamentID, playerID, pin)
+	officials, err := uc.repo.GetOfficials(ctx, tournamentID)
+	if err != nil {
+		return err
+	}
+
+	usedPINs := make(map[string]bool)
+	for _, o := range officials {
+		usedPINs[o.Pin] = true
+	}
+
+	pinStr := pin.GenerateUniqueInBatch(usedPINs)
+	return uc.repo.AddOfficial(ctx, tournamentID, playerID, pinStr)
 }
 
 func (uc *GetTournamentByIDUseCase) RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error {

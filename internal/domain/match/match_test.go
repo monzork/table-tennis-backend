@@ -9,11 +9,11 @@ import (
 
 func TestFFTTPoints(t *testing.T) {
 	cases := []struct {
-		rA, rB  int
-		won     bool
-		coeff   float64
-		expect  float64
-		label   string
+		rA, rB int
+		won    bool
+		coeff  float64
+		expect float64
+		label  string
 	}{
 		// Same-ish rating (gap 0-24) — normal win
 		{1000, 1010, true, 1.0, 6.0, "equal ratings normal win"},

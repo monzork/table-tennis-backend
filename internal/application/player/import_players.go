@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"table-tennis-backend/internal/domain/idgen"
 	"github.com/xuri/excelize/v2"
+	"table-tennis-backend/internal/domain/idgen"
 
 	playerDomain "table-tennis-backend/internal/domain/player"
 )

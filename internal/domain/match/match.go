@@ -23,12 +23,12 @@ func StandardEloPoints(rA, rB int, wonMatch bool, kFactor float64) float64 {
 
 // FFTTTier represents one row in the FFTT official point table (French System).
 type FFTTTier struct {
-	MinGap         int
-	MaxGap         int
-	WinNormal      float64
-	LossNormal     float64
-	WinUpset       float64
-	LossUpset      float64
+	MinGap     int
+	MaxGap     int
+	WinNormal  float64
+	LossNormal float64
+	WinUpset   float64
+	LossUpset  float64
 }
 
 // ffttTable is the official FFTT bareme

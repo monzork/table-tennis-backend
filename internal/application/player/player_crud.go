@@ -54,7 +54,7 @@ func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, se
 	p.Department = department
 	p.WhatsAppNumber = whatsAppNumber
 	p.NationalID = nationalID
-	
+
 	p.UpdateSinglesElo(singlesElo)
 	p.UpdateDoublesElo(doublesElo)
 

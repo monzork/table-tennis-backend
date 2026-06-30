@@ -38,14 +38,14 @@ func (uc *ExportTournamentReportUseCase) Execute(ctx context.Context, tournament
 
 	// Header
 	header := []string{
-		"Player Name", 
+		"Player Name",
 		"Gender",
 		"Country",
 		"Department",
-		"Elo Before (Singles)", 
+		"Elo Before (Singles)",
 		"Elo After (Singles)",
 		"Elo Delta (Singles)",
-		"Elo Before (Doubles)", 
+		"Elo Before (Doubles)",
 		"Elo After (Doubles)",
 		"Elo Delta (Doubles)",
 	}

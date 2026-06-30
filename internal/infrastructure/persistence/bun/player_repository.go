@@ -221,4 +221,3 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 		Exec(ctx)
 	return err
 }
-

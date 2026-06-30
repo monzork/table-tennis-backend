@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	ErrInvalidEventName  = errors.New("event name is required")
+	ErrInvalidEventName   = errors.New("event name is required")
 	ErrInvalidDivisionIDs = errors.New("at least one division ID is required")
-	ErrInvalidEventDates = errors.New("event end date must be after start date")
+	ErrInvalidEventDates  = errors.New("event end date must be after start date")
 )
 
 type Repository interface {

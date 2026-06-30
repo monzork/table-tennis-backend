@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/jung-kurt/gofpdf"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	eventDomain "table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
 type ExportEventPdfUseCase struct {
@@ -52,7 +52,7 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 	// Date and Summary Info
 	pdf.SetTextColor(50, 50, 50)
 	pdf.Ln(5)
-	
+
 	pdf.SetFont("Arial", "B", 14)
 	pdf.CellFormat(0, 10, "REPORT SUMMARY", "B", 1, "L", false, 0, "")
 	pdf.Ln(5)
@@ -85,7 +85,7 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 
 	// --- 2. INDIVIDUAL TOURNAMENT SECTIONS ---
 	pdf.SetTextColor(0, 0, 0)
-	
+
 	for _, t := range tournamentsList {
 		pdf.AddPage()
 
@@ -100,7 +100,7 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 		pdf.CellFormat(30, 7, "Game Type:", "1", 0, "L", false, 0, "")
 		pdf.SetFont("Arial", "", 9)
 		pdf.CellFormat(60, 7, strings.ToUpper(t.Type), "1", 0, "L", false, 0, "")
-		
+
 		pdf.SetFont("Arial", "B", 9)
 		pdf.CellFormat(30, 7, "Status:", "1", 0, "L", false, 0, "")
 		pdf.SetFont("Arial", "", 9)
@@ -111,7 +111,7 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 		pdf.CellFormat(30, 7, "Format:", "1", 0, "L", false, 0, "")
 		pdf.SetFont("Arial", "", 9)
 		pdf.CellFormat(60, 7, strings.ToUpper(t.Format), "1", 0, "L", false, 0, "")
-		
+
 		pdf.SetFont("Arial", "B", 9)
 		pdf.CellFormat(30, 7, "Dates:", "1", 0, "L", false, 0, "")
 		pdf.SetFont("Arial", "", 9)
@@ -132,16 +132,16 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 				if first != "" {
 					pdf.CellFormat(40, 7, "  1st Place (Champion):", "1", 0, "L", false, 0, "")
 					pdf.SetFont("Arial", "B", 9)
-					pdf.CellFormat(0, 7, "  " + strings.ToUpper(first), "1", 1, "L", false, 0, "")
+					pdf.CellFormat(0, 7, "  "+strings.ToUpper(first), "1", 1, "L", false, 0, "")
 					pdf.SetFont("Arial", "", 9)
 				}
 				if second != "" {
 					pdf.CellFormat(40, 7, "  2nd Place:", "1", 0, "L", false, 0, "")
-					pdf.CellFormat(0, 7, "  " + strings.ToUpper(second), "1", 1, "L", false, 0, "")
+					pdf.CellFormat(0, 7, "  "+strings.ToUpper(second), "1", 1, "L", false, 0, "")
 				}
 				if third != "" {
 					pdf.CellFormat(40, 7, "  3rd Place:", "1", 0, "L", false, 0, "")
-					pdf.CellFormat(0, 7, "  " + strings.ToUpper(third), "1", 1, "L", false, 0, "")
+					pdf.CellFormat(0, 7, "  "+strings.ToUpper(third), "1", 1, "L", false, 0, "")
 				}
 				pdf.Ln(4)
 			}
@@ -175,7 +175,7 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 				pdf.CellFormat(15, 7, fmt.Sprintf("%d", idx+1), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(100, 7, fullName, "1", 0, "L", false, 0, "")
 				pdf.CellFormat(30, 7, p.Gender, "1", 0, "C", false, 0, "")
-				
+
 				rating := p.SinglesElo
 				if t.Type == "doubles" || t.Type == "mixed_doubles" {
 					rating = p.DoublesElo
@@ -213,7 +213,7 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 				if (t.Type == "doubles" || t.Type == "mixed_doubles") && len(m.TeamB) >= 2 {
 					nameB = m.TeamB[0].LastName + "/" + m.TeamB[1].LastName
 				}
-				
+
 				scoreStr := fmt.Sprintf("%d - %d", m.ScoreA(), m.ScoreB())
 				var setsList []string
 				for _, set := range m.Sets {
@@ -247,7 +247,7 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 				pdf.SetFont("Arial", "B", 10)
 				pdf.SetFillColor(245, 245, 245)
 				pdf.CellFormat(0, 8, fmt.Sprintf(" %s", stageTitle), "1", 1, "L", true, 0, "")
-				
+
 				pdf.SetFont("Arial", "B", 8)
 				pdf.CellFormat(70, 7, "Side A", "1", 0, "C", false, 0, "")
 				pdf.CellFormat(70, 7, "Side B", "1", 0, "C", false, 0, "")

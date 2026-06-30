@@ -26,7 +26,7 @@ func (uc *DivisionUseCase) Save(ctx context.Context, id, name string, displayOrd
 		// Try to fetch existing
 		d, err = uc.repo.GetById(ctx, id)
 		if err != nil {
-             // fallback to new if not found
+			// fallback to new if not found
 			d, err = division.NewDivision(id, name, displayOrder, minElo, maxElo, category, color)
 		} else {
 			d.Name = name

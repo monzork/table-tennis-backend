@@ -150,7 +150,7 @@ func (uc *CreateEventUseCase) Execute(
 		if !cfg.Auto {
 			return
 		}
-		
+
 		allCatPlayers := getPlayers(cfg.PlayerIDs, categoryGender, isDoubles)
 		if len(allCatPlayers) == 0 {
 			return
@@ -159,10 +159,16 @@ func (uc *CreateEventUseCase) Execute(
 		if skipElo || len(divs) == 0 {
 			tName := fmt.Sprintf("%s - %s", e.Name, suffix)
 			if categoryGender == "men" || categoryGender == "women" {
-			   // fallback in case I used lowercase men/women instead of M/F, wait, categoryGender is M/F, but for category we pass men/women, wait!
+				// fallback in case I used lowercase men/women instead of M/F, wait, categoryGender is M/F, but for category we pass men/women, wait!
 			}
 			catArg := categoryGender
-			if categoryGender == "M" { catArg = "men" } else if categoryGender == "F" { catArg = "women" } else { catArg = "open" }
+			if categoryGender == "M" {
+				catArg = "men"
+			} else if categoryGender == "F" {
+				catArg = "women"
+			} else {
+				catArg = "open"
+			}
 			_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, allCatPlayers)
 		} else {
 			// Group by division
@@ -177,11 +183,17 @@ func (uc *CreateEventUseCase) Execute(
 						divPlayers = append(divPlayers, p)
 					}
 				}
-				
+
 				if len(divPlayers) > 0 {
 					tName := fmt.Sprintf("%s - %s (%s)", e.Name, suffix, div.Name)
 					catArg := categoryGender
-					if categoryGender == "M" { catArg = "men" } else if categoryGender == "F" { catArg = "women" } else { catArg = "open" }
+					if categoryGender == "M" {
+						catArg = "men"
+					} else if categoryGender == "F" {
+						catArg = "women"
+					} else {
+						catArg = "open"
+					}
 					_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, divPlayers)
 				}
 			}
@@ -195,8 +207,6 @@ func (uc *CreateEventUseCase) Execute(
 	processCategory(doublesMixed, "Mixed Doubles", "doubles", "", true)
 	processCategory(teamsMen, "Men's Teams", "teams", "M", false)
 	processCategory(teamsWomen, "Women's Teams", "teams", "F", false)
-
-
 
 	if err := uc.eventRepo.Save(ctx, e); err != nil {
 		return nil, err

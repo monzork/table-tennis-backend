@@ -92,7 +92,7 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 
 		if len(allUpdatedPlayers) > 0 {
 			// deduplicate players by ID if needed, though SaveMultiple with ON CONFLICT handles it.
-			// however, we've updated their Elo in memory, so the latest instance in the slice 
+			// however, we've updated their Elo in memory, so the latest instance in the slice
 			// has the most recent Elo. Saving them all works if ordered correctly, but better to dedup.
 			latestPlayers := make(map[string]*player.Player)
 			for _, p := range allUpdatedPlayers {

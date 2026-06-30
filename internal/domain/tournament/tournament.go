@@ -101,27 +101,27 @@ type Group struct {
 }
 
 type Tournament struct {
-	ID           string
-	Name         string
-	Type         string // "singles", "doubles", "teams"
-	EventCategory string // "men", "women", "mixed", "open"
-	Format       string // "elimination", "groups_elimination", "round_robin"
-	Status       string // "in_progress", "finished"
-	WinnerName   string // Name of the winner (player or team)
-	Participants []*player.Player
-	StartDate    time.Time
-	EndDate      time.Time
-	Rules        []Rule
-	StageRules   []StageRule
-	Matches      []Match
-	Groups         []Group
-	GroupPassCount int
-	RegistrationOpen bool
-	EventID      *string
-	SkipElo      bool
-	Teams        []*Team
-	TeamFormat   string // "olympic", "swaythling", or ""
-	NumTables    int
+	ID                 string
+	Name               string
+	Type               string // "singles", "doubles", "teams"
+	EventCategory      string // "men", "women", "mixed", "open"
+	Format             string // "elimination", "groups_elimination", "round_robin"
+	Status             string // "in_progress", "finished"
+	WinnerName         string // Name of the winner (player or team)
+	Participants       []*player.Player
+	StartDate          time.Time
+	EndDate            time.Time
+	Rules              []Rule
+	StageRules         []StageRule
+	Matches            []Match
+	Groups             []Group
+	GroupPassCount     int
+	RegistrationOpen   bool
+	EventID            *string
+	SkipElo            bool
+	Teams              []*Team
+	TeamFormat         string // "olympic", "swaythling", or ""
+	NumTables          int
 	HasThirdPlaceMatch bool
 }
 
@@ -150,23 +150,23 @@ func NewTournament(id string, name string, tournamentType string, format string,
 	}
 
 	t := &Tournament{
-		ID:           id,
-		Name:         name,
-		Type:         tournamentType,
-		EventCategory: category,
-		Format:       format,
-		Participants: participants,
-		StartDate:    start,
-		EndDate:      end,
-		Rules:        rules,
-		Matches:      []Match{},
-		Groups:         []Group{},
-		GroupPassCount: groupPassCount,
-		RegistrationOpen: false,
-		EventID:      nil,
-		SkipElo:      false,
-		Teams:        []*Team{},
-		NumTables:    0,
+		ID:                 id,
+		Name:               name,
+		Type:               tournamentType,
+		EventCategory:      category,
+		Format:             format,
+		Participants:       participants,
+		StartDate:          start,
+		EndDate:            end,
+		Rules:              rules,
+		Matches:            []Match{},
+		Groups:             []Group{},
+		GroupPassCount:     groupPassCount,
+		RegistrationOpen:   false,
+		EventID:            nil,
+		SkipElo:            false,
+		Teams:              []*Team{},
+		NumTables:          0,
 		HasThirdPlaceMatch: hasThirdPlaceMatch,
 	}
 	t.StageRules = DefaultStageRules(t.ID)
@@ -500,13 +500,13 @@ func (t *Tournament) MovePlayer(playerID string, targetGroupID string, targetInd
 					return errors.New("player is already in the target group")
 				}
 			}
-			
+
 			// Determine insertion index
 			idx := targetIndex
 			if idx < 0 || idx > len(g.Players) {
 				idx = len(g.Players)
 			}
-			
+
 			// Insert player at idx
 			newPlayers := make([]*player.Player, 0, len(g.Players)+1)
 			newPlayers = append(newPlayers, g.Players[:idx]...)

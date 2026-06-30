@@ -15,8 +15,8 @@ type PlayerModel struct {
 	SecondName     string     `bun:"second_name,nullzero"`
 	LastName       string     `bun:"last_name,notnull"`
 	SecondLastName string     `bun:"second_last_name,nullzero"`
-	Birthdate  time.Time  `bun:"birthdate,notnull"`
-	Gender     string     `bun:"gender,notnull,default:'M'"`
+	Birthdate      time.Time  `bun:"birthdate,notnull"`
+	Gender         string     `bun:"gender,notnull,default:'M'"`
 	SinglesElo     int16      `bun:"singles_elo,notnull,default:1000"`
 	DoublesElo     int16      `bun:"doubles_elo,notnull,default:1000"`
 	Country        string     `bun:"country,notnull"`
