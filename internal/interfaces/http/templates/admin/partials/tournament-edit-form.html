@@ -266,18 +266,19 @@
         <p class="text-[10px] text-gray-500">Override match rules for specific divisions (e.g., 1st Division Best of 5, 2nd/3rd Division Best of 3). Leave empty to use stage rules.</p>
         <div id="edit-division-rules-panel" class="hidden space-y-2">
             {{range .Divisions}}
+            {{$divID := .ID}}
             {{$divRule := ""}}
-            {{range $.Tournament.DivisionRules}}{{if eq .DivisionID .ID}}{{$divRule = .}}{{end}}{{end}}
+            {{range $.Tournament.DivisionRules}}{{if eq .DivisionID $divID}}{{$divRule = .}}{{end}}{{end}}
             <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
                 <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{.Name}}</span>
                 <div class="space-y-1">
                     <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
                     <select name="division_rule[{{.ID}}][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
-                        <option value="" {{if eq $divRule ""}}selected{{end}}>-- Use Stage Rules --</option>
-                        <option value="3" {{if eq $divRule.BestOf 3}}selected{{end}}>3</option>
-                        <option value="5" {{if eq $divRule.BestOf 5}}selected{{end}}>5</option>
-                        <option value="7" {{if eq $divRule.BestOf 7}}selected{{end}}>7</option>
-                        <option value="9" {{if eq $divRule.BestOf 9}}selected{{end}}>9</option>
+                        <option value="" {{if not $divRule}}selected{{end}}>-- Use Stage Rules --</option>
+                        <option value="3" {{if $divRule}}{{if eq $divRule.BestOf 3}}selected{{end}}{{end}}>3</option>
+                        <option value="5" {{if $divRule}}{{if eq $divRule.BestOf 5}}selected{{end}}{{end}}>5</option>
+                        <option value="7" {{if $divRule}}{{if eq $divRule.BestOf 7}}selected{{end}}{{end}}>7</option>
+                        <option value="9" {{if $divRule}}{{if eq $divRule.BestOf 9}}selected{{end}}{{end}}>9</option>
                     </select>
                 </div>
                 <div class="space-y-1">
