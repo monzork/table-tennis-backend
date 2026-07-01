@@ -119,7 +119,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	ctx context.Context, idStr, name, tournamentType, format, category, startStr, endStr string,
 	registrationOpen bool,
 	participantIDs []string, newPlayers []NewPlayerData,
-	stageRuleOverrides []StageRuleOverride, groupPassCount int,
+	stageRuleOverrides []StageRuleOverride, divisionRules []tournamentDomain.DivisionRule, groupPassCount int,
 	skipElo bool, eventID *string,
 	teamFormat string,
 	numTables int,
@@ -259,6 +259,9 @@ func (uc *UpdateTournamentUseCase) Execute(
 			}
 		}
 	}
+
+	// Apply division-specific rules
+	t.DivisionRules = divisionRules
 
 	if err := uc.repo.Update(ctx, t); err != nil {
 		return nil, err

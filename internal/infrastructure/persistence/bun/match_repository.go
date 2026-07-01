@@ -27,6 +27,7 @@ type MatchModel struct {
 	Status         string     `bun:"status,notnull,default:'scheduled'"`
 	WinnerTeam     *string    `bun:"winner_team"`
 	Stage          string     `bun:"stage,notnull,default:'group'"`
+	DivisionID     string     `bun:"division_id"`
 	RoundNumber    int        `bun:"round_number,notnull,default:1"`
 	GroupID        *string    `bun:"group_id"`
 	NextMatchID    *string    `bun:"next_match_id"`
@@ -130,6 +131,7 @@ func (r *MatchRepository) Save(ctx context.Context, m *tournament.Match) error {
 		TeamBPlayer1ID: pB1,
 		Status:         m.Status,
 		Stage:          stage,
+		DivisionID:     m.DivisionID,
 		RoundNumber:    1,
 		TeamMatchID:    teamMatchIDPtr,
 		RefereeID:      refereeIDPtr,
@@ -496,6 +498,7 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, erro
 			Sets:         setsByMatch[m.ID.String()],
 			TeamMatchID:  teamMatchIDPtr,
 			Stage:        m.Stage,
+			DivisionID:   m.DivisionID,
 			UpdatedAt:    m.UpdatedAt,
 			RefereeID:    refereeIDPtr,
 			TableNumber:  m.TableNumber,

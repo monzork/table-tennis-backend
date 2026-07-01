@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"html/template"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
@@ -137,7 +138,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	eventHandler := handler.NewEventHandler(createEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
-	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo)
+	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC)

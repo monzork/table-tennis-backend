@@ -36,6 +36,7 @@ func (uc *CreateTournamentUseCase) Execute(
 	newPlayers []NewPlayerData,
 	groupPassCount int,
 	stageRuleOverrides []StageRuleOverride,
+	divisionRules []tournamentDomain.DivisionRule,
 	skipElo bool,
 	eventID *string,
 	teamFormat string,
@@ -137,6 +138,9 @@ func (uc *CreateTournamentUseCase) Execute(
 			}
 		}
 	}
+
+	// Apply division-specific rules
+	t.DivisionRules = divisionRules
 
 	if err := uc.repo.Save(ctx, t); err != nil {
 		return nil, err

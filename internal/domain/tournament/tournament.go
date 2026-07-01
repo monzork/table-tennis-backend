@@ -53,6 +53,7 @@ type Match struct {
 	Sets         []MatchSet
 	TeamMatchID  *string
 	Stage        string
+	DivisionID   string // Division this match belongs to (for division-specific rules)
 	UpdatedAt    *time.Time
 	RefereeID    *string
 	TableNumber  *int
@@ -113,6 +114,7 @@ type Tournament struct {
 	EndDate            time.Time
 	Rules              []Rule
 	StageRules         []StageRule
+	DivisionRules      []DivisionRule // Division-specific rules override stage rules
 	Matches            []Match
 	Groups             []Group
 	GroupPassCount     int
@@ -178,6 +180,34 @@ func NewTournament(id string, name string, tournamentType string, format string,
 	}
 
 	return t, nil
+}
+
+// GetEffectiveStageRule returns the stage rule to use for a match, considering division overrides.
+// Priority: Division Rules > Stage Rules > Default WTT Rules
+func (t *Tournament) GetEffectiveStageRule(stage string, divisionID string) StageRule {
+	// 1. Check division-specific rules first
+	if divisionID != "" && len(t.DivisionRules) > 0 {
+		for _, dr := range t.DivisionRules {
+			if dr.DivisionID == divisionID {
+				return dr.ToStageRule()
+			}
+		}
+	}
+
+	// 2. Check tournament stage rules
+	for _, sr := range t.StageRules {
+		if sr.Stage == stage {
+			return sr
+		}
+	}
+
+	// 3. Fallback to default WTT rules
+	return StageRule{
+		Stage:        stage,
+		BestOf:       5,
+		PointsToWin:  11,
+		PointsMargin: 2,
+	}
 }
 
 func (t *Tournament) AddMatch(match Match) {

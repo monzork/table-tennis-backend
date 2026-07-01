@@ -11,8 +11,8 @@ import (
 	"table-tennis-backend/internal/application/tournament"
 	adminDomain "table-tennis-backend/internal/domain/admin"
 	"table-tennis-backend/internal/domain/idgen"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
+	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	qrinfra "table-tennis-backend/internal/infrastructure/qrcode"
 	"table-tennis-backend/internal/infrastructure/security"
 	"table-tennis-backend/internal/interfaces/http/handler"
@@ -93,7 +93,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
-	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo)
+	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC)

@@ -319,6 +319,37 @@
             </div>
 
             <div class="space-y-4 pt-4 border-t border-white/5">
+                <div class="flex items-center justify-between cursor-pointer" onclick="var p=document.getElementById('create-division-rules-panel'); p.classList.toggle('hidden'); this.querySelector('span.toggle-arrow').textContent = p.classList.contains('hidden') ? 'Expand ▾' : 'Collapse ▴'">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">Division-Specific Rules</label>
+                    <span class="toggle-arrow text-[10px] text-gray-400 uppercase tracking-widest">Expand ▾</span>
+                </div>
+                <p class="text-[10px] text-gray-500">Override match rules for specific divisions (e.g., 1st Division Best of 5, 2nd/3rd Division Best of 3). Leave empty to use stage rules.</p>
+                <div id="create-division-rules-panel" class="hidden space-y-2">
+                    {{range .Divisions}}
+                    <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                        <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{.Name}}</span>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                            <select name="division_rule[{{.ID}}][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                <option value="">-- Use Stage Rules --</option>
+                                <option value="3">3</option>
+                                <option value="5">5</option>
+                                <option value="7">7</option>
+                                <option value="9">9</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                            <input type="number" name="division_rule[{{.ID}}][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                        </div>
+                        <input type="hidden" name="division_rule[{{.ID}}][points_margin]" value="2">
+                        <input type="hidden" name="division_rule[division_id][]" value="{{.ID}}">
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+
+            <div class="space-y-4 pt-4 border-t border-white/5">
                 <div class="flex justify-between items-center">
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Participants</label>
                     <button type="button"

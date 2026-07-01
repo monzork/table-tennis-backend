@@ -136,6 +136,33 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		}
 	}
 
+	// Parse division-specific rules
+	var divisionRules []tournamentDomain.DivisionRule
+	divisionIDs := c.Request().PostArgs().PeekMulti("division_rule[division_id][]")
+	for _, divIDBytes := range divisionIDs {
+		divID := string(divIDBytes)
+		if divID == "" {
+			continue
+		}
+		boStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][best_of]"))
+		ptStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][points_to_win]"))
+		pmStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][points_margin]"))
+		if boStr != "" {
+			bo := 5
+			pt := 11
+			pm := 2
+			fmt.Sscanf(boStr, "%d", &bo)
+			fmt.Sscanf(ptStr, "%d", &pt)
+			fmt.Sscanf(pmStr, "%d", &pm)
+			divisionRules = append(divisionRules, tournamentDomain.DivisionRule{
+				DivisionID:   divID,
+				BestOf:       bo,
+				PointsToWin:  pt,
+				PointsMargin: pm,
+			})
+		}
+	}
+
 	skipElo := c.FormValue("skipElo") == "on"
 	hasThirdPlaceMatch := c.FormValue("hasThirdPlaceMatch") == "on"
 	var eventID *string
@@ -143,7 +170,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		eventID = &eIDStr
 	}
 
-	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch)
+	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, divisionRules, skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -284,10 +311,11 @@ func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
 		tournament *tournamentDomain.Tournament
 		err        error
 		players    any
+		divisions  []*divisionDomain.Division
 	}
 	var res result
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
@@ -297,6 +325,10 @@ func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
 		defer wg.Done()
 		res.players, _ = h.leaderboardUC.ExecuteSingles(c.Context())
 	}()
+	go func() {
+		defer wg.Done()
+		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
 	wg.Wait()
 
 	if res.err != nil {
@@ -305,6 +337,7 @@ func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
 	return c.Render("admin/partials/tournament-edit-form", fiber.Map{
 		"Tournament": res.tournament,
 		"Players":    res.players,
+		"Divisions":  res.divisions,
 	})
 }
 
@@ -372,6 +405,33 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		}
 	}
 
+	// Parse division-specific rules
+	var divisionRules []tournamentDomain.DivisionRule
+	divisionIDs := c.Request().PostArgs().PeekMulti("division_rule[division_id][]")
+	for _, divIDBytes := range divisionIDs {
+		divID := string(divIDBytes)
+		if divID == "" {
+			continue
+		}
+		boStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][best_of]"))
+		ptStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][points_to_win]"))
+		pmStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][points_margin]"))
+		if boStr != "" {
+			bo := 5
+			pt := 11
+			pm := 2
+			fmt.Sscanf(boStr, "%d", &bo)
+			fmt.Sscanf(ptStr, "%d", &pt)
+			fmt.Sscanf(pmStr, "%d", &pm)
+			divisionRules = append(divisionRules, tournamentDomain.DivisionRule{
+				DivisionID:   divID,
+				BestOf:       bo,
+				PointsToWin:  pt,
+				PointsMargin: pm,
+			})
+		}
+	}
+
 	skipElo := c.FormValue("skipElo") == "on"
 	hasThirdPlaceMatch := c.FormValue("hasThirdPlaceMatch") == "on"
 	var eventID *string
@@ -381,7 +441,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 
 	t, err := h.updateUC.Execute(
 		c.Context(), id, body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
-		body.RegistrationOpen, participantIDs, newPlayers, stageRules, body.GroupPassCount,
+		body.RegistrationOpen, participantIDs, newPlayers, stageRules, divisionRules, body.GroupPassCount,
 		skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch,
 	)
 	if err != nil {
@@ -653,7 +713,7 @@ func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	if res.err != nil {
 		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
 	}
-	
+
 	tmap, _ := c.Locals("T").(map[string]string)
 	vm := BuildTournamentViewModel(res.tournament, res.divisions, tmap)
 	vm.IsPublic = true

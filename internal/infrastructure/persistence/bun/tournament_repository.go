@@ -600,6 +600,9 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		eventIDPtr = &s
 	}
 
+	// ── 9. Load division rules ───────────────────────────────────────────────
+	divisionRules := LoadDivisionRules(ctx, r.db, model.ID.String())
+
 	return &tournament.Tournament{
 		ID:                 model.ID.String(),
 		Name:               model.Name,
@@ -618,6 +621,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		Groups:             groups,
 		Rules:              []tournament.Rule{},
 		StageRules:         loadStageRules(ctx, r.db, model.ID),
+		DivisionRules:      divisionRules,
 		Matches:            matches,
 		Teams:              teams,
 		TeamFormat:         model.TeamFormat,
@@ -795,6 +799,13 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 	// Replace stage rules if changed
 	if len(t.StageRules) > 0 {
 		if err := replaceStageRules(ctx, tx, t.ID, t.StageRules); err != nil {
+			return err
+		}
+	}
+
+	// Replace division rules if changed
+	if len(t.DivisionRules) > 0 {
+		if err := ReplaceDivisionRules(ctx, tx, t.ID, t.DivisionRules); err != nil {
 			return err
 		}
 	}

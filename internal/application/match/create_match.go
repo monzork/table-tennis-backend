@@ -3,6 +3,7 @@ package match
 import (
 	"context"
 	"errors"
+	divisionDomain "table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/player"
 	tournament "table-tennis-backend/internal/domain/tournament"
@@ -12,17 +13,20 @@ type CreateMatchUseCase struct {
 	matchRepo      tournament.MatchRepository
 	playerRepo     player.Repository
 	tournamentRepo tournament.Repository
+	divisionRepo   divisionDomain.Repository
 }
 
 func NewCreateMatchUseCase(
 	matchRepo tournament.MatchRepository,
 	players player.Repository,
 	tournaments tournament.Repository,
+	divisions divisionDomain.Repository,
 ) *CreateMatchUseCase {
 	return &CreateMatchUseCase{
 		matchRepo:      matchRepo,
 		playerRepo:     players,
 		tournamentRepo: tournaments,
+		divisionRepo:   divisions,
 	}
 }
 
@@ -85,6 +89,9 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 		stage = opts[0]
 	}
 
+	// Determine division ID for this match based on player Elo
+	divisionID := uc.determinePlayerDivision(ctx, t, teamA, teamB, matchType)
+
 	m := &tournament.Match{
 		ID:           idgen.Generate(),
 		TournamentID: tournamentID,
@@ -94,6 +101,7 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 		Status:       "in_progress",
 		Sets:         []tournament.MatchSet{},
 		Stage:        stage,
+		DivisionID:   divisionID,
 	}
 
 	// Add match to tournament
@@ -105,4 +113,32 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 	}
 
 	return m, nil
+}
+
+// determinePlayerDivision finds which division a match belongs to based on player Elo ratings.
+func (uc *CreateMatchUseCase) determinePlayerDivision(ctx context.Context, t *tournament.Tournament, teamA, teamB []*player.Player, matchType string) string {
+	if len(t.DivisionRules) == 0 || len(teamA) == 0 {
+		return ""
+	}
+
+	// Get all divisions to check Elo ranges
+	divisions, err := uc.divisionRepo.GetAll(ctx)
+	if err != nil || len(divisions) == 0 {
+		return ""
+	}
+
+	// Use first player's Elo for division lookup
+	playerElo := teamA[0].SinglesElo
+	if matchType == "doubles" {
+		playerElo = teamA[0].DoublesElo
+	}
+
+	// Find matching division by Elo range
+	for _, div := range divisions {
+		if div.ContainsElo(playerElo) {
+			return div.ID
+		}
+	}
+
+	return ""
 }

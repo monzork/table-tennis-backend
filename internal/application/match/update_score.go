@@ -73,25 +73,9 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 		return fmt.Errorf("cannot update score of a finished tournament")
 	}
 
-	// Load the stage rule for this stage from the tournament
-	var stageRule tournament.StageRule
-	foundRule := false
-	for _, r := range t.StageRules {
-		if r.Stage == stage {
-			stageRule = r
-			foundRule = true
-			break
-		}
-	}
-	if !foundRule {
-		// Fallback to default WTT rules
-		stageRule = tournament.StageRule{
-			BestOf:       5,
-			PointsToWin:  11,
-			PointsMargin: 2,
-			Stage:        stage,
-		}
-	}
+	// Get effective stage rule (division rules will be applied if match has division info)
+	// For score updates, we use the stage rule directly since division is determined at creation
+	stageRule := t.GetEffectiveStageRule(stage, "")
 
 	return uc.matchRepo.UpdateScore(ctx, matchIDStr, sets, stageRule)
 }
