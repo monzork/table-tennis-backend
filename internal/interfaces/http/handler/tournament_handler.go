@@ -136,30 +136,34 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		}
 	}
 
-	// Parse division-specific rules
+	// Parse division-specific rules (stage-based)
 	var divisionRules []tournamentDomain.DivisionRule
+	divisionStages := []string{"group", "r32", "r16", "quarterfinal", "semifinal", "final"}
 	divisionIDs := c.Request().PostArgs().PeekMulti("division_rule[division_id][]")
 	for _, divIDBytes := range divisionIDs {
 		divID := string(divIDBytes)
 		if divID == "" {
 			continue
 		}
-		boStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][best_of]"))
-		ptStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][points_to_win]"))
-		pmStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][points_margin]"))
-		if boStr != "" {
-			bo := 5
-			pt := 11
-			pm := 2
-			fmt.Sscanf(boStr, "%d", &bo)
-			fmt.Sscanf(ptStr, "%d", &pt)
-			fmt.Sscanf(pmStr, "%d", &pm)
-			divisionRules = append(divisionRules, tournamentDomain.DivisionRule{
-				DivisionID:   divID,
-				BestOf:       bo,
-				PointsToWin:  pt,
-				PointsMargin: pm,
-			})
+		for _, stage := range divisionStages {
+			boStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][best_of]"))
+			ptStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][points_to_win]"))
+			pmStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][points_margin]"))
+			if boStr != "" {
+				bo := 5
+				pt := 11
+				pm := 2
+				fmt.Sscanf(boStr, "%d", &bo)
+				fmt.Sscanf(ptStr, "%d", &pt)
+				fmt.Sscanf(pmStr, "%d", &pm)
+				divisionRules = append(divisionRules, tournamentDomain.DivisionRule{
+					DivisionID:   divID,
+					Stage:        stage,
+					BestOf:       bo,
+					PointsToWin:  pt,
+					PointsMargin: pm,
+				})
+			}
 		}
 	}
 
@@ -405,30 +409,34 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		}
 	}
 
-	// Parse division-specific rules
+	// Parse division-specific rules (stage-based)
 	var divisionRules []tournamentDomain.DivisionRule
+	divisionStages := []string{"group", "r32", "r16", "quarterfinal", "semifinal", "final"}
 	divisionIDs := c.Request().PostArgs().PeekMulti("division_rule[division_id][]")
 	for _, divIDBytes := range divisionIDs {
 		divID := string(divIDBytes)
 		if divID == "" {
 			continue
 		}
-		boStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][best_of]"))
-		ptStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][points_to_win]"))
-		pmStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][points_margin]"))
-		if boStr != "" {
-			bo := 5
-			pt := 11
-			pm := 2
-			fmt.Sscanf(boStr, "%d", &bo)
-			fmt.Sscanf(ptStr, "%d", &pt)
-			fmt.Sscanf(pmStr, "%d", &pm)
-			divisionRules = append(divisionRules, tournamentDomain.DivisionRule{
-				DivisionID:   divID,
-				BestOf:       bo,
-				PointsToWin:  pt,
-				PointsMargin: pm,
-			})
+		for _, stage := range divisionStages {
+			boStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][best_of]"))
+			ptStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][points_to_win]"))
+			pmStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][points_margin]"))
+			if boStr != "" {
+				bo := 5
+				pt := 11
+				pm := 2
+				fmt.Sscanf(boStr, "%d", &bo)
+				fmt.Sscanf(ptStr, "%d", &pt)
+				fmt.Sscanf(pmStr, "%d", &pm)
+				divisionRules = append(divisionRules, tournamentDomain.DivisionRule{
+					DivisionID:   divID,
+					Stage:        stage,
+					BestOf:       bo,
+					PointsToWin:  pt,
+					PointsMargin: pm,
+				})
+			}
 		}
 	}
 

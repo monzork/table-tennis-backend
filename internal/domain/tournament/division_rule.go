@@ -1,14 +1,15 @@
 package tournament
 
-// DivisionRule defines match rules for a specific division within a tournament.
-// This allows different divisions to have different match formats (e.g., Best of 3 vs Best of 5).
+// DivisionRule defines match rules for a specific division and stage within a tournament.
+// This allows different divisions to have different match formats per stage (e.g., 1st Division Best of 5 in finals, 2nd Division Best of 3 in finals).
 type DivisionRule struct {
 	ID           string
 	TournamentID string
 	DivisionID   string
-	BestOf       int // e.g. 3, 5, or 7
-	PointsToWin  int // e.g. 11
-	PointsMargin int // must win by this many (e.g. 2)
+	Stage        string // "group", "r32", "r16", "quarterfinal", "semifinal", "final"
+	BestOf       int    // e.g. 3, 5, or 7
+	PointsToWin  int    // e.g. 11
+	PointsMargin int    // must win by this many (e.g. 2)
 }
 
 // NewDivisionRule creates a new DivisionRule with validation.

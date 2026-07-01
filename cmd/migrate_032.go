@@ -1,0 +1,102 @@
+//go:build ignore
+
+package main
+
+import (
+	"context"
+	"database/sql"
+	"log"
+	"net/url"
+	"os"
+
+	"github.com/joho/godotenv"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
+	"github.com/uptrace/bun/dialect/sqlitedialect"
+	"github.com/uptrace/bun/driver/pgdriver"
+	_ "modernc.org/sqlite"
+)
+
+func main() {
+	_ = godotenv.Load()
+
+	var sqldb *sql.DB
+	var bunDB *bun.DB
+	var err error
+
+	dsn := os.Getenv("DATABASE_URL")
+	isPostgres := false
+	if dsn != "" {
+		log.Println("Using PostgreSQL migration...")
+		isPostgres = true
+		if u, err := url.Parse(dsn); err == nil {
+			q := u.Query()
+			if q.Has("channel_binding") {
+				q.Del("channel_binding")
+				u.RawQuery = q.Encode()
+				dsn = u.String()
+			}
+		}
+		sqldb = sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
+		bunDB = bun.NewDB(sqldb, pgdialect.New())
+	} else {
+		log.Println("Using SQLite migration...")
+		dbPath := os.Getenv("DB_PATH")
+		if dbPath == "" {
+			dbPath = "table_tennis.db"
+		}
+		sqldb, err = sql.Open("sqlite", dbPath+"?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)")
+		if err != nil {
+			log.Fatal(err)
+		}
+		bunDB = bun.NewDB(sqldb, sqlitedialect.New())
+	}
+	defer sqldb.Close()
+
+	ctx := context.Background()
+
+	// Add stage column to division_rules
+	if isPostgres {
+		_, err = bunDB.NewRaw(`
+			ALTER TABLE division_rules 
+			ADD COLUMN IF NOT EXISTS stage VARCHAR(50) DEFAULT 'group'
+		`).Exec(ctx)
+		if err != nil {
+			log.Fatal("Failed to add stage column (PostgreSQL):", err)
+		}
+
+		// Update existing records to have 'group' stage
+		_, err = bunDB.NewRaw(`
+			UPDATE division_rules 
+			SET stage = 'group' 
+			WHERE stage IS NULL
+		`).Exec(ctx)
+		if err != nil {
+			log.Fatal("Failed to update existing records (PostgreSQL):", err)
+		}
+	} else {
+		// SQLite doesn't support ADD COLUMN IF NOT EXISTS in older versions
+		// Check if column exists first
+		var hasCol int
+		_ = bunDB.NewRaw(`SELECT COUNT(*) FROM pragma_table_info('division_rules') WHERE name = 'stage'`).Scan(ctx, &hasCol)
+
+		if hasCol == 0 {
+			_, err = bunDB.NewRaw(`ALTER TABLE division_rules ADD COLUMN stage VARCHAR(50) DEFAULT 'group'`).Exec(ctx)
+			if err != nil {
+				log.Fatal("Failed to add stage column (SQLite):", err)
+			}
+		}
+
+		// Update existing records to have 'group' stage
+		_, err = bunDB.NewRaw(`
+			UPDATE division_rules 
+			SET stage = 'group' 
+			WHERE stage IS NULL
+		`).Exec(ctx)
+		if err != nil {
+			log.Fatal("Failed to update existing records (SQLite):", err)
+		}
+	}
+
+	log.Println("Migration 032 complete: Added stage column to tournament_division_rules")
+}

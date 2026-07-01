@@ -267,26 +267,140 @@
         <div id="edit-division-rules-panel" class="hidden space-y-2">
             {{range .Divisions}}
             {{$divID := .ID}}
-            {{$divRule := ""}}
-            {{range $.Tournament.DivisionRules}}{{if eq .DivisionID $divID}}{{$divRule = .}}{{end}}{{end}}
-            <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+            <div class="bg-black/20 border border-white/5 rounded-xl px-4 py-3 space-y-3">
                 <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{.Name}}</span>
-                <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
-                    <select name="division_rule[{{.ID}}][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
-                        <option value="" {{if not $divRule}}selected{{end}}>-- Use Stage Rules --</option>
-                        <option value="3" {{if $divRule}}{{if eq $divRule.BestOf 3}}selected{{end}}{{end}}>3</option>
-                        <option value="5" {{if $divRule}}{{if eq $divRule.BestOf 5}}selected{{end}}{{end}}>5</option>
-                        <option value="7" {{if $divRule}}{{if eq $divRule.BestOf 7}}selected{{end}}{{end}}>7</option>
-                        <option value="9" {{if $divRule}}{{if eq $divRule.BestOf 9}}selected{{end}}{{end}}>9</option>
-                    </select>
+                
+                <!-- Group -->
+                {{$groupRule := ""}}
+                {{range $.Tournament.DivisionRules}}{{if and (eq .DivisionID $divID) (eq .Stage "group")}}{{$groupRule = .}}{{end}}{{end}}
+                <div class="grid grid-cols-3 gap-3 items-center">
+                    <span class="text-[10px] font-bold uppercase text-gray-400">Group</span>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                        <select name="division_rule[{{.ID}}][group][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                            <option value="" {{if not $groupRule}}selected{{end}}>-- Use Stage Rules --</option>
+                            <option value="3" {{if $groupRule}}{{if eq $groupRule.BestOf 3}}selected{{end}}{{end}}>3</option>
+                            <option value="5" {{if $groupRule}}{{if eq $groupRule.BestOf 5}}selected{{end}}{{end}}>5</option>
+                            <option value="7" {{if $groupRule}}{{if eq $groupRule.BestOf 7}}selected{{end}}{{end}}>7</option>
+                            <option value="9" {{if $groupRule}}{{if eq $groupRule.BestOf 9}}selected{{end}}{{end}}>9</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                        <input type="number" name="division_rule[{{.ID}}][group][points_to_win]" value="{{if $groupRule}}{{$groupRule.PointsToWin}}{{else}}11{{end}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                    </div>
+                    <input type="hidden" name="division_rule[{{.ID}}][group][points_margin]" value="{{if $groupRule}}{{$groupRule.PointsMargin}}{{else}}2{{end}}">
                 </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
-                    <input type="number" name="division_rule[{{.ID}}][points_to_win]" value="{{if $divRule}}{{$divRule.PointsToWin}}{{else}}11{{end}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+
+                <!-- R32 -->
+                {{$r32Rule := ""}}
+                {{range $.Tournament.DivisionRules}}{{if and (eq .DivisionID $divID) (eq .Stage "r32")}}{{$r32Rule = .}}{{end}}{{end}}
+                <div class="grid grid-cols-3 gap-3 items-center">
+                    <span class="text-[10px] font-bold uppercase text-gray-400">R32</span>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                        <select name="division_rule[{{.ID}}][r32][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                            <option value="" {{if not $r32Rule}}selected{{end}}>-- Use Stage Rules --</option>
+                            <option value="3" {{if $r32Rule}}{{if eq $r32Rule.BestOf 3}}selected{{end}}{{end}}>3</option>
+                            <option value="5" {{if $r32Rule}}{{if eq $r32Rule.BestOf 5}}selected{{end}}{{end}}>5</option>
+                            <option value="7" {{if $r32Rule}}{{if eq $r32Rule.BestOf 7}}selected{{end}}{{end}}>7</option>
+                            <option value="9" {{if $r32Rule}}{{if eq $r32Rule.BestOf 9}}selected{{end}}{{end}}>9</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                        <input type="number" name="division_rule[{{.ID}}][r32][points_to_win]" value="{{if $r32Rule}}{{$r32Rule.PointsToWin}}{{else}}11{{end}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                    </div>
+                    <input type="hidden" name="division_rule[{{.ID}}][r32][points_margin]" value="{{if $r32Rule}}{{$r32Rule.PointsMargin}}{{else}}2{{end}}">
                 </div>
-                <input type="hidden" name="division_rule[{{.ID}}][points_margin]" value="{{if $divRule}}{{$divRule.PointsMargin}}{{else}}2{{end}}">
-                <input type="hidden" name="division_rule[division_id][]" value="{{.ID}}">
+
+                <!-- R16 -->
+                {{$r16Rule := ""}}
+                {{range $.Tournament.DivisionRules}}{{if and (eq .DivisionID $divID) (eq .Stage "r16")}}{{$r16Rule = .}}{{end}}{{end}}
+                <div class="grid grid-cols-3 gap-3 items-center">
+                    <span class="text-[10px] font-bold uppercase text-gray-400">R16</span>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                        <select name="division_rule[{{.ID}}][r16][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                            <option value="" {{if not $r16Rule}}selected{{end}}>-- Use Stage Rules --</option>
+                            <option value="3" {{if $r16Rule}}{{if eq $r16Rule.BestOf 3}}selected{{end}}{{end}}>3</option>
+                            <option value="5" {{if $r16Rule}}{{if eq $r16Rule.BestOf 5}}selected{{end}}{{end}}>5</option>
+                            <option value="7" {{if $r16Rule}}{{if eq $r16Rule.BestOf 7}}selected{{end}}{{end}}>7</option>
+                            <option value="9" {{if $r16Rule}}{{if eq $r16Rule.BestOf 9}}selected{{end}}{{end}}>9</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                        <input type="number" name="division_rule[{{.ID}}][r16][points_to_win]" value="{{if $r16Rule}}{{$r16Rule.PointsToWin}}{{else}}11{{end}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                    </div>
+                    <input type="hidden" name="division_rule[{{.ID}}][r16][points_margin]" value="{{if $r16Rule}}{{$r16Rule.PointsMargin}}{{else}}2{{end}}">
+                </div>
+
+                <!-- QF -->
+                {{$qfRule := ""}}
+                {{range $.Tournament.DivisionRules}}{{if and (eq .DivisionID $divID) (eq .Stage "quarterfinal")}}{{$qfRule = .}}{{end}}{{end}}
+                <div class="grid grid-cols-3 gap-3 items-center">
+                    <span class="text-[10px] font-bold uppercase text-gray-400">QF</span>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                        <select name="division_rule[{{.ID}}][quarterfinal][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                            <option value="" {{if not $qfRule}}selected{{end}}>-- Use Stage Rules --</option>
+                            <option value="3" {{if $qfRule}}{{if eq $qfRule.BestOf 3}}selected{{end}}{{end}}>3</option>
+                            <option value="5" {{if $qfRule}}{{if eq $qfRule.BestOf 5}}selected{{end}}{{end}}>5</option>
+                            <option value="7" {{if $qfRule}}{{if eq $qfRule.BestOf 7}}selected{{end}}{{end}}>7</option>
+                            <option value="9" {{if $qfRule}}{{if eq $qfRule.BestOf 9}}selected{{end}}{{end}}>9</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                        <input type="number" name="division_rule[{{.ID}}][quarterfinal][points_to_win]" value="{{if $qfRule}}{{$qfRule.PointsToWin}}{{else}}11{{end}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                    </div>
+                    <input type="hidden" name="division_rule[{{.ID}}][quarterfinal][points_margin]" value="{{if $qfRule}}{{$qfRule.PointsMargin}}{{else}}2{{end}}">
+                </div>
+
+                <!-- SF -->
+                {{$sfRule := ""}}
+                {{range $.Tournament.DivisionRules}}{{if and (eq .DivisionID $divID) (eq .Stage "semifinal")}}{{$sfRule = .}}{{end}}{{end}}
+                <div class="grid grid-cols-3 gap-3 items-center">
+                    <span class="text-[10px] font-bold uppercase text-gray-400">SF</span>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                        <select name="division_rule[{{.ID}}][semifinal][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                            <option value="" {{if not $sfRule}}selected{{end}}>-- Use Stage Rules --</option>
+                            <option value="3" {{if $sfRule}}{{if eq $sfRule.BestOf 3}}selected{{end}}{{end}}>3</option>
+                            <option value="5" {{if $sfRule}}{{if eq $sfRule.BestOf 5}}selected{{end}}{{end}}>5</option>
+                            <option value="7" {{if $sfRule}}{{if eq $sfRule.BestOf 7}}selected{{end}}{{end}}>7</option>
+                            <option value="9" {{if $sfRule}}{{if eq $sfRule.BestOf 9}}selected{{end}}{{end}}>9</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                        <input type="number" name="division_rule[{{.ID}}][semifinal][points_to_win]" value="{{if $sfRule}}{{$sfRule.PointsToWin}}{{else}}11{{end}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                    </div>
+                    <input type="hidden" name="division_rule[{{.ID}}][semifinal][points_margin]" value="{{if $sfRule}}{{$sfRule.PointsMargin}}{{else}}2{{end}}">
+                </div>
+
+                <!-- Final -->
+                {{$finalRule := ""}}
+                {{range $.Tournament.DivisionRules}}{{if and (eq .DivisionID $divID) (eq .Stage "final")}}{{$finalRule = .}}{{end}}{{end}}
+                <div class="grid grid-cols-3 gap-3 items-center">
+                    <span class="text-[10px] font-bold uppercase text-gray-400">Final</span>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                        <select name="division_rule[{{.ID}}][final][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                            <option value="" {{if not $finalRule}}selected{{end}}>-- Use Stage Rules --</option>
+                            <option value="3" {{if $finalRule}}{{if eq $finalRule.BestOf 3}}selected{{end}}{{end}}>3</option>
+                            <option value="5" {{if $finalRule}}{{if eq $finalRule.BestOf 5}}selected{{end}}{{end}}>5</option>
+                            <option value="7" {{if $finalRule}}{{if eq $finalRule.BestOf 7}}selected{{end}}{{end}}>7</option>
+                            <option value="9" {{if $finalRule}}{{if eq $finalRule.BestOf 9}}selected{{end}}{{end}}>9</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                        <input type="number" name="division_rule[{{.ID}}][final][points_to_win]" value="{{if $finalRule}}{{$finalRule.PointsToWin}}{{else}}11{{end}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                    </div>
+                    <input type="hidden" name="division_rule[{{.ID}}][final][points_margin]" value="{{if $finalRule}}{{$finalRule.PointsMargin}}{{else}}2{{end}}">
+                </div>
             </div>
             {{end}}
         </div>

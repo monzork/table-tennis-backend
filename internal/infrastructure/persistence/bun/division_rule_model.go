@@ -15,6 +15,7 @@ type DivisionRuleModel struct {
 	ID           string `bun:"id,pk"`
 	TournamentID string `bun:"tournament_id,notnull"`
 	DivisionID   string `bun:"division_id,notnull"`
+	Stage        string `bun:"stage,notnull"`
 	BestOf       int    `bun:"best_of,notnull"`
 	PointsToWin  int    `bun:"points_to_win,notnull"`
 	PointsMargin int    `bun:"points_margin,notnull"`
@@ -28,6 +29,7 @@ func (m *DivisionRuleModel) ToDomain() tournament.DivisionRule {
 		ID:           m.ID,
 		TournamentID: m.TournamentID,
 		DivisionID:   m.DivisionID,
+		Stage:        m.Stage,
 		BestOf:       m.BestOf,
 		PointsToWin:  m.PointsToWin,
 		PointsMargin: m.PointsMargin,
@@ -48,6 +50,7 @@ func FromDomainDivisionRule(dr tournament.DivisionRule) *DivisionRuleModel {
 		ID:           id,
 		TournamentID: dr.TournamentID,
 		DivisionID:   dr.DivisionID,
+		Stage:        dr.Stage,
 		BestOf:       dr.BestOf,
 		PointsToWin:  dr.PointsToWin,
 		PointsMargin: dr.PointsMargin,

@@ -323,27 +323,131 @@
                     <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">Division-Specific Rules</label>
                     <span class="toggle-arrow text-[10px] text-gray-400 uppercase tracking-widest">Expand ▾</span>
                 </div>
-                <p class="text-[10px] text-gray-500">Override match rules for specific divisions (e.g., 1st Division Best of 5, 2nd/3rd Division Best of 3). Leave empty to use stage rules.</p>
+                <p class="text-[10px] text-gray-500">Override match rules for specific divisions per stage (e.g., 1st Division Best of 5 in finals, 2nd Division Best of 3 in finals). Leave empty to use stage rules.</p>
                 <div id="create-division-rules-panel" class="hidden space-y-2">
                     {{range .Divisions}}
-                    <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                    <div class="bg-black/20 border border-white/5 rounded-xl px-4 py-3 space-y-3">
                         <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{.Name}}</span>
-                        <div class="space-y-1">
-                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
-                            <select name="division_rule[{{.ID}}][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
-                                <option value="">-- Use Stage Rules --</option>
-                                <option value="3">3</option>
-                                <option value="5">5</option>
-                                <option value="7">7</option>
-                                <option value="9">9</option>
-                            </select>
+                        
+                        <!-- Group -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <span class="text-[10px] font-bold uppercase text-gray-400">Group</span>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                                <select name="division_rule[{{.ID}}][group][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                    <option value="">-- Use Stage Rules --</option>
+                                    <option value="3">3</option>
+                                    <option value="5">5</option>
+                                    <option value="7">7</option>
+                                    <option value="9">9</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                                <input type="number" name="division_rule[{{.ID}}][group][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                            </div>
+                            <input type="hidden" name="division_rule[{{.ID}}][group][points_margin]" value="2">
                         </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
-                            <input type="number" name="division_rule[{{.ID}}][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+
+                        <!-- R32 -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <span class="text-[10px] font-bold uppercase text-gray-400">R32</span>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                                <select name="division_rule[{{.ID}}][r32][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                    <option value="">-- Use Stage Rules --</option>
+                                    <option value="3">3</option>
+                                    <option value="5">5</option>
+                                    <option value="7">7</option>
+                                    <option value="9">9</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                                <input type="number" name="division_rule[{{.ID}}][r32][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                            </div>
+                            <input type="hidden" name="division_rule[{{.ID}}][r32][points_margin]" value="2">
                         </div>
-                        <input type="hidden" name="division_rule[{{.ID}}][points_margin]" value="2">
-                        <input type="hidden" name="division_rule[division_id][]" value="{{.ID}}">
+
+                        <!-- R16 -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <span class="text-[10px] font-bold uppercase text-gray-400">R16</span>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                                <select name="division_rule[{{.ID}}][r16][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                    <option value="">-- Use Stage Rules --</option>
+                                    <option value="3">3</option>
+                                    <option value="5">5</option>
+                                    <option value="7">7</option>
+                                    <option value="9">9</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                                <input type="number" name="division_rule[{{.ID}}][r16][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                            </div>
+                            <input type="hidden" name="division_rule[{{.ID}}][r16][points_margin]" value="2">
+                        </div>
+
+                        <!-- QF -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <span class="text-[10px] font-bold uppercase text-gray-400">QF</span>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                                <select name="division_rule[{{.ID}}][quarterfinal][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                    <option value="">-- Use Stage Rules --</option>
+                                    <option value="3">3</option>
+                                    <option value="5">5</option>
+                                    <option value="7">7</option>
+                                    <option value="9">9</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                                <input type="number" name="division_rule[{{.ID}}][quarterfinal][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                            </div>
+                            <input type="hidden" name="division_rule[{{.ID}}][quarterfinal][points_margin]" value="2">
+                        </div>
+
+                        <!-- SF -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <span class="text-[10px] font-bold uppercase text-gray-400">SF</span>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                                <select name="division_rule[{{.ID}}][semifinal][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                    <option value="">-- Use Stage Rules --</option>
+                                    <option value="3">3</option>
+                                    <option value="5">5</option>
+                                    <option value="7">7</option>
+                                    <option value="9">9</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                                <input type="number" name="division_rule[{{.ID}}][semifinal][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                            </div>
+                            <input type="hidden" name="division_rule[{{.ID}}][semifinal][points_margin]" value="2">
+                        </div>
+
+                        <!-- Final -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <span class="text-[10px] font-bold uppercase text-gray-400">Final</span>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                                <select name="division_rule[{{.ID}}][final][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                                    <option value="">-- Use Stage Rules --</option>
+                                    <option value="3">3</option>
+                                    <option value="5">5</option>
+                                    <option value="7">7</option>
+                                    <option value="9">9</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                                <input type="number" name="division_rule[{{.ID}}][final][points_to_win]" value="11" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                            </div>
+                            <input type="hidden" name="division_rule[{{.ID}}][final][points_margin]" value="2">
+                        </div>
                     </div>
                     {{end}}
                 </div>
