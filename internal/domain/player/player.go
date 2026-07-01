@@ -13,6 +13,7 @@ type Repository interface {
 	SaveMultiple(ctx context.Context, players []*Player) error
 	Delete(ctx context.Context, id string) error
 	Search(ctx context.Context, query string) ([]*Player, error)
+	SearchForSelection(ctx context.Context, query, gender string) ([]*Player, error)
 	GetAll(ctx context.Context) ([]*Player, error)
 	GetAllSingles(ctx context.Context) ([]*Player, error)
 	GetAllDoubles(ctx context.Context) ([]*Player, error)

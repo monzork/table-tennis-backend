@@ -98,8 +98,9 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	deletePlayerUC := player.NewDeletePlayerUseCase(playerRepo)
 	getPlayerByIDUC := player.NewGetPlayerByIDUseCase(playerRepo)
 	searchPlayerUC := player.NewSearchPlayersUseCase(playerRepo)
+	searchPlayerSelectionUC := player.NewSearchPlayersForSelectionUseCase(playerRepo)
 	importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
-	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, importPlayerUC)
+	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 

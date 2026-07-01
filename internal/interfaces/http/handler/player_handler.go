@@ -12,12 +12,13 @@ import (
 )
 
 type PlayerHandler struct {
-	registerPlayerUC *player.RegisterPlayerUseCase
-	updatePlayerUC   *player.UpdatePlayerUseCase
-	deletePlayerUC   *player.DeletePlayerUseCase
-	getPlayerByIDUC  *player.GetPlayerByIDUseCase
-	searchPlayerUC   *player.SearchPlayersUseCase
-	importPlayersUC  *player.ImportPlayersUseCase
+	registerPlayerUC        *player.RegisterPlayerUseCase
+	updatePlayerUC          *player.UpdatePlayerUseCase
+	deletePlayerUC          *player.DeletePlayerUseCase
+	getPlayerByIDUC         *player.GetPlayerByIDUseCase
+	searchPlayerUC          *player.SearchPlayersUseCase
+	searchPlayerSelectionUC *player.SearchPlayersForSelectionUseCase
+	importPlayersUC         *player.ImportPlayersUseCase
 }
 
 func NewPlayerHandler(
@@ -26,15 +27,17 @@ func NewPlayerHandler(
 	duc *player.DeletePlayerUseCase,
 	giuc *player.GetPlayerByIDUseCase,
 	siuc *player.SearchPlayersUseCase,
+	ssuc *player.SearchPlayersForSelectionUseCase,
 	iuc *player.ImportPlayersUseCase,
 ) *PlayerHandler {
 	return &PlayerHandler{
-		registerPlayerUC: uc,
-		updatePlayerUC:   uuc,
-		deletePlayerUC:   duc,
-		getPlayerByIDUC:  giuc,
-		searchPlayerUC:   siuc,
-		importPlayersUC:  iuc,
+		registerPlayerUC:        uc,
+		updatePlayerUC:          uuc,
+		deletePlayerUC:          duc,
+		getPlayerByIDUC:         giuc,
+		searchPlayerUC:          siuc,
+		searchPlayerSelectionUC: ssuc,
+		importPlayersUC:         iuc,
 	}
 }
 
@@ -135,20 +138,9 @@ func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
 	}
 	selectAll := c.Query("selectAll") == "true" // if true, mark all returned players as checked
 
-	players, err := h.searchPlayerUC.Execute(c.Context(), query)
+	players, err := h.searchPlayerSelectionUC.Execute(c.Context(), query, gender)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	// Filter by gender if requested
-	if gender != "" {
-		filtered := players[:0]
-		for _, p := range players {
-			if p.Gender == gender {
-				filtered = append(filtered, p)
-			}
-		}
-		players = filtered
 	}
 
 	// Build selected map: preserve existing selections OR select all returned

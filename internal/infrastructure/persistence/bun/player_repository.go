@@ -188,6 +188,27 @@ func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.
 	return r.mapModelsToDomain(models), nil
 }
 
+// SearchForSelection is a lighter-weight variant of Search for the participant
+// selection cards UI, which only ever renders name, gender and singles Elo.
+func (r *PlayerRepository) SearchForSelection(ctx context.Context, query, gender string) ([]*player.Player, error) {
+	var models []PlayerModel
+	q := r.db.NewSelect().
+		Model(&models).
+		Column("id", "first_name", "second_name", "last_name", "second_last_name", "gender", "singles_elo").
+		OrderBy("singles_elo", bun.OrderDesc)
+	if query != "" {
+		lowerQuery := "%" + strings.ToLower(query) + "%"
+		q = q.Where("LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?", lowerQuery, lowerQuery, lowerQuery, lowerQuery)
+	}
+	if gender != "" {
+		q = q.Where("gender = ?", gender)
+	}
+	if err := q.Scan(ctx); err != nil {
+		return nil, err
+	}
+	return r.mapModelsToDomain(models), nil
+}
+
 func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.Player) error {
 	if len(players) == 0 {
 		return nil

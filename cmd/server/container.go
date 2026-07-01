@@ -41,7 +41,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
 	getPlayerByIDUC := player.NewGetPlayerByIDUseCase(playerRepo)
 	searchPlayerUC := player.NewSearchPlayersUseCase(playerRepo)
-	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, importPlayerUC)
+	searchPlayerSelectionUC := player.NewSearchPlayersForSelectionUseCase(playerRepo)
+	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 

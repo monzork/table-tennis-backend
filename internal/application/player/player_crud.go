@@ -85,3 +85,15 @@ func NewSearchPlayersUseCase(repo player.Repository) *SearchPlayersUseCase {
 func (uc *SearchPlayersUseCase) Execute(ctx context.Context, query string) ([]*player.Player, error) {
 	return uc.repo.Search(ctx, query)
 }
+
+type SearchPlayersForSelectionUseCase struct {
+	repo player.Repository
+}
+
+func NewSearchPlayersForSelectionUseCase(repo player.Repository) *SearchPlayersForSelectionUseCase {
+	return &SearchPlayersForSelectionUseCase{repo: repo}
+}
+
+func (uc *SearchPlayersForSelectionUseCase) Execute(ctx context.Context, query, gender string) ([]*player.Player, error) {
+	return uc.repo.SearchForSelection(ctx, query, gender)
+}
