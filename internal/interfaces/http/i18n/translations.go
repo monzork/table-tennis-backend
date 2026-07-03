@@ -153,6 +153,7 @@ var Translations = map[string]map[string]string{
 		"board.no_in_progress": "No matches in progress",
 		"board.edit":           "✏️ Edit",
 		"board.no_finished":    "No matches finished yet",
+		"board.in_match":       "IN MATCH",
 
 		// Score Form
 		"score_form.title":         "Enter",
@@ -409,6 +410,7 @@ var Translations = map[string]map[string]string{
 		"board.no_in_progress": "No hay partidos en progreso",
 		"board.edit":           "✏️ Editar",
 		"board.no_finished":    "No hay partidos finalizados aún",
+		"board.in_match":       "JUGANDO",
 
 		// Score Form
 		"score_form.title":         "Ingresar",

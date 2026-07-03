@@ -794,6 +794,8 @@ type BoardCard struct {
 	Pin          string
 	GroupName    string
 	DivisionName string
+	P1InMatch    bool
+	P2InMatch    bool
 }
 
 type TableVM struct {
@@ -1168,6 +1170,25 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 	scheduleMatchGreedy(&virtualScheduled)
 
 	scheduled = reordered
+
+	// Mark players currently in a match
+	inMatchPlayers := make(map[string]bool)
+	for _, c := range inProgress {
+		if c.P1Id != "" {
+			inMatchPlayers[c.P1Id] = true
+		}
+		if c.P2Id != "" {
+			inMatchPlayers[c.P2Id] = true
+		}
+	}
+	for i := range scheduled {
+		if scheduled[i].P1Id != "" && inMatchPlayers[scheduled[i].P1Id] {
+			scheduled[i].P1InMatch = true
+		}
+		if scheduled[i].P2Id != "" && inMatchPlayers[scheduled[i].P2Id] {
+			scheduled[i].P2InMatch = true
+		}
+	}
 
 	return
 }
