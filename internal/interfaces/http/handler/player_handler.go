@@ -22,6 +22,7 @@ type PlayerHandler struct {
 	searchPlayerSelectionUC *player.SearchPlayersForSelectionUseCase
 	importPlayersUC         *player.ImportPlayersUseCase
 	enrollPlayerUC          *tournament.EnrollPlayerUseCase
+	getTournamentsUC        *tournament.GetTournamentsUseCase
 }
 
 func NewPlayerHandler(
@@ -33,6 +34,7 @@ func NewPlayerHandler(
 	ssuc *player.SearchPlayersForSelectionUseCase,
 	iuc *player.ImportPlayersUseCase,
 	enrollUC *tournament.EnrollPlayerUseCase,
+	gtuc *tournament.GetTournamentsUseCase,
 ) *PlayerHandler {
 	return &PlayerHandler{
 		registerPlayerUC:        uc,
@@ -43,6 +45,7 @@ func NewPlayerHandler(
 		searchPlayerSelectionUC: ssuc,
 		importPlayersUC:         iuc,
 		enrollPlayerUC:          enrollUC,
+		getTournamentsUC:        gtuc,
 	}
 }
 
@@ -97,6 +100,7 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 		NationalID     string `json:"nationalID" form:"nationalID"`
 		SinglesElo     int16  `json:"singlesElo" form:"singlesElo"`
 		DoublesElo     int16  `json:"doublesElo" form:"doublesElo"`
+		TournamentID   string `json:"tournamentId" form:"tournamentId"`
 	}
 
 	if err := c.BodyParser(&body); err != nil {
@@ -106,6 +110,12 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 	player, err := h.updatePlayerUC.Execute(c.Context(), id, body.FirstName, body.SecondName, body.LastName, body.SecondLastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, body.SinglesElo, body.DoublesElo)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	if body.TournamentID != "" {
+		if err := h.enrollPlayerUC.Execute(c.Context(), body.TournamentID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
+			slog.Warn("failed to enroll updated player into tournament", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
+		}
 	}
 
 	return c.Render("admin/partials/player-row", player)
@@ -125,7 +135,13 @@ func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, "Player not found")
 	}
-	return c.Render("admin/partials/player-edit-form", p)
+	
+	tournaments, _ := h.getTournamentsUC.Execute(c.Context())
+
+	return c.Render("admin/partials/player-edit-form", fiber.Map{
+		"Player":      p,
+		"Tournaments": tournaments,
+	})
 }
 
 func (h *PlayerHandler) Search(c *fiber.Ctx) error {

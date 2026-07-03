@@ -44,7 +44,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	searchPlayerSelectionUC := player.NewSearchPlayersForSelectionUseCase(playerRepo)
 	tournamentRepo := bun.NewTournamentRepository(bun.DB)
 	enrollPlayerUC := tournament.NewEnrollPlayerUseCase(tournamentRepo)
-	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC)
+	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
+	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 
@@ -53,7 +54,6 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 
 	createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
 	getTournamentByIDUC := tournament.NewGetTournamentByIDUseCase(tournamentRepo, divisionRepo)
-	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
 	updateTournamentUC := tournament.NewUpdateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
 	deleteTournamentUC := tournament.NewDeleteTournamentUseCase(tournamentRepo)
 	matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)

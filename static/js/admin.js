@@ -166,13 +166,14 @@ function showToast(message, type = 'success') {
     });
 
     const dismiss = () => {
-        toast.classList.add('translate-x-full', 'opacity-0');
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
         setTimeout(() => toast.remove(), 300);
     };
-    toast.addEventListener('click', dismiss);
-    if (type === 'error') {
-        setTimeout(dismiss, 6000);
-    }
+    toast.onclick = dismiss;
+    
+    // Auto dismiss all toasts, longer for errors
+    setTimeout(dismiss, type === 'error' ? 6000 : 4500);
 }
 
 // Check for pending success toasts on page load

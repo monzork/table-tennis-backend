@@ -58,6 +58,7 @@ func (g *GoFpdfGenerator) GenerateTournamentReport(t *tournament.Tournament) ([]
 		pdf.SetDrawColor(200, 200, 200)
 		w, _ := pdf.GetPageSize()
 		pdf.Line(15, 45, w-15, 45)
+		pdf.SetY(52)
 	})
 
 

@@ -1,38 +1,38 @@
 <h2 class="text-2xl font-extrabold uppercase mb-8 tracking-tighter">Edit <span class="text-white">Athlete</span>.</h2>
 
-<form hx-put="/players/{{.ID}}" hx-target="#player-{{.ID}}" hx-swap="outerHTML" class="space-y-4" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('edit-player-modal').classList.add('hidden')">
+<form hx-put="/players/{{.Player.ID}}" hx-target="#player-{{.Player.ID}}" hx-swap="outerHTML" class="space-y-4" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('edit-player-modal').classList.add('hidden')">
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">First Name</label>
-            <input type="text" name="firstName" value="{{.FirstName}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <input type="text" name="firstName" value="{{.Player.FirstName}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Second Name</label>
-            <input type="text" name="secondName" value="{{.SecondName}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <input type="text" name="secondName" value="{{.Player.SecondName}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Last Name</label>
-            <input type="text" name="lastName" value="{{.LastName}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <input type="text" name="lastName" value="{{.Player.LastName}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Second Last Name</label>
-            <input type="text" name="secondLastName" value="{{.SecondLastName}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <input type="text" name="secondLastName" value="{{.Player.SecondLastName}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Birthdate</label>
-            <input type="date" name="birthdate" value="{{.Birthdate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
+            <input type="date" name="birthdate" value="{{.Player.Birthdate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
         </div>
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Gender</label>
             <select name="gender" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
-                <option value="M" {{if eq .Gender "M"}}selected{{end}}>Male</option>
-                <option value="F" {{if eq .Gender "F"}}selected{{end}}>Female</option>
+                <option value="M" {{if eq .Player.Gender "M"}}selected{{end}}>Male</option>
+                <option value="F" {{if eq .Player.Gender "F"}}selected{{end}}>Female</option>
             </select>
         </div>
     </div>
@@ -46,36 +46,46 @@
                     hx-target="#edit-department-container"
                     hx-swap="innerHTML"
                     class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none cursor-pointer">
-                {{$currentCountry := .Country}}
+                {{$currentCountry := .Player.Country}}
                 {{range countries}}
                     <option value="{{.Code}}" {{if eq .Code $currentCountry}}selected{{end}}>{{.Name}} ({{.Code}})</option>
                 {{end}}
             </select>
         </div>
         <div class="space-y-1" id="edit-department-container">
-            {{template "partials/department-input" dict "Theme" "admin-edit" "Country" .Country "Department" .Department}}
+            {{template "partials/department-input" dict "Theme" "admin-edit" "Country" .Player.Country "Department" .Player.Department}}
         </div>
     </div>
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">WhatsApp Number</label>
-            <input type="text" name="whatsAppNumber" value="{{.WhatsAppNumber}}" placeholder="+52..." class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <input type="text" name="whatsAppNumber" value="{{.Player.WhatsAppNumber}}" placeholder="+52..." class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">National ID (Cédula)</label>
-            <input type="text" name="nationalID" value="{{.NationalID}}" placeholder="e.g. 001-000000-0000A" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <input type="text" name="nationalID" value="{{.Player.NationalID}}" placeholder="e.g. 001-000000-0000A" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4 pt-2 border-t border-white/5 mt-4">
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Singles Elo</label>
-            <input type="number" name="singlesElo" value="{{.SinglesElo}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <input type="number" name="singlesElo" value="{{.Player.SinglesElo}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Doubles Elo</label>
-            <input type="number" name="doublesElo" value="{{.DoublesElo}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <input type="number" name="doublesElo" value="{{.Player.DoublesElo}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
+    </div>
+
+    <div class="pt-2 border-t border-white/5 mt-4">
+        <label class="text-[10px] font-bold uppercase text-gray-500 mb-1 block">Enroll into Tournament (Optional)</label>
+        <select name="tournamentId" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none cursor-pointer">
+            <option value="">Don't enroll now</option>
+            {{range .Tournaments}}
+                <option value="{{.ID}}">{{.Name}}</option>
+            {{end}}
+        </select>
     </div>
 
     <div class="flex gap-3 pt-6">
