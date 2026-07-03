@@ -1368,7 +1368,8 @@ func (r *TournamentRepository) UpdateParticipantsElo(ctx context.Context, tourna
 	return tx.Commit()
 }
 
-// AddParticipant inserts a single player into tournament_participants.
+// AddParticipant inserts a single player into tournament_participants, e.g. to
+// enroll a newly-created player into a tournament outside of tournament creation.
 func (r *TournamentRepository) AddParticipant(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
@@ -1381,11 +1382,28 @@ func (r *TournamentRepository) AddParticipant(ctx context.Context, tournamentID 
 	model := &TournamentParticipantModel{
 		TournamentID:     tID,
 		PlayerID:         pID,
+		Pin:              r.generateUniqueParticipantPIN(ctx, tID),
 		EloBeforeSingles: &singlesElo,
 		EloBeforeDoubles: &doublesElo,
 	}
 	_, err = r.db.NewInsert().Model(model).Ignore().Exec(ctx)
 	return err
+}
+
+func (r *TournamentRepository) generateUniqueParticipantPIN(ctx context.Context, tournamentID uuid.UUID) string {
+	for {
+		var b [4]byte
+		_, _ = cryptorand.Read(b[:])
+		pinVal := int(binary.BigEndian.Uint32(b[:]))%9000 + 1000
+		pin := fmt.Sprintf("%04d", pinVal)
+		count, err := r.db.NewSelect().
+			Model((*TournamentParticipantModel)(nil)).
+			Where("tournament_id = ? AND pin = ?", tournamentID, pin).
+			Count(ctx)
+		if err == nil && count == 0 {
+			return pin
+		}
+	}
 }
 
 func (r *TournamentRepository) GetEventNumTables(ctx context.Context, eventID string) (int, error) {

@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"table-tennis-backend/internal/application/player"
+	"table-tennis-backend/internal/application/tournament"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/xuri/excelize/v2"
@@ -19,6 +21,7 @@ type PlayerHandler struct {
 	searchPlayerUC          *player.SearchPlayersUseCase
 	searchPlayerSelectionUC *player.SearchPlayersForSelectionUseCase
 	importPlayersUC         *player.ImportPlayersUseCase
+	enrollPlayerUC          *tournament.EnrollPlayerUseCase
 }
 
 func NewPlayerHandler(
@@ -29,6 +32,7 @@ func NewPlayerHandler(
 	siuc *player.SearchPlayersUseCase,
 	ssuc *player.SearchPlayersForSelectionUseCase,
 	iuc *player.ImportPlayersUseCase,
+	enrollUC *tournament.EnrollPlayerUseCase,
 ) *PlayerHandler {
 	return &PlayerHandler{
 		registerPlayerUC:        uc,
@@ -38,6 +42,7 @@ func NewPlayerHandler(
 		searchPlayerUC:          siuc,
 		searchPlayerSelectionUC: ssuc,
 		importPlayersUC:         iuc,
+		enrollPlayerUC:          enrollUC,
 	}
 }
 
@@ -55,6 +60,7 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 		NationalID     string `json:"nationalID" form:"nationalID"`
 		SinglesElo     int16  `json:"singlesElo" form:"singlesElo"`
 		DoublesElo     int16  `json:"doublesElo" form:"doublesElo"`
+		TournamentID   string `json:"tournamentId" form:"tournamentId"`
 	}
 
 	if err := c.BodyParser(&body); err != nil {
@@ -65,6 +71,12 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	if body.TournamentID != "" {
+		if err := h.enrollPlayerUC.Execute(c.Context(), body.TournamentID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
+			slog.Warn("failed to enroll newly created player into tournament", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
+		}
 	}
 
 	return c.Render("admin/partials/player-row", player)

@@ -129,6 +129,15 @@
                     <input type="text" name="nationalID" placeholder="e.g. 001-000000-0000A" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
                 </div>
             </div>
+            <div>
+                <label class="text-[9px] font-bold uppercase text-gray-500 mb-1 block">Enroll into Tournament (Optional)</label>
+                <select name="tournamentId" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer">
+                    <option value="">Don't enroll now</option>
+                    {{range .Tournaments}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
             <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-bold py-3 rounded-xl transition-all uppercase tracking-wider mt-4">Register</button>
         </form>
     </div>
