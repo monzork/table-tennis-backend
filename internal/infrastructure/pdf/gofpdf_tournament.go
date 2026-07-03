@@ -1092,7 +1092,7 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, tr fu
 
 			getBracketPlayerText := func(sp *pdfMatchSlot) string {
 				if sp == nil || sp.Player == nil {
-					return "TBD"
+					return "BYE"
 				}
 				return strings.ToUpper(formatPlayerName(sp.Player))
 			}
@@ -1120,7 +1120,7 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, tr fu
 
 						pdf.SetFont("Arial", "B", 6)
 						pdf.SetTextColor(0, 0, 0)
-						champName := "TBD"
+						champName := "BYE"
 						if m.Player1 != nil && m.Player1.Player != nil {
 							champName = strings.ToUpper(formatPlayerName(m.Player1.Player))
 						}

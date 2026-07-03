@@ -12,6 +12,7 @@ import (
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -1069,13 +1070,36 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 		}
 	}
 
-	// Sort scheduled matches so oldest (first created) appear at the top.
-	// We can use MatchID as a proxy for creation time if it's sortable (e.g., UUID or sequential ID),
-	// or we can just leave the order since the original loop usually appends in order of creation.
-	// But to be explicit and allow players to rest, we can sort by MatchID length or alphabetically
-	// assuming they are sequential. Actually, t.Matches is usually already ordered by DB creation.
-	// If the user wants oldest first, and we appended them sequentially, they might already be in order.
-	// But let's reverse them if they are newest-first, or just sort them by MatchID to be safe.
+	// Track last activity to allow players to rest
+	lastActivity := make(map[string]time.Time)
+	for _, m := range t.Matches {
+		if m.Status == "in_progress" || m.Status == "finished" {
+			tAct := time.Time{}
+			if m.UpdatedAt != nil {
+				tAct = *m.UpdatedAt
+			}
+			for _, p := range m.TeamA {
+				if lastActivity[p.ID].Before(tAct) {
+					lastActivity[p.ID] = tAct
+				}
+			}
+			for _, p := range m.TeamB {
+				if lastActivity[p.ID].Before(tAct) {
+					lastActivity[p.ID] = tAct
+				}
+			}
+		}
+	}
+
+	getRestPenalty := func(c BoardCard) time.Time {
+		t1 := lastActivity[c.P1Id]
+		t2 := lastActivity[c.P2Id]
+		if t1.After(t2) {
+			return t1
+		}
+		return t2
+	}
+
 	sort.Slice(scheduled, func(i, j int) bool {
 		// If MatchID is empty, it's a virtual match (from bracket/group). Put those at the end.
 		if scheduled[i].MatchID == "" && scheduled[j].MatchID != "" {
@@ -1084,6 +1108,13 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 		if scheduled[i].MatchID != "" && scheduled[j].MatchID == "" {
 			return true
 		}
+
+		rp1 := getRestPenalty(scheduled[i])
+		rp2 := getRestPenalty(scheduled[j])
+		if !rp1.Equal(rp2) {
+			return rp1.Before(rp2)
+		}
+
 		// Otherwise sort by MatchID
 		return scheduled[i].MatchID < scheduled[j].MatchID
 	})

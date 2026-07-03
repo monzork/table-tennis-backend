@@ -167,7 +167,7 @@ function showToast(message, type = 'success') {
 
     const dismiss = () => {
         toast.classList.add('translate-x-full', 'opacity-0');
-        setTimeout(() => toast.remove(), 500);
+        setTimeout(() => toast.remove(), 300);
     };
     toast.addEventListener('click', dismiss);
     if (type === 'error') {
