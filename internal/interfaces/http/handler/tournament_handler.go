@@ -768,10 +768,13 @@ func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	vm := BuildTournamentViewModel(res.tournament, res.divisions, tmap)
 	vm.IsPublic = true
 
+	scheduled, _, _ := buildBoardCards(res.tournament, res.divisions)
+
 	return c.Render("public/tv-dashboard", merge(tMap(lang), fiber.Map{
 		"Tournament":       res.tournament,
 		"Divisions":        res.divisions,
 		"BracketViewModel": vm,
+		"Scheduled":        scheduled,
 	})) // No layout for TV
 }
 
