@@ -189,6 +189,39 @@ document.body.addEventListener('htmx:responseError', function() {
     sessionStorage.removeItem('pending_toast');
 });
 
+// ── Global styled confirm (replaces native confirm() for every hx-confirm) ──────
+document.body.addEventListener('htmx:confirm', function(evt) {
+    if (!evt.detail.question) return; // no hx-confirm on this element, let it proceed
+
+    const modal = document.getElementById('global-confirm-modal');
+    const msgEl = document.getElementById('global-confirm-msg');
+    const yesBtn = document.getElementById('global-confirm-yes');
+    const cancelBtn = document.getElementById('global-confirm-cancel');
+    if (!modal || !msgEl || !yesBtn || !cancelBtn) {
+        if (window.confirm(evt.detail.question)) evt.detail.issueRequest(true);
+        return;
+    }
+
+    evt.preventDefault();
+    msgEl.textContent = evt.detail.question;
+    modal.classList.remove('hidden');
+
+    function cleanup() {
+        modal.classList.add('hidden');
+        yesBtn.removeEventListener('click', onConfirm);
+        cancelBtn.removeEventListener('click', onCancel);
+    }
+    function onConfirm() {
+        cleanup();
+        evt.detail.issueRequest(true);
+    }
+    function onCancel() {
+        cleanup();
+    }
+    yesBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+});
+
 // Auto-reload bracket and matches after player move
 document.body.addEventListener('htmx:afterOnLoad', function(evt) {
     const path = (evt.detail.pathInfo && evt.detail.pathInfo.requestPath) || 

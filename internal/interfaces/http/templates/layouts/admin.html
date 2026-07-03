@@ -250,7 +250,23 @@
         {{embed}}
     </main>
 
+    <!-- Global Toast Container -->
+    <div id="toast-container" class="fixed top-6 right-6 z-[250] space-y-3 pointer-events-none"></div>
+
+    <!-- Global Styled Confirm Modal (replaces native browser confirm() for hx-confirm) -->
+    <div id="global-confirm-modal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md">
+        <div class="bg-club-panel p-8 rounded-3xl border border-white/10 shadow-2xl max-w-sm w-full mx-4 text-center relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+            <h3 class="text-xl font-black uppercase tracking-widest text-white mb-4">Please Confirm</h3>
+            <p id="global-confirm-msg" class="text-sm text-gray-400 font-mono mb-8 whitespace-pre-wrap leading-relaxed"></p>
+            <div class="flex gap-4 relative z-10">
+                <button type="button" id="global-confirm-cancel" class="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl uppercase tracking-widest text-xs transition-colors border border-white/10">Cancel</button>
+                <button type="button" id="global-confirm-yes" class="flex-1 bg-white hover:bg-gray-200 text-black font-black py-3 rounded-xl uppercase tracking-widest text-xs transition-colors">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- External admin JS (cacheable) -->
-    <script src="/static/js/admin.js?v=5"></script>
+    <script src="/static/js/admin.js?v=6"></script>
 </body>
 </html>
