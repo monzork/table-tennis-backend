@@ -57,6 +57,10 @@ func (m *mockMovePlayerRepository) UpdateParticipantsElo(ctx context.Context, to
 	return nil
 }
 
+func (m *mockMovePlayerRepository) UpdateParticipantEloBefore(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
+	return nil
+}
+
 func (m *mockMovePlayerRepository) SaveTeam(ctx context.Context, team *tournamentDomain.Team) error {
 	return nil
 }

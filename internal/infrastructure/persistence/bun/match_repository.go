@@ -380,6 +380,56 @@ func (r *MatchRepository) CountFinishedMatches(ctx context.Context, tournamentID
 		Count(ctx)
 }
 
+// HasStartedOrFinishedMatches reports whether any match for the tournament has
+// already been played or is being played, i.e. it's unsafe to wipe and regenerate.
+func (r *MatchRepository) HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error) {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return false, err
+	}
+	count, err := r.db.NewSelect().
+		Model((*MatchModel)(nil)).
+		Where("tournament_id = ?", tID).
+		Where("status != ?", "scheduled").
+		Count(ctx)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// DeleteByTournament removes all matches (and their sets) for a tournament.
+// Callers must ensure no match has been started/finished first.
+func (r *MatchRepository) DeleteByTournament(ctx context.Context, tournamentID string) error {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return err
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.NewDelete().TableExpr("match_sets").
+		Where("match_id IN (SELECT id FROM matches WHERE tournament_id = ?)", tID).Exec(ctx); err != nil {
+		return err
+	}
+	// Clear self-referencing FKs before deleting matches
+	if _, err := tx.NewUpdate().TableExpr("matches").
+		Set("next_match_id = NULL, team_match_id = NULL").
+		Where("tournament_id = ?", tID).Exec(ctx); err != nil {
+		return err
+	}
+	if _, err := tx.NewDelete().TableExpr("matches").
+		Where("tournament_id = ?", tID).Exec(ctx); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, error) {
 	var models []MatchModel
 	if err := r.db.NewSelect().Model(&models).Order("created_at DESC").Scan(ctx); err != nil {

@@ -150,9 +150,12 @@ function showToast(message, type = 'success') {
     if (!container) return;
 
     const toast = document.createElement('div');
-    toast.className = `cursor-pointer flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border border-white/10 shadow-2xl transition-all duration-500 transform translate-x-full opacity-0 pointer-events-auto max-w-sm`;
-    
-    const icon = `<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+    const borderClass = type === 'error' ? 'border-red-500/30' : 'border-white/10';
+    toast.className = `cursor-pointer flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border ${borderClass} shadow-2xl transition-all duration-500 transform translate-x-full opacity-0 pointer-events-auto max-w-sm`;
+
+    const icon = type === 'error'
+        ? `<svg class="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"></path></svg>`
+        : `<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
 
     toast.innerHTML = `${icon}<span class="text-xs font-bold uppercase tracking-wider text-white/90">${message}</span>`;
 
@@ -162,10 +165,14 @@ function showToast(message, type = 'success') {
         toast.classList.remove('translate-x-full', 'opacity-0');
     });
 
-    toast.addEventListener('click', () => {
+    const dismiss = () => {
         toast.classList.add('translate-x-full', 'opacity-0');
         setTimeout(() => toast.remove(), 500);
-    });
+    };
+    toast.addEventListener('click', dismiss);
+    if (type === 'error') {
+        setTimeout(dismiss, 6000);
+    }
 }
 
 // Check for pending success toasts on page load

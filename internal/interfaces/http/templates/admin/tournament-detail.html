@@ -42,6 +42,13 @@
         class="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-green-500/20 text-center">
         Finish Tournament
       </button>
+      <button hx-post="/admin/tournaments/{{.Tournament.ID}}/regenerate-seeds"
+        hx-swap="none"
+        hx-confirm="Regenerate group seeds from current player Elo? This re-groups players by division and deletes any matches created so far. Only do this if no matches have been played yet."
+        hx-on::response-error="showToast(event.detail.xhr.responseText, 'error')"
+        class="w-full sm:w-auto bg-amber-500/20 hover:bg-amber-500/40 text-amber-400 border border-amber-500/30 text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-center">
+        Regenerate Seeds
+      </button>
       {{end}}
       <a href="/admin/tournaments/{{.Tournament.ID}}/board"
         class="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/20 text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider flex items-center justify-center gap-2">
@@ -87,6 +94,13 @@
           <span class="text-base font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
           <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
           <span class="ml-2 text-[9px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 rounded font-mono" title="Player Match PIN">{{index $.PlayerPins .ID}}</span>
+          <button type="button"
+            onclick="document.getElementById('elo-edit-player-id').value='{{.ID}}';
+                     document.getElementById('elo-edit-name').textContent='{{.FirstNameWithSecond}} {{.LastNameWithSecond}}';
+                     document.getElementById('elo-edit-singles').value='{{.SinglesElo}}';
+                     document.getElementById('elo-edit-doubles').value='{{.DoublesElo}}';
+                     document.getElementById('edit-elo-modal').classList.remove('hidden');"
+            class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold ml-1" title="Correct this player's seeded Elo for this tournament">✎</button>
         </div>
         {{else}}
         <p class="text-sm text-gray-600">No participants available.</p>
@@ -100,6 +114,13 @@
           <span class="text-base font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
           <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
           <span class="ml-2 text-[9px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 rounded font-mono" title="Player Match PIN">{{index $.PlayerPins .ID}}</span>
+          <button type="button"
+            onclick="document.getElementById('elo-edit-player-id').value='{{.ID}}';
+                     document.getElementById('elo-edit-name').textContent='{{.FirstNameWithSecond}} {{.LastNameWithSecond}}';
+                     document.getElementById('elo-edit-singles').value='{{.SinglesElo}}';
+                     document.getElementById('elo-edit-doubles').value='{{.DoublesElo}}';
+                     document.getElementById('edit-elo-modal').classList.remove('hidden');"
+            class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold ml-1" title="Correct this player's seeded Elo for this tournament">✎</button>
         </div>
         {{else}}
         <p class="text-sm text-gray-600">No participants registered.</p>
@@ -243,6 +264,36 @@
         </div>
         <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">
           Assign Official
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Seeded Elo Modal -->
+  <div id="edit-elo-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] transition-all">
+    <div class="bg-club-panel border border-white/10 p-6 rounded-2xl max-w-sm w-full relative shadow-2xl">
+      <button hx-on:click="document.getElementById('edit-elo-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+      <h3 class="text-xl font-extrabold uppercase mb-1 tracking-tighter">Correct Seeded Elo</h3>
+      <p id="elo-edit-name" class="text-xs text-gray-500 mb-4"></p>
+      <form hx-post="/admin/tournaments/{{.Tournament.ID}}/participants/elo-before"
+        hx-swap="none"
+        hx-on::before-request="document.getElementById('edit-elo-modal').classList.add('hidden')"
+        hx-on::response-error="showToast(event.detail.xhr.responseText, 'error')"
+        class="space-y-4">
+        <input type="hidden" id="elo-edit-player-id" name="playerId" value="">
+        <div class="space-y-2">
+          <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Singles Elo</label>
+          <input id="elo-edit-singles" name="singlesElo" type="number" required class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+        <div class="space-y-2">
+          <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Doubles Elo</label>
+          <input id="elo-edit-doubles" name="doublesElo" type="number" required class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+        <p class="text-[10px] text-amber-400/80">This also regenerates the tournament's group seeds from the corrected Elo. Blocked if any match has already started or finished.</p>
+        <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+          Save &amp; Regenerate Seeds
         </button>
       </form>
     </div>

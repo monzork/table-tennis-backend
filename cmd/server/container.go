@@ -65,6 +65,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
 	assignPlayerToTeamUC := tournament.NewAssignPlayerToTeamUseCase(tournamentRepo)
 	removePlayerFromTeamUC := tournament.NewRemovePlayerFromTeamUseCase(tournamentRepo)
+	regenerateSeedsUC := tournament.NewRegenerateGroupSeedsUseCase(tournamentRepo, matchRepo, divisionRepo)
+	updateParticipantEloUC := tournament.NewUpdateParticipantEloBeforeUseCase(tournamentRepo, regenerateSeedsUC)
 
 	tournamentHandler := handler.NewTournamentHandler(
 		createTournamentUC,
@@ -83,6 +85,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		removePlayerFromTeamUC,
 		getTournamentsUC,
 		tournament.NewGetOccupiedTablesUseCase(matchRepo),
+		regenerateSeedsUC,
+		updateParticipantEloUC,
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
 	exportEventPdfUC := tournament.NewExportEventPdfUseCase(eventRepo, pdfGenerator)

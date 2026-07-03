@@ -574,6 +574,7 @@ type Repository interface {
 	Delete(ctx context.Context, id string) error
 	UpdateParticipantElo(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error
 	UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error
+	UpdateParticipantEloBefore(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error
 	SaveTeam(ctx context.Context, team *Team) error
 	DeleteTeam(ctx context.Context, id string) error
 	AddPlayerToTeam(ctx context.Context, teamID string, playerID string) error
@@ -593,4 +594,6 @@ type MatchRepository interface {
 	UpdateScore(ctx context.Context, id string, sets []MatchSet, stageRule StageRule) error
 	GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error)
 	GetOccupiedTablesByTournament(ctx context.Context, tournamentID string) ([]int, error)
+	HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error)
+	DeleteByTournament(ctx context.Context, tournamentID string) error
 }

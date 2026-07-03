@@ -33,6 +33,8 @@ type TournamentHandler struct {
 	removePlayerFromTeamUC *tournament.RemovePlayerFromTeamUseCase
 	getTournamentsUC       *tournament.GetTournamentsUseCase
 	getOccupiedTablesUC    *tournament.GetOccupiedTablesUseCase
+	regenerateSeedsUC      *tournament.RegenerateGroupSeedsUseCase
+	updateParticipantEloUC *tournament.UpdateParticipantEloBeforeUseCase
 }
 
 func NewTournamentHandler(
@@ -52,6 +54,8 @@ func NewTournamentHandler(
 	removePlayerFromTeamUC *tournament.RemovePlayerFromTeamUseCase,
 	getTournamentsUC *tournament.GetTournamentsUseCase,
 	getOccupiedTablesUC *tournament.GetOccupiedTablesUseCase,
+	regenerateSeedsUC *tournament.RegenerateGroupSeedsUseCase,
+	updateParticipantEloUC *tournament.UpdateParticipantEloBeforeUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:               createUC,
@@ -70,6 +74,8 @@ func NewTournamentHandler(
 		removePlayerFromTeamUC: removePlayerFromTeamUC,
 		getTournamentsUC:       getTournamentsUC,
 		getOccupiedTablesUC:    getOccupiedTablesUC,
+		regenerateSeedsUC:      regenerateSeedsUC,
+		updateParticipantEloUC: updateParticipantEloUC,
 	}
 }
 
@@ -487,6 +493,41 @@ func (h *TournamentHandler) Finish(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
 	}
 	return c.JSON(fiber.Map{"status": "finished"})
+}
+
+func (h *TournamentHandler) RegenerateGroupSeeds(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	if err := h.regenerateSeedsUC.Execute(c.Context(), idStr); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Trigger", "reload-bracket, reload-matches")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.JSON(fiber.Map{"status": "regenerated"})
+}
+
+func (h *TournamentHandler) UpdateParticipantEloBefore(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	var body struct {
+		PlayerID   string `form:"playerId"`
+		SinglesElo int16  `form:"singlesElo"`
+		DoublesElo int16  `form:"doublesElo"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	if body.PlayerID == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "playerId is required")
+	}
+	if err := h.updateParticipantEloUC.Execute(c.Context(), idStr, body.PlayerID, body.SinglesElo, body.DoublesElo); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Trigger", "reload-bracket, reload-matches")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.JSON(fiber.Map{"status": "updated"})
 }
 
 func (h *TournamentHandler) Export(c *fiber.Ctx) error {

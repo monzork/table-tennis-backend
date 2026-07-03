@@ -154,6 +154,11 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *tourna
 		return err
 	}
 
+	// Save division-specific rules
+	if err := SaveDivisionRules(ctx, tx, t.ID, t.DivisionRules); err != nil {
+		return err
+	}
+
 	// Save teams and team players in bulk
 	if len(t.Teams) > 0 {
 		teamModels := make([]TeamModel, len(t.Teams))
@@ -1305,6 +1310,26 @@ func (r *TournamentRepository) UpdateParticipantElo(ctx context.Context, tournam
 	_, err = r.db.NewUpdate().
 		TableExpr("tournament_participants").
 		Set("elo_after_singles = ?, elo_after_doubles = ?", singlesElo, doublesElo).
+		Where("tournament_id = ? AND player_id = ?", tID, pID).
+		Exec(ctx)
+	return err
+}
+
+// UpdateParticipantEloBefore corrects the Elo snapshot a participant was seeded
+// with for this tournament (elo_before_singles/doubles), e.g. when the player's
+// stored Elo was fixed after they were already registered.
+func (r *TournamentRepository) UpdateParticipantEloBefore(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return err
+	}
+	pID, err := uuid.Parse(playerID)
+	if err != nil {
+		return err
+	}
+	_, err = r.db.NewUpdate().
+		TableExpr("tournament_participants").
+		Set("elo_before_singles = ?, elo_before_doubles = ?", singlesElo, doublesElo).
 		Where("tournament_id = ? AND player_id = ?", tID, pID).
 		Exec(ctx)
 	return err

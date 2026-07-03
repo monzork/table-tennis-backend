@@ -174,32 +174,23 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 		}
 
 		if t.Format == "elimination" {
-			// Find the bracket-draw group whose players belong to this division.
-			// We search by Elo range (same logic as the Elo filter below) applied
-			// to each group's player list.
+			// Find the bracket-draw group generated for this division. Groups are
+			// named "<division name> - Bracket Draw" at generation time, so match
+			// on that stable name instead of re-deriving membership from each
+			// player's current Elo — a player's Elo can be edited after the group
+			// was generated, which would otherwise let the same group satisfy more
+			// than one division's Elo range and be shown under both.
+			expectedGroupName := d.Name + " - Bracket Draw"
 			for i := range t.Groups {
-				if !strings.HasSuffix(t.Groups[i].Name, " - Bracket Draw") {
+				if t.Groups[i].Name != expectedGroupName {
 					continue
 				}
-				match := false
-				for _, gp := range t.Groups[i].Players {
-					elo := gp.SinglesElo
-					if t.Type == "doubles" || t.Type == "mixed_doubles" {
-						elo = gp.DoublesElo
-					}
-					if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
-						match = true
-						break
-					}
+				divGroupID = t.Groups[i].ID
+				dPlayers = t.Groups[i].Players
+				for _, p := range dPlayers {
+					assignedMap[p.ID] = true
 				}
-				if match {
-					divGroupID = t.Groups[i].ID
-					dPlayers = t.Groups[i].Players
-					for _, p := range dPlayers {
-						assignedMap[p.ID] = true
-					}
-					break
-				}
+				break
 			}
 		}
 

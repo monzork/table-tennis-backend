@@ -123,11 +123,13 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	assignPlayerToTeamUC := tournament.NewAssignPlayerToTeamUseCase(tournamentRepo)
 	removePlayerFromTeamUC := tournament.NewRemovePlayerFromTeamUseCase(tournamentRepo)
 	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
+	regenerateSeedsUC := tournament.NewRegenerateGroupSeedsUseCase(tournamentRepo, matchRepo, divisionRepo)
+	updateParticipantEloUC := tournament.NewUpdateParticipantEloBeforeUseCase(tournamentRepo, regenerateSeedsUC)
 	tournamentHandler := handler.NewTournamentHandler(
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,
 		leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC,
 		movePlayerUC, createTeamUC, deleteTeamUC, assignPlayerToTeamUC, removePlayerFromTeamUC,
-		getTournamentsUC, nil,
+		getTournamentsUC, nil, regenerateSeedsUC, updateParticipantEloUC,
 	)
 
 	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)

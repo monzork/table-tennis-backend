@@ -69,13 +69,15 @@ func LoadDivisionRules(ctx context.Context, db *bun.DB, tournamentID string) []t
 	return rules
 }
 
-// SaveDivisionRules inserts all division rules inside a transaction.
-func SaveDivisionRules(ctx context.Context, tx bun.IDB, rules []tournament.DivisionRule) error {
+// SaveDivisionRules inserts all division rules inside a transaction, stamping
+// tournamentID onto each rule so callers don't need to set it themselves.
+func SaveDivisionRules(ctx context.Context, tx bun.IDB, tournamentID string, rules []tournament.DivisionRule) error {
 	if len(rules) == 0 {
 		return nil
 	}
 	models := make([]DivisionRuleModel, len(rules))
 	for i, r := range rules {
+		r.TournamentID = tournamentID
 		models[i] = *FromDomainDivisionRule(r)
 	}
 	_, err := tx.NewInsert().Model(&models).Exec(ctx)
@@ -88,7 +90,7 @@ func ReplaceDivisionRules(ctx context.Context, tx bun.IDB, tournamentID string, 
 		Where("tournament_id = ?", tournamentID).Exec(ctx); err != nil {
 		return err
 	}
-	return SaveDivisionRules(ctx, tx, rules)
+	return SaveDivisionRules(ctx, tx, tournamentID, rules)
 }
 
 // GetDivisionRule retrieves a specific division rule for a tournament.
