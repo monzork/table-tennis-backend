@@ -1091,33 +1091,80 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 		}
 	}
 
-	getRestPenalty := func(c BoardCard) time.Time {
-		t1 := lastActivity[c.P1Id]
-		t2 := lastActivity[c.P2Id]
-		if t1.After(t2) {
-			return t1
+	// We'll simulate a clock starting from a baseline to pick the best next match
+	// for maximum rest interleaving (especially interleaving different groups).
+	var reordered []BoardCard
+	var unstarted []BoardCard
+	var virtualScheduled []BoardCard
+
+	// Virtual matches (MatchID == "") are handled after real matches
+	for _, c := range scheduled {
+		if c.MatchID == "" {
+			virtualScheduled = append(virtualScheduled, c)
+		} else {
+			unstarted = append(unstarted, c)
 		}
-		return t2
 	}
 
-	sort.Slice(scheduled, func(i, j int) bool {
-		// If MatchID is empty, it's a virtual match (from bracket/group). Put those at the end.
-		if scheduled[i].MatchID == "" && scheduled[j].MatchID != "" {
-			return false
-		}
-		if scheduled[i].MatchID != "" && scheduled[j].MatchID == "" {
-			return true
-		}
+	simClock := time.Now().Add(24 * time.Hour) // start in future to override past matches
+	
+	scheduleMatchGreedy := func(pool *[]BoardCard) {
+		for len(*pool) > 0 {
+			bestIdx := -1
+			var bestPenalty time.Time
+			var bestSum int64
 
-		rp1 := getRestPenalty(scheduled[i])
-		rp2 := getRestPenalty(scheduled[j])
-		if !rp1.Equal(rp2) {
-			return rp1.Before(rp2)
-		}
+			for i, c := range *pool {
+				t1 := lastActivity[c.P1Id]
+				t2 := lastActivity[c.P2Id]
 
-		// Otherwise sort by MatchID
-		return scheduled[i].MatchID < scheduled[j].MatchID
-	})
+				penalty := t1
+				if t2.After(t1) {
+					penalty = t2
+				}
+
+				sum := t1.UnixNano() + t2.UnixNano()
+
+				if bestIdx == -1 || penalty.Before(bestPenalty) {
+					bestIdx = i
+					bestPenalty = penalty
+					bestSum = sum
+				} else if penalty.Equal(bestPenalty) {
+					if sum < bestSum {
+						bestIdx = i
+						bestPenalty = penalty
+						bestSum = sum
+					} else if sum == bestSum {
+						if (*pool)[i].MatchID < (*pool)[bestIdx].MatchID {
+							bestIdx = i
+							bestPenalty = penalty
+							bestSum = sum
+						}
+					}
+				}
+			}
+
+			picked := (*pool)[bestIdx]
+			reordered = append(reordered, picked)
+			
+			simClock = simClock.Add(time.Second) // advance simulated time
+			if picked.P1Id != "" {
+				lastActivity[picked.P1Id] = simClock
+			}
+			if picked.P2Id != "" {
+				lastActivity[picked.P2Id] = simClock
+			}
+
+			// Remove from pool
+			*pool = append((*pool)[:bestIdx], (*pool)[bestIdx+1:]...)
+		}
+	}
+
+	// Schedule real matches first, then virtual matches
+	scheduleMatchGreedy(&unstarted)
+	scheduleMatchGreedy(&virtualScheduled)
+
+	scheduled = reordered
 
 	return
 }

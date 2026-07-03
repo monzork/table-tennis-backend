@@ -60,7 +60,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
 	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
 	pdfGenerator := pdfinfra.NewGoFpdfGenerator()
-	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo, pdfGenerator)
+	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo, divisionRepo, pdfGenerator)
 	movePlayerUC := tournament.NewMovePlayerUseCase(tournamentRepo)
 	createTeamUC := tournament.NewCreateTeamUseCase(tournamentRepo)
 	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
@@ -90,7 +90,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		updateParticipantEloUC,
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
-	exportEventPdfUC := tournament.NewExportEventPdfUseCase(eventRepo, pdfGenerator)
+	exportEventPdfUC := tournament.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGenerator)
 	createEventUC := event.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
 	getEventByIDUC := event.NewGetEventByIDUseCase(eventRepo)
 	getAllEventsUC := event.NewGetAllEventsUseCase(eventRepo)

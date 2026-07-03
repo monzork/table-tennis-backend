@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/event"
 
 	"github.com/jung-kurt/gofpdf"
 )
 
-func (g *GoFpdfGenerator) GenerateEventReport(e *event.Event) ([]byte, error) {
+func (g *GoFpdfGenerator) GenerateEventReport(e *event.Event, divs []*division.Division) ([]byte, error) {
 	tournamentsList := e.Tournaments
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
@@ -25,10 +26,21 @@ func (g *GoFpdfGenerator) GenerateEventReport(e *event.Event) ([]byte, error) {
 		pdf.Image(imagePath, 15, 10, 25, 0, false, "", 0, "")
 		pdf.SetY(17)
 		pdf.SetX(48)
-		pdf.SetFont("Arial", "B", 14)
-		pdf.CellFormat(0, 10, tr("EVENTO TENIS DE MESA - "+strings.ToUpper(e.Name)), "", 1, "L", false, 0, "")
-		pdf.SetDrawColor(200, 200, 200)
+		
+		text := tr("EVENTO TENIS DE MESA - " + strings.ToUpper(e.Name))
 		w, _ := pdf.GetPageSize()
+		maxWidth := w - 48 - 15
+		
+		fontSize := 14.0
+		pdf.SetFont("Arial", "B", fontSize)
+		for pdf.GetStringWidth(text) > maxWidth && fontSize > 8.0 {
+			fontSize -= 0.5
+			pdf.SetFont("Arial", "B", fontSize)
+		}
+		
+		pdf.CellFormat(0, 10, text, "", 1, "L", false, 0, "")
+		pdf.SetDrawColor(200, 200, 200)
+		w, _ = pdf.GetPageSize()
 		pdf.Line(15, 45, w-15, 45)
 		pdf.SetY(52)
 	})
@@ -52,7 +64,7 @@ func (g *GoFpdfGenerator) GenerateEventReport(e *event.Event) ([]byte, error) {
 	pdf.CellFormat(0, 8, fmt.Sprintf("%d Tournaments", len(tournamentsList)), "", 1, "L", false, 0, "")
 
 	for _, t := range tournamentsList {
-		BuildTournamentPdfContent(pdf, t, tr)
+		BuildTournamentPdfContent(pdf, t, divs, tr)
 	}
 
 	var buf bytes.Buffer

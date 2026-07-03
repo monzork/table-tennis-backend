@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jung-kurt/gofpdf"
+	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
 )
@@ -21,7 +22,7 @@ func NewGoFpdfGenerator() *GoFpdfGenerator {
 	return &GoFpdfGenerator{}
 }
 
-func (g *GoFpdfGenerator) GenerateTournamentReport(t *tournament.Tournament) ([]byte, error) {
+func (g *GoFpdfGenerator) GenerateTournamentReport(t *tournament.Tournament, divs []*division.Division) ([]byte, error) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.SetMargins(15, 52, 15)
 	pdf.SetAutoPageBreak(true, 15)
@@ -53,16 +54,27 @@ func (g *GoFpdfGenerator) GenerateTournamentReport(t *tournament.Tournament) ([]
 		pdf.Image(imagePath, 15, 10, 25, 0, false, "", 0, "")
 		pdf.SetY(17)
 		pdf.SetX(48)
-		pdf.SetFont("Arial", "B", 14)
-		pdf.CellFormat(0, 10, tr("TORNEO TENIS DE MESA - "+strings.ToUpper(t.Name)), "", 1, "L", false, 0, "")
-		pdf.SetDrawColor(200, 200, 200)
+		
+		text := tr("TORNEO TENIS DE MESA - " + strings.ToUpper(t.Name))
 		w, _ := pdf.GetPageSize()
+		maxWidth := w - 48 - 15
+		
+		fontSize := 14.0
+		pdf.SetFont("Arial", "B", fontSize)
+		for pdf.GetStringWidth(text) > maxWidth && fontSize > 8.0 {
+			fontSize -= 0.5
+			pdf.SetFont("Arial", "B", fontSize)
+		}
+		
+		pdf.CellFormat(0, 10, text, "", 1, "L", false, 0, "")
+		pdf.SetDrawColor(200, 200, 200)
+		w, _ = pdf.GetPageSize()
 		pdf.Line(15, 45, w-15, 45)
 		pdf.SetY(52)
 	})
 
-
-	BuildTournamentPdfContent(pdf, t, tr)
+	// Build Content
+	BuildTournamentPdfContent(pdf, t, divs, tr)
 
 	var buf bytes.Buffer
 	err := pdf.Output(&buf)
@@ -421,7 +433,7 @@ func getSubMatchAlignments(roundNumber int, teamFormat string) (string, string) 
 	return "", ""
 }
 
-func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, tr func(string) string) {
+func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs []*division.Division, tr func(string) string) {
 	pdf.AddPage()
 
 	// Tournament Title Block
@@ -511,12 +523,53 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, tr fu
 		pdf.Ln(8)
 		writeHeader(fmt.Sprintf("LISTA DE INSCRITOS - %d JUGADORES", len(t.Participants)))
 
-		var mens, womens []*player.Player
-		for _, p := range t.Participants {
-			if p.Gender == "M" {
-				mens = append(mens, p)
-			} else {
-				womens = append(womens, p)
+		assignedMap := make(map[string]bool)
+		
+		var validDivs []*division.Division
+		for _, d := range divs {
+			if !t.SkipElo && d.MinElo == 0 && d.MaxElo == nil {
+				continue
+			}
+			if d.Category == "both" || d.Category == t.Type {
+				validDivs = append(validDivs, d)
+			}
+		}
+
+		divPlayers := make(map[string][]*player.Player)
+		
+		for _, d := range validDivs {
+			var dPlayers []*player.Player
+			
+			// Find if there is a Bracket Draw group for this division (for elimination)
+			expectedGroupName := d.Name + " - Bracket Draw"
+			for i := range t.Groups {
+				if t.Groups[i].Name == expectedGroupName {
+					dPlayers = t.Groups[i].Players
+					for _, p := range dPlayers {
+						assignedMap[p.ID] = true
+					}
+					break
+				}
+			}
+			
+			if len(dPlayers) == 0 {
+				for _, p := range t.Participants {
+					if assignedMap[p.ID] {
+						continue
+					}
+					elo := p.SinglesElo
+					if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
+						elo = p.DoublesElo
+					}
+					if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
+						dPlayers = append(dPlayers, p)
+						assignedMap[p.ID] = true
+					}
+				}
+			}
+			
+			if len(dPlayers) > 0 {
+				divPlayers[d.ID] = dPlayers
 			}
 		}
 
@@ -524,35 +577,47 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, tr fu
 		pdf.CellFormat(30, 8, "Elo", "1", 0, "C", false, 0, "")
 		pdf.CellFormat(150, 8, tr("NOMBRE"), "1", 1, "C", false, 0, "")
 
-		// Men List
-		if len(mens) > 0 {
-			pdf.SetFillColor(240, 240, 240)
-			pdf.SetFont("Arial", "B", 9)
-			pdf.CellFormat(180, 8, tr("  PARTICIPANTES MASCULINOS / VARONES"), "1", 1, "L", true, 0, "")
-
-			pdf.SetFont("Arial", "", 10)
-			for _, p := range mens {
-				elo := p.SinglesElo
-				if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
-					elo = p.DoublesElo
+		for _, d := range validDivs {
+			players := divPlayers[d.ID]
+			if len(players) > 0 {
+				pdf.SetFillColor(240, 240, 240)
+				pdf.SetFont("Arial", "B", 9)
+				pdf.CellFormat(180, 8, tr("  " + strings.ToUpper(d.Name)), "1", 1, "L", true, 0, "")
+				
+				pdf.SetFont("Arial", "", 10)
+				for _, p := range players {
+					elo := p.SinglesElo
+					if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
+						elo = p.DoublesElo
+					}
+					fullName := p.FirstNameWithSecond()
+					if strings.TrimSpace(p.LastName) != "(Team)" && strings.TrimSpace(p.LastName) != "" {
+						fullName += " " + p.LastNameWithSecond()
+					}
+					pdf.CellFormat(30, 8, fmt.Sprintf("%d", elo), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(150, 8, tr(fullName), "1", 1, "L", false, 0, "")
 				}
-				fullName := p.FirstNameWithSecond()
-				if strings.TrimSpace(p.LastName) != "(Team)" && strings.TrimSpace(p.LastName) != "" {
-					fullName += " " + p.LastNameWithSecond()
-				}
-				pdf.CellFormat(30, 8, fmt.Sprintf("%d", elo), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(150, 8, tr(fullName), "1", 1, "L", false, 0, "")
 			}
 		}
 
-		// Women List
-		if len(womens) > 0 {
+		var unassigned []*player.Player
+		for _, p := range t.Participants {
+			if !assignedMap[p.ID] {
+				unassigned = append(unassigned, p)
+			}
+		}
+
+		if len(unassigned) > 0 {
 			pdf.SetFillColor(240, 240, 240)
 			pdf.SetFont("Arial", "B", 9)
-			pdf.CellFormat(180, 8, tr("  PARTICIPANTES FEMENINOS / DAMAS"), "1", 1, "L", true, 0, "")
-
+			headerText := "  JUGADORES SIN CLASIFICAR"
+			if len(validDivs) == 0 {
+				headerText = "  TODOS LOS JUGADORES"
+			}
+			pdf.CellFormat(180, 8, tr(headerText), "1", 1, "L", true, 0, "")
+			
 			pdf.SetFont("Arial", "", 10)
-			for _, p := range womens {
+			for _, p := range unassigned {
 				elo := p.SinglesElo
 				if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
 					elo = p.DoublesElo
