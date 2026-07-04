@@ -858,14 +858,6 @@ func filterBoardCards(cards []BoardCard, q string, divs []string) []BoardCard {
 }
 
 func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Division) (scheduled, inProgress, finished []BoardCard) {
-	bestOfForStage := func(stage string) int {
-		for _, r := range t.StageRules {
-			if r.Stage == stage {
-				return r.BestOf
-			}
-		}
-		return 5
-	}
 	nameOf := func(players []*player.Player) string {
 		if len(players) == 0 {
 			return "TBD"
@@ -937,7 +929,7 @@ func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 			MatchID:     m.ID,
 			Status:      m.Status,
 			Stage:       m.Stage,
-			BestOf:      bestOfForStage(m.Stage),
+			BestOf:      t.GetEffectiveStageRule(m.Stage, m.DivisionID).BestOf,
 			PlayerAName: nameOf(m.TeamA),
 			PlayerBName: nameOf(m.TeamB),
 			P1Id:        idOf(m.TeamA),

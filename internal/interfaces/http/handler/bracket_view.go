@@ -145,7 +145,7 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 				}
 			}
 		}
-		dv := buildDivisionView(t, "Open Bracket", "", 0, nil, false, openPlayers)
+		dv := buildDivisionView(t, "", "Open Bracket", "", 0, nil, false, openPlayers)
 		dv.GroupID = openGroupID
 		vm.Divisions = append(vm.Divisions, dv)
 		return vm
@@ -211,7 +211,7 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 		}
 
 		if len(dPlayers) > 0 {
-			dv := buildDivisionView(t, name, d.Color, d.MinElo, d.MaxElo, false, dPlayers)
+			dv := buildDivisionView(t, d.ID, name, d.Color, d.MinElo, d.MaxElo, false, dPlayers)
 			dv.GroupID = divGroupID
 			vm.Divisions = append(vm.Divisions, dv)
 		}
@@ -231,7 +231,7 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 				unclassifiedGroupID = g.ID
 			}
 		}
-		dv := buildDivisionView(t, "Unclassified", "", 0, nil, true, unassigned)
+		dv := buildDivisionView(t, "", "Unclassified", "", 0, nil, true, unassigned)
 		dv.GroupID = unclassifiedGroupID
 		vm.Divisions = append(vm.Divisions, dv)
 	}
@@ -259,16 +259,11 @@ func findGroupByPlayers(t *tournament.Tournament, players []*player.Player) *tou
 	return nil
 }
 
-func getBestOfForStage(t *tournament.Tournament, stage string) int {
-	for _, r := range t.StageRules {
-		if r.Stage == stage {
-			return r.BestOf
-		}
-	}
-	return 5
+func getBestOfForStage(t *tournament.Tournament, stage string, divID string) int {
+	return t.GetEffectiveStageRule(stage, divID).BestOf
 }
 
-func buildDivisionView(t *tournament.Tournament, name, color string, minElo int16, maxElo *int16, unclassified bool, players []*player.Player) DivisionView {
+func buildDivisionView(t *tournament.Tournament, divID, name, color string, minElo int16, maxElo *int16, unclassified bool, players []*player.Player) DivisionView {
 	dv := DivisionView{
 		Name:           name,
 		Color:          color,
@@ -281,7 +276,7 @@ func buildDivisionView(t *tournament.Tournament, name, color string, minElo int1
 
 	if t.Format == "round_robin" {
 		dv.Standings = buildStandings(players, t.Matches)
-		dv.RoundRobinMatches = buildRRMatches(t, players, "group")
+		dv.RoundRobinMatches = buildRRMatches(t, divID, players, "group")
 		expectedMatches := len(players) * (len(players) - 1) / 2
 		finishedMatches := 0
 		for _, m := range t.Matches {
@@ -291,7 +286,7 @@ func buildDivisionView(t *tournament.Tournament, name, color string, minElo int1
 		}
 		dv.RoundRobinFinished = expectedMatches > 0 && finishedMatches >= expectedMatches
 	} else if t.Format == "groups_elimination" {
-		dv.Groups, dv.AllGroupsFinished = buildGroupEliminationGroups(t, players)
+		dv.Groups, dv.AllGroupsFinished = buildGroupEliminationGroups(t, divID, players)
 
 		if dv.AllGroupsFinished {
 			var advancing []*player.Player
@@ -316,10 +311,10 @@ func buildDivisionView(t *tournament.Tournament, name, color string, minElo int1
 				}
 				return ei > ej
 			})
-			dv.KnockoutRounds = buildBracketRounds(t, advancing)
+			dv.KnockoutRounds = buildBracketRounds(t, divID, advancing)
 		}
 	} else {
-		dv.KnockoutRounds = buildBracketRounds(t, players)
+		dv.KnockoutRounds = buildBracketRounds(t, divID, players)
 	}
 
 	dv.KnockoutRoundsLeft, dv.KnockoutRoundsRight, dv.KnockoutRoundsCenter = splitKnockoutRounds(dv.KnockoutRounds)
@@ -352,9 +347,9 @@ func splitKnockoutRounds(rounds []RoundView) (left, right, center []RoundView) {
 func buildStandings(players []*player.Player, matches []tournament.Match) []PlayerStanding {
 	return tournament.BuildStandings(players, matches)
 }
-func buildRRMatches(t *tournament.Tournament, players []*player.Player, stage string) []MatchView {
+func buildRRMatches(t *tournament.Tournament, divID string, players []*player.Player, stage string) []MatchView {
 	var results []MatchView
-	bestOf := getBestOfForStage(t, stage)
+	bestOf := getBestOfForStage(t, stage, divID)
 	for i := 0; i < len(players); i++ {
 		for j := i + 1; j < len(players); j++ {
 			p1 := players[i]
@@ -387,7 +382,7 @@ func buildRRMatches(t *tournament.Tournament, players []*player.Player, stage st
 	return results
 }
 
-func buildGroupEliminationGroups(t *tournament.Tournament, players []*player.Player) ([]GroupView, bool) {
+func buildGroupEliminationGroups(t *tournament.Tournament, divID string, players []*player.Player) ([]GroupView, bool) {
 	// Try to load saved groups containing any players in this division first
 	var divisionGroups []tournament.Group
 	for _, g := range t.Groups {
@@ -446,7 +441,7 @@ func buildGroupEliminationGroups(t *tournament.Tournament, players []*player.Pla
 				Name:      displayName,
 				Players:   g.Players,
 				Standings: buildStandings(g.Players, t.Matches),
-				Matches:   buildRRMatches(t, g.Players, "group"),
+				Matches:   buildRRMatches(t, divID, g.Players, "group"),
 				Finished:  isFinished,
 			})
 		}
@@ -504,7 +499,7 @@ func buildGroupEliminationGroups(t *tournament.Tournament, players []*player.Pla
 			Name:      fmt.Sprintf("Group %c", 'A'+i),
 			Players:   gp,
 			Standings: buildStandings(gp, t.Matches),
-			Matches:   buildRRMatches(t, gp, "group"),
+			Matches:   buildRRMatches(t, divID, gp, "group"),
 			Finished:  isFinished,
 		}
 		views = append(views, gv)
@@ -542,7 +537,7 @@ func getSeedingArrangement(size int) []int {
 	return bracket
 }
 
-func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []RoundView {
+func buildBracketRounds(t *tournament.Tournament, divID string, players []*player.Player) []RoundView {
 	if len(players) == 0 {
 		return nil
 	}
@@ -719,7 +714,7 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 				Player2: p2,
 				Match:   foundMatch,
 				Stage:   stageNameCurrent,
-				BestOf:  getBestOfForStage(t, stageNameCurrent),
+				BestOf:  getBestOfForStage(t, stageNameCurrent, divID),
 			})
 		}
 
@@ -790,7 +785,7 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 					Player2: p2,
 					Match:   finalMatch,
 					Stage:   "final",
-					BestOf:  getBestOfForStage(t, "final"),
+					BestOf:  getBestOfForStage(t, "final", divID),
 				},
 			},
 		})
@@ -831,7 +826,7 @@ func buildBracketRounds(t *tournament.Tournament, players []*player.Player) []Ro
 					Player2: thirdPlaceP2,
 					Match:   thirdPlaceMatch,
 					Stage:   "3rd_place",
-					BestOf:  getBestOfForStage(t, "3rd_place"),
+					BestOf:  getBestOfForStage(t, "3rd_place", divID),
 				},
 			},
 		})
