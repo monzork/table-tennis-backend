@@ -15,12 +15,6 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	// ==========================================
 
 	app.Get("/health", func(ctx *fiber.Ctx) error {
-		if err := bun.DB.PingContext(ctx.Context()); err != nil {
-			return ctx.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
-				"status": "unhealthy",
-				"error":  err.Error(),
-			})
-		}
 		return ctx.JSON(fiber.Map{"status": "ok"})
 	})
 
