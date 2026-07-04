@@ -188,7 +188,7 @@ func (t *Tournament) GetEffectiveStageRule(stage string, divisionID string) Stag
 	// 1. Check division-specific rules first
 	if divisionID != "" && len(t.DivisionRules) > 0 {
 		for _, dr := range t.DivisionRules {
-			if dr.DivisionID == divisionID {
+			if dr.DivisionID == divisionID && dr.Stage == stage {
 				return dr.ToStageRule()
 			}
 		}
