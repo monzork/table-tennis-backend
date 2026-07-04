@@ -102,7 +102,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
 	tournamentRepoForEnroll := bunRepo.NewTournamentRepository(db)
 	enrollPlayerUC := tournament.NewEnrollPlayerUseCase(tournamentRepoForEnroll)
-	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC)
+	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepoForEnroll)
+	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 
@@ -118,13 +119,13 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
 	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
 	pdfGen := pdfinfra.NewGoFpdfGenerator()
-	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo, pdfGen)
+	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo, divisionRepo, pdfGen)
 	movePlayerUC := tournament.NewMovePlayerUseCase(tournamentRepo)
 	createTeamUC := tournament.NewCreateTeamUseCase(tournamentRepo)
 	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
 	assignPlayerToTeamUC := tournament.NewAssignPlayerToTeamUseCase(tournamentRepo)
 	removePlayerFromTeamUC := tournament.NewRemovePlayerFromTeamUseCase(tournamentRepo)
-	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
+	getTournamentsUC = tournament.NewGetTournamentsUseCase(tournamentRepo)
 	regenerateSeedsUC := tournament.NewRegenerateGroupSeedsUseCase(tournamentRepo, matchRepo, divisionRepo)
 	updateParticipantEloUC := tournament.NewUpdateParticipantEloBeforeUseCase(tournamentRepo, regenerateSeedsUC)
 	tournamentHandler := handler.NewTournamentHandler(
@@ -135,7 +136,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	)
 
 	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)
-	exportEventPdfUC := tournament.NewExportEventPdfUseCase(eventRepo, pdfGen)
+	exportEventPdfUC := tournament.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGen)
 	createEventUC := event.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
 	getEventByIDUC := event.NewGetEventByIDUseCase(eventRepo)
 	getAllEventsUC := event.NewGetAllEventsUseCase(eventRepo)

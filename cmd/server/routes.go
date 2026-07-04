@@ -4,7 +4,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	fiberws "github.com/gofiber/websocket/v2"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	"table-tennis-backend/internal/interfaces/http/handler"
 	"time"
 )
