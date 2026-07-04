@@ -8,15 +8,22 @@ import (
 // Protected checks the session to see if the user is authenticated.
 func Protected(store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		handleUnauthorized := func() error {
+			if c.Get("HX-Request") == "true" {
+				c.Set("HX-Redirect", "/admin/login")
+				return c.SendStatus(fiber.StatusUnauthorized)
+			}
+			return c.Redirect("/admin/login")
+		}
+
 		sess, err := store.Get(c)
 		if err != nil {
-			return c.Redirect("/admin/login")
+			return handleUnauthorized()
 		}
 
 		auth := sess.Get("authenticated")
 		if auth == nil || !auth.(bool) {
-			// Save intended destination for post-login redirect? We won't overcomplicate it.
-			return c.Redirect("/admin/login")
+			return handleUnauthorized()
 		}
 
 		// User is authenticated, proceed

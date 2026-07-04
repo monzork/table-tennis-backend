@@ -65,6 +65,8 @@ func main() {
 				best_of INTEGER NOT NULL,
 				points_to_win INTEGER NOT NULL,
 				points_margin INTEGER NOT NULL,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				UNIQUE(tournament_id, division_id)
 			)
 		`).Exec(ctx)
@@ -80,6 +82,8 @@ func main() {
 				best_of INTEGER NOT NULL,
 				points_to_win INTEGER NOT NULL,
 				points_margin INTEGER NOT NULL,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				UNIQUE(tournament_id, division_id)
 			)
 		`).Exec(ctx)
