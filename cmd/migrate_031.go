@@ -58,7 +58,7 @@ func main() {
 	// Create division_rules table (no foreign key to avoid type mismatch)
 	if isPostgres {
 		_, err = bunDB.NewRaw(`
-			CREATE TABLE IF NOT EXISTS division_rules (
+			CREATE TABLE IF NOT EXISTS tournament_division_rules (
 				id TEXT PRIMARY KEY,
 				tournament_id TEXT NOT NULL,
 				division_id TEXT NOT NULL,
@@ -73,7 +73,7 @@ func main() {
 		}
 	} else {
 		_, err = bunDB.NewRaw(`
-			CREATE TABLE IF NOT EXISTS division_rules (
+			CREATE TABLE IF NOT EXISTS tournament_division_rules (
 				id TEXT PRIMARY KEY,
 				tournament_id TEXT NOT NULL,
 				division_id TEXT NOT NULL,

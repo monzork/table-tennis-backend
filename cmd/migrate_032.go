@@ -58,7 +58,7 @@ func main() {
 	// Add stage column to division_rules
 	if isPostgres {
 		_, err = bunDB.NewRaw(`
-			ALTER TABLE division_rules 
+			ALTER TABLE tournament_division_rules 
 			ADD COLUMN IF NOT EXISTS stage VARCHAR(50) DEFAULT 'group'
 		`).Exec(ctx)
 		if err != nil {
@@ -67,7 +67,7 @@ func main() {
 
 		// Update existing records to have 'group' stage
 		_, err = bunDB.NewRaw(`
-			UPDATE division_rules 
+			UPDATE tournament_division_rules 
 			SET stage = 'group' 
 			WHERE stage IS NULL
 		`).Exec(ctx)
@@ -78,10 +78,10 @@ func main() {
 		// SQLite doesn't support ADD COLUMN IF NOT EXISTS in older versions
 		// Check if column exists first
 		var hasCol int
-		_ = bunDB.NewRaw(`SELECT COUNT(*) FROM pragma_table_info('division_rules') WHERE name = 'stage'`).Scan(ctx, &hasCol)
+		_ = bunDB.NewRaw(`SELECT COUNT(*) FROM pragma_table_info('tournament_division_rules') WHERE name = 'stage'`).Scan(ctx, &hasCol)
 
 		if hasCol == 0 {
-			_, err = bunDB.NewRaw(`ALTER TABLE division_rules ADD COLUMN stage VARCHAR(50) DEFAULT 'group'`).Exec(ctx)
+			_, err = bunDB.NewRaw(`ALTER TABLE tournament_division_rules ADD COLUMN stage VARCHAR(50) DEFAULT 'group'`).Exec(ctx)
 			if err != nil {
 				log.Fatal("Failed to add stage column (SQLite):", err)
 			}
@@ -89,7 +89,7 @@ func main() {
 
 		// Update existing records to have 'group' stage
 		_, err = bunDB.NewRaw(`
-			UPDATE division_rules 
+			UPDATE tournament_division_rules 
 			SET stage = 'group' 
 			WHERE stage IS NULL
 		`).Exec(ctx)
