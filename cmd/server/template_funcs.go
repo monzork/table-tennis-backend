@@ -89,6 +89,15 @@ func SetupTemplateEngine() *html.Engine {
 		}
 		return key
 	})
+	engine.AddFunc("cleanPhone", func(phone string) string {
+		var b strings.Builder
+		for _, ch := range phone {
+			if ch >= '0' && ch <= '9' {
+				b.WriteRune(ch)
+			}
+		}
+		return b.String()
+	})
 	engine.AddFunc("safeHTML", func(s string) template.HTML {
 		return template.HTML(s)
 	})
