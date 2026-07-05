@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
+	"golang.org/x/sync/errgroup"
 )
 
 type TournamentRepository struct {
@@ -911,23 +912,55 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 		tournamentIDs[i] = m.ID
 	}
 
-	// Batch-load all participants for all tournaments in this event
+	// Use errgroup for concurrent loading
+	eg, egCtx := errgroup.WithContext(ctx)
+
 	var allPartModels []TournamentParticipantModel
-	_ = r.db.NewSelect().Model(&allPartModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Scan(ctx)
-
-	// Batch-load all teams for all tournaments
 	var allTeamModels []TeamModel
-	_ = r.db.NewSelect().Model(&allTeamModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Order("name ASC").Scan(ctx)
+	var allTPModels []TeamPlayerModel
 
-	teamIDs := make([]uuid.UUID, len(allTeamModels))
-	for i, tm := range allTeamModels {
-		teamIDs[i] = tm.ID
+	var matchModels []MatchModel
+	var allSetModels []MatchSetModel
+
+	eg.Go(func() error {
+		return r.db.NewSelect().Model(&allPartModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Scan(egCtx)
+	})
+
+	eg.Go(func() error {
+		err := r.db.NewSelect().Model(&allTeamModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Order("name ASC").Scan(egCtx)
+		if err != nil {
+			return err
+		}
+		if len(allTeamModels) > 0 {
+			teamIDs := make([]uuid.UUID, len(allTeamModels))
+			for i, tm := range allTeamModels {
+				teamIDs[i] = tm.ID
+			}
+			return r.db.NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.List(teamIDs)).Scan(egCtx)
+		}
+		return nil
+	})
+
+	if deep {
+		eg.Go(func() error {
+			if len(tournamentIDs) > 0 {
+				if err := r.db.NewSelect().Model(&matchModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Scan(egCtx); err != nil {
+					return err
+				}
+				matchIDs := make([]uuid.UUID, len(matchModels))
+				for i, mm := range matchModels {
+					matchIDs[i] = mm.ID
+				}
+				if len(matchIDs) > 0 {
+					return r.db.NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("match_id", "set_number ASC").Scan(egCtx)
+				}
+			}
+			return nil
+		})
 	}
 
-	// Batch-load all team players
-	var allTPModels []TeamPlayerModel
-	if len(teamIDs) > 0 {
-		_ = r.db.NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.List(teamIDs)).Scan(ctx)
+	if err := eg.Wait(); err != nil && err != sql.ErrNoRows {
+		// Just ignore if empty, or log it.
 	}
 
 	// Collect all player IDs needed
@@ -996,20 +1029,6 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 
 	matchesByTournament := make(map[uuid.UUID][]tournament.Match)
 	if deep {
-		// ── Batch-load matches and sets ──────────────────────────────────
-		var matchModels []MatchModel
-		if len(tournamentIDs) > 0 {
-			_ = r.db.NewSelect().Model(&matchModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Scan(ctx)
-		}
-
-		matchIDs := make([]uuid.UUID, len(matchModels))
-		for i, mm := range matchModels {
-			matchIDs[i] = mm.ID
-		}
-		var allSetModels []MatchSetModel
-		if len(matchIDs) > 0 {
-			_ = r.db.NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("match_id", "set_number ASC").Scan(ctx)
-		}
 		setsByMatch := make(map[string][]MatchSetModel)
 		for _, sm := range allSetModels {
 			setsByMatch[sm.MatchID] = append(setsByMatch[sm.MatchID], sm)
