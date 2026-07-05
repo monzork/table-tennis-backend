@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{t .T "tv.dashboard_title"}} - {{.Event.Name}}</title>
+    <meta name="description" content="Live Scoreboard for Event: {{.Event.Name}}">
+    <meta property="og:title" content="{{.Event.Name}} — Open TDM Nicaragua Live Board">
+    <meta property="og:description" content="Follow the live matches, scores, and up-next schedules in real-time.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="{{if .OGImage}}{{.OGImage}}{{else}}/open_tdm.jpeg{{end}}">
+    <meta name="twitter:card" content="summary_large_image">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/ws.js"></script>
