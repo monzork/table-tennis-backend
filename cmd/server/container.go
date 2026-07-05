@@ -10,6 +10,7 @@ import (
 	"table-tennis-backend/internal/application/player"
 	"table-tennis-backend/internal/application/tournament"
 	adminDomain "table-tennis-backend/internal/domain/admin"
+	"table-tennis-backend/internal/domain/events"
 	"table-tennis-backend/internal/domain/idgen"
 	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
@@ -43,7 +44,9 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	searchPlayerUC := player.NewSearchPlayersUseCase(playerRepo)
 	searchPlayerSelectionUC := player.NewSearchPlayersForSelectionUseCase(playerRepo)
 	tournamentRepo := bun.NewTournamentRepository(bun.DB)
-	enrollPlayerUC := tournament.NewEnrollPlayerUseCase(tournamentRepo)
+
+	dispatcher := events.NewInMemoryDispatcher()
+	enrollPlayerUC := tournament.NewEnrollPlayerUseCase(tournamentRepo, dispatcher)
 	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepo)
 
 
@@ -67,8 +70,14 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	assignPlayerToTeamUC := tournament.NewAssignPlayerToTeamUseCase(tournamentRepo)
 	removePlayerFromTeamUC := tournament.NewRemovePlayerFromTeamUseCase(tournamentRepo)
 	regenerateSeedsUC := tournament.NewRegenerateGroupSeedsUseCase(tournamentRepo, matchRepo, divisionRepo)
+	dispatcher.Subscribe(events.PlayerEnrolledEventName, func(ctx context.Context, e events.Event) error {
+		if pe, ok := e.(events.PlayerEnrolledEvent); ok {
+			_ = regenerateSeedsUC.Execute(ctx, pe.TournamentID)
+		}
+		return nil
+	})
 	updateParticipantEloUC := tournament.NewUpdateParticipantEloBeforeUseCase(tournamentRepo, regenerateSeedsUC)
-	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC, regenerateSeedsUC)
+	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC)
 
 	tournamentHandler := handler.NewTournamentHandler(
 		createTournamentUC,

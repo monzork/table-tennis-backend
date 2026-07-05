@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -23,7 +22,6 @@ type PlayerHandler struct {
 	importPlayersUC         *player.ImportPlayersUseCase
 	enrollPlayerUC          *tournament.EnrollPlayerUseCase
 	getTournamentsUC        *tournament.GetTournamentsUseCase
-	regenerateSeedsUC       *tournament.RegenerateGroupSeedsUseCase
 }
 
 func NewPlayerHandler(
@@ -36,7 +34,6 @@ func NewPlayerHandler(
 	iuc *player.ImportPlayersUseCase,
 	enrollUC *tournament.EnrollPlayerUseCase,
 	gtuc *tournament.GetTournamentsUseCase,
-	regenUC *tournament.RegenerateGroupSeedsUseCase,
 ) *PlayerHandler {
 	return &PlayerHandler{
 		registerPlayerUC:        uc,
@@ -48,7 +45,6 @@ func NewPlayerHandler(
 		importPlayersUC:         iuc,
 		enrollPlayerUC:          enrollUC,
 		getTournamentsUC:        gtuc,
-		regenerateSeedsUC:       regenUC,
 	}
 }
 
@@ -70,22 +66,18 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Invalid request body")
 	}
 
-	player, err := h.registerPlayerUC.Execute(context.Background(), body.FirstName, body.SecondName, body.LastName, body.SecondLastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, body.SinglesElo, body.DoublesElo)
+	player, err := h.registerPlayerUC.Execute(c.Context(), body.FirstName, body.SecondName, body.LastName, body.SecondLastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, body.SinglesElo, body.DoublesElo)
 
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
 	}
 
 	if body.TournamentID != "" {
 		if err := h.enrollPlayerUC.Execute(c.Context(), body.TournamentID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
 			slog.Warn("failed to enroll newly created player into tournament", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
-		} else {
-			if err := h.regenerateSeedsUC.Execute(c.Context(), body.TournamentID); err != nil {
-				slog.Warn("failed to regenerate seeds after enrolling player", "tournamentID", body.TournamentID, "err", err)
-			}
 		}
 	}
 
@@ -111,21 +103,17 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Invalid request body")
 	}
 
 	player, err := h.updatePlayerUC.Execute(c.Context(), id, body.FirstName, body.SecondName, body.LastName, body.SecondLastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, body.SinglesElo, body.DoublesElo)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
 	}
 
 	if body.TournamentID != "" {
 		if err := h.enrollPlayerUC.Execute(c.Context(), body.TournamentID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
 			slog.Warn("failed to enroll updated player into tournament", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
-		} else {
-			if err := h.regenerateSeedsUC.Execute(c.Context(), body.TournamentID); err != nil {
-				slog.Warn("failed to regenerate seeds after enrolling player", "tournamentID", body.TournamentID, "err", err)
-			}
 		}
 	}
 
@@ -135,7 +123,7 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 func (h *PlayerHandler) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if err := h.deletePlayerUC.Execute(c.Context(), id); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
 	}
 	return c.SendStatus(fiber.StatusOK)
 }

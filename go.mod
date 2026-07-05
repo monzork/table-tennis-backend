@@ -16,6 +16,7 @@ require (
 	github.com/uptrace/bun/driver/pgdriver v1.2.18
 	github.com/xuri/excelize/v2 v2.10.1
 	golang.org/x/crypto v0.49.0
+	golang.org/x/sync v0.20.0
 	modernc.org/sqlite v1.48.0
 )
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"golang.org/x/sync/errgroup"
+
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 )
@@ -27,34 +29,53 @@ func NewRegenerateGroupSeedsUseCase(
 }
 
 func (uc *RegenerateGroupSeedsUseCase) Execute(ctx context.Context, tournamentID string) error {
-	t, err := uc.tournamentRepo.GetByID(ctx, tournamentID)
-	if err != nil {
+	var (
+		t           *tournamentDomain.Tournament
+		hasActivity bool
+		divs        []*divisionDomain.Division
+	)
+
+	g, gCtx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		var err error
+		t, err = uc.tournamentRepo.GetByID(gCtx, tournamentID)
+		return err
+	})
+
+	g.Go(func() error {
+		var err error
+		hasActivity, err = uc.matchRepo.HasStartedOrFinishedMatches(gCtx, tournamentID)
+		return err
+	})
+
+	g.Go(func() error {
+		var err error
+		divs, err = uc.divisionRepo.GetAll(gCtx)
+		return err
+	})
+
+	if err := g.Wait(); err != nil {
 		return err
 	}
+
 	if t.Status == "finished" {
 		return errors.New("cannot regenerate seeds: tournament is already finished")
 	}
 
-	hasActivity, err := uc.matchRepo.HasStartedOrFinishedMatches(ctx, tournamentID)
-	if err != nil {
-		return err
-	}
 	if hasActivity {
 		return errors.New("cannot regenerate seeds: matches have already been started or finished")
 	}
 
 	var divsList []tournamentDomain.DivisionSeeding
 	if !t.SkipElo {
-		divs, err := uc.divisionRepo.GetAll(ctx)
-		if err == nil {
-			for _, d := range divs {
-				if d.Category == "both" || d.Category == t.Type {
-					divsList = append(divsList, tournamentDomain.DivisionSeeding{
-						Name:   d.Name,
-						MinElo: d.MinElo,
-						MaxElo: d.MaxElo,
-					})
-				}
+		for _, d := range divs {
+			if d.Category == "both" || d.Category == t.Type {
+				divsList = append(divsList, tournamentDomain.DivisionSeeding{
+					Name:   d.Name,
+					MinElo: d.MinElo,
+					MaxElo: d.MaxElo,
+				})
 			}
 		}
 	}

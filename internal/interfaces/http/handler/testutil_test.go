@@ -22,6 +22,7 @@ import (
 	"table-tennis-backend/internal/application/player"
 	"table-tennis-backend/internal/application/tournament"
 	adminDomain "table-tennis-backend/internal/domain/admin"
+	"table-tennis-backend/internal/domain/events"
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/infrastructure/identity"
 	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
@@ -101,7 +102,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	searchPlayerSelectionUC := player.NewSearchPlayersForSelectionUseCase(playerRepo)
 	importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
 	tournamentRepoForEnroll := bunRepo.NewTournamentRepository(db)
-	enrollPlayerUC := tournament.NewEnrollPlayerUseCase(tournamentRepoForEnroll)
+	dispatcher := events.NewInMemoryDispatcher()
+	enrollPlayerUC := tournament.NewEnrollPlayerUseCase(tournamentRepoForEnroll, dispatcher)
 	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepoForEnroll)
 	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC)
 
