@@ -107,10 +107,17 @@ func main() {
 
 	// Pass CSRF token to all templates
 	app.Use(func(c *fiber.Ctx) error {
-		c.Locals("CSRFToken", c.Cookies("csrf_"))
-		if c.Locals("CSRFToken") == "" || c.Locals("CSRFToken") == nil {
-			c.Locals("CSRFToken", c.Locals(csrf.ConfigDefault.ContextKey))
+		// First try cookie
+		token := c.Cookies("csrf_")
+		
+		// If empty, try context key
+		if token == "" {
+			if t, ok := c.Locals(csrf.ConfigDefault.ContextKey).(string); ok {
+				token = t
+			}
 		}
+
+		c.Locals("CSRFToken", token)
 		return c.Next()
 	})
 
