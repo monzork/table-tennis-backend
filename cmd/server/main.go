@@ -103,6 +103,18 @@ func main() {
 		Expiration:     1 * time.Hour,
 		KeyGenerator:   utils.UUID,
 		Extractor:      csrf.CsrfFromHeader("X-Csrf-Token"),
+		Session:        store,
+		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
+			// If CSRF validation fails (e.g., token expired or server restarted),
+			// clear the invalid cookie and force the client to reload the page
+			// to generate a fresh token instead of locking them out.
+			ctx.ClearCookie("csrf_")
+			if ctx.Get("HX-Request") == "true" {
+				ctx.Set("HX-Redirect", ctx.OriginalURL())
+				return ctx.SendStatus(200)
+			}
+			return ctx.Redirect(ctx.OriginalURL())
+		},
 	}))
 
 	// Pass CSRF token to all templates
