@@ -4,7 +4,7 @@
  */
 
 // ── Theme Switcher ────────────────────────────────────────────────────────────
-const THEME_KEY = 'club-theme';
+var THEME_KEY = 'club-theme';
 
 function applyTheme(theme) {
     const isProj = (theme === 'proj');
