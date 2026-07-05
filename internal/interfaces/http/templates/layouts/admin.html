@@ -10,6 +10,17 @@
     <script src="https://unpkg.com/htmx.org@1.9.3/dist/ext/ws.js"></script>
     <link href="/static/dist/tailwind.css?v=3" rel="stylesheet">
     <link id="font-outfit" href="/static/fonts/outfit.css" rel="stylesheet" hx-preserve="true">
+    
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{.CSRFToken}}">
+    <script>
+      document.addEventListener('htmx:configRequest', function(evt) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        if (csrfToken) {
+          evt.detail.headers['X-Csrf-Token'] = csrfToken;
+        }
+      });
+    </script>
     <style>
         /* ── Base (Admin / Dark) Theme ───────────────────────────── */
         body { background-color: #0a0a0a; color: #fff; transition: background .25s, color .25s; }

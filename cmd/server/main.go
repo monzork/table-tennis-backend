@@ -15,7 +15,11 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/csrf"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/gofiber/utils"
 	"github.com/joho/godotenv"
 )
 
@@ -73,6 +77,38 @@ func main() {
 			}
 			return ctx.Status(code).Render("errors/500", fiber.Map{"Message": msg})
 		},
+	})
+
+	// Enable Security Headers
+	app.Use(helmet.New())
+
+	// Enable CORS
+	allowedOrigins := os.Getenv("CORS_ORIGIN")
+	if allowedOrigins == "" {
+		allowedOrigins = "http://localhost:3000, http://127.0.0.1:3000, https://table-tennis-backend-8isa.onrender.com"
+	}
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     allowedOrigins,
+		AllowHeaders:     "Origin, Content-Type, Accept, X-Csrf-Token",
+		AllowCredentials: true,
+	}))
+
+	// Enable CSRF
+	app.Use(csrf.New(csrf.Config{
+		KeyLookup:      "header:X-Csrf-Token",
+		CookieName:     "csrf_",
+		CookieSameSite: "Lax",
+		CookieSecure:   os.Getenv("DATABASE_URL") != "",
+		CookieHTTPOnly: true,
+		Expiration:     1 * time.Hour,
+		KeyGenerator:   utils.UUID,
+		Extractor:      csrf.CsrfFromHeader("X-Csrf-Token"),
+	}))
+
+	// Pass CSRF token to all templates
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("CSRFToken", c.Locals(csrf.ConfigDefault.ContextKey))
+		return c.Next()
 	})
 
 	// Enable Gzip/Brotli compression for all text-based responses (HTML, CSS, JS, JSON)
