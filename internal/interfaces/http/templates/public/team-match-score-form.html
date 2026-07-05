@@ -95,11 +95,8 @@
         {{end}}
     </div>
 
-    <!-- Verification PIN -->
-    <div class="space-y-1">
-        <label class="text-[10px] font-bold uppercase tracking-widest text-yellow-500 block">Verification PIN</label>
-        <input name="pin" type="text" maxlength="8" placeholder="Enter Match PIN or Referee PIN" class="w-full bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-500 font-mono tracking-widest text-center" required>
-    </div>
+    <!-- Verification PIN (hidden now) -->
+    <input type="hidden" name="pin" value="{{.Pin}}">
 
     <div class="flex gap-2 pt-2">
         <button type="submit" class="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">

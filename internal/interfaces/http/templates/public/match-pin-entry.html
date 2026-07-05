@@ -2,11 +2,18 @@
 <html lang="{{if .Lang}}{{.Lang}}{{else}}en{{end}}">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <title>{{t .T "pin.score_entry"}}</title>
   <meta name="description" content="Enter the match PIN to submit scores for this table tennis match."/>
+  <meta name="csrf-token" content="{{.CSRFToken}}">
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script>
+    document.addEventListener('htmx:configRequest', (evt) => {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        evt.detail.headers['X-CSRF-Token'] = csrfToken;
+    });
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link id="font-inter-jetbrains" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" hx-preserve="true"/>
@@ -291,7 +298,7 @@
 
     <!-- PIN Entry -->
     <div id="pin-section">
-      <label class="pin-label">{{t .T "pin.enter_pin"}}</label>
+      <label class="pin-label">{{t .T "board.personal_pin"}}</label>
 
       <form id="pin-form"
             hx-post="/score/{{.MatchID}}/verify"

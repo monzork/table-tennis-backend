@@ -70,14 +70,6 @@
         {{end}}
     </div>
 
-    {{if .Pin}}
-    <!-- Match PIN Info (For player self-report) -->
-    <div class="bg-white/5 border border-white/5 rounded-xl p-3 flex justify-between items-center text-xs">
-        <span class="text-gray-500 font-mono">{{t .T "score_form.match_pin"}}</span>
-        <span class="text-yellow-400 font-bold font-mono tracking-widest text-lg">{{.Pin}}</span>
-    </div>
-    {{end}}
-
     <div id="score-error" class="hidden text-sm text-red-400 mb-4 font-mono"></div>
 
     <div class="flex gap-3">
