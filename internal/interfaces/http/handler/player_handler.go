@@ -23,6 +23,7 @@ type PlayerHandler struct {
 	importPlayersUC         *player.ImportPlayersUseCase
 	enrollPlayerUC          *tournament.EnrollPlayerUseCase
 	getTournamentsUC        *tournament.GetTournamentsUseCase
+	regenerateSeedsUC       *tournament.RegenerateGroupSeedsUseCase
 }
 
 func NewPlayerHandler(
@@ -35,6 +36,7 @@ func NewPlayerHandler(
 	iuc *player.ImportPlayersUseCase,
 	enrollUC *tournament.EnrollPlayerUseCase,
 	gtuc *tournament.GetTournamentsUseCase,
+	regenUC *tournament.RegenerateGroupSeedsUseCase,
 ) *PlayerHandler {
 	return &PlayerHandler{
 		registerPlayerUC:        uc,
@@ -46,6 +48,7 @@ func NewPlayerHandler(
 		importPlayersUC:         iuc,
 		enrollPlayerUC:          enrollUC,
 		getTournamentsUC:        gtuc,
+		regenerateSeedsUC:       regenUC,
 	}
 }
 
@@ -79,6 +82,10 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 	if body.TournamentID != "" {
 		if err := h.enrollPlayerUC.Execute(c.Context(), body.TournamentID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
 			slog.Warn("failed to enroll newly created player into tournament", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
+		} else {
+			if err := h.regenerateSeedsUC.Execute(c.Context(), body.TournamentID); err != nil {
+				slog.Warn("failed to regenerate seeds after enrolling player", "tournamentID", body.TournamentID, "err", err)
+			}
 		}
 	}
 
@@ -115,6 +122,10 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 	if body.TournamentID != "" {
 		if err := h.enrollPlayerUC.Execute(c.Context(), body.TournamentID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
 			slog.Warn("failed to enroll updated player into tournament", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
+		} else {
+			if err := h.regenerateSeedsUC.Execute(c.Context(), body.TournamentID); err != nil {
+				slog.Warn("failed to regenerate seeds after enrolling player", "tournamentID", body.TournamentID, "err", err)
+			}
 		}
 	}
 
@@ -136,11 +147,19 @@ func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "Player not found")
 	}
 	
+	var activeTournaments []any
 	tournaments, _ := h.getTournamentsUC.Execute(c.Context())
+	if tournaments != nil {
+		for _, t := range tournaments {
+			if t.Status != "finished" {
+				activeTournaments = append(activeTournaments, t)
+			}
+		}
+	}
 
 	return c.Render("admin/partials/player-edit-form", fiber.Map{
 		"Player":      p,
-		"Tournaments": tournaments,
+		"Tournaments": activeTournaments,
 	})
 }
 

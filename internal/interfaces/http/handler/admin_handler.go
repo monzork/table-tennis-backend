@@ -93,12 +93,17 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 		return c.Status(500).SendString(err.Error())
 	}
 	tournaments, err := h.getTournaments.Execute(c.Context())
-	if err != nil {
-		tournaments = nil
+	var activeTournaments []any
+	if err == nil {
+		for _, t := range tournaments {
+			if t.Status != "finished" {
+				activeTournaments = append(activeTournaments, t)
+			}
+		}
 	}
 	return c.Render("admin/players", fiber.Map{
 		"Players":     board,
-		"Tournaments": tournaments,
+		"Tournaments": activeTournaments,
 	}, "layouts/admin")
 }
 
