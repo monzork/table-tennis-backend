@@ -31,6 +31,7 @@ func (h *AuthHandler) ShowLogin(c *fiber.Ctx) error {
 	lang := getLang(c)
 	return c.Render("admin/login", merge(tMap(lang), fiber.Map{
 		"Title": i18n.T(lang, "nav.singles"),
+		"CSRFToken": c.Locals("csrf_token"),
 	}), "layouts/public")
 }
 
@@ -43,30 +44,30 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&body); err != nil {
 		lang := getLang(c)
-		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid form submission"}), "layouts/public")
+		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid form submission", "CSRFToken": c.Locals("csrf_token")}), "layouts/public")
 	}
 
 	admin, err := h.adminRepo.GetByUsername(c.Context(), body.Username)
 	if err != nil || admin == nil {
 		lang := getLang(c)
-		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid Username or Password"}), "layouts/public")
+		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid Username or Password", "CSRFToken": c.Locals("csrf_token")}), "layouts/public")
 	}
 
 	if err := h.hasher.Compare(admin.PasswordHash, body.Password); err != nil {
 		lang := getLang(c)
-		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid Username or Password"}), "layouts/public")
+		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Invalid Username or Password", "CSRFToken": c.Locals("csrf_token")}), "layouts/public")
 	}
 
 	sess, err := h.store.Get(c)
 	if err != nil {
 		lang := getLang(c)
-		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Session error"}), "layouts/public")
+		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Session error", "CSRFToken": c.Locals("csrf_token")}), "layouts/public")
 	}
 
 	sess.Set("authenticated", true)
 	if err := sess.Save(); err != nil {
 		lang := getLang(c)
-		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Failed to save session"}), "layouts/public")
+		return c.Render("admin/login", merge(tMap(lang), fiber.Map{"Error": "Failed to save session", "CSRFToken": c.Locals("csrf_token")}), "layouts/public")
 	}
 
 	// Use HTMX redirect header if it's an HTMX request, otherwise normal redirect
