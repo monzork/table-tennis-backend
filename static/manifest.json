@@ -1,0 +1,17 @@
+{
+  "name": "Open TDM Nicaragua",
+  "short_name": "Open TDM",
+  "description": "Official Open TDM Nicaragua rankings, athlete registration, and tournament management platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/open_tdm.jpeg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

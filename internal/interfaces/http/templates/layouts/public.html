@@ -6,21 +6,40 @@
     <title>{{.Title}} — Open TDM Nicaragua</title>
     <meta name="description" content="{{if .Description}}{{.Description}}{{else}}Official Open TDM Nicaragua rankings, athlete registration, and tournament management platform.{{end}}">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- SEO & PWA Additions -->
+    <meta name="view-transition" content="same-origin">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="apple-touch-icon" href="/open_tdm.jpeg">
+    {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">{{end}}
+    {{if .AlternateURL}}<link rel="alternate" hreflang="{{.AlternateLang}}" href="{{.AlternateURL}}">{{end}}
+    {{if .JSONLD}}<script type="application/ld+json">{{.JSONLD | safeHTML}}</script>{{end}}
+    
     <!-- Open Graph -->
     <meta property="og:title" content="{{.Title}} — Open TDM Nicaragua">
     <meta property="og:description" content="{{if .Description}}{{.Description}}{{else}}Official Open TDM Nicaragua rankings, athlete registration, and tournament management platform.{{end}}">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="/open_tdm.jpeg">
+    <meta property="og:image" content="{{if .OGImage}}{{.OGImage}}{{else}}/open_tdm.jpeg{{end}}">
     <meta property="og:site_name" content="Open TDM Nicaragua">
+    {{if .CanonicalURL}}<meta property="og:url" content="{{.CanonicalURL}}">{{end}}
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="{{.Title}} — Open TDM Nicaragua">
     <meta name="twitter:description" content="{{if .Description}}{{.Description}}{{else}}Official Open TDM Nicaragua rankings, athlete registration, and tournament management platform.{{end}}">
-    <meta name="twitter:image" content="/open_tdm.jpeg">
+    <meta name="twitter:image" content="{{if .OGImage}}{{.OGImage}}{{else}}/open_tdm.jpeg{{end}}">
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://unpkg.com/htmx.org@1.9.3/dist/ext/ws.js"></script>
     <link href="/static/dist/tailwind.css?v=3" rel="stylesheet">
     <link id="font-outfit" href="/static/fonts/outfit.css" rel="stylesheet" hx-preserve="true">
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/static/sw.js').catch(err => console.log('SW registration failed:', err));
+        });
+      }
+    </script>
     <style>
         body { background-color: #0a0a0a; color: #fff; }
         .glass { background: rgba(18, 18, 18, 0.80); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.07); }
@@ -48,14 +67,23 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col font-sans antialiased text-gray-200" hx-indicator="#global-spinner" hx-boost="true">
-    <!-- Global HTMX Spinner Overlay -->
-    <div id="global-spinner" class="htmx-indicator fixed inset-0 z-[9999] items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-        <div class="bg-black/60 p-6 rounded-3xl border border-white/20 shadow-2xl flex flex-col items-center gap-4">
-            <svg class="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span class="text-white font-bold tracking-widest text-xs uppercase">Processing...</span>
+    <!-- Global HTMX Skeleton Loader -->
+    <div id="global-spinner" class="htmx-indicator fixed inset-0 z-[9999] pt-[100px] bg-[#0a0a0a] px-4 sm:px-6 lg:px-8 transition-opacity duration-300">
+        <div class="max-w-7xl mx-auto space-y-6">
+            <!-- Header Skeleton -->
+            <div class="h-10 bg-white/5 rounded w-1/3 animate-pulse"></div>
+            <!-- Grid Skeleton -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="h-32 bg-white/5 rounded-xl animate-pulse"></div>
+                <div class="h-32 bg-white/5 rounded-xl animate-pulse"></div>
+                <div class="h-32 bg-white/5 rounded-xl animate-pulse"></div>
+            </div>
+            <!-- List Skeleton -->
+            <div class="space-y-3 pt-6">
+                <div class="h-16 bg-white/5 rounded animate-pulse"></div>
+                <div class="h-16 bg-white/5 rounded animate-pulse w-11/12"></div>
+                <div class="h-16 bg-white/5 rounded animate-pulse"></div>
+            </div>
         </div>
     </div>
     <nav class="border-b border-white/10 sticky top-0 z-50 bg-black/80 backdrop-blur-md">

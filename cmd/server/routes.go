@@ -62,6 +62,9 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	// Language Switcher
 	app.Get("/lang/:locale", c.PublicHandler.SetLang)
 
+	// Sitemap
+	app.Get("/sitemap.xml", c.PublicHandler.Sitemap)
+
 	// Public Score Entry & Match Starting Endpoints
 	app.Get("/public/matches/score/form", c.MatchHandler.ShowPublicScoreForm)
 	app.Post("/public/matches/score/form", c.MatchHandler.ShowPublicScoreForm)

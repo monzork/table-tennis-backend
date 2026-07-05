@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"table-tennis-backend/internal/application/player"
 	appTournament "table-tennis-backend/internal/application/tournament"
@@ -265,4 +266,44 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 		"TournamentName": t.Name,
 		"PlayerName":     playerName,
 	}), "layouts/public")
+}
+
+// Sitemap generates a dynamic XML sitemap.
+func (h *PublicHandler) Sitemap(c *fiber.Ctx) error {
+	baseURL := c.BaseURL()
+	tournaments, _ := h.selfRegisterUC.GetOpenTournaments(context.Background()) // we can use GetOpenTournaments or ideally all tournaments if available. Actually, just public ones.
+
+	var sb strings.Builder
+	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+	sb.WriteString("\n")
+	sb.WriteString(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
+	sb.WriteString("\n")
+
+	// Static routes
+	staticRoutes := []string{
+		"/rankings/singles",
+		"/tournaments",
+		"/register",
+	}
+	for _, route := range staticRoutes {
+		sb.WriteString("  <url>\n")
+		sb.WriteString(fmt.Sprintf("    <loc>%s%s</loc>\n", baseURL, route))
+		sb.WriteString("    <changefreq>daily</changefreq>\n")
+		sb.WriteString("    <priority>0.8</priority>\n")
+		sb.WriteString("  </url>\n")
+	}
+
+	// Dynamic routes (Tournaments)
+	for _, t := range tournaments {
+		sb.WriteString("  <url>\n")
+		sb.WriteString(fmt.Sprintf("    <loc>%s/tournaments/%s</loc>\n", baseURL, t.ID))
+		sb.WriteString("    <changefreq>hourly</changefreq>\n")
+		sb.WriteString("    <priority>1.0</priority>\n")
+		sb.WriteString("  </url>\n")
+	}
+
+	sb.WriteString(`</urlset>`)
+
+	c.Set("Content-Type", "application/xml")
+	return c.SendString(sb.String())
 }

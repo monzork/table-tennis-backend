@@ -722,6 +722,24 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 		}
 	}
 
+	// SEO additions
+	canonicalURL := c.BaseURL() + c.Path()
+	// Quick escape for JSON string (just in case there are quotes in name)
+	safeName := strings.ReplaceAll(t.Name, `"`, `\"`)
+	jsonLD := fmt.Sprintf(`{
+  "@context": "https://schema.org",
+  "@type": "SportsEvent",
+  "name": "%s",
+  "startDate": "%s",
+  "endDate": "%s",
+  "sport": "Table Tennis",
+  "url": "%s",
+  "location": {
+    "@type": "Place",
+    "name": "Nicaragua"
+  }
+}`, safeName, t.StartDate.Format(time.RFC3339), t.EndDate.Format(time.RFC3339), canonicalURL)
+
 	return c.Render("public/tournament-detail", merge(tMap(lang), fiber.Map{
 		"Tournament":       t,
 		"Divisions":        divisions,
@@ -729,6 +747,10 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 		"Type":             "Tournaments",
 		"StatusFilter":     statusFilter,
 		"RefereeNames":     refereeNames,
+		"CanonicalURL":     canonicalURL,
+		"JSONLD":           jsonLD,
+		"Title":            t.Name,
+		"Description":      fmt.Sprintf("%s Tournament. Register and view live bracket.", t.Name),
 	}), "layouts/public")
 }
 
