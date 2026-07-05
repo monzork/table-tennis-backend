@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{t .T "tv.dashboard_title"}} - {{.Event.Name}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/ws.js"></script>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* Hide scrollbar for the auto-scrolling containers */
+        .auto-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        .auto-scroll-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-black text-white p-6 lg:overflow-hidden" hx-ext="ws" ws-connect="/ws/brackets/event_{{.Event.ID}}"
+      hx-on::ws-before-message="try { const data = JSON.parse(event.detail.message); if(data.event === 'score_updated') { htmx.trigger('body', 'reload-tv'); } } catch(e) {}">
+
+    <div class="min-h-screen lg:h-screen flex flex-col gap-6"
+         hx-get="/events/{{.Event.ID}}/tv"
+         hx-trigger="reload-tv, every 30s"
+         hx-select="#tv-content"
+         hx-target="#tv-content"
+         hx-swap="outerHTML">
+         
+        <div id="tv-content" class="flex flex-col h-full gap-6">
+            <header class="flex flex-col sm:flex-row items-center justify-between gap-4 glass rounded-3xl p-6 shadow-2xl">
+                <div>
+                    <h1 class="text-5xl font-extrabold uppercase tracking-tighter">{{.Event.Name}}<span class="text-blue-500">.</span></h1>
+                    <p class="text-gray-400 mt-2 font-mono uppercase tracking-widest text-sm">{{t .T "tv.dashboard_title"}}</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="px-4 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full text-sm font-bold uppercase tracking-wider animate-pulse">
+                        🔴 LIVE
+                    </span>
+                    <div class="text-right">
+                        <p class="text-2xl font-black">{{len .Event.Tournaments}}</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest">{{t .T "board.tournaments"}}</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:overflow-hidden">
+                <!-- LEFT: IN PROGRESS -->
+                <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-blue-500/20">
+                    <h2 class="text-2xl font-bold uppercase tracking-widest text-blue-400 mb-6 flex items-center gap-3">
+                        <svg class="w-8 h-8 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        {{t .T "tv.now_playing"}}
+                    </h2>
+                    <div class="flex-1 lg:overflow-hidden relative">
+                        <div class="lg:absolute lg:inset-0 lg:overflow-y-auto pr-2 space-y-4 auto-scroll-container">
+                            {{range .InProgress}}
+                                <div class="bg-black/50 border border-white/10 rounded-2xl p-5 flex items-center justify-between shadow-lg">
+                                    {{if .TableNumber}}
+                                        <div class="bg-blue-500 text-white rounded-xl w-14 h-14 flex flex-col items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+                                            <span class="text-[9px] font-bold uppercase tracking-widest opacity-80">{{t $.T "tv.table"}}</span>
+                                            <span class="text-xl font-black">{{.TableNumber}}</span>
+                                        </div>
+                                    {{else}}
+                                        <div class="bg-gray-800 text-gray-400 rounded-xl w-14 h-14 flex items-center justify-center shrink-0">
+                                            <span class="text-[9px] font-bold uppercase tracking-widest">{{t $.T "tv.tbd"}}</span>
+                                        </div>
+                                    {{end}}
+                                    
+                                    <div class="flex-1 px-4 flex justify-between items-center">
+                                        <div class="flex flex-col items-end flex-1 text-right">
+                                            <span class="text-lg font-bold truncate max-w-[150px]">{{.PlayerAName}}</span>
+                                            <span class="text-blue-400 font-black text-3xl mt-1">{{.ScoreA}}</span>
+                                        </div>
+                                        
+                                        <div class="px-4 flex flex-col items-center justify-center">
+                                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1">{{t $.T "tv.vs"}}</span>
+                                            <span class="px-1.5 py-0.5 rounded bg-white/5 text-[8px] uppercase tracking-widest text-gray-400">{{if .TournamentName}}{{.TournamentName}}{{else}}{{.Stage}}{{end}}</span>
+                                        </div>
+
+                                        <div class="flex flex-col items-start flex-1 text-left">
+                                            <span class="text-lg font-bold truncate max-w-[150px]">{{.PlayerBName}}</span>
+                                            <span class="text-blue-400 font-black text-3xl mt-1">{{.ScoreB}}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {{else}}
+                                <div class="h-full flex items-center justify-center text-gray-500 text-lg uppercase tracking-widest font-bold">
+                                    {{t .T "tv.no_active"}}
+                                </div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MIDDLE: UP NEXT -->
+                <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-yellow-500/20">
+                    <h2 class="text-2xl font-bold uppercase tracking-widest text-yellow-400 mb-6 flex items-center gap-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        {{t .T "tv.up_next"}}
+                    </h2>
+                    <div class="flex-1 lg:overflow-hidden relative">
+                        <div class="lg:absolute lg:inset-0 lg:overflow-y-auto pr-2 space-y-4 auto-scroll-container">
+                            {{range .Scheduled}}
+                                <div class="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-3 shadow-lg opacity-80">
+                                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">{{if .TournamentName}}{{.TournamentName}}{{else}}{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}}{{end}} • {{.Stage}}</span>
+                                        {{if .TableNumber}}
+                                            <span class="px-2 py-0.5 rounded bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest animate-pulse">{{t $.T "tv.table"}} {{.TableNumber}}</span>
+                                        {{else}}
+                                            <span class="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-white/10">{{t $.T "tv.waiting"}}</span>
+                                        {{end}}
+                                    </div>
+                                    <div class="flex justify-between items-center text-lg">
+                                        <div class="w-[45%] text-right font-bold truncate text-gray-200">
+                                            {{.PlayerAName}}
+                                        </div>
+                                        <div class="w-[10%] text-center text-xs font-black text-gray-600 italic">{{t $.T "tv.vs"}}</div>
+                                        <div class="w-[45%] text-left font-bold truncate text-gray-200">
+                                            {{.PlayerBName}}
+                                        </div>
+                                    </div>
+                                </div>
+                            {{else}}
+                                <div class="h-full flex items-center justify-center text-gray-500 text-lg uppercase tracking-widest font-bold text-center px-4">
+                                    {{t .T "tv.no_upcoming" | safeHTML}}
+                                </div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: RECENT RESULTS -->
+                <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-green-500/10">
+                    <h2 class="text-2xl font-bold uppercase tracking-widest text-green-400 mb-6 flex items-center gap-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        {{t .T "tv.recent_results"}}
+                    </h2>
+                    <div class="flex-1 lg:overflow-hidden relative">
+                        <div class="lg:absolute lg:inset-0 lg:overflow-y-auto pr-2 space-y-3 auto-scroll-container">
+                            {{range .Finished}}
+                                <div class="bg-black/30 border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
+                                    <span class="text-[9px] font-bold uppercase tracking-widest text-gray-500">{{if .TournamentName}}{{.TournamentName}}{{end}} • {{.Stage}}</span>
+                                    <div class="flex-1 flex justify-between items-center text-sm sm:text-base">
+                                        <div class="w-[45%] text-right pr-2 {{if gt .ScoreA .ScoreB}}text-white font-extrabold{{else}}text-gray-500{{end}} truncate">
+                                            {{.PlayerAName}}
+                                        </div>
+                                        <div class="px-2 py-1 rounded-full bg-white/5 border border-white/10 font-black font-mono text-sm flex gap-1 shadow-inner shrink-0">
+                                            <span class="{{if gt .ScoreA .ScoreB}}text-green-400{{else}}text-gray-500{{end}}">{{.ScoreA}}</span>
+                                            <span class="text-gray-600">-</span>
+                                            <span class="{{if gt .ScoreB .ScoreA}}text-green-400{{else}}text-gray-500{{end}}">{{.ScoreB}}</span>
+                                        </div>
+                                        <div class="w-[45%] text-left pl-2 {{if gt .ScoreB .ScoreA}}text-white font-extrabold{{else}}text-gray-500{{end}} truncate">
+                                            {{.PlayerBName}}
+                                        </div>
+                                    </div>
+                                </div>
+                            {{else}}
+                                <div class="h-full flex items-center justify-center text-gray-600 text-lg uppercase tracking-widest font-bold">
+                                    {{t .T "tv.no_results"}}
+                                </div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-Scroll Script -->
+    <script>
+        const scrollDirs = new Map();
+        const scrollPositions = new Map();
+        
+        setInterval(() => {
+            document.querySelectorAll('.auto-scroll-container').forEach(el => {
+                // If content fits without scrolling, do nothing
+                if (el.scrollHeight <= el.clientHeight) return;
+                
+                let dir = scrollDirs.get(el) || 1;
+                
+                // If paused, don't move
+                if (el.dataset.paused === 'true') return;
+
+                let exactPos = scrollPositions.get(el);
+                if (exactPos === undefined) {
+                    exactPos = el.scrollTop;
+                }
+                
+                exactPos += dir * 0.5; // Very slow, smooth scroll speed
+                scrollPositions.set(el, exactPos);
+                el.scrollTop = Math.floor(exactPos);
+                
+                // Check if hit bottom
+                if (dir === 1 && el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
+                    scrollDirs.set(el, -1);
+                    el.dataset.paused = 'true';
+                    setTimeout(() => { el.dataset.paused = 'false'; }, 4000); // Wait 4 seconds at bottom
+                } 
+                // Check if hit top
+                else if (dir === -1 && el.scrollTop <= 0) {
+                    scrollDirs.set(el, 1);
+                    el.dataset.paused = 'true';
+                    setTimeout(() => { el.dataset.paused = 'false'; }, 4000); // Wait 4 seconds at top
+                }
+            });
+        }, 20); // 50fps smooth scrolling
+    </script>
+</body>
+</html>

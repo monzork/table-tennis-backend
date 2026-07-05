@@ -794,7 +794,7 @@ func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	vm := BuildTournamentViewModel(res.tournament, res.divisions, tmap)
 	vm.IsPublic = true
 
-	scheduled, _, _ := buildBoardCards(res.tournament, res.divisions)
+	scheduled, _, _ := BuildBoardCards(res.tournament, res.divisions)
 
 	return c.Render("public/tv-dashboard", merge(tMap(lang), fiber.Map{
 		"Tournament":       res.tournament,
@@ -806,22 +806,24 @@ func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
 
 // BoardCard is a flattened match representation used by the kanban board.
 type BoardCard struct {
-	MatchID      string
-	Status       string
-	Stage        string
-	BestOf       int
-	PlayerAName  string
-	PlayerBName  string
-	P1Id         string
-	P2Id         string
-	TableNumber  *int
-	ScoreA       int
-	ScoreB       int
-	Pin          string
-	GroupName    string
-	DivisionName string
-	P1InMatch    bool
-	P2InMatch    bool
+	MatchID        string
+	Status         string
+	Stage          string
+	BestOf         int
+	PlayerAName    string
+	PlayerBName    string
+	P1Id           string
+	P2Id           string
+	TableNumber    *int
+	ScoreA         int
+	ScoreB         int
+	Pin            string
+	GroupName      string
+	DivisionName   string
+	P1InMatch      bool
+	P2InMatch      bool
+	TournamentID   string
+	TournamentName string
 }
 
 type TableVM struct {
@@ -859,7 +861,7 @@ func buildTables(t *tournamentDomain.Tournament, excludeMatchID string, globalOc
 	return tables
 }
 
-func filterBoardCards(cards []BoardCard, q string, divs []string) []BoardCard {
+func FilterBoardCards(cards []BoardCard, q string, divs []string) []BoardCard {
 	if q == "" && len(divs) == 0 {
 		return cards
 	}
@@ -883,7 +885,7 @@ func filterBoardCards(cards []BoardCard, q string, divs []string) []BoardCard {
 	return filtered
 }
 
-func buildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Division) (scheduled, inProgress, finished []BoardCard) {
+func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Division) (scheduled, inProgress, finished []BoardCard) {
 	nameOf := func(players []*player.Player) string {
 		if len(players) == 0 {
 			return "TBD"
@@ -1252,7 +1254,7 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 	}
 	t := res.tournament
 	divs := res.divisions
-	scheduled, inProgress, finished := buildBoardCards(t, divs)
+	scheduled, inProgress, finished := BuildBoardCards(t, divs)
 	tables := buildTables(t, "", h.getOccupiedTables(c.Context(), t))
 
 	uniqueDivsMap := make(map[string]bool)
@@ -1283,9 +1285,9 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 		selectedDivs = append(selectedDivs, string(d))
 	}
 	if c.Query("q") != "" || len(selectedDivs) > 0 {
-		scheduled = filterBoardCards(scheduled, q, selectedDivs)
-		inProgress = filterBoardCards(inProgress, q, selectedDivs)
-		finished = filterBoardCards(finished, q, selectedDivs)
+		scheduled = FilterBoardCards(scheduled, q, selectedDivs)
+		inProgress = FilterBoardCards(inProgress, q, selectedDivs)
+		finished = FilterBoardCards(finished, q, selectedDivs)
 	}
 
 	selectedDivsMap := make(map[string]bool)
@@ -1332,7 +1334,7 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	}
 	t := res.tournament
 	divs := res.divisions
-	scheduled, inProgress, finished := buildBoardCards(t, divs)
+	scheduled, inProgress, finished := BuildBoardCards(t, divs)
 	tables := buildTables(t, "", h.getOccupiedTables(c.Context(), t))
 
 	q := strings.ToLower(c.Query("q"))
@@ -1342,9 +1344,9 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	}
 
 	if c.Query("q") != "" || len(selectedDivs) > 0 {
-		scheduled = filterBoardCards(scheduled, q, selectedDivs)
-		inProgress = filterBoardCards(inProgress, q, selectedDivs)
-		finished = filterBoardCards(finished, q, selectedDivs)
+		scheduled = FilterBoardCards(scheduled, q, selectedDivs)
+		inProgress = FilterBoardCards(inProgress, q, selectedDivs)
+		finished = FilterBoardCards(finished, q, selectedDivs)
 	}
 
 	return c.Render("admin/partials/board-columns", fiber.Map{

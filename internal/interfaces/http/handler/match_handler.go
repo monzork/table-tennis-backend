@@ -96,6 +96,8 @@ func (h *MatchHandler) broadcastToTournamentOrEvent(c *fiber.Ctx, tournamentID s
 
 	if err == nil && t.EventID != nil {
 		eventUUID, _ := uuid.Parse(*t.EventID)
+		// Broadcast to the event dashboard
+		broadcastFunc(fmt.Sprintf("event_%s", *t.EventID))
 		if tourneys, err := h.tournamentRepo.GetByEventID(ctx, eventUUID, false); err == nil {
 			for _, tourney := range tourneys {
 				broadcastFunc(tourney.ID)

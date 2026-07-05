@@ -53,6 +53,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	app.Get("/tournaments/:id", c.TournamentHandler.PublicDetail)
 	app.Get("/tournaments/:id/tv", c.TournamentHandler.PublicTVDashboard)
 	app.Get("/events/:id", c.EventHandler.PublicDetail)
+	app.Get("/events/:id/tv", c.EventHandler.PublicTVDashboard)
 
 	// User Registration
 	app.Get("/register", c.PublicHandler.ShowSignup)
@@ -179,6 +180,8 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	// Events API
 	admin.Get("/events/division-select", c.AdminHandler.DivisionSelect)
 	admin.Get("/events/:id", c.EventHandler.Detail)
+	admin.Get("/events/:id/board", c.EventHandler.AdminBoard)
+	admin.Get("/events/:id/board/columns", c.EventHandler.BoardColumns)
 	api.Post("/events", c.EventHandler.Create)
 	api.Delete("/events/:id", c.EventHandler.Delete)
 	api.Post("/events/bulk-delete", c.EventHandler.DeleteBulk)

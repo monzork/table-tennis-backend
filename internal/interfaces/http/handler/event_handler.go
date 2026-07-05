@@ -4,10 +4,14 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
+
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/tournament"
+	divisionDomain "table-tennis-backend/internal/domain/division"
+	eventDomain "table-tennis-backend/internal/domain/event"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -245,4 +249,184 @@ func (h *EventHandler) ExportEventPDF(c *fiber.Ctx) error {
 	c.Set("Content-Type", "application/pdf")
 	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"event_report_%s.pdf\"", idStr))
 	return c.Send(pdfBytes)
+}
+
+func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.Event, []*divisionDomain.Division, []BoardCard, []BoardCard, []BoardCard, error) {
+	ctx := c.Context()
+	
+	// Ensure deep fetch of the event so all tournaments and matches are loaded.
+	// Actually, getByID uses GetByIDDeep behind the scenes which includes tournaments and matches.
+	e, err := h.getByID.Execute(ctx, eventID)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+	
+	divs, _ := h.divisionUC.GetAll(ctx)
+	
+	var globalScheduled []BoardCard
+	var inProgress []BoardCard
+	var finished []BoardCard
+
+	// Global tracker for player activity
+	lastActivity := make(map[string]time.Time)
+
+	for _, t := range e.Tournaments {
+		s, i, f := BuildBoardCards(t, divs)
+		// Inject TournamentName into the cards for display
+		for idx := range s {
+			s[idx].TournamentName = t.Name
+			s[idx].TournamentID = t.ID
+		}
+		for idx := range i {
+			i[idx].TournamentName = t.Name
+			i[idx].TournamentID = t.ID
+		}
+		for idx := range f {
+			f[idx].TournamentName = t.Name
+			f[idx].TournamentID = t.ID
+		}
+		
+		globalScheduled = append(globalScheduled, s...)
+		inProgress = append(inProgress, i...)
+		finished = append(finished, f...)
+
+		// Track last activity across all tournaments in this event
+		for _, m := range t.Matches {
+			if m.Status == "in_progress" || m.Status == "finished" {
+				tAct := time.Time{}
+				if m.UpdatedAt != nil {
+					tAct = *m.UpdatedAt
+				}
+				for _, p := range m.TeamA {
+					if lastActivity[p.ID].Before(tAct) {
+						lastActivity[p.ID] = tAct
+					}
+				}
+				for _, p := range m.TeamB {
+					if lastActivity[p.ID].Before(tAct) {
+						lastActivity[p.ID] = tAct
+					}
+				}
+			}
+		}
+	}
+
+	var reordered []BoardCard
+	var unstarted []BoardCard
+	var virtualScheduled []BoardCard
+
+	for _, c := range globalScheduled {
+		if c.MatchID == "" {
+			virtualScheduled = append(virtualScheduled, c)
+		} else {
+			unstarted = append(unstarted, c)
+		}
+	}
+
+	simClock := time.Now().Add(24 * time.Hour)
+	
+	scheduleMatchGreedy := func(pool *[]BoardCard) {
+		for len(*pool) > 0 {
+			bestIdx := -1
+			var bestPenalty time.Time
+			var bestSum int64
+
+			for i, c := range *pool {
+				t1 := lastActivity[c.P1Id]
+				t2 := lastActivity[c.P2Id]
+				penalty := t1
+				if t2.After(t1) {
+					penalty = t2
+				}
+				sum := t1.UnixNano() + t2.UnixNano()
+
+				if bestIdx == -1 || penalty.Before(bestPenalty) || (penalty.Equal(bestPenalty) && sum < bestSum) {
+					bestIdx = i
+					bestPenalty = penalty
+					bestSum = sum
+				}
+			}
+			
+			bestCard := (*pool)[bestIdx]
+			reordered = append(reordered, bestCard)
+			lastActivity[bestCard.P1Id] = simClock
+			lastActivity[bestCard.P2Id] = simClock
+			simClock = simClock.Add(time.Second)
+			*pool = append((*pool)[:bestIdx], (*pool)[bestIdx+1:]...)
+		}
+	}
+
+	scheduleMatchGreedy(&unstarted)
+	scheduleMatchGreedy(&virtualScheduled)
+
+	return e, divs, reordered, inProgress, finished, nil
+}
+
+func (h *EventHandler) AdminBoard(c *fiber.Ctx) error {
+	lang := getLang(c)
+	e, divs, scheduled, inProgress, finished, err := h.getBoardData(c, c.Params("id"))
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.Render("admin/event-board", merge(tMap(lang), fiber.Map{
+		"Event":      e,
+		"Scheduled":  scheduled,
+		"InProgress": inProgress,
+		"Finished":   finished,
+		"AllDivisions": func() []string {
+			m := make(map[string]bool)
+			for _, d := range divs {
+				m[d.Name] = true
+			}
+			var list []string
+			for k := range m {
+				list = append(list, k)
+			}
+			return list
+		}(),
+	}), "layouts/admin")
+}
+
+func (h *EventHandler) PublicTVDashboard(c *fiber.Ctx) error {
+	lang := getLang(c)
+	e, _, scheduled, inProgress, finished, err := h.getBoardData(c, c.Params("id"))
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.Render("public/event-board", merge(tMap(lang), fiber.Map{
+		"Event":      e,
+		"Scheduled":  scheduled,
+		"InProgress": inProgress,
+		"Finished":   finished,
+	}), "layouts/public")
+}
+
+func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
+	lang := getLang(c)
+	e, _, scheduled, inProgress, finished, err := h.getBoardData(c, c.Params("id"))
+	if err != nil {
+		return c.SendString("<div class='text-red-400'>Error loading board</div>")
+	}
+
+	q := strings.ToLower(c.Query("q"))
+	var selectedDivs []string
+	for _, d := range c.Request().URI().QueryArgs().PeekMulti("div") {
+		selectedDivs = append(selectedDivs, string(d))
+	}
+
+	if c.Query("q") != "" || len(selectedDivs) > 0 {
+		scheduled = FilterBoardCards(scheduled, q, selectedDivs)
+		inProgress = FilterBoardCards(inProgress, q, selectedDivs)
+		finished = FilterBoardCards(finished, q, selectedDivs)
+	}
+
+	return c.Render("admin/partials/event-board-columns", fiber.Map{
+		"Event":      e,
+		"Scheduled":  scheduled,
+		"InProgress": inProgress,
+		"Finished":   finished,
+		"T":          tMap(lang)["T"],
+	})
 }
