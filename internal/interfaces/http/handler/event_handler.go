@@ -227,9 +227,11 @@ func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 	}
 
 	return c.Render("public/event-detail", merge(tMap(lang), fiber.Map{
-		"Event":     res.event,
-		"Divisions": res.divisions,
-		"Type":      "Tournaments", // highlight tournaments tab in layout
+		"Event":        res.event,
+		"Divisions":    res.divisions,
+		"Type":         "Tournaments", // highlight tournaments tab in layout
+		"OGImage":      c.BaseURL() + "/open_tdm.jpeg",
+		"CanonicalURL": c.BaseURL() + c.Path(),
 	}), "layouts/public")
 }
 

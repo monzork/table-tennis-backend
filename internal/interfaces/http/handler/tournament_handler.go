@@ -653,8 +653,11 @@ func (h *TournamentHandler) PublicList(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 	return c.Render("public/tournaments", merge(tMap(lang), fiber.Map{
-		"Tournaments": tournaments,
-		"Type":        "Tournaments",
+		"Tournaments":  tournaments,
+		"Type":         "Tournaments",
+		"OGImage":      c.BaseURL() + "/open_tdm.jpeg",
+		"Title":        "Tournaments",
+		"CanonicalURL": c.BaseURL() + c.Path(),
 	}), "layouts/public")
 }
 
@@ -748,6 +751,7 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 		"StatusFilter":     statusFilter,
 		"RefereeNames":     refereeNames,
 		"CanonicalURL":     canonicalURL,
+		"OGImage":          c.BaseURL() + "/open_tdm.jpeg",
 		"JSONLD":           jsonLD,
 		"Title":            t.Name,
 		"Description":      fmt.Sprintf("%s Tournament. Register and view live bracket.", t.Name),
