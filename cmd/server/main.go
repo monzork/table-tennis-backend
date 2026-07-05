@@ -88,6 +88,9 @@ func main() {
 	app.Static("/open_tdm.jpeg", "./open_tdm.jpeg", fiber.Static{
 		MaxAge: 86400,
 	})
+	app.Static("/favicon.ico", "./favicon.ico", fiber.Static{
+		MaxAge: 86400,
+	})
 
 	// Global Translation Middleware
 	app.Use(func(ctx *fiber.Ctx) error {
