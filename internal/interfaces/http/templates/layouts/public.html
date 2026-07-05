@@ -44,7 +44,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{.CSRFToken}}">
     <script>
-      document.body.addEventListener('htmx:configRequest', function(evt) {
+      document.addEventListener('htmx:configRequest', function(evt) {
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         if (csrfToken) {
           evt.detail.headers['X-Csrf-Token'] = csrfToken;
