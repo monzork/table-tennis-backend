@@ -46,6 +46,9 @@ COPY --from=builder /app/static ./static
 # Copy the logo/header image used in PDF reports
 COPY --from=builder /app/open_tdm.jpeg ./open_tdm.jpeg
 
+# Copy favicon
+COPY --from=builder /app/favicon.ico ./favicon.ico
+
 # Transfer ownership to the non-root user
 RUN chown -R appuser:appgroup /app
 
