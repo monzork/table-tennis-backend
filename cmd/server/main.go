@@ -16,10 +16,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/csrf"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/session"
-	"github.com/gofiber/utils"
 	"github.com/joho/godotenv"
 )
 
@@ -94,45 +92,45 @@ func main() {
 	}))
 
 	/*
-	// Enable CSRF
-	app.Use(csrf.New(csrf.Config{
-		KeyLookup:      "header:X-Csrf-Token",
-		CookieName:     "csrf_",
-		CookieSameSite: "Lax",
-		CookieSecure:   os.Getenv("DATABASE_URL") != "",
-		CookieHTTPOnly: true,
-		Expiration:     1 * time.Hour,
-		KeyGenerator:   utils.UUID,
-		Extractor:      csrf.CsrfFromHeader("X-Csrf-Token"),
-		Session:        store,
-		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-			// If CSRF validation fails (e.g., token expired or server restarted),
-			// clear the invalid cookie and force the client to reload the page
-			// to generate a fresh token instead of locking them out.
-			ctx.ClearCookie("csrf_")
-			if ctx.Get("HX-Request") == "true" {
-				ctx.Set("HX-Redirect", ctx.OriginalURL())
-				return ctx.SendStatus(200)
-			}
-			return ctx.Redirect(ctx.OriginalURL())
-		},
-	}))
+		// Enable CSRF
+		app.Use(csrf.New(csrf.Config{
+			KeyLookup:      "header:X-Csrf-Token",
+			CookieName:     "csrf_",
+			CookieSameSite: "Lax",
+			CookieSecure:   os.Getenv("DATABASE_URL") != "",
+			CookieHTTPOnly: true,
+			Expiration:     1 * time.Hour,
+			KeyGenerator:   utils.UUID,
+			Extractor:      csrf.CsrfFromHeader("X-Csrf-Token"),
+			Session:        store,
+			ErrorHandler: func(ctx *fiber.Ctx, err error) error {
+				// If CSRF validation fails (e.g., token expired or server restarted),
+				// clear the invalid cookie and force the client to reload the page
+				// to generate a fresh token instead of locking them out.
+				ctx.ClearCookie("csrf_")
+				if ctx.Get("HX-Request") == "true" {
+					ctx.Set("HX-Redirect", ctx.OriginalURL())
+					return ctx.SendStatus(200)
+				}
+				return ctx.Redirect(ctx.OriginalURL())
+			},
+		}))
 
-	// Pass CSRF token to all templates
-	app.Use(func(c *fiber.Ctx) error {
-		// First try cookie
-		token := c.Cookies("csrf_")
-		
-		// If empty, try context key
-		if token == "" {
-			if t, ok := c.Locals(csrf.ConfigDefault.ContextKey).(string); ok {
-				token = t
-			}
-		}
+		// Pass CSRF token to all templates
+		app.Use(func(c *fiber.Ctx) error {
+			// First try cookie
+			token := c.Cookies("csrf_")
 
-		c.Locals("CSRFToken", token)
-		return c.Next()
-	})
+			// If empty, try context key
+			if token == "" {
+				if t, ok := c.Locals(csrf.ConfigDefault.ContextKey).(string); ok {
+					token = t
+				}
+			}
+
+			c.Locals("CSRFToken", token)
+			return c.Next()
+		})
 	*/
 
 	// Enable Gzip/Brotli compression for all text-based responses (HTML, CSS, JS, JSON)
