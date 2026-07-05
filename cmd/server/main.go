@@ -93,6 +93,7 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	/*
 	// Enable CSRF
 	app.Use(csrf.New(csrf.Config{
 		KeyLookup:      "header:X-Csrf-Token",
@@ -132,6 +133,7 @@ func main() {
 		c.Locals("CSRFToken", token)
 		return c.Next()
 	})
+	*/
 
 	// Enable Gzip/Brotli compression for all text-based responses (HTML, CSS, JS, JSON)
 	app.Use(compress.New(compress.Config{
