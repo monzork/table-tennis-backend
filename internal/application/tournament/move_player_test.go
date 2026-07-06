@@ -101,6 +101,10 @@ func (m *mockMovePlayerRepository) GetOfficials(ctx context.Context, tournamentI
 	return nil, nil
 }
 
+func (m *mockMovePlayerRepository) RemoveParticipant(ctx context.Context, tournamentID string, playerID string) error {
+	return nil
+}
+
 func TestMovePlayerUseCase_Execute(t *testing.T) {
 	pID := uuid.New().String()
 	p := &player.Player{ID: pID, FirstName: "Kevin", LastName: "Muñoz", SinglesElo: 2400}
