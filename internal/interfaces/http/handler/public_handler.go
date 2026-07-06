@@ -53,9 +53,20 @@ func (h *PublicHandler) SetLang(c *fiber.Ctx) error {
 		SameSite: "Lax",
 	})
 	// Redirect back to the page the user was on
-	referer := c.Get("Referer")
+	referer := c.Query("returnTo")
+	if referer == "" {
+		referer = c.Get("HX-Current-URL")
+	}
+	if referer == "" {
+		referer = c.Get("Referer")
+	}
 	if referer == "" {
 		referer = "/"
+	}
+	
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Redirect", referer)
+		return c.SendStatus(fiber.StatusOK)
 	}
 	return c.Redirect(referer, fiber.StatusFound)
 }

@@ -9,6 +9,15 @@
     <td class="block sm:table-cell p-0 sm:p-4 text-white font-bold mb-3 sm:mb-0 flex justify-between sm:table-cell items-center"><span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Doubles Elo:</span><span class="bg-white/10 sm:bg-transparent px-2 py-0.5 sm:px-0 sm:py-0 rounded">{{.DoublesElo}}</span></td>
     <td class="block sm:table-cell p-0 sm:p-4 mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-white/10 sm:border-t-0 w-full sm:w-auto">
         <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-between sm:justify-end w-full">
+            {{if .WhatsAppNumber}}
+            <a 
+                href="https://wa.me/{{cleanPhone .WhatsAppNumber}}" 
+                target="_blank"
+                title="Send WhatsApp Message"
+                class="text-[10px] font-bold uppercase tracking-widest text-green-500 hover:text-white border border-green-900/50 hover:border-green-500 hover:bg-green-600 px-3 py-2 sm:py-1.5 rounded-lg transition-all flex-1 sm:flex-none text-center flex items-center justify-center">
+                WA
+            </a>
+            {{end}}
             <button 
                 hx-get="/players/{{.ID}}/edit" 
                 hx-target="#edit-modal-content"
