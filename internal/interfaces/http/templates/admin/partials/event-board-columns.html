@@ -25,6 +25,7 @@
           <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
           {{end}}
         </div>
+        {{if .TableNumber}}<span class="text-[9px] font-bold text-yellow-400 font-mono">{{t $.T "board.table"}} {{.TableNumber}}</span>{{else}}<span class="text-[9px] text-gray-600 font-mono">{{t $.T "board.no_table"}}</span>{{end}}
       </div>
       <div class="space-y-1.5">
         <div class="flex items-center gap-2 bg-white/5 border border-white/5 rounded-xl px-3 py-2">
