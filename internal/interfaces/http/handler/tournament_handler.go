@@ -915,13 +915,17 @@ func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	vm := BuildTournamentViewModel(res.tournament, res.divisions, tmap)
 	vm.IsPublic = true
 
-	scheduled, _, _ := BuildBoardCards(res.tournament, res.divisions)
+	scheduled, inProgress, finished := BuildBoardCards(res.tournament, res.divisions)
+	tables := buildTables(res.tournament, "", h.getOccupiedTables(c.Context(), res.tournament))
 
 	return c.Render("public/tv-dashboard", merge(tMap(lang), fiber.Map{
 		"Tournament":       res.tournament,
 		"Divisions":        res.divisions,
 		"BracketViewModel": vm,
 		"Scheduled":        scheduled,
+		"InProgress":       inProgress,
+		"Finished":         finished,
+		"Tables":           tables,
 	})) // No layout for TV
 }
 
@@ -1480,3 +1484,5 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 		"Lang":       c.Locals("Lang"),
 	})
 }
+
+

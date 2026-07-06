@@ -441,11 +441,14 @@ func (h *EventHandler) PublicTVDashboard(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
+	tables := buildEventTables(e, inProgress)
+
 	return c.Render("public/event-board", merge(tMap(lang), fiber.Map{
 		"Event":      e,
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
+		"Tables":     tables,
 	}))
 }
 

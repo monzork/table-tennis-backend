@@ -61,7 +61,26 @@
                 </div>
             </header>
 
-            <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:overflow-hidden">
+            <!-- Table Status Panel -->
+            <div class="glass rounded-3xl p-5 shadow-2xl border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
+                <div>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-gray-400">{{t $.T "board.table_status"}}</h3>
+                    <p class="text-[11px] text-gray-500 mt-1">{{t $.T "board.table_desc"}}</p>
+                </div>
+                <div class="flex flex-wrap gap-2.5">
+                    {{range .Tables}}
+                    <div class="flex items-center gap-2 px-3.5 py-2 rounded-2xl border transition-all duration-300 {{if .IsUsed}}bg-red-500/10 border-red-500/30 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.07)]{{else}}bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.07)]{{end}}">
+                        <span class="w-1.5 h-1.5 rounded-full {{if .IsUsed}}bg-red-500 animate-pulse{{else}}bg-emerald-500{{end}}"></span>
+                        <span class="text-xs font-black font-mono">{{t $.T "board.table"}} {{.Number}}</span>
+                        <span class="text-[9px] uppercase tracking-wider font-bold opacity-80">{{if .IsUsed}}{{t $.T "board.occupied"}}{{else}}{{t $.T "board.available"}}{{end}}</span>
+                    </div>
+                    {{else}}
+                    <div class="text-[11px] italic text-gray-600">{{t $.T "board.no_tables"}}</div>
+                    {{end}}
+                </div>
+            </div>
+
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:overflow-hidden min-h-0">
                 <!-- LEFT: IN PROGRESS -->
                 <div class="glass rounded-3xl p-6 flex flex-col h-full shadow-2xl border-blue-500/20">
                     <h2 class="text-2xl font-bold uppercase tracking-widest text-blue-400 mb-6 flex items-center gap-3">
