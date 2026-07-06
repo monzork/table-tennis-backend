@@ -371,7 +371,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 		"Title":        title,
 	}
 
-	if c.Get("HX-Request") == "true" {
+	if c.Get("HX-Request") == "true" && c.Get("HX-Boosted") != "true" {
 		return c.Render("partials/rankings-container", data)
 	}
 
