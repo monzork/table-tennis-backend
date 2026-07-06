@@ -373,27 +373,57 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 
 func (h *EventHandler) AdminBoard(c *fiber.Ctx) error {
 	lang := getLang(c)
-	e, divs, scheduled, inProgress, finished, err := h.getBoardData(c, c.Params("id"))
+	e, _, scheduled, inProgress, finished, err := h.getBoardData(c, c.Params("id"))
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
+	// Build AllDivisions from the board cards (same approach as tournament Board handler)
+	uniqueDivsMap := make(map[string]bool)
+	for _, card := range scheduled {
+		if card.DivisionName != "" {
+			uniqueDivsMap[card.DivisionName] = true
+		}
+	}
+	for _, card := range inProgress {
+		if card.DivisionName != "" {
+			uniqueDivsMap[card.DivisionName] = true
+		}
+	}
+	for _, card := range finished {
+		if card.DivisionName != "" {
+			uniqueDivsMap[card.DivisionName] = true
+		}
+	}
+	var allDivs []string
+	for d := range uniqueDivsMap {
+		allDivs = append(allDivs, d)
+	}
+
+	// Parse filter params
+	q := strings.ToLower(c.Query("q"))
+	var selectedDivs []string
+	for _, d := range c.Request().URI().QueryArgs().PeekMulti("div") {
+		selectedDivs = append(selectedDivs, string(d))
+	}
+	if c.Query("q") != "" || len(selectedDivs) > 0 {
+		scheduled = FilterBoardCards(scheduled, q, selectedDivs)
+		inProgress = FilterBoardCards(inProgress, q, selectedDivs)
+		finished = FilterBoardCards(finished, q, selectedDivs)
+	}
+	selectedDivsMap := make(map[string]bool)
+	for _, d := range selectedDivs {
+		selectedDivsMap[d] = true
+	}
+
 	return c.Render("admin/event-board", merge(tMap(lang), fiber.Map{
-		"Event":      e,
-		"Scheduled":  scheduled,
-		"InProgress": inProgress,
-		"Finished":   finished,
-		"AllDivisions": func() []string {
-			m := make(map[string]bool)
-			for _, d := range divs {
-				m[d.Name] = true
-			}
-			var list []string
-			for k := range m {
-				list = append(list, k)
-			}
-			return list
-		}(),
+		"Event":        e,
+		"Scheduled":    scheduled,
+		"InProgress":   inProgress,
+		"Finished":     finished,
+		"AllDivisions": allDivs,
+		"QueryQ":       c.Query("q"),
+		"SelectedDivs": selectedDivsMap,
 	}), "layouts/admin")
 }
 
@@ -409,7 +439,7 @@ func (h *EventHandler) PublicTVDashboard(c *fiber.Ctx) error {
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
-	}), "layouts/public")
+	}))
 }
 
 func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
