@@ -235,7 +235,7 @@ func NewGetEventByIDUseCase(eventRepo eventDomain.Repository) *GetEventByIDUseCa
 }
 
 func (uc *GetEventByIDUseCase) Execute(ctx context.Context, idStr string) (*eventDomain.Event, error) {
-	return uc.eventRepo.GetByID(ctx, idStr)
+	return uc.eventRepo.GetByIDDeep(ctx, idStr)
 }
 
 type GetAllEventsUseCase struct {

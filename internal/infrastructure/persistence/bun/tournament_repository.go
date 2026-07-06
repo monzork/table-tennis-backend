@@ -1614,7 +1614,7 @@ func (r *TournamentRepository) UpdateEventIDBulk(ctx context.Context, tournament
 	_, err = r.db.NewUpdate().
 		Model((*TournamentModel)(nil)).
 		Set("event_id = ?", eventUUID).
-		Where("id IN (?)", bun.In(uuids)).
+		Where("id IN (?)", bun.List(uuids)).
 		Exec(ctx)
 
 	return err
