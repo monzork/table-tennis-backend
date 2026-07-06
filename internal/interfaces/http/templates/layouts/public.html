@@ -81,11 +81,22 @@
 
       // Expose a function to manually request permission
       window.requestPushPermission = async function() {
-        if (!('Notification' in window)) return;
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          const reg = await navigator.serviceWorker.ready;
-          subscribeToPush(reg);
+        if (!('Notification' in window)) {
+            alert("Push notifications are not supported in this browser (make sure you are using HTTPS or localhost).");
+            return;
+        }
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const reg = await navigator.serviceWorker.ready;
+                subscribeToPush(reg);
+                alert("Notifications enabled successfully!");
+            } else {
+                alert("Notification permission was denied.");
+            }
+        } catch(e) {
+            console.error("Error requesting permission:", e);
+            alert("Failed to request permission: " + e.message);
         }
       };
     </script>
