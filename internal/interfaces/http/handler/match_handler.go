@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"table-tennis-backend/internal/application/match"
+	"table-tennis-backend/internal/application/notification"
 	appTournament "table-tennis-backend/internal/application/tournament"
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
@@ -28,6 +29,7 @@ type MatchHandler struct {
 	matchRepo          *bun.MatchRepository
 	tournamentRepo     *bun.TournamentRepository
 	finishTournamentUC *appTournament.FinishTournamentUseCase
+	broadcastPushUC    *notification.BroadcastPushNotificationUseCase
 }
 
 func NewMatchHandler(
@@ -38,6 +40,7 @@ func NewMatchHandler(
 	matchRepo *bun.MatchRepository,
 	tournamentRepo *bun.TournamentRepository,
 	finishTournamentUC *appTournament.FinishTournamentUseCase,
+	broadcastPushUC *notification.BroadcastPushNotificationUseCase,
 ) *MatchHandler {
 	return &MatchHandler{
 		createUC:           createUC,
@@ -47,6 +50,7 @@ func NewMatchHandler(
 		matchRepo:          matchRepo,
 		tournamentRepo:     tournamentRepo,
 		finishTournamentUC: finishTournamentUC,
+		broadcastPushUC:    broadcastPushUC,
 	}
 }
 
@@ -1605,6 +1609,17 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 
 	h.broadcastToTournamentOrEvent(c, body.TournamentID, broadcastData)
 
+	if updatedMatch != nil && updatedMatch.Status == "finished" && h.broadcastPushUC != nil {
+		winStr := broadcastData["message"] // "Match finished: nameA defeated nameB"
+		go func() {
+			_ = h.broadcastPushUC.Execute(notification.PushMessage{
+				Title: "Match Finished!",
+				Body:  winStr,
+				URL:   "/tournaments/" + body.TournamentID + "/tv",
+			})
+		}()
+	}
+
 	if c.Get("HX-Request") != "" {
 		if updatedMatch != nil && updatedMatch.Status == "finished" {
 			// Return a beautiful success component to replace the form out-of-band
@@ -2112,6 +2127,30 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 		"tournamentId": m.TournamentID.String(),
 		"matchId":      m.ID.String(),
 	})
+
+	if h.broadcastPushUC != nil {
+		tblStr := ""
+		if m.TableNumber != nil {
+			tblStr = fmt.Sprintf("Table %d: ", *m.TableNumber)
+		}
+		
+		var pA, pB bun.PlayerModel
+		pAName, pBName := "TBD", "TBD"
+		if err := h.matchRepo.DB().NewSelect().Model(&pA).Where("id = ?", m.TeamAPlayer1ID).Scan(c.Context()); err == nil {
+			pAName = pA.FullName()
+		}
+		if err := h.matchRepo.DB().NewSelect().Model(&pB).Where("id = ?", m.TeamBPlayer1ID).Scan(c.Context()); err == nil {
+			pBName = pB.FullName()
+		}
+		
+		go func() {
+			_ = h.broadcastPushUC.Execute(notification.PushMessage{
+				Title: "Match Called to Table!",
+				Body:  fmt.Sprintf("%s%s vs %s", tblStr, pAName, pBName),
+				URL:   "/tournaments/" + m.TournamentID.String() + "/tv",
+			})
+		}()
+	}
 
 	// Refresh tournament to get updated matches
 	t, err = h.tournamentRepo.GetByID(c.Context(), m.TournamentID.String())

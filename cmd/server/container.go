@@ -116,7 +116,11 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC)
+
+	notificationRepo := bun.NewPushSubscriptionRepository(bun.DB)
+	broadcastNotificationUC := notification.NewBroadcastPushNotificationUseCase(notificationRepo, cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey)
+
+	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC, broadcastNotificationUC)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
@@ -146,10 +150,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	authHandler := handler.NewAuthHandler(store, adminRepo, hasher)
 	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 
-	notificationRepo := bun.NewPushSubscriptionRepository(bun.DB)
-	broadcastNotificationUC := notification.NewBroadcastPushNotificationUseCase(notificationRepo, cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey)
 	notificationHandler := handler.NewNotificationHandler(notificationRepo, cfg.VAPIDPublicKey, broadcastNotificationUC)
-
 	return &Container{
 		PlayerHandler:      playerHandler,
 		TournamentHandler:  tournamentHandler,
