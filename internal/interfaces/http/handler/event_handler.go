@@ -124,15 +124,24 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 	}
 
 	toastHTML := fmt.Sprintf(`
-<div id="toast-container" hx-swap-oob="beforeend">
-	<div class="flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border border-white/10 shadow-2xl transition-all duration-500 max-w-sm toast-slide-in pointer-events-auto">
-		<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-		<span class="text-xs font-bold uppercase tracking-wider text-white/90">Grand Event "%s" initialized successfully!</span>
+<td style="display:none;">
+	<div id="toast-container" hx-swap-oob="beforeend">
+		<div class="flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border border-white/10 shadow-2xl transition-all duration-500 max-w-sm toast-slide-in pointer-events-auto">
+			<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+			<span class="text-xs font-bold uppercase tracking-wider text-white/90">Grand Event "%s" initialized successfully!</span>
+		</div>
 	</div>
-</div>`, e.Name)
+</td>`, e.Name)
+
+	rowStr := rowBuf.String()
+	if idx := strings.LastIndex(rowStr, "</tr>"); idx != -1 {
+		rowStr = rowStr[:idx] + toastHTML + rowStr[idx:]
+	} else {
+		rowStr = rowStr + toastHTML
+	}
 
 	c.Set("Content-Type", "text/html")
-	return c.SendString(rowBuf.String() + toastHTML)
+	return c.SendString(rowStr)
 }
 
 func (h *EventHandler) Detail(c *fiber.Ctx) error {
