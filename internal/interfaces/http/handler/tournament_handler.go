@@ -36,6 +36,7 @@ type TournamentHandler struct {
 	getOccupiedTablesUC    *tournament.GetOccupiedTablesUseCase
 	regenerateSeedsUC      *tournament.RegenerateGroupSeedsUseCase
 	updateParticipantEloUC *tournament.UpdateParticipantEloBeforeUseCase
+	removeParticipantUC    *tournament.RemoveParticipantUseCase
 }
 
 func NewTournamentHandler(
@@ -57,6 +58,7 @@ func NewTournamentHandler(
 	getOccupiedTablesUC *tournament.GetOccupiedTablesUseCase,
 	regenerateSeedsUC *tournament.RegenerateGroupSeedsUseCase,
 	updateParticipantEloUC *tournament.UpdateParticipantEloBeforeUseCase,
+	removeParticipantUC *tournament.RemoveParticipantUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:               createUC,
@@ -77,6 +79,7 @@ func NewTournamentHandler(
 		getOccupiedTablesUC:    getOccupiedTablesUC,
 		regenerateSeedsUC:      regenerateSeedsUC,
 		updateParticipantEloUC: updateParticipantEloUC,
+		removeParticipantUC:    removeParticipantUC,
 	}
 }
 
@@ -272,6 +275,82 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		playerPins[snap.PlayerID] = snap.Pin
 	}
 
+	// Build a sorted ParticipantRow slice: seed#, group name, division
+	type ParticipantRow struct {
+		Player    *player.Player
+		Seed      int
+		GroupName string
+		DivName   string
+		Pin       string
+		Elo       int16
+	}
+
+	// Build player→group map from tournament.Groups
+	playerGroupMap := make(map[string]string)
+	for _, g := range t.Groups {
+		gDisplayName := g.Name
+		// Strip "Division - " prefix if present
+		if idx := strings.Index(g.Name, " - "); idx != -1 {
+			gDisplayName = g.Name[idx+3:]
+		}
+		for _, p := range g.Players {
+			playerGroupMap[p.ID] = gDisplayName
+		}
+	}
+
+	// Build player→division map using the same Elo-band logic as BuildBoardCards
+	playerDivMap := make(map[string]string)
+	for _, p := range t.Participants {
+		elo := p.SinglesElo
+		if t.Type == "doubles" || t.Type == "mixed_doubles" {
+			elo = p.DoublesElo
+		}
+		found := false
+		for _, d := range divisions {
+			if d.MinElo == 0 && d.MaxElo == nil {
+				continue
+			}
+			if (d.Category == "both" || d.Category == t.Type) && elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
+				playerDivMap[p.ID] = d.Name
+				found = true
+				break
+			}
+		}
+		if !found && !t.SkipElo {
+			playerDivMap[p.ID] = "Open Bracket"
+		}
+	}
+
+	// Sort participants by Elo descending to assign seed numbers
+	sortedParts := make([]*player.Player, len(t.Participants))
+	copy(sortedParts, t.Participants)
+	sort.Slice(sortedParts, func(i, j int) bool {
+		if t.Type == "doubles" || t.Type == "mixed_doubles" {
+			return sortedParts[i].DoublesElo > sortedParts[j].DoublesElo
+		}
+		return sortedParts[i].SinglesElo > sortedParts[j].SinglesElo
+	})
+	seedMap := make(map[string]int, len(sortedParts))
+	for i, p := range sortedParts {
+		seedMap[p.ID] = i + 1
+	}
+
+	rows := make([]ParticipantRow, len(sortedParts))
+	for i, p := range sortedParts {
+		elo := p.SinglesElo
+		if t.Type == "doubles" || t.Type == "mixed_doubles" {
+			elo = p.DoublesElo
+		}
+		rows[i] = ParticipantRow{
+			Player:    p,
+			Seed:      seedMap[p.ID],
+			GroupName: playerGroupMap[p.ID],
+			DivName:   playerDivMap[p.ID],
+			Pin:       playerPins[p.ID],
+			Elo:       elo,
+		}
+	}
+
 	return c.Render("admin/tournament-detail", fiber.Map{
 		"Tournament":            t,
 		"Players":               players,
@@ -281,6 +360,7 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		"StatusFilter":          statusFilter,
 		"PlayerPins":            playerPins,
 		"Officials":             res.officials,
+		"ParticipantRows":       rows,
 	}, "layouts/admin")
 }
 
@@ -306,6 +386,19 @@ func (h *TournamentHandler) RemoveOfficial(c *fiber.Ctx) error {
 	tournamentID := c.Params("id")
 	playerID := c.Params("playerId")
 	if err := h.getByID.RemoveOfficial(c.Context(), tournamentID, playerID); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/tournaments/%s", tournamentID))
+}
+
+func (h *TournamentHandler) RemoveParticipant(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	playerID := c.Params("playerId")
+	if err := h.removeParticipantUC.Execute(c.Context(), tournamentID, playerID); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 	if c.Get("HX-Request") != "" {

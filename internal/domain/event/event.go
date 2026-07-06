@@ -15,6 +15,7 @@ var (
 
 type Repository interface {
 	Save(ctx context.Context, e *Event) error
+	Update(ctx context.Context, e *Event) error
 	GetByID(ctx context.Context, id string) (*Event, error)
 	GetByIDDeep(ctx context.Context, id string) (*Event, error)
 	GetAll(ctx context.Context) ([]*Event, error)

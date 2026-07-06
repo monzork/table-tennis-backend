@@ -13,18 +13,24 @@
             </div>
             <!-- Action Buttons -->
             <div class="flex flex-wrap gap-3 w-full sm:w-auto">
+                <button
+                   onclick="openEditEventModal('{{.Event.ID}}')"
+                   class="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all border border-white/20">
+                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                   Edit
+                </button>
                 <a href="/admin/events/{{.Event.ID}}/board" 
                    class="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)]">
-                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
+                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
                    {{t .T "board.board"}}
                 </a>
                 <a href="/events/{{.Event.ID}}/tv" target="_blank"
                    class="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-2.5 bg-white hover:bg-gray-200 text-black text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-xl">
-                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2-2v10a2 2 0 002 2z"></path></svg>
+                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2-2v10a2 2 0 002 2z"/></svg>
                    {{t .T "tv.dashboard_title"}}
                 </a>
                 <a href="/admin/events/{{.Event.ID}}/export/pdf" target="_blank" class="inline-flex items-center justify-center bg-white hover:bg-gray-200 text-black font-extrabold py-2 px-5 rounded-full transition-all uppercase tracking-wider text-sm whitespace-nowrap shadow-xl">
-                    <svg class="w-4 h-4 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <svg class="w-4 h-4 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     Export to PDF
                 </a>
             </div>
@@ -124,3 +130,29 @@
         </div>
     </div>
 </div>
+
+{{/* ── Edit Event Modal ── */}}
+<div id="edit-event-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
+  <div class="bg-[#111] border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl relative">
+    <button onclick="document.getElementById('edit-event-modal').classList.add('hidden')"
+            class="absolute top-5 right-5 text-gray-400 hover:text-white transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <h3 class="text-sm font-black uppercase tracking-widest text-white mb-6">Edit Event</h3>
+    <div id="edit-event-modal-body"
+         hx-get="/admin/events/{{.Event.ID}}/edit"
+         hx-trigger="openEditModal once"
+         hx-swap="innerHTML">
+      <div class="flex justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function openEditEventModal(eventId) {
+  const modal = document.getElementById('edit-event-modal');
+  modal.classList.remove('hidden');
+  htmx.trigger('#edit-event-modal-body', 'openEditModal');
+}
+</script>

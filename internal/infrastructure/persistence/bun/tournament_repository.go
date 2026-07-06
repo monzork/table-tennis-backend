@@ -1411,6 +1411,36 @@ func (r *TournamentRepository) AddParticipant(ctx context.Context, tournamentID 
 	return err
 }
 
+// RemoveParticipant deletes a player from tournament_participants and any group they belong to.
+func (r *TournamentRepository) RemoveParticipant(ctx context.Context, tournamentID string, playerID string) error {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return err
+	}
+	pID, err := uuid.Parse(playerID)
+	if err != nil {
+		return err
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	// Remove from group participants
+	tx.NewDelete().TableExpr("group_participants").
+		Where("player_id = ? AND group_id IN (SELECT id FROM groups WHERE tournament_id = ?)", pID, tID).
+		Exec(ctx)
+	// Remove from tournament participants
+	_, err = tx.NewDelete().TableExpr("tournament_participants").
+		Where("tournament_id = ? AND player_id = ?", tID, pID).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+
 func (r *TournamentRepository) generateUniqueParticipantPIN(ctx context.Context, tournamentID uuid.UUID) string {
 	for {
 		var b [4]byte

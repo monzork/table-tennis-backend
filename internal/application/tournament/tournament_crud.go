@@ -282,3 +282,17 @@ func NewDeleteTournamentUseCase(repo tournamentDomain.Repository) *DeleteTournam
 func (uc *DeleteTournamentUseCase) Execute(ctx context.Context, idStr string) error {
 	return uc.repo.Delete(ctx, idStr)
 }
+
+// ── Remove Participant ──────────────────────────────────────────────────────
+
+type RemoveParticipantUseCase struct {
+	repo tournamentDomain.Repository
+}
+
+func NewRemoveParticipantUseCase(repo tournamentDomain.Repository) *RemoveParticipantUseCase {
+	return &RemoveParticipantUseCase{repo: repo}
+}
+
+func (uc *RemoveParticipantUseCase) Execute(ctx context.Context, tournamentID, playerID string) error {
+	return uc.repo.RemoveParticipant(ctx, tournamentID, playerID)
+}

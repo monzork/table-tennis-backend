@@ -80,12 +80,129 @@
   </header>
 
   {{/* ── Participants ─────────────────────────────────────────── */}}
-  <section class="space-y-3">
-    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">
-      {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}Available Player Pool{{else}}All Participants{{end}}
-    </h2>
-    <div class="flex flex-wrap gap-2">
-      {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}
+  {{if not (or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles"))}}
+  <section class="space-y-3" id="participants-section">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">
+        All Participants <span class="text-gray-700 ml-1">({{len .Tournament.Participants}})</span>
+      </h2>
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Sort:</span>
+        <button onclick="sortParticipants('elo')" id="sort-elo-btn"
+          class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white text-black border-white">
+          Elo ↓
+        </button>
+        <button onclick="sortParticipants('name')" id="sort-name-btn"
+          class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white">
+          Name
+        </button>
+      </div>
+    </div>
+
+    <div class="glass rounded-2xl border border-white/10 overflow-hidden" id="participants-table-wrap">
+      <table class="w-full text-sm" id="participants-table">
+        <thead>
+          <tr class="border-b border-white/10 bg-white/[0.03]">
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 w-10">#</th>
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">Player</th>
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hidden sm:table-cell">Division</th>
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hidden md:table-cell">Group</th>
+            <th class="text-right px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hidden sm:table-cell">Elo</th>
+            <th class="text-center px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">PIN</th>
+            <th class="text-right px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5" id="participants-tbody">
+          {{range .ParticipantRows}}
+          <tr class="hover:bg-white/[0.03] transition-colors group/row"
+              data-elo="{{.Elo}}"
+              data-name="{{.Player.LastName}} {{.Player.FirstName}}">
+            <td class="px-4 py-3">
+              <span class="text-[11px] font-black text-gray-600 tabular-nums">#{{.Seed}}</span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 shrink-0 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[10px] font-extrabold text-white">
+                  {{if gt (len .Player.FirstName) 0}}{{slice .Player.FirstName 0 1}}{{else}}?{{end}}
+                </div>
+                <span class="font-semibold text-white text-sm">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 hidden sm:table-cell">
+              {{if .DivName}}
+              <span class="text-[9px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded">{{.DivName}}</span>
+              {{else}}
+              <span class="text-gray-700 text-[10px]">—</span>
+              {{end}}
+            </td>
+            <td class="px-4 py-3 hidden md:table-cell">
+              {{if .GroupName}}
+              <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded">{{.GroupName}}</span>
+              {{else}}
+              <span class="text-gray-700 text-[10px]">—</span>
+              {{end}}
+            </td>
+            <td class="px-4 py-3 text-right hidden sm:table-cell">
+              <span class="text-[12px] font-bold text-gray-400 tabular-nums font-mono">{{.Elo}}</span>
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span class="text-[10px] font-black text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 rounded font-mono tracking-widest">{{.Pin}}</span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center justify-end gap-1">
+                {{if .Player.WhatsAppNumber}}
+                <a href="https://wa.me/{{cleanPhone .Player.WhatsAppNumber}}?text=Hola%20{{.Player.FirstName}},%20tu%20PIN%20de%20acceso%20para%20{{$.Tournament.Name}}%20es%20{{.Pin}}"
+                   target="_blank" title="Send PIN via WhatsApp"
+                   class="text-green-500 hover:text-green-400 transition-colors p-1">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 21.031c-1.558 0-3.078-.396-4.437-1.144l-.318-.178-3.3.864.881-3.218-.195-.311c-.819-1.309-1.252-2.825-1.252-4.402 0-4.631 3.774-8.406 8.411-8.406 2.25 0 4.364.877 5.955 2.47 1.591 1.593 2.467 3.708 2.467 5.959 0 4.631-3.774 8.366-8.212 8.366zM12.031 5.373c-3.993 0-7.248 3.253-7.248 7.246 0 1.277.332 2.525.962 3.626l1.378 2.404-1.253 4.58 4.693-1.231 2.378 1.348c1.08.612 2.302.936 3.551.936 3.993 0 7.248-3.254 7.248-7.247 0-1.938-.755-3.759-2.126-5.13-1.37-1.372-3.193-2.128-5.132-2.128h-.001m4.053 9.771c-.222-.111-1.314-.648-1.518-.722-.204-.074-.352-.111-.5.111-.148.222-.574.722-.704.87-.13.148-.26.167-.481.056-.222-.111-.938-.346-1.787-1.107-.66-.593-1.106-1.326-1.236-1.548-.13-.222-.014-.343.097-.453.1-.1.222-.259.333-.389.111-.13.148-.222.222-.37.074-.148.037-.278-.019-.389-.056-.111-.5-.1.204-1.204-.076-.481-.148-.962-.352-.102-.019-.204-.019h-.176c-.148 0-.389.056-.593.278-.204.222-.778.759-.778 1.852 0 1.093.796 2.148.907 2.296.111.148 1.556 2.37 3.759 3.333.519.222.926.352 1.241.463.519.167.981.148 1.352.093.414-.056 1.314-.537 1.5-1.056.185-.519.185-.963.13-1.056-.056-.093-.204-.148-.426-.259z"/></svg>
+                </a>
+                {{end}}
+                <button type="button"
+                  title="Edit seeded Elo"
+                  onclick="document.getElementById('elo-edit-player-id').value='{{.Player.ID}}';
+                           document.getElementById('elo-edit-name').textContent='{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}';
+                           document.getElementById('elo-edit-singles').value='{{.Player.SinglesElo}}';
+                           document.getElementById('elo-edit-doubles').value='{{.Player.DoublesElo}}';
+                           document.getElementById('edit-elo-modal').classList.remove('hidden');"
+                  class="text-gray-600 hover:text-white transition-colors p-1 text-[11px] font-extrabold">✎</button>
+                <button type="button"
+                  title="Unenroll player"
+                  hx-delete="/tournaments/{{$.Tournament.ID}}/participants/{{.Player.ID}}"
+                  hx-confirm="Remove {{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}} from this tournament?"
+                  hx-swap="none"
+                  class="text-gray-700 hover:text-red-400 transition-colors p-1 opacity-0 group-hover/row:opacity-100">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {{else}}
+          <tr><td colspan="7" class="text-center py-10 text-gray-600 italic text-sm">No participants registered.</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <script>
+  let _sortMode = 'elo';
+  function sortParticipants(mode) {
+    _sortMode = mode;
+    document.getElementById('sort-elo-btn').className = mode === 'elo'
+      ? 'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white text-black border-white'
+      : 'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white';
+    document.getElementById('sort-name-btn').className = mode === 'name'
+      ? 'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white text-black border-white'
+      : 'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white';
+    const tbody = document.getElementById('participants-tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr[data-elo]'));
+    rows.sort((a, b) => mode === 'elo'
+      ? parseInt(b.dataset.elo) - parseInt(a.dataset.elo)
+      : a.dataset.name.localeCompare(b.dataset.name));
+    rows.forEach(r => tbody.appendChild(r));
+  }
+  </script>
+  {{else}}
+
         {{range .AvailableParticipants}}
         <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
           <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
@@ -110,34 +227,9 @@
         {{else}}
         <p class="text-sm text-gray-600">No participants available.</p>
         {{end}}
-      {{else}}
-        {{range .Tournament.Participants}}
-        <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-          <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
-            {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
-          </div>
-          <span class="text-base font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
-          <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
-          <span class="ml-2 text-[9px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 rounded font-mono" title="Player Match PIN">{{index $.PlayerPins .ID}}</span>
-          {{if .WhatsAppNumber}}
-          <a href="https://wa.me/{{cleanPhone .WhatsAppNumber}}?text=Hola%20{{.FirstName}},%20tu%20PIN%20de%20acceso%20para%20{{$.Tournament.Name}}%20es%20{{index $.PlayerPins .ID}}" target="_blank" title="Send PIN via WhatsApp" class="ml-1 text-green-500 hover:text-green-400 transition-colors">
-            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 21.031c-1.558 0-3.078-.396-4.437-1.144l-.318-.178-3.3.864.881-3.218-.195-.311c-.819-1.309-1.252-2.825-1.252-4.402 0-4.631 3.774-8.406 8.411-8.406 2.25 0 4.364.877 5.955 2.47 1.591 1.593 2.467 3.708 2.467 5.959 0 4.631-3.774 8.366-8.212 8.366zM12.031 5.373c-3.993 0-7.248 3.253-7.248 7.246 0 1.277.332 2.525.962 3.626l1.378 2.404-1.253 4.58 4.693-1.231 2.378 1.348c1.08.612 2.302.936 3.551.936 3.993 0 7.248-3.254 7.248-7.247 0-1.938-.755-3.759-2.126-5.13-1.37-1.372-3.193-2.128-5.132-2.128h-.001m4.053 9.771c-.222-.111-1.314-.648-1.518-.722-.204-.074-.352-.111-.5.111-.148.222-.574.722-.704.87-.13.148-.26.167-.481.056-.222-.111-.938-.346-1.787-1.107-.66-.593-1.106-1.326-1.236-1.548-.13-.222-.014-.343.097-.453.1-.1.222-.259.333-.389.111-.13.148-.222.222-.37.074-.148.037-.278-.019-.389-.056-.111-.5-.1.204-1.204-.076-.481-.148-.962-.352-.102-.019-.204-.019h-.176c-.148 0-.389.056-.593.278-.204.222-.778.759-.778 1.852 0 1.093.796 2.148.907 2.296.111.148 1.556 2.37 3.759 3.333.519.222.926.352 1.241.463.519.167.981.148 1.352.093.414-.056 1.314-.537 1.5-1.056.185-.519.185-.963.13-1.056-.056-.093-.204-.148-.426-.259z"/></svg>
-          </a>
-          {{end}}
-          <button type="button"
-            onclick="document.getElementById('elo-edit-player-id').value='{{.ID}}';
-                     document.getElementById('elo-edit-name').textContent='{{.FirstNameWithSecond}} {{.LastNameWithSecond}}';
-                     document.getElementById('elo-edit-singles').value='{{.SinglesElo}}';
-                     document.getElementById('elo-edit-doubles').value='{{.DoublesElo}}';
-                     document.getElementById('edit-elo-modal').classList.remove('hidden');"
-            class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold ml-1" title="Correct this player's seeded Elo for this tournament">✎</button>
-        </div>
-        {{else}}
-        <p class="text-sm text-gray-600">No participants registered.</p>
-        {{end}}
-      {{end}}
-    </div>
   </section>
+  {{end}}
+
 
   {{/* ── Officials ─────────────────────────────────────────── */}}
   <section class="space-y-3">

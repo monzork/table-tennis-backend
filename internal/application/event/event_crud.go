@@ -265,3 +265,41 @@ func (uc *DeleteEventUseCase) Execute(ctx context.Context, idStr string) error {
 func (uc *DeleteEventUseCase) ExecuteBulk(ctx context.Context, idStrs []string) error {
 	return uc.eventRepo.DeleteEvents(ctx, idStrs)
 }
+
+// ── Update ──────────────────────────────────────────────────────────────────
+
+type UpdateEventUseCase struct {
+	eventRepo eventDomain.Repository
+}
+
+func NewUpdateEventUseCase(eventRepo eventDomain.Repository) *UpdateEventUseCase {
+	return &UpdateEventUseCase{eventRepo: eventRepo}
+}
+
+func (uc *UpdateEventUseCase) Execute(ctx context.Context, idStr, name, startDateStr, endDateStr string, numTables int) (*eventDomain.Event, error) {
+	e, err := uc.eventRepo.GetByID(ctx, idStr)
+	if err != nil {
+		return nil, err
+	}
+	if name != "" {
+		e.Name = name
+	}
+	if startDateStr != "" {
+		if t, err := time.Parse("2006-01-02", startDateStr); err == nil {
+			e.StartDate = t
+		}
+	}
+	if endDateStr != "" {
+		if t, err := time.Parse("2006-01-02", endDateStr); err == nil {
+			e.EndDate = t
+		}
+	}
+	if numTables > 0 {
+		e.NumTables = numTables
+	}
+	if err := uc.eventRepo.Update(ctx, e); err != nil {
+		return nil, fmt.Errorf("failed to update event: %w", err)
+	}
+	return e, nil
+}
+

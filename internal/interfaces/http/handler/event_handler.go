@@ -18,6 +18,7 @@ import (
 
 type EventHandler struct {
 	createUC      *event.CreateEventUseCase
+	updateUC      *event.UpdateEventUseCase
 	getByID       *event.GetEventByIDUseCase
 	getAll        *event.GetAllEventsUseCase
 	deleteUC      *event.DeleteEventUseCase
@@ -28,6 +29,7 @@ type EventHandler struct {
 
 func NewEventHandler(
 	createUC *event.CreateEventUseCase,
+	updateUC *event.UpdateEventUseCase,
 	getByID *event.GetEventByIDUseCase,
 	getAll *event.GetAllEventsUseCase,
 	deleteUC *event.DeleteEventUseCase,
@@ -37,6 +39,7 @@ func NewEventHandler(
 ) *EventHandler {
 	return &EventHandler{
 		createUC:      createUC,
+		updateUC:      updateUC,
 		getByID:       getByID,
 		getAll:        getAll,
 		deleteUC:      deleteUC,
@@ -416,6 +419,9 @@ func (h *EventHandler) AdminBoard(c *fiber.Ctx) error {
 		selectedDivsMap[d] = true
 	}
 
+	// Build tables from event NumTables
+	tables := buildEventTables(e)
+
 	return c.Render("admin/event-board", merge(tMap(lang), fiber.Map{
 		"Event":        e,
 		"Scheduled":    scheduled,
@@ -424,6 +430,7 @@ func (h *EventHandler) AdminBoard(c *fiber.Ctx) error {
 		"AllDivisions": allDivs,
 		"QueryQ":       c.Query("q"),
 		"SelectedDivs": selectedDivsMap,
+		"Tables":       tables,
 	}), "layouts/admin")
 }
 
@@ -461,11 +468,61 @@ func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
 		finished = FilterBoardCards(finished, q, selectedDivs)
 	}
 
+	// Build tables from event NumTables
+	tables := buildEventTables(e)
+
 	return c.Render("admin/partials/event-board-columns", fiber.Map{
 		"Event":      e,
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
+		"Tables":     tables,
 		"T":          tMap(lang)["T"],
 	})
+}
+
+// buildEventTables creates a TableVM slice from an event's NumTables + occupied tables.
+func buildEventTables(e *eventDomain.Event) []TableVM {
+	var tables []TableVM
+	if e == nil || e.NumTables <= 0 {
+		return tables
+	}
+	for i := 1; i <= e.NumTables; i++ {
+		tables = append(tables, TableVM{Number: i})
+	}
+	return tables
+}
+
+func (h *EventHandler) ShowEditForm(c *fiber.Ctx) error {
+	id := c.Params("id")
+	e, err := h.getByID.Execute(c.Context(), id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	}
+	return c.Render("admin/partials/event-edit-form", fiber.Map{
+		"Event": e,
+	})
+}
+
+func (h *EventHandler) Update(c *fiber.Ctx) error {
+	id := c.Params("id")
+	name := c.FormValue("name")
+	startDate := c.FormValue("startDate")
+	endDate := c.FormValue("endDate")
+	var numTables int
+	fmt.Sscanf(c.FormValue("numTables"), "%d", &numTables)
+
+	e, err := h.updateUC.Execute(c.Context(), id, name, startDate, endDate, numTables)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Trigger", "event-updated")
+		return c.Render("admin/partials/event-edit-form", fiber.Map{
+			"Event":   e,
+			"Success": true,
+		})
+	}
+	return c.Redirect("/admin/events/" + id)
 }

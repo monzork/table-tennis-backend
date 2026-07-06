@@ -98,6 +98,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		tournament.NewGetOccupiedTablesUseCase(matchRepo),
 		regenerateSeedsUC,
 		updateParticipantEloUC,
+		tournament.NewRemoveParticipantUseCase(tournamentRepo),
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
 	exportEventPdfUC := tournament.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGenerator)
@@ -105,7 +106,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	getEventByIDUC := event.NewGetEventByIDUseCase(eventRepo)
 	getAllEventsUC := event.NewGetAllEventsUseCase(eventRepo)
 	deleteEventUC := event.NewDeleteEventUseCase(eventRepo)
-	eventHandler := handler.NewEventHandler(createEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
+	updateEventUC := event.NewUpdateEventUseCase(eventRepo)
+	eventHandler := handler.NewEventHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
 
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
