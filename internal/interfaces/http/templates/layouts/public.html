@@ -32,13 +32,62 @@
     <link href="/static/dist/tailwind.css?v=3" rel="stylesheet">
     <link id="font-outfit" href="/static/fonts/outfit.css" rel="stylesheet" hx-preserve="true">
     
-    <!-- Service Worker Registration -->
+    <!-- Service Worker Registration & Push -->
     <script>
+      function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+      }
+
+      async function subscribeToPush(registration) {
+        try {
+          const res = await fetch('/api/vapid-public-key');
+          const vapidPublicKey = await res.text();
+          
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+          });
+          
+          await fetch('/api/notifications/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(subscription)
+          });
+          console.log('Push subscription successful');
+        } catch (e) {
+          console.error('Push subscription failed:', e);
+        }
+      }
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/static/sw.js').catch(err => console.log('SW registration failed:', err));
+          navigator.serviceWorker.register('/static/sw.js').then(reg => {
+            // Subscribe if permission is already granted
+            if (Notification.permission === 'granted') {
+              reg.pushManager.getSubscription().then(sub => {
+                if (!sub) subscribeToPush(reg);
+              });
+            }
+          }).catch(err => console.log('SW registration failed:', err));
         });
       }
+
+      // Expose a function to manually request permission
+      window.requestPushPermission = async function() {
+        if (!('Notification' in window)) return;
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          const reg = await navigator.serviceWorker.ready;
+          subscribeToPush(reg);
+        }
+      };
     </script>
     
     <!-- CSRF Token -->
@@ -124,7 +173,7 @@
 
             <!-- Main Nav & Desktop Lang Switcher -->
             <div class="flex items-center justify-start sm:justify-end gap-6 pb-3 sm:pb-0 overflow-x-auto hide-scrollbar w-full sm:w-auto snap-x">
-                <div class="flex flex-nowrap gap-5 sm:gap-6 font-bold text-[11px] sm:text-sm tracking-widest uppercase text-gray-400 min-w-max px-1">
+                <div class="flex flex-nowrap gap-5 sm:gap-6 font-bold text-[11px] sm:text-sm tracking-widest uppercase text-gray-400 min-w-max px-1 items-center">
                     <a href="/rankings/singles" class="snap-start shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Singles"}}text-white border-b-2 border-white{{end}}">
                         {{t .T "nav.singles"}}
                     </a>
@@ -138,6 +187,11 @@
                         <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
                         {{t .T "nav.register"}}
                     </a>
+                    <button type="button" onclick="window.requestPushPermission()" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1 focus:outline-none" aria-label="Enable Notifications" title="Enable Notifications">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Language switcher (Desktop) -->

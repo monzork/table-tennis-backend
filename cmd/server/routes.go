@@ -89,6 +89,12 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 
 	app.Get("/players/import/template", c.PlayerHandler.ImportTemplate) // public template download
 
+	// Push Notifications
+	app.Get("/api/vapid-public-key", func(ctx *fiber.Ctx) error {
+		return ctx.SendString(c.NotificationHandler.GetVAPIDPublicKey())
+	})
+	app.Post("/api/notifications/subscribe", c.NotificationHandler.Subscribe)
+
 	// ==========================================
 	// WEBSOCKET ROUTES
 	// ==========================================
@@ -207,4 +213,5 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 
 	// Reports API
 	admin.Get("/events/:id/export/pdf", c.EventHandler.ExportEventPDF)
+	admin.Post("/notifications/broadcast", c.NotificationHandler.Broadcast)
 }

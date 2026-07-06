@@ -12,6 +12,7 @@ import (
 	adminDomain "table-tennis-backend/internal/domain/admin"
 	"table-tennis-backend/internal/domain/events"
 	"table-tennis-backend/internal/domain/idgen"
+	"table-tennis-backend/internal/application/notification"
 	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	qrinfra "table-tennis-backend/internal/infrastructure/qrcode"
@@ -32,6 +33,7 @@ type Container struct {
 	QRHandler          *handler.QRHandler
 	AuthHandler        *handler.AuthHandler
 	AdminHandler       *handler.AdminHandler
+	NotificationHandler *handler.NotificationHandler
 }
 
 func NewContainer(store *session.Store, cfg Config) *Container {
@@ -144,6 +146,10 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	authHandler := handler.NewAuthHandler(store, adminRepo, hasher)
 	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 
+	notificationRepo := bun.NewPushSubscriptionRepository(bun.DB)
+	broadcastNotificationUC := notification.NewBroadcastPushNotificationUseCase(notificationRepo, cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey)
+	notificationHandler := handler.NewNotificationHandler(notificationRepo, cfg.VAPIDPublicKey, broadcastNotificationUC)
+
 	return &Container{
 		PlayerHandler:      playerHandler,
 		TournamentHandler:  tournamentHandler,
@@ -155,5 +161,6 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		QRHandler:          qrHandler,
 		AuthHandler:        authHandler,
 		AdminHandler:       adminHandler,
+		NotificationHandler: notificationHandler,
 	}
 }

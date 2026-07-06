@@ -20,6 +20,10 @@ type Config struct {
 	// Admin seed credentials (used when no admin exists yet)
 	AdminUsername string
 	AdminPassword string
+
+	// Push Notifications
+	VAPIDPublicKey  string
+	VAPIDPrivateKey string
 }
 
 // LoadConfig reads configuration from environment variables and applies defaults.
@@ -31,6 +35,8 @@ func LoadConfig() Config {
 		SessionSecret: os.Getenv("SESSION_SECRET"),
 		AdminUsername: getEnvOrDefault("ADMIN_USERNAME", "admin"),
 		AdminPassword: getEnvOrDefault("ADMIN_PASSWORD", "password"),
+		VAPIDPublicKey:  os.Getenv("VAPID_PUBLIC_KEY"),
+		VAPIDPrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
 	}
 
 	if cfg.SessionSecret == "" {
