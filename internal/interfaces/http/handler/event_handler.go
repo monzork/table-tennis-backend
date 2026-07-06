@@ -484,7 +484,18 @@ func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
 // buildEventTables creates a TableVM slice from an event's NumTables + occupied tables.
 func buildEventTables(e *eventDomain.Event, inProgress []BoardCard) []TableVM {
 	var tables []TableVM
-	if e == nil || e.NumTables <= 0 {
+	if e == nil {
+		return tables
+	}
+
+	numTables := e.NumTables
+	for _, t := range e.Tournaments {
+		if t.NumTables > numTables {
+			numTables = t.NumTables
+		}
+	}
+
+	if numTables <= 0 {
 		return tables
 	}
 	
@@ -495,7 +506,7 @@ func buildEventTables(e *eventDomain.Event, inProgress []BoardCard) []TableVM {
 		}
 	}
 	
-	for i := 1; i <= e.NumTables; i++ {
+	for i := 1; i <= numTables; i++ {
 		tables = append(tables, TableVM{
 			Number: i,
 			IsUsed: usedTables[i],
