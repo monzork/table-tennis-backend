@@ -244,7 +244,8 @@
             </div>
 
             <!-- Main Nav & Desktop Lang Switcher -->
-            <div class="flex items-center justify-start sm:justify-end gap-6 pb-3 sm:pb-0 overflow-x-auto hide-scrollbar w-full sm:w-auto snap-x">
+            <!-- Main Nav & Desktop Lang Switcher -->
+            <div class="hidden sm:flex items-center justify-end gap-6 pb-0 overflow-x-auto hide-scrollbar w-auto snap-x">
                 <div class="flex flex-nowrap gap-5 sm:gap-6 font-bold text-[11px] sm:text-sm tracking-widest uppercase text-gray-400 min-w-max px-1 items-center">
                     <button type="button" onclick="window.requestPushPermission()" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1 focus:outline-none" aria-label="Enable Notifications" title="Enable Notifications">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -282,7 +283,7 @@
     </footer>
 
     <!-- Push Notification Prompt Banner -->
-    <div id="push-prompt-banner" class="fixed left-4 right-4 sm:left-auto sm:right-4 sm:w-96 border border-white/10 rounded-2xl p-5 shadow-2xl z-50 transform translate-y-[150%] transition-transform duration-500 flex flex-col gap-3 hidden" style="bottom: 1rem; background-color: #111827; z-index: 9999;">
+    <div id="push-prompt-banner" class="fixed left-4 right-4 sm:left-auto sm:right-4 sm:w-96 border border-white/10 rounded-2xl p-5 shadow-2xl z-50 transform translate-y-[150%] transition-transform duration-500 flex flex-col gap-3 hidden" style="bottom: 5rem; background-color: #111827; z-index: 9999;">
         <div class="flex items-start justify-between gap-3">
             <div class="bg-blue-500/10 text-blue-400 p-2 rounded-xl shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
@@ -299,6 +300,29 @@
             <button onclick="dismissPushPrompt()" class="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">Not Now</button>
             <button onclick="acceptPushPrompt()" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">Enable</button>
         </div>
+    </div>
+
+    <!-- Mobile Bottom Tab Bar -->
+    <div class="sm:hidden fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-xl border-t border-white/10 flex justify-around items-center px-2 py-3 z-[100] pb-safe" style="padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);">
+        <a href="/rankings/singles" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors {{if eq .Type "Singles"}}text-white{{end}}">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            <span class="text-[9px] font-bold uppercase tracking-widest">Rankings</span>
+        </a>
+        <a href="/tournaments" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors {{if eq .Type "Tournaments"}}text-white{{end}}">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            <span class="text-[9px] font-bold uppercase tracking-widest">Events</span>
+        </a>
+        <a href="/tournaments/register" class="flex flex-col items-center gap-1 text-green-400 hover:text-green-300 transition-colors">
+            <div class="relative">
+                <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            </div>
+            <span class="text-[9px] font-bold uppercase tracking-widest">Register</span>
+        </a>
+        <button type="button" onclick="window.requestPushPermission()" class="flex flex-col items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+            <span class="text-[9px] font-bold uppercase tracking-widest">Alerts</span>
+        </button>
     </div>
 </body>
 </html>

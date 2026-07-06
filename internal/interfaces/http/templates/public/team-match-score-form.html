@@ -91,7 +91,7 @@
             {{end}}
         </select>
         {{else}}
-        <input name="tableNumber" type="number" min="1" max="50" placeholder="e.g. 1" value="{{if .TableNumber}}{{.TableNumber}}{{end}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white text-xs focus:outline-none focus:ring-1 focus:ring-white">
+        <input name="tableNumber" type="number" inputmode="numeric" pattern="[0-9]*" min="1" max="50" placeholder="e.g. 1" value="{{if .TableNumber}}{{.TableNumber}}{{end}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white text-base focus:outline-none focus:ring-1 focus:ring-white">
         {{end}}
     </div>
 
