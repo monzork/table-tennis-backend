@@ -270,20 +270,13 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 			return q.Relation("Player")
 		}).
 		Relation("Groups", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.Relation("Participants", func(q *bun.SelectQuery) *bun.SelectQuery {
-				return q.OrderExpr("position ASC").Relation("Player")
-			}).OrderExpr("name ASC")
+			return q.OrderExpr("name ASC")
 		}).
 		Relation("Teams", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.Relation("TeamPlayers", func(q *bun.SelectQuery) *bun.SelectQuery {
-				return q.Relation("Player")
-			}).OrderExpr("name ASC")
+			return q.OrderExpr("name ASC")
 		}).
 		Relation("Matches", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.Relation("Sets", func(q *bun.SelectQuery) *bun.SelectQuery {
-				return q.OrderExpr("set_number ASC")
-			}).
-			Relation("TeamAPlayer1").
+			return q.Relation("TeamAPlayer1").
 			Relation("TeamAPlayer2").
 			Relation("TeamBPlayer1").
 			Relation("TeamBPlayer2")
@@ -294,6 +287,63 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 	if err != nil {
 		return nil, err
 	}
+
+	db := ExtractDB(ctx, r.db)
+
+	// --- Workaround for Bun nested has-many panics: Manually fetch nested has-many relations ---
+
+	// 1. Fetch Group Participants
+	if len(model.Groups) > 0 {
+		var groupIDs []uuid.UUID
+		groupMap := make(map[uuid.UUID]*GroupModel)
+		for i := range model.Groups {
+			groupIDs = append(groupIDs, model.Groups[i].ID)
+			groupMap[model.Groups[i].ID] = &model.Groups[i]
+		}
+		var gps []GroupParticipantModel
+		_ = db.NewSelect().Model(&gps).Where("group_id IN (?)", bun.In(groupIDs)).Relation("Player").OrderExpr("position ASC").Scan(ctx)
+		for _, gp := range gps {
+			if g, ok := groupMap[gp.GroupID]; ok {
+				g.Participants = append(g.Participants, gp)
+			}
+		}
+	}
+
+	// 2. Fetch Team Players
+	if len(model.Teams) > 0 {
+		var teamIDs []uuid.UUID
+		teamMap := make(map[uuid.UUID]*TeamModel)
+		for i := range model.Teams {
+			teamIDs = append(teamIDs, model.Teams[i].ID)
+			teamMap[model.Teams[i].ID] = &model.Teams[i]
+		}
+		var tps []TeamPlayerModel
+		_ = db.NewSelect().Model(&tps).Where("team_id IN (?)", bun.In(teamIDs)).Relation("Player").Scan(ctx)
+		for _, tp := range tps {
+			if t, ok := teamMap[tp.TeamID]; ok {
+				t.TeamPlayers = append(t.TeamPlayers, tp)
+			}
+		}
+	}
+
+	// 3. Fetch Match Sets
+	if len(model.Matches) > 0 {
+		var matchIDs []uuid.UUID
+		matchMap := make(map[uuid.UUID]*MatchModel)
+		for i := range model.Matches {
+			matchIDs = append(matchIDs, model.Matches[i].ID)
+			matchMap[model.Matches[i].ID] = &model.Matches[i]
+		}
+		var sets []MatchSetModel
+		_ = db.NewSelect().Model(&sets).Where("match_id IN (?)", bun.In(matchIDs)).OrderExpr("set_number ASC").Scan(ctx)
+		for _, set := range sets {
+			mID, _ := uuid.Parse(set.MatchID)
+			if m, ok := matchMap[mID]; ok {
+				m.Sets = append(m.Sets, set)
+			}
+		}
+	}
+	// -----------------------------------------------------------------------------------------
 
 	// Helper to convert PlayerModel to domain player
 	toPlayer := func(pm *PlayerModel) *player.Player {
@@ -340,22 +390,22 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 
 	// ── 2. Assemble teams ───────────────────────────────────────────────────
 	var teams []*tournament.Team
-	teamMap := make(map[uuid.UUID]*TeamModel)
+	teamMapDomain := make(map[uuid.UUID]*tournament.Team)
 	for _, tm := range model.Teams {
-		tmCopy := tm
-		teamMap[tm.ID] = &tmCopy
 		var teamPlayers []*player.Player
 		for _, tp := range tm.TeamPlayers {
 			if tp.Player != nil {
 				teamPlayers = append(teamPlayers, toPlayer(tp.Player))
 			}
 		}
-		teams = append(teams, &tournament.Team{
+		t := &tournament.Team{
 			ID:           tm.ID.String(),
 			TournamentID: tm.TournamentID.String(),
 			Name:         tm.Name,
 			Players:      teamPlayers,
-		})
+		}
+		teams = append(teams, t)
+		teamMapDomain[tm.ID] = t
 	}
 
 	// ── 3. Assemble groups ──────────────────────────────────────────────────
@@ -378,30 +428,30 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 			} else if isTeamType {
 				// For doubles/teams, group participants use team IDs.
 				// Avg Elo is computed from each team member's snapshot Elo.
-				if tm, ok := teamMap[gp.PlayerID]; ok {
+				if tm, ok := teamMapDomain[gp.PlayerID]; ok {
 					avgElo := int16(1000)
-					tps := tm.TeamPlayers
+					tps := tm.Players
 					if len(tps) > 0 {
 						sum := int32(0)
 						for _, tp := range tps {
 							if model.Type == "doubles" || model.Type == "mixed_doubles" {
-								if snap, ok := snapshotDoublesElo[tp.PlayerID]; ok {
-									sum += int32(snap)
-								} else if tp.Player != nil {
-									sum += int32(tp.Player.DoublesElo)
+								if e, ok := snapshotDoublesElo[uuid.MustParse(tp.ID)]; ok {
+									sum += int32(e)
+								} else {
+									sum += int32(tp.DoublesElo)
 								}
 							} else {
-								if snap, ok := snapshotSinglesElo[tp.PlayerID]; ok {
-									sum += int32(snap)
-								} else if tp.Player != nil {
-									sum += int32(tp.Player.SinglesElo)
+								if e, ok := snapshotSinglesElo[uuid.MustParse(tp.ID)]; ok {
+									sum += int32(e)
+								} else {
+									sum += int32(tp.SinglesElo)
 								}
 							}
 						}
 						avgElo = int16(sum / int32(len(tps)))
 					}
 					groupPlayers = append(groupPlayers, &player.Player{
-						ID:         tm.ID.String(),
+						ID:         tm.ID,
 						FirstName:  tm.Name,
 						LastName:   "",
 						SinglesElo: avgElo,
@@ -458,13 +508,13 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		teamAPlayer := &player.Player{ID: teamAID.String()}
 		teamBPlayer := &player.Player{ID: teamBID.String()}
 		if isTeamType {
-			if tm, ok := teamMap[teamAID]; ok {
+			if tm, ok := teamMapDomain[teamAID]; ok {
 				teamAPlayer.FirstName = tm.Name
 			} else if mm.TeamAPlayer1 != nil {
 				teamAPlayer.FirstName = mm.TeamAPlayer1.FirstName
 				teamAPlayer.LastName = mm.TeamAPlayer1.LastName
 			}
-			if tm, ok := teamMap[teamBID]; ok {
+			if tm, ok := teamMapDomain[teamBID]; ok {
 				teamBPlayer.FirstName = tm.Name
 			} else if mm.TeamBPlayer1 != nil {
 				teamBPlayer.FirstName = mm.TeamBPlayer1.FirstName
