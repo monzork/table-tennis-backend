@@ -18,33 +18,39 @@ type MatchModel struct {
 	bun.BaseModel `bun:"table:matches"`
 
 	ID             uuid.UUID  `bun:"id,pk,type:uuid"`
-	TournamentID   uuid.UUID  `bun:"tournament_id,notnull"`
+	TournamentID   uuid.UUID  `bun:"tournament_id,notnull,index"`
 	MatchType      string     `bun:"match_type,notnull,default:'singles'"`
-	TeamAPlayer1ID uuid.UUID  `bun:"team_a_player_1_id,notnull"`
+	TeamAPlayer1ID uuid.UUID  `bun:"team_a_player_1_id,notnull,index"`
 	TeamAPlayer2ID *uuid.UUID `bun:"team_a_player_2_id"`
-	TeamBPlayer1ID uuid.UUID  `bun:"team_b_player_1_id,notnull"`
+	TeamBPlayer1ID uuid.UUID  `bun:"team_b_player_1_id,notnull,index"`
 	TeamBPlayer2ID *uuid.UUID `bun:"team_b_player_2_id"`
 	Status         string     `bun:"status,notnull,default:'scheduled'"`
 	WinnerTeam     *string    `bun:"winner_team"`
 	Stage          string     `bun:"stage,notnull,default:'group'"`
-	DivisionID     string     `bun:"division_id"`
+	DivisionID     string     `bun:"division_id,index"`
 	RoundNumber    int        `bun:"round_number,notnull,default:1"`
 	GroupID        *string    `bun:"group_id"`
 	NextMatchID    *string    `bun:"next_match_id"`
 	NextMatchSlot  string     `bun:"next_match_slot,default:'A'"`
-	TeamMatchID    *uuid.UUID `bun:"team_match_id,type:uuid"`
-	RefereeID      *uuid.UUID `bun:"referee_id,type:uuid"`
+	TeamMatchID    *uuid.UUID `bun:"team_match_id,type:uuid,index"`
+	RefereeID      *uuid.UUID `bun:"referee_id,type:uuid,index"`
 	TableNumber    *int       `bun:"table_number"`
 	Pin            string     `bun:"pin,nullzero"`
 	CreatedAt      time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
+
+	Sets         []MatchSetModel `bun:"rel:has-many,join:id=match_id"`
+	TeamAPlayer1 *PlayerModel    `bun:"rel:belongs-to,join:team_a_player_1_id=id"`
+	TeamBPlayer1 *PlayerModel    `bun:"rel:belongs-to,join:team_b_player_1_id=id"`
+	TeamAPlayer2 *PlayerModel    `bun:"rel:belongs-to,join:team_a_player_2_id=id"`
+	TeamBPlayer2 *PlayerModel    `bun:"rel:belongs-to,join:team_b_player_2_id=id"`
 }
 
 type MatchSetModel struct {
 	bun.BaseModel `bun:"table:match_sets"`
 
 	ID        string `bun:"id,pk"`
-	MatchID   string `bun:"match_id,notnull"`
+	MatchID   string `bun:"match_id,notnull,index"`
 	SetNumber int    `bun:"set_number,notnull"`
 	ScoreA    int    `bun:"score_a,notnull"`
 	ScoreB    int    `bun:"score_b,notnull"`

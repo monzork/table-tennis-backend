@@ -264,77 +264,42 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 	}
 
 	model := new(TournamentModel)
-	err = ExtractDB(ctx, r.db).NewSelect().Model(model).Where("id = ?", id).Scan(ctx)
+	err = ExtractDB(ctx, r.db).NewSelect().
+		Model(model).
+		Relation("Participants", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.Relation("Player")
+		}).
+		Relation("Groups", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.Relation("Participants", func(q *bun.SelectQuery) *bun.SelectQuery {
+				return q.OrderExpr("position ASC").Relation("Player")
+			}).OrderExpr("name ASC")
+		}).
+		Relation("Teams", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.Relation("TeamPlayers", func(q *bun.SelectQuery) *bun.SelectQuery {
+				return q.Relation("Player")
+			}).OrderExpr("name ASC")
+		}).
+		Relation("Matches", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.Relation("Sets", func(q *bun.SelectQuery) *bun.SelectQuery {
+				return q.OrderExpr("set_number ASC")
+			}).
+			Relation("TeamAPlayer1").
+			Relation("TeamAPlayer2").
+			Relation("TeamBPlayer1").
+			Relation("TeamBPlayer2")
+		}).
+		Where("id = ?", id).
+		Scan(ctx)
+
 	if err != nil {
 		return nil, err
 	}
 
-	// ── 1. Load participants ────────────────────────────────────────────────
-	var partModels []TournamentParticipantModel
-	_ = ExtractDB(ctx, r.db).NewSelect().Model(&partModels).Where("tournament_id = ?", id).Scan(ctx)
-
-	// Collect all player IDs we'll need
-	playerIDSet := make(map[uuid.UUID]bool)
-	for _, pt := range partModels {
-		playerIDSet[pt.PlayerID] = true
-	}
-
-	// ── 2. Load groups and group participants in batch ───────────────────────
-	var groupModels []GroupModel
-	_ = ExtractDB(ctx, r.db).NewSelect().Model(&groupModels).Where("tournament_id = ?", id).Order("name ASC").Scan(ctx)
-
-	groupIDs := make([]uuid.UUID, len(groupModels))
-	for i, gm := range groupModels {
-		groupIDs[i] = gm.ID
-	}
-
-	var allGPModels []GroupParticipantModel
-	if len(groupIDs) > 0 {
-		_ = ExtractDB(ctx, r.db).NewSelect().Model(&allGPModels).Where("group_id IN (?)", bun.List(groupIDs)).Order("group_id", "position ASC").Scan(ctx)
-	}
-
-	for _, gp := range allGPModels {
-		playerIDSet[gp.PlayerID] = true
-	}
-
-	// ── 3. Load teams and team players in batch ─────────────────────────────
-	var teamModels []TeamModel
-	_ = ExtractDB(ctx, r.db).NewSelect().Model(&teamModels).Where("tournament_id = ?", model.ID).Order("name ASC").Scan(ctx)
-
-	teamIDs := make([]uuid.UUID, len(teamModels))
-	teamMap := make(map[uuid.UUID]*TeamModel)
-	for i, tm := range teamModels {
-		teamIDs[i] = tm.ID
-		tmCopy := tm
-		teamMap[tm.ID] = &tmCopy
-	}
-
-	var allTPModels []TeamPlayerModel
-	if len(teamIDs) > 0 {
-		_ = ExtractDB(ctx, r.db).NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.List(teamIDs)).Scan(ctx)
-	}
-
-	for _, tp := range allTPModels {
-		playerIDSet[tp.PlayerID] = true
-	}
-
-	// ── 4. Batch-load ALL players we need in a single query ─────────────────
-	playerIDs := make([]uuid.UUID, 0, len(playerIDSet))
-	for pid := range playerIDSet {
-		playerIDs = append(playerIDs, pid)
-	}
-
-	playerCache := make(map[uuid.UUID]*PlayerModel)
-	if len(playerIDs) > 0 {
-		var allPlayers []PlayerModel
-		_ = ExtractDB(ctx, r.db).NewSelect().Model(&allPlayers).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx)
-		for i := range allPlayers {
-			playerCache[allPlayers[i].ID] = &allPlayers[i]
-		}
-	}
-
 	// Helper to convert PlayerModel to domain player
 	toPlayer := func(pm *PlayerModel) *player.Player {
+		if pm == nil {
+			return &player.Player{}
+		}
 		return &player.Player{
 			ID:             pm.ID.String(),
 			FirstName:      pm.FirstName,
@@ -349,46 +314,40 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		}
 	}
 
-	// ── 5. Assemble participants ────────────────────────────────────────────
+	// ── 1. Assemble participants ────────────────────────────────────────────
 	var participantPlayers []*player.Player
 	// Also build a snapshot Elo lookup keyed by player UUID for use in groups/teams.
-	snapshotSinglesElo := make(map[uuid.UUID]int16, len(partModels))
-	snapshotDoublesElo := make(map[uuid.UUID]int16, len(partModels))
-	for _, pt := range partModels {
-		if pm, ok := playerCache[pt.PlayerID]; ok {
-			p := toPlayer(pm)
-			// Use the Elo snapshot from when the player registered for this tournament.
-			// This ensures division grouping reflects their Elo at registration time,
-			// not their current (potentially updated) Elo.
+	snapshotSinglesElo := make(map[uuid.UUID]int16, len(model.Participants))
+	snapshotDoublesElo := make(map[uuid.UUID]int16, len(model.Participants))
+	for _, pt := range model.Participants {
+		if pt.Player != nil {
+			p := toPlayer(pt.Player)
 			if pt.EloBeforeSingles != nil {
 				p.SinglesElo = *pt.EloBeforeSingles
 				snapshotSinglesElo[pt.PlayerID] = *pt.EloBeforeSingles
 			} else {
-				snapshotSinglesElo[pt.PlayerID] = pm.SinglesElo
+				snapshotSinglesElo[pt.PlayerID] = pt.Player.SinglesElo
 			}
 			if pt.EloBeforeDoubles != nil {
 				p.DoublesElo = *pt.EloBeforeDoubles
 				snapshotDoublesElo[pt.PlayerID] = *pt.EloBeforeDoubles
 			} else {
-				snapshotDoublesElo[pt.PlayerID] = pm.DoublesElo
+				snapshotDoublesElo[pt.PlayerID] = pt.Player.DoublesElo
 			}
 			participantPlayers = append(participantPlayers, p)
 		}
 	}
 
-	// ── 6. Assemble teams ───────────────────────────────────────────────────
-	// Group team players by team ID
-	tpByTeam := make(map[uuid.UUID][]TeamPlayerModel)
-	for _, tp := range allTPModels {
-		tpByTeam[tp.TeamID] = append(tpByTeam[tp.TeamID], tp)
-	}
-
+	// ── 2. Assemble teams ───────────────────────────────────────────────────
 	var teams []*tournament.Team
-	for _, tm := range teamModels {
+	teamMap := make(map[uuid.UUID]*TeamModel)
+	for _, tm := range model.Teams {
+		tmCopy := tm
+		teamMap[tm.ID] = &tmCopy
 		var teamPlayers []*player.Player
-		for _, tp := range tpByTeam[tm.ID] {
-			if pm, ok := playerCache[tp.PlayerID]; ok {
-				teamPlayers = append(teamPlayers, toPlayer(pm))
+		for _, tp := range tm.TeamPlayers {
+			if tp.Player != nil {
+				teamPlayers = append(teamPlayers, toPlayer(tp.Player))
 			}
 		}
 		teams = append(teams, &tournament.Team{
@@ -399,21 +358,15 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		})
 	}
 
-	// ── 7. Assemble groups ──────────────────────────────────────────────────
-	// Group participants by group ID
-	gpByGroup := make(map[uuid.UUID][]GroupParticipantModel)
-	for _, gp := range allGPModels {
-		gpByGroup[gp.GroupID] = append(gpByGroup[gp.GroupID], gp)
-	}
-
+	// ── 3. Assemble groups ──────────────────────────────────────────────────
 	isTeamType := model.Type == "doubles" || model.Type == "mixed_doubles" || model.Type == "teams"
 
 	var groups []tournament.Group
-	for _, gm := range groupModels {
+	for _, gm := range model.Groups {
 		var groupPlayers []*player.Player
-		for _, gp := range gpByGroup[gm.ID] {
-			if pm, ok := playerCache[gp.PlayerID]; ok {
-				p := toPlayer(pm)
+		for _, gp := range gm.Participants {
+			if gp.Player != nil {
+				p := toPlayer(gp.Player)
 				// Use snapshot Elo for display consistency with division grouping.
 				if snap, ok := snapshotSinglesElo[gp.PlayerID]; ok {
 					p.SinglesElo = snap
@@ -427,21 +380,21 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 				// Avg Elo is computed from each team member's snapshot Elo.
 				if tm, ok := teamMap[gp.PlayerID]; ok {
 					avgElo := int16(1000)
-					tps := tpByTeam[tm.ID]
+					tps := tm.TeamPlayers
 					if len(tps) > 0 {
 						sum := int32(0)
 						for _, tp := range tps {
 							if model.Type == "doubles" || model.Type == "mixed_doubles" {
 								if snap, ok := snapshotDoublesElo[tp.PlayerID]; ok {
 									sum += int32(snap)
-								} else if pm, ok := playerCache[tp.PlayerID]; ok {
-									sum += int32(pm.DoublesElo)
+								} else if tp.Player != nil {
+									sum += int32(tp.Player.DoublesElo)
 								}
 							} else {
 								if snap, ok := snapshotSinglesElo[tp.PlayerID]; ok {
 									sum += int32(snap)
-								} else if pm, ok := playerCache[tp.PlayerID]; ok {
-									sum += int32(pm.SinglesElo)
+								} else if tp.Player != nil {
+									sum += int32(tp.Player.SinglesElo)
 								}
 							}
 						}
@@ -464,45 +417,26 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		})
 	}
 
-	// ── 8. Load matches and sets in batch ───────────────────────────────────
-	var matchModels []MatchModel
-	if err := ExtractDB(ctx, r.db).NewSelect().Model(&matchModels).Where("tournament_id = ?", id).Scan(ctx); err != nil && err != sql.ErrNoRows {
-		// Just ignore if matches fail to load
-	}
-
-	// Batch-load all match sets
-	matchIDs := make([]uuid.UUID, len(matchModels))
-	for i, mm := range matchModels {
-		matchIDs[i] = mm.ID
-	}
-	var allSetModels []MatchSetModel
-	if len(matchIDs) > 0 {
-		_ = ExtractDB(ctx, r.db).NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("match_id", "set_number ASC").Scan(ctx)
-	}
-	setsByMatch := make(map[string][]MatchSetModel)
-	for _, sm := range allSetModels {
-		setsByMatch[sm.MatchID] = append(setsByMatch[sm.MatchID], sm)
-	}
-
+	// ── 4. Assemble matches ─────────────────────────────────────────────────
 	// For doubles/teams, build a reverse map: player ID → team ID
 	playerToTeam := make(map[uuid.UUID]uuid.UUID)
 	if isTeamType {
-		for _, tm := range teamModels {
-			for _, tp := range tpByTeam[tm.ID] {
+		for _, tm := range model.Teams {
+			for _, tp := range tm.TeamPlayers {
 				playerToTeam[tp.PlayerID] = tm.ID
 			}
 		}
 	}
 
 	var matches []tournament.Match
-	for _, mm := range matchModels {
+	for _, mm := range model.Matches {
 		wt := ""
 		if mm.WinnerTeam != nil {
 			wt = *mm.WinnerTeam
 		}
 
 		var sets []tournament.MatchSet
-		for _, sm := range setsByMatch[mm.ID.String()] {
+		for _, sm := range mm.Sets {
 			sets = append(sets, tournament.MatchSet{
 				Number: sm.SetNumber,
 				ScoreA: sm.ScoreA,
@@ -526,24 +460,24 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		if isTeamType {
 			if tm, ok := teamMap[teamAID]; ok {
 				teamAPlayer.FirstName = tm.Name
-			} else if pm, ok := playerCache[teamAID]; ok {
-				teamAPlayer.FirstName = pm.FirstName
-				teamAPlayer.LastName = pm.LastName
+			} else if mm.TeamAPlayer1 != nil {
+				teamAPlayer.FirstName = mm.TeamAPlayer1.FirstName
+				teamAPlayer.LastName = mm.TeamAPlayer1.LastName
 			}
 			if tm, ok := teamMap[teamBID]; ok {
 				teamBPlayer.FirstName = tm.Name
-			} else if pm, ok := playerCache[teamBID]; ok {
-				teamBPlayer.FirstName = pm.FirstName
-				teamBPlayer.LastName = pm.LastName
+			} else if mm.TeamBPlayer1 != nil {
+				teamBPlayer.FirstName = mm.TeamBPlayer1.FirstName
+				teamBPlayer.LastName = mm.TeamBPlayer1.LastName
 			}
 		} else {
-			if pm, ok := playerCache[teamAID]; ok {
-				teamAPlayer.FirstName = pm.FirstName
-				teamAPlayer.LastName = pm.LastName
+			if mm.TeamAPlayer1 != nil {
+				teamAPlayer.FirstName = mm.TeamAPlayer1.FirstName
+				teamAPlayer.LastName = mm.TeamAPlayer1.LastName
 			}
-			if pm, ok := playerCache[teamBID]; ok {
-				teamBPlayer.FirstName = pm.FirstName
-				teamBPlayer.LastName = pm.LastName
+			if mm.TeamBPlayer1 != nil {
+				teamBPlayer.FirstName = mm.TeamBPlayer1.FirstName
+				teamBPlayer.LastName = mm.TeamBPlayer1.LastName
 			}
 		}
 
@@ -582,7 +516,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		// and store them as a single virtual set so ScoreA()/ScoreB() reflect team scores correctly.
 		if mm.MatchType == "teams" && mm.TeamMatchID == nil {
 			subWinsA, subWinsB := 0, 0
-			for _, other := range matchModels {
+			for _, other := range model.Matches {
 				if other.TeamMatchID == nil || other.TeamMatchID.String() != mm.ID.String() {
 					continue
 				}
@@ -606,7 +540,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		eventIDPtr = &s
 	}
 
-	// ── 9. Load division rules ───────────────────────────────────────────────
+	// ── 5. Load division rules ───────────────────────────────────────────────
 	divisionRules := LoadDivisionRules(ctx, r.db, model.ID.String())
 
 	return &tournament.Tournament{
