@@ -85,6 +85,19 @@
             alert("Push notifications are not supported in this browser (make sure you are using HTTPS or localhost).");
             return;
         }
+        
+        if (Notification.permission === 'granted') {
+            alert("Notifications are already enabled!");
+            const reg = await navigator.serviceWorker.ready;
+            subscribeToPush(reg);
+            return;
+        }
+        
+        if (Notification.permission === 'denied') {
+            alert("You have previously blocked notifications for this site. Please click the lock icon next to the URL in your browser and allow notifications.");
+            return;
+        }
+
         try {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
