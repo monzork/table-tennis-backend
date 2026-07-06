@@ -3,6 +3,33 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[calc(100vh-220px)]">
 
+  {{/* ── Table Availability Panel ── */}}
+  <div class="col-span-1 lg:col-span-3 mb-2 glass rounded-3xl border border-white/10 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-club-panel/30 backdrop-blur-md">
+    <div>
+      <h3 class="text-xs font-black uppercase tracking-widest text-gray-400">{{t $.T "board.table_status"}}</h3>
+      <p class="text-[11px] text-gray-500 mt-1">{{t $.T "board.table_desc"}}</p>
+    </div>
+    <div class="flex flex-wrap gap-2.5">
+      {{range .Tables}}
+      <div class="flex items-center gap-2 px-3.5 py-2 rounded-2xl border transition-all duration-300 {{if .IsUsed}}bg-red-500/10 border-red-500/30 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.07)]{{else}}bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.07)]{{end}}">
+        <span class="w-1.5 h-1.5 rounded-full {{if .IsUsed}}bg-red-500 animate-pulse{{else}}bg-emerald-500{{end}}"></span>
+        <span class="text-xs font-black font-mono">{{t $.T "board.table"}} {{.Number}}</span>
+        <span class="text-[9px] uppercase tracking-wider font-bold opacity-80">{{if .IsUsed}}{{t $.T "board.occupied"}}{{else}}{{t $.T "board.available"}}{{end}}</span>
+        <button type="button" 
+                onclick="showQRCodeModal('', 'Table {{.Number}}', '{{.Number}}', '', '{{$e.ID}}')"
+                class="ml-1 text-gray-400 hover:text-white transition-colors flex items-center justify-center"
+                title="Show Table {{.Number}} QR Code">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+          </svg>
+        </button>
+      </div>
+      {{else}}
+      <div class="text-[11px] italic text-gray-600">{{t $.T "board.no_tables"}}</div>
+      {{end}}
+    </div>
+  </div>
+
   {{/* ── Scheduled ─────────────────────────────────── */}}
   <div class="flex flex-col gap-3">
     <div class="flex items-center gap-2 mb-1">
@@ -46,6 +73,14 @@
       <div class="flex flex-col gap-2 mt-1 w-full">
         {{if .MatchID}}
         <form hx-post="/matches/{{.MatchID}}/start" hx-swap="none" class="flex gap-1.5 items-center w-full">
+          <select name="tableNumber" class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
+            <option value="">{{t $.T "board.auto"}}</option>
+            {{range $.Tables}}
+              <option value="{{.Number}}" {{if .IsUsed}}disabled class="text-gray-500 bg-black"{{else}}class="text-white bg-black"{{end}}>
+                T{{.Number}} {{if .IsUsed}}{{t $.T "board.used"}}{{else}}{{t $.T "board.free"}}{{end}}
+              </option>
+            {{end}}
+          </select>
           <button
             type="submit"
             class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 transition-all">
@@ -54,6 +89,14 @@
         </form>
         {{else}}
         <form hx-post="/matches/nil/start?tournamentId={{.TournamentID}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}&stage={{.Stage}}" hx-swap="none" class="flex gap-1.5 items-center w-full">
+          <select name="tableNumber" class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
+            <option value="">{{t $.T "board.auto"}}</option>
+            {{range $.Tables}}
+              <option value="{{.Number}}" {{if .IsUsed}}disabled class="text-gray-500 bg-black"{{else}}class="text-white bg-black"{{end}}>
+                T{{.Number}} {{if .IsUsed}}{{t $.T "board.used"}}{{else}}{{t $.T "board.free"}}{{end}}
+              </option>
+            {{end}}
+          </select>
           <button
             type="submit"
             class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-2 transition-all">

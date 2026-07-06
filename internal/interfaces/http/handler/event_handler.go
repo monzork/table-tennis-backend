@@ -420,7 +420,7 @@ func (h *EventHandler) AdminBoard(c *fiber.Ctx) error {
 	}
 
 	// Build tables from event NumTables
-	tables := buildEventTables(e)
+	tables := buildEventTables(e, inProgress)
 
 	return c.Render("admin/event-board", merge(tMap(lang), fiber.Map{
 		"Event":        e,
@@ -469,7 +469,7 @@ func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
 	}
 
 	// Build tables from event NumTables
-	tables := buildEventTables(e)
+	tables := buildEventTables(e, inProgress)
 
 	return c.Render("admin/partials/event-board-columns", fiber.Map{
 		"Event":      e,
@@ -482,13 +482,24 @@ func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
 }
 
 // buildEventTables creates a TableVM slice from an event's NumTables + occupied tables.
-func buildEventTables(e *eventDomain.Event) []TableVM {
+func buildEventTables(e *eventDomain.Event, inProgress []BoardCard) []TableVM {
 	var tables []TableVM
 	if e == nil || e.NumTables <= 0 {
 		return tables
 	}
+	
+	usedTables := make(map[int]bool)
+	for _, match := range inProgress {
+		if match.TableNumber != nil {
+			usedTables[*match.TableNumber] = true
+		}
+	}
+	
 	for i := 1; i <= e.NumTables; i++ {
-		tables = append(tables, TableVM{Number: i})
+		tables = append(tables, TableVM{
+			Number: i,
+			IsUsed: usedTables[i],
+		})
 	}
 	return tables
 }
