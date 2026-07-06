@@ -20,7 +20,7 @@ type TournamentModel struct {
 	EndDate            time.Time  `bun:"end_date,notnull"`
 	GroupPassCount     int        `bun:"group_pass_count,notnull,default:2"`
 	RegistrationOpen   bool       `bun:"registration_open,notnull,default:false"`
-	EventID            *uuid.UUID        `bun:"event_id,type:uuid,index"`
+	EventID            *uuid.UUID        `bun:"event_id,type:uuid"`
 	SkipElo            bool              `bun:"skip_elo,notnull,default:false"`
 	TeamFormat         string            `bun:"team_format,nullzero"`
 	DivisionFormats    map[string]string `bun:"division_formats,type:json"`
@@ -41,8 +41,8 @@ type TournamentModel struct {
 type TournamentParticipantModel struct {
 	bun.BaseModel `bun:"table:tournament_participants"`
 
-	TournamentID uuid.UUID `bun:"tournament_id,pk,type:uuid,index"`
-	PlayerID     uuid.UUID `bun:"player_id,pk,type:uuid,index"`
+	TournamentID uuid.UUID `bun:"tournament_id,pk,type:uuid"`
+	PlayerID     uuid.UUID `bun:"player_id,pk,type:uuid"`
 	Pin          string    `bun:"pin,notnull,default:'0000'"`
 
 	EloBeforeSingles *int16 `bun:"elo_before_singles"`
@@ -56,8 +56,8 @@ type TournamentParticipantModel struct {
 type TournamentOfficialModel struct {
 	bun.BaseModel `bun:"table:tournament_officials"`
 
-	TournamentID uuid.UUID `bun:"tournament_id,pk,type:uuid,index"`
-	PlayerID     uuid.UUID `bun:"player_id,pk,type:uuid,index"`
+	TournamentID uuid.UUID `bun:"tournament_id,pk,type:uuid"`
+	PlayerID     uuid.UUID `bun:"player_id,pk,type:uuid"`
 	Pin          string    `bun:"pin,notnull"`
 }
 
@@ -65,7 +65,7 @@ type GroupModel struct {
 	bun.BaseModel `bun:"table:groups"`
 
 	ID           uuid.UUID `bun:"id,pk,type:uuid"`
-	TournamentID uuid.UUID `bun:"tournament_id,type:uuid,index"`
+	TournamentID uuid.UUID `bun:"tournament_id,type:uuid"`
 	Name         string    `bun:"name,notnull"`
 
 	Participants []GroupParticipantModel `bun:"rel:has-many,join:id=group_id"`
@@ -75,8 +75,8 @@ type GroupModel struct {
 type GroupParticipantModel struct {
 	bun.BaseModel `bun:"table:group_participants"`
 
-	GroupID  uuid.UUID `bun:"group_id,pk,type:uuid,index"`
-	PlayerID uuid.UUID `bun:"player_id,pk,type:uuid,index"`
+	GroupID  uuid.UUID `bun:"group_id,pk,type:uuid"`
+	PlayerID uuid.UUID `bun:"player_id,pk,type:uuid"`
 	Position int       `bun:"position,notnull,default:0"`
 
 	Player *PlayerModel `bun:"rel:belongs-to,join:player_id=id"`
@@ -99,7 +99,7 @@ type TeamModel struct {
 	bun.BaseModel `bun:"table:teams"`
 
 	ID           uuid.UUID `bun:"id,pk,type:uuid"`
-	TournamentID uuid.UUID `bun:"tournament_id,type:uuid,index"`
+	TournamentID uuid.UUID `bun:"tournament_id,type:uuid"`
 	Name         string    `bun:"name,notnull"`
 
 	TeamPlayers []TeamPlayerModel `bun:"rel:has-many,join:id=team_id"`
@@ -108,8 +108,8 @@ type TeamModel struct {
 type TeamPlayerModel struct {
 	bun.BaseModel `bun:"table:team_players"`
 
-	TeamID   uuid.UUID `bun:"team_id,pk,type:uuid,index"`
-	PlayerID uuid.UUID `bun:"player_id,pk,type:uuid,index"`
+	TeamID   uuid.UUID `bun:"team_id,pk,type:uuid"`
+	PlayerID uuid.UUID `bun:"player_id,pk,type:uuid"`
 
 	Player *PlayerModel `bun:"rel:belongs-to,join:player_id=id"`
 }
