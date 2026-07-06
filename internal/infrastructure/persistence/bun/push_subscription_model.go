@@ -9,8 +9,8 @@ import (
 
 type PushSubscriptionModel struct {
 	bun.BaseModel `bun:"table:push_subscriptions,alias:ps"`
-	ID            string    `bun:"id,pk,type:uuid,default:gen_random_uuid()"`
-	Endpoint      string    `bun:"endpoint,notnull"`
+	ID            string    `bun:"id,pk,type:uuid"`
+	Endpoint      string    `bun:"endpoint,notnull,unique"`
 	P256dh        string    `bun:"p256dh,notnull"`
 	Auth          string    `bun:"auth,notnull"`
 	UserAgent     string    `bun:"user_agent"`

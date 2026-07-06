@@ -53,6 +53,7 @@ func SetupTestDB() (*bun.DB, error) {
 	bunDB.RegisterModel(
 		(*bunRepo.TournamentParticipantModel)(nil),
 		(*bunRepo.GroupParticipantModel)(nil),
+		(*bunRepo.TeamPlayerModel)(nil),
 	)
 
 	models := []interface{}{
@@ -68,6 +69,10 @@ func SetupTestDB() (*bun.DB, error) {
 		(*bunRepo.GroupModel)(nil),
 		(*bunRepo.GroupParticipantModel)(nil),
 		(*bunRepo.RuleModel)(nil),
+		(*bunRepo.TeamModel)(nil),
+		(*bunRepo.TeamPlayerModel)(nil),
+		(*bunRepo.TournamentOfficialModel)(nil),
+		(*bunRepo.PushSubscriptionModel)(nil),
 	}
 
 	ctx := context.Background()
@@ -149,7 +154,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC)
+	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC, nil)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)

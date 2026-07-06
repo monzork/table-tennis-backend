@@ -3,6 +3,7 @@ package handler
 import (
 	"log/slog"
 	appNotification "table-tennis-backend/internal/application/notification"
+	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/notification"
 
 	"github.com/gofiber/fiber/v2"
@@ -42,6 +43,7 @@ func (h *NotificationHandler) Subscribe(c *fiber.Ctx) error {
 	}
 
 	sub := notification.PushSubscription{
+		ID:        idgen.Generate(),
 		Endpoint:  req.Endpoint,
 		P256dh:    req.Keys.P256dh,
 		Auth:      req.Keys.Auth,
