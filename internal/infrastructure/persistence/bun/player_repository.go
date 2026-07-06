@@ -38,7 +38,7 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 		NationalID:     p.NationalID,
 	}
 
-	_, err = r.db.NewInsert().Model(model).
+	_, err = ExtractDB(ctx, r.db).NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
 		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id").
 		Exec(ctx)
@@ -48,7 +48,7 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 
 func (r *PlayerRepository) GetAllSingles(ctx context.Context) ([]*player.Player, error) {
 	var models []PlayerModel
-	err := r.db.NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc).Scan(ctx)
+	err := ExtractDB(ctx, r.db).NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc).Scan(ctx)
 
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (r *PlayerRepository) GetAllSingles(ctx context.Context) ([]*player.Player,
 
 func (r *PlayerRepository) GetAllDoubles(ctx context.Context) ([]*player.Player, error) {
 	var models []PlayerModel
-	err := r.db.NewSelect().Model(&models).OrderBy("doubles_elo", bun.OrderDesc).Scan(ctx)
+	err := ExtractDB(ctx, r.db).NewSelect().Model(&models).OrderBy("doubles_elo", bun.OrderDesc).Scan(ctx)
 
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (r *PlayerRepository) GetAll(ctx context.Context) ([]*player.Player, error)
 
 func (r *PlayerRepository) GetSinglesByGender(ctx context.Context, gender string) ([]*player.Player, error) {
 	var models []PlayerModel
-	q := r.db.NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc)
+	q := ExtractDB(ctx, r.db).NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc)
 	if gender != "" {
 		q = q.Where("gender = ?", gender)
 	}
@@ -84,7 +84,7 @@ func (r *PlayerRepository) GetSinglesByGender(ctx context.Context, gender string
 
 func (r *PlayerRepository) GetDoublesByGender(ctx context.Context, gender string) ([]*player.Player, error) {
 	var models []PlayerModel
-	q := r.db.NewSelect().Model(&models).OrderBy("doubles_elo", bun.OrderDesc)
+	q := ExtractDB(ctx, r.db).NewSelect().Model(&models).OrderBy("doubles_elo", bun.OrderDesc)
 	if gender != "" {
 		q = q.Where("gender = ?", gender)
 	}
@@ -122,7 +122,7 @@ func (r *PlayerRepository) GetById(ctx context.Context, id string) (*player.Play
 		return nil, err
 	}
 	var model PlayerModel
-	err = r.db.NewSelect().Model(&model).Where("id = ?", uid).Scan(ctx)
+	err = ExtractDB(ctx, r.db).NewSelect().Model(&model).Where("id = ?", uid).Scan(ctx)
 
 	if err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func (r *PlayerRepository) GetByIDs(ctx context.Context, ids []string) ([]*playe
 		return nil, nil
 	}
 	var models []PlayerModel
-	err := r.db.NewSelect().Model(&models).Where("id IN (?)", bun.List(uids)).Scan(ctx)
+	err := ExtractDB(ctx, r.db).NewSelect().Model(&models).Where("id IN (?)", bun.List(uids)).Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -171,13 +171,13 @@ func (r *PlayerRepository) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	_, err = r.db.NewDelete().Model((*PlayerModel)(nil)).Where("id = ?", uid).Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewDelete().Model((*PlayerModel)(nil)).Where("id = ?", uid).Exec(ctx)
 	return err
 }
 
 func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.Player, error) {
 	var models []PlayerModel
-	q := r.db.NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc)
+	q := ExtractDB(ctx, r.db).NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc)
 	if query != "" {
 		lowerQuery := "%" + strings.ToLower(query) + "%"
 		q = q.Where("LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?", lowerQuery, lowerQuery, lowerQuery, lowerQuery)
@@ -192,7 +192,7 @@ func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.
 // selection cards UI, which only ever renders name, gender and singles Elo.
 func (r *PlayerRepository) SearchForSelection(ctx context.Context, query, gender string) ([]*player.Player, error) {
 	var models []PlayerModel
-	q := r.db.NewSelect().
+	q := ExtractDB(ctx, r.db).NewSelect().
 		Model(&models).
 		Column("id", "first_name", "second_name", "last_name", "second_last_name", "gender", "singles_elo").
 		OrderBy("singles_elo", bun.OrderDesc)
@@ -236,7 +236,7 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 		}
 	}
 
-	_, err := r.db.NewInsert().Model(&models).
+	_, err := ExtractDB(ctx, r.db).NewInsert().Model(&models).
 		On("CONFLICT (id) DO UPDATE").
 		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id").
 		Exec(ctx)

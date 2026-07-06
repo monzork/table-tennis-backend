@@ -27,13 +27,13 @@ func (r *DivisionRepository) Save(ctx context.Context, d *division.Division) err
 		Color:        d.Color,
 	}
 
-	_, err := r.db.NewInsert().Model(model).On("CONFLICT (id) DO UPDATE").Exec(ctx)
+	_, err := ExtractDB(ctx, r.db).NewInsert().Model(model).On("CONFLICT (id) DO UPDATE").Exec(ctx)
 	return err
 }
 
 func (r *DivisionRepository) GetAll(ctx context.Context) ([]*division.Division, error) {
 	var models []DivisionModel
-	err := r.db.NewSelect().Model(&models).Order("display_order ASC").Scan(ctx)
+	err := ExtractDB(ctx, r.db).NewSelect().Model(&models).Order("display_order ASC").Scan(ctx)
 
 	if err != nil {
 		return nil, err
@@ -55,13 +55,13 @@ func (r *DivisionRepository) GetAll(ctx context.Context) ([]*division.Division, 
 }
 
 func (r *DivisionRepository) Delete(ctx context.Context, id string) error {
-	_, err := r.db.NewDelete().Model((*DivisionModel)(nil)).Where("id = ?", id).Exec(ctx)
+	_, err := ExtractDB(ctx, r.db).NewDelete().Model((*DivisionModel)(nil)).Where("id = ?", id).Exec(ctx)
 	return err
 }
 
 func (r *DivisionRepository) GetById(ctx context.Context, id string) (*division.Division, error) {
 	var m DivisionModel
-	err := r.db.NewSelect().Model(&m).Where("id = ?", id).Scan(ctx)
+	err := ExtractDB(ctx, r.db).NewSelect().Model(&m).Where("id = ?", id).Scan(ctx)
 
 	if err != nil {
 		return nil, err

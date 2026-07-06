@@ -118,12 +118,12 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 		existingTournamentIDs,
 	)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	var rowBuf strings.Builder
 	if err := c.App().Config().Views.Render(&rowBuf, "admin/partials/event-row", e); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	toastHTML := fmt.Sprintf(`
@@ -170,7 +170,7 @@ func (h *EventHandler) Detail(c *fiber.Ctx) error {
 	wg.Wait()
 
 	if res.err != nil {
-		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+		return ErrorHandler(res.err)
 	}
 
 	return c.Render("admin/event-detail", fiber.Map{
@@ -182,7 +182,7 @@ func (h *EventHandler) Detail(c *fiber.Ctx) error {
 func (h *EventHandler) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if err := h.deleteUC.Execute(c.Context(), id); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	if c.Get("HX-Request") != "" {
@@ -199,12 +199,12 @@ func (h *EventHandler) DeleteBulk(c *fiber.Ctx) error {
 		IDs []string `json:"ids" form:"ids"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 
 	if len(body.IDs) > 0 {
 		if err := h.deleteUC.ExecuteBulk(c.Context(), body.IDs); err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+			return ErrorHandler(err)
 		}
 	}
 
@@ -239,7 +239,7 @@ func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 	wg.Wait()
 
 	if res.err != nil {
-		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+		return ErrorHandler(res.err)
 	}
 
 	return c.Render("public/event-detail", merge(tMap(lang), fiber.Map{
@@ -255,7 +255,7 @@ func (h *EventHandler) ExportEventPDF(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	pdfBytes, err := h.exportPdfUC.Execute(c.Context(), idStr)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	c.Set("Content-Type", "application/pdf")
@@ -378,7 +378,7 @@ func (h *EventHandler) AdminBoard(c *fiber.Ctx) error {
 	lang := getLang(c)
 	e, _, scheduled, inProgress, finished, err := h.getBoardData(c, c.Params("id"))
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Build AllDivisions from the board cards (same approach as tournament Board handler)
@@ -438,7 +438,7 @@ func (h *EventHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	lang := getLang(c)
 	e, _, scheduled, inProgress, finished, err := h.getBoardData(c, c.Params("id"))
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	tables := buildEventTables(e, inProgress)
@@ -522,7 +522,7 @@ func (h *EventHandler) ShowEditForm(c *fiber.Ctx) error {
 	id := c.Params("id")
 	e, err := h.getByID.Execute(c.Context(), id)
 	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+		return ErrorHandler(err)
 	}
 	return c.Render("admin/partials/event-edit-form", fiber.Map{
 		"Event": e,
@@ -539,7 +539,7 @@ func (h *EventHandler) Update(c *fiber.Ctx) error {
 
 	e, err := h.updateUC.Execute(c.Context(), id, name, startDate, endDate, numTables)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	if c.Get("HX-Request") != "" {

@@ -61,7 +61,7 @@ func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (
 				}
 			}
 		}
-		if err := t.AssignGroupsByDivisions(divsList); err == nil {
+		if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err == nil {
 			_ = uc.repo.Update(ctx, t)
 		}
 	}
@@ -222,7 +222,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 			}
 
 			if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
-				if err := t.AssignGroupsByDivisions(divsList); err != nil {
+				if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err != nil {
 					return nil, err
 				}
 			}
@@ -247,7 +247,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 		}
 
 		if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
-			if err := t.AssignGroupsByDivisions(divsList); err != nil {
+			if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err != nil {
 				return nil, err
 			}
 		}

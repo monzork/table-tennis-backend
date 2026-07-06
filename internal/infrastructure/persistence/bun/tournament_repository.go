@@ -40,16 +40,13 @@ func generateUniqueTournamentPIN(usedPINs map[string]bool) string {
 }
 
 func (r *TournamentRepository) Save(ctx context.Context, t *tournament.Tournament) error {
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
 	if err := r.saveTx(ctx, tx, t); err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
+	})
 }
 
 func (r *TournamentRepository) SaveTx(ctx context.Context, tx bun.IDB, t *tournament.Tournament) error {
@@ -201,7 +198,7 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *tourna
 
 func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tournament, error) {
 	var models []TournamentModel
-	if err := r.db.NewSelect().Model(&models).Order("start_date DESC").Scan(ctx); err != nil {
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&models).Order("start_date DESC").Scan(ctx); err != nil {
 		return nil, err
 	}
 
@@ -211,7 +208,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 		Count        int       `bun:"count"`
 	}
 	var counts []countRow
-	_ = r.db.NewSelect().
+	_ = ExtractDB(ctx, r.db).NewSelect().
 		TableExpr("tournament_participants").
 		ColumnExpr("tournament_id, COUNT(*) AS count").
 		GroupExpr("tournament_id").
@@ -267,14 +264,14 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 	}
 
 	model := new(TournamentModel)
-	err = r.db.NewSelect().Model(model).Where("id = ?", id).Scan(ctx)
+	err = ExtractDB(ctx, r.db).NewSelect().Model(model).Where("id = ?", id).Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// ── 1. Load participants ────────────────────────────────────────────────
 	var partModels []TournamentParticipantModel
-	_ = r.db.NewSelect().Model(&partModels).Where("tournament_id = ?", id).Scan(ctx)
+	_ = ExtractDB(ctx, r.db).NewSelect().Model(&partModels).Where("tournament_id = ?", id).Scan(ctx)
 
 	// Collect all player IDs we'll need
 	playerIDSet := make(map[uuid.UUID]bool)
@@ -284,7 +281,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 
 	// ── 2. Load groups and group participants in batch ───────────────────────
 	var groupModels []GroupModel
-	_ = r.db.NewSelect().Model(&groupModels).Where("tournament_id = ?", id).Order("name ASC").Scan(ctx)
+	_ = ExtractDB(ctx, r.db).NewSelect().Model(&groupModels).Where("tournament_id = ?", id).Order("name ASC").Scan(ctx)
 
 	groupIDs := make([]uuid.UUID, len(groupModels))
 	for i, gm := range groupModels {
@@ -293,7 +290,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 
 	var allGPModels []GroupParticipantModel
 	if len(groupIDs) > 0 {
-		_ = r.db.NewSelect().Model(&allGPModels).Where("group_id IN (?)", bun.List(groupIDs)).Order("group_id", "position ASC").Scan(ctx)
+		_ = ExtractDB(ctx, r.db).NewSelect().Model(&allGPModels).Where("group_id IN (?)", bun.List(groupIDs)).Order("group_id", "position ASC").Scan(ctx)
 	}
 
 	for _, gp := range allGPModels {
@@ -302,7 +299,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 
 	// ── 3. Load teams and team players in batch ─────────────────────────────
 	var teamModels []TeamModel
-	_ = r.db.NewSelect().Model(&teamModels).Where("tournament_id = ?", model.ID).Order("name ASC").Scan(ctx)
+	_ = ExtractDB(ctx, r.db).NewSelect().Model(&teamModels).Where("tournament_id = ?", model.ID).Order("name ASC").Scan(ctx)
 
 	teamIDs := make([]uuid.UUID, len(teamModels))
 	teamMap := make(map[uuid.UUID]*TeamModel)
@@ -314,7 +311,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 
 	var allTPModels []TeamPlayerModel
 	if len(teamIDs) > 0 {
-		_ = r.db.NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.List(teamIDs)).Scan(ctx)
+		_ = ExtractDB(ctx, r.db).NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.List(teamIDs)).Scan(ctx)
 	}
 
 	for _, tp := range allTPModels {
@@ -330,7 +327,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 	playerCache := make(map[uuid.UUID]*PlayerModel)
 	if len(playerIDs) > 0 {
 		var allPlayers []PlayerModel
-		_ = r.db.NewSelect().Model(&allPlayers).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx)
+		_ = ExtractDB(ctx, r.db).NewSelect().Model(&allPlayers).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx)
 		for i := range allPlayers {
 			playerCache[allPlayers[i].ID] = &allPlayers[i]
 		}
@@ -469,7 +466,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 
 	// ── 8. Load matches and sets in batch ───────────────────────────────────
 	var matchModels []MatchModel
-	if err := r.db.NewSelect().Model(&matchModels).Where("tournament_id = ?", id).Scan(ctx); err != nil && err != sql.ErrNoRows {
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&matchModels).Where("tournament_id = ?", id).Scan(ctx); err != nil && err != sql.ErrNoRows {
 		// Just ignore if matches fail to load
 	}
 
@@ -480,7 +477,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 	}
 	var allSetModels []MatchSetModel
 	if len(matchIDs) > 0 {
-		_ = r.db.NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("match_id", "set_number ASC").Scan(ctx)
+		_ = ExtractDB(ctx, r.db).NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("match_id", "set_number ASC").Scan(ctx)
 	}
 	setsByMatch := make(map[string][]MatchSetModel)
 	for _, sm := range allSetModels {
@@ -655,11 +652,7 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		eventIDPtr = &uid
 	}
 
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
 	model := &TournamentModel{
 		ID:                 tID,
@@ -821,7 +814,8 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		}
 	}
 
-	return tx.Commit()
+	return nil
+	})
 }
 
 func (r *TournamentRepository) UpdateGroups(ctx context.Context, t *tournament.Tournament) error {
@@ -830,11 +824,7 @@ func (r *TournamentRepository) UpdateGroups(ctx context.Context, t *tournament.T
 		return err
 	}
 
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
 	// Scrub existing groups and group participants
 	tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE tournament_id = ?)", tID).Exec(ctx)
@@ -876,7 +866,8 @@ func (r *TournamentRepository) UpdateGroups(ctx context.Context, t *tournament.T
 		}
 	}
 
-	return tx.Commit()
+	return nil
+	})
 }
 
 func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
@@ -885,11 +876,7 @@ func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
 		return err
 	}
 
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 	// Manual cascade since SQLite FK cascade may not be enabled
 	tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE tournament_id = ?)", id).Exec(ctx)
 	tx.NewDelete().TableExpr("groups").Where("tournament_id = ?", id).Exec(ctx)
@@ -898,12 +885,13 @@ func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
 	if err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
+	})
 }
 
 func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, deep bool) ([]*tournament.Tournament, error) {
 	var models []TournamentModel
-	if err := r.db.NewSelect().Model(&models).Where("event_id = ?", eventID).Order("start_date DESC").Scan(ctx); err != nil {
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&models).Where("event_id = ?", eventID).Order("start_date DESC").Scan(ctx); err != nil {
 		return nil, err
 	}
 	if len(models) == 0 {
@@ -927,11 +915,11 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	var allSetModels []MatchSetModel
 
 	eg.Go(func() error {
-		return r.db.NewSelect().Model(&allPartModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Scan(egCtx)
+		return ExtractDB(ctx, r.db).NewSelect().Model(&allPartModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Scan(egCtx)
 	})
 
 	eg.Go(func() error {
-		err := r.db.NewSelect().Model(&allTeamModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Order("name ASC").Scan(egCtx)
+		err := ExtractDB(ctx, r.db).NewSelect().Model(&allTeamModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Order("name ASC").Scan(egCtx)
 		if err != nil {
 			return err
 		}
@@ -940,7 +928,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 			for i, tm := range allTeamModels {
 				teamIDs[i] = tm.ID
 			}
-			return r.db.NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.List(teamIDs)).Scan(egCtx)
+			return ExtractDB(ctx, r.db).NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.List(teamIDs)).Scan(egCtx)
 		}
 		return nil
 	})
@@ -948,7 +936,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	if deep {
 		eg.Go(func() error {
 			if len(tournamentIDs) > 0 {
-				if err := r.db.NewSelect().Model(&matchModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Scan(egCtx); err != nil {
+				if err := ExtractDB(ctx, r.db).NewSelect().Model(&matchModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Scan(egCtx); err != nil {
 					return err
 				}
 				matchIDs := make([]uuid.UUID, len(matchModels))
@@ -956,7 +944,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 					matchIDs[i] = mm.ID
 				}
 				if len(matchIDs) > 0 {
-					return r.db.NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("match_id", "set_number ASC").Scan(egCtx)
+					return ExtractDB(ctx, r.db).NewSelect().Model(&allSetModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("match_id", "set_number ASC").Scan(egCtx)
 				}
 			}
 			return nil
@@ -984,7 +972,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	playerCache := make(map[uuid.UUID]*PlayerModel)
 	if len(playerIDs) > 0 {
 		var allPlayers []PlayerModel
-		_ = r.db.NewSelect().Model(&allPlayers).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx)
+		_ = ExtractDB(ctx, r.db).NewSelect().Model(&allPlayers).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx)
 		for i := range allPlayers {
 			playerCache[allPlayers[i].ID] = &allPlayers[i]
 		}
@@ -1231,7 +1219,7 @@ func (r *TournamentRepository) SaveTeam(ctx context.Context, team *tournament.Te
 		TournamentID: tID,
 		Name:         team.Name,
 	}
-	_, err = r.db.NewInsert().Model(tmModel).Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewInsert().Model(tmModel).Exec(ctx)
 	return err
 }
 
@@ -1240,7 +1228,7 @@ func (r *TournamentRepository) DeleteTeam(ctx context.Context, idStr string) err
 	if err != nil {
 		return err
 	}
-	_, err = r.db.NewDelete().Model((*TeamModel)(nil)).Where("id = ?", id).Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewDelete().Model((*TeamModel)(nil)).Where("id = ?", id).Exec(ctx)
 	return err
 }
 
@@ -1255,7 +1243,7 @@ func (r *TournamentRepository) AddPlayerToTeam(ctx context.Context, teamIDStr st
 	}
 
 	var tm TeamModel
-	if err := r.db.NewSelect().Model(&tm).Where("id = ?", teamID).Scan(ctx); err != nil {
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&tm).Where("id = ?", teamID).Scan(ctx); err != nil {
 		return err
 	}
 
@@ -1265,7 +1253,7 @@ func (r *TournamentRepository) AddPlayerToTeam(ctx context.Context, teamIDStr st
 	}
 
 	var pm PlayerModel
-	if err := r.db.NewSelect().Model(&pm).Where("id = ?", playerID).Scan(ctx); err != nil {
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&pm).Where("id = ?", playerID).Scan(ctx); err != nil {
 		return err
 	}
 
@@ -1307,7 +1295,7 @@ func (r *TournamentRepository) AddPlayerToTeam(ctx context.Context, teamIDStr st
 		TeamID:   teamID,
 		PlayerID: playerID,
 	}
-	_, err = r.db.NewInsert().Model(tpModel).Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewInsert().Model(tpModel).Exec(ctx)
 	return err
 }
 
@@ -1320,7 +1308,7 @@ func (r *TournamentRepository) RemovePlayerFromTeam(ctx context.Context, teamIDS
 	if err != nil {
 		return err
 	}
-	_, err = r.db.NewDelete().Model((*TeamPlayerModel)(nil)).Where("team_id = ? AND player_id = ?", teamID, playerID).Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewDelete().Model((*TeamPlayerModel)(nil)).Where("team_id = ? AND player_id = ?", teamID, playerID).Exec(ctx)
 	return err
 }
 
@@ -1333,7 +1321,7 @@ func (r *TournamentRepository) UpdateParticipantElo(ctx context.Context, tournam
 	if err != nil {
 		return err
 	}
-	_, err = r.db.NewUpdate().
+	_, err = ExtractDB(ctx, r.db).NewUpdate().
 		TableExpr("tournament_participants").
 		Set("elo_after_singles = ?, elo_after_doubles = ?", singlesElo, doublesElo).
 		Where("tournament_id = ? AND player_id = ?", tID, pID).
@@ -1353,7 +1341,7 @@ func (r *TournamentRepository) UpdateParticipantEloBefore(ctx context.Context, t
 	if err != nil {
 		return err
 	}
-	_, err = r.db.NewUpdate().
+	_, err = ExtractDB(ctx, r.db).NewUpdate().
 		TableExpr("tournament_participants").
 		Set("elo_before_singles = ?, elo_before_doubles = ?", singlesElo, doublesElo).
 		Where("tournament_id = ? AND player_id = ?", tID, pID).
@@ -1370,11 +1358,7 @@ func (r *TournamentRepository) UpdateParticipantsElo(ctx context.Context, tourna
 		return err
 	}
 
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
 	for _, p := range players {
 		pID, err := uuid.Parse(p.ID)
@@ -1391,7 +1375,8 @@ func (r *TournamentRepository) UpdateParticipantsElo(ctx context.Context, tourna
 		}
 	}
 
-	return tx.Commit()
+	return nil
+	})
 }
 
 // AddParticipant inserts a single player into tournament_participants, e.g. to
@@ -1412,7 +1397,7 @@ func (r *TournamentRepository) AddParticipant(ctx context.Context, tournamentID 
 		EloBeforeSingles: &singlesElo,
 		EloBeforeDoubles: &doublesElo,
 	}
-	_, err = r.db.NewInsert().Model(model).Ignore().Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewInsert().Model(model).Ignore().Exec(ctx)
 	return err
 }
 
@@ -1426,11 +1411,7 @@ func (r *TournamentRepository) RemoveParticipant(ctx context.Context, tournament
 	if err != nil {
 		return err
 	}
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 	// Remove from group participants
 	tx.NewDelete().TableExpr("group_participants").
 		Where("player_id = ? AND group_id IN (SELECT id FROM groups WHERE tournament_id = ?)", pID, tID).
@@ -1442,7 +1423,8 @@ func (r *TournamentRepository) RemoveParticipant(ctx context.Context, tournament
 	if err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
+	})
 }
 
 
@@ -1452,7 +1434,7 @@ func (r *TournamentRepository) generateUniqueParticipantPIN(ctx context.Context,
 		_, _ = cryptorand.Read(b[:])
 		pinVal := int(binary.BigEndian.Uint32(b[:]))%9000 + 1000
 		pin := fmt.Sprintf("%04d", pinVal)
-		count, err := r.db.NewSelect().
+		count, err := ExtractDB(ctx, r.db).NewSelect().
 			Model((*TournamentParticipantModel)(nil)).
 			Where("tournament_id = ? AND pin = ?", tournamentID, pin).
 			Count(ctx)
@@ -1468,7 +1450,7 @@ func (r *TournamentRepository) GetEventNumTables(ctx context.Context, eventID st
 		return 0, err
 	}
 	var eventModel EventModel
-	err = r.db.NewSelect().
+	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(&eventModel).
 		Column("num_tables").
 		Where("id = ?", eID).
@@ -1486,7 +1468,7 @@ func (r *TournamentRepository) GetParticipantSnapshots(ctx context.Context, tour
 	}
 
 	var snapshots []TournamentParticipantModel
-	err = r.db.NewSelect().
+	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(&snapshots).
 		Where("tournament_id = ?", tID).
 		Scan(ctx)
@@ -1519,7 +1501,7 @@ func (r *TournamentRepository) GetParticipantPIN(ctx context.Context, tournament
 		return "", err
 	}
 	var part TournamentParticipantModel
-	err = r.db.NewSelect().
+	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(&part).
 		Where("tournament_id = ? AND player_id = ?", tID, pID).
 		Scan(ctx)
@@ -1536,7 +1518,7 @@ func (r *TournamentRepository) GetParticipantPINsByTournament(ctx context.Contex
 		return nil, err
 	}
 	var parts []TournamentParticipantModel
-	err = r.db.NewSelect().
+	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(&parts).
 		Column("player_id", "pin").
 		Where("tournament_id = ?", tID).
@@ -1560,14 +1542,14 @@ func (r *TournamentRepository) GetParticipantOrOfficialByPIN(ctx context.Context
 	var playerID string
 
 	// Check participants
-	err := r.db.NewSelect().Table("tournament_participants").Column("player_id").
+	err := ExtractDB(ctx, r.db).NewSelect().Table("tournament_participants").Column("player_id").
 		Where("tournament_id = ? AND pin = ?", tournamentID, pin).Scan(ctx, &playerID)
 	if err == nil && playerID != "" {
 		return playerID, nil
 	}
 
 	// Check officials
-	err = r.db.NewSelect().Table("tournament_officials").Column("player_id").
+	err = ExtractDB(ctx, r.db).NewSelect().Table("tournament_officials").Column("player_id").
 		Where("tournament_id = ? AND pin = ?", tournamentID, pin).Scan(ctx, &playerID)
 	if err == nil && playerID != "" {
 		return playerID, nil
@@ -1590,7 +1572,7 @@ func (r *TournamentRepository) AddOfficial(ctx context.Context, tournamentID str
 		PlayerID:     pID,
 		Pin:          pin,
 	}
-	_, err = r.db.NewInsert().Model(official).On("CONFLICT (tournament_id, player_id) DO UPDATE").Set("pin = EXCLUDED.pin").Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewInsert().Model(official).On("CONFLICT (tournament_id, player_id) DO UPDATE").Set("pin = EXCLUDED.pin").Exec(ctx)
 	return err
 }
 
@@ -1603,7 +1585,7 @@ func (r *TournamentRepository) RemoveOfficial(ctx context.Context, tournamentID 
 	if err != nil {
 		return err
 	}
-	_, err = r.db.NewDelete().Model((*TournamentOfficialModel)(nil)).Where("tournament_id = ? AND player_id = ?", tID, pID).Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewDelete().Model((*TournamentOfficialModel)(nil)).Where("tournament_id = ? AND player_id = ?", tID, pID).Exec(ctx)
 	return err
 }
 
@@ -1613,7 +1595,7 @@ func (r *TournamentRepository) GetOfficials(ctx context.Context, tournamentID st
 		return nil, err
 	}
 	var officials []TournamentOfficialModel
-	if err := r.db.NewSelect().Model(&officials).Where("tournament_id = ?", tID).Scan(ctx); err != nil {
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&officials).Where("tournament_id = ?", tID).Scan(ctx); err != nil {
 		return nil, err
 	}
 	var snapshots []tournament.ParticipantSnapshot
@@ -1646,7 +1628,7 @@ func (r *TournamentRepository) UpdateEventIDBulk(ctx context.Context, tournament
 		return err
 	}
 
-	_, err = r.db.NewUpdate().
+	_, err = ExtractDB(ctx, r.db).NewUpdate().
 		Model((*TournamentModel)(nil)).
 		Set("event_id = ?", eventUUID).
 		Where("id IN (?)", bun.List(uuids)).

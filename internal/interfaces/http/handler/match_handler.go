@@ -117,7 +117,7 @@ func (h *MatchHandler) Create(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 
 	if _, err := uuid.Parse(body.TournamentID); err != nil {
@@ -140,7 +140,7 @@ func (h *MatchHandler) Create(c *fiber.Ctx) error {
 
 	newMatch, err := h.createUC.Execute(c.Context(), body.TournamentID, body.MatchType, teamA, teamB)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Score modal requests come without HX-Request header — return JSON with match ID
@@ -157,7 +157,7 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 		WinnerTeam string `json:"winnerTeam" form:"winnerTeam"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 
 	mUUID, err := uuid.Parse(body.MatchID)
@@ -172,7 +172,7 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 
 	t, err := h.tournamentRepo.GetByID(c.Context(), mModel.TournamentID.String())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	var matched *tournament.Match
@@ -189,7 +189,7 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 
 	tx, err := h.matchRepo.DB().BeginTx(c.Context(), nil)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	defer tx.Rollback()
 
@@ -201,7 +201,7 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 
 	_, err = tx.NewUpdate().Model(mModel).WherePK().Column("status", "winner_team", "updated_at").Exec(c.Context())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Advance winner to next match slot if configured
@@ -282,7 +282,7 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Apply Elo
@@ -1020,7 +1020,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		Scores       []string `json:"scores" form:"scores[]"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 
 	if matchID == "" {
@@ -1142,7 +1142,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	}
 
 	if err := h.updateScoreUC.Execute(c.Context(), matchID, body.Scores, body.TournamentID, body.Stage); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Broadcast real-time update to all bracket viewers for this tournament
@@ -1641,12 +1641,12 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, tourna
 
 	t, err := h.tournamentRepo.GetByID(c.Context(), tournamentID)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	parent, err := h.matchRepo.GetByID(c.Context(), parentUUID)
 	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, err.Error())
+		return ErrorHandler(err)
 	}
 
 	bestOf := 5
@@ -1951,7 +1951,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 	// Fetch fully loaded tournament to get table counts & division details
 	t, err := h.tournamentRepo.GetByID(c.Context(), m.TournamentID.String())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Override table number if provided manually in the form
@@ -2103,7 +2103,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 
 	_, err = h.matchRepo.DB().NewUpdate().Model(m).WherePK().Column("status", "updated_at", "table_number", "pin").Exec(c.Context())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Broadcast real-time update to all bracket viewers for this tournament
@@ -2116,7 +2116,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 	// Refresh tournament to get updated matches
 	t, err = h.tournamentRepo.GetByID(c.Context(), m.TournamentID.String())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	var matched *tournament.Match
@@ -2154,13 +2154,13 @@ func (h *MatchHandler) Reset(c *fiber.Ctx) error {
 
 	_, err = h.matchRepo.DB().NewDelete().TableExpr("match_sets").Where("match_id = ?", mUUID).Exec(c.Context())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	_, err = h.matchRepo.DB().NewUpdate().Model(m).WherePK().
 		Column("status", "winner_team", "table_number", "updated_at").Exec(c.Context())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	h.broadcastToTournamentOrEvent(c, m.TournamentID.String(), map[string]string{

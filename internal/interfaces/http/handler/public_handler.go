@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"table-tennis-backend/internal/application/player"
@@ -134,7 +133,7 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Honeypot check: if 'website' is filled, it's likely a bot
@@ -145,7 +144,7 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 	}
 
 	_, err := h.registerPlayerUC.Execute(
-		context.Background(),
+		c.Context(),
 		body.FirstName,
 		body.SecondName,
 		body.LastName,
@@ -161,7 +160,7 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 	)
 
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	return c.Render("register-success", merge(tMap(lang), fiber.Map{
@@ -175,9 +174,9 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 // ShowTournamentRegistration lists all open tournaments.
 func (h *PublicHandler) ShowTournamentRegistration(c *fiber.Ctx) error {
 	lang := getLang(c)
-	tournaments, err := h.selfRegisterUC.GetOpenTournaments(context.Background())
+	tournaments, err := h.selfRegisterUC.GetOpenTournaments(c.Context())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	return c.Render("tournament-register", merge(tMap(lang), fiber.Map{
 		"Title":       i18n.T(lang, "tourney_reg.title"),
@@ -189,9 +188,9 @@ func (h *PublicHandler) ShowTournamentRegistration(c *fiber.Ctx) error {
 func (h *PublicHandler) ShowTournamentRegisterForm(c *fiber.Ctx) error {
 	lang := getLang(c)
 	tid := c.Params("id")
-	tournaments, err := h.selfRegisterUC.GetOpenTournaments(context.Background())
+	tournaments, err := h.selfRegisterUC.GetOpenTournaments(c.Context())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	// Find the specific tournament
 	var target interface{}
@@ -234,7 +233,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 		Honeypot       string `form:"website"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Bot protection
@@ -246,7 +245,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 	}
 
 	t, playerName, err := h.selfRegisterUC.Execute(
-		context.Background(),
+		c.Context(),
 		body.TournamentID,
 		body.FirstName,
 		body.SecondName,
@@ -262,7 +261,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 
 	if err != nil {
 		// Re-render with error
-		tournaments, _ := h.selfRegisterUC.GetOpenTournaments(context.Background())
+		tournaments, _ := h.selfRegisterUC.GetOpenTournaments(c.Context())
 		return c.Render("tournament-register", merge(tMap(lang), fiber.Map{
 			"Title":        i18n.T(lang, "tourney_reg.title"),
 			"Tournaments":  tournaments,
@@ -282,7 +281,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 // Sitemap generates a dynamic XML sitemap.
 func (h *PublicHandler) Sitemap(c *fiber.Ctx) error {
 	baseURL := c.BaseURL()
-	tournaments, _ := h.selfRegisterUC.GetOpenTournaments(context.Background()) // we can use GetOpenTournaments or ideally all tournaments if available. Actually, just public ones.
+	tournaments, _ := h.selfRegisterUC.GetOpenTournaments(c.Context()) // we can use GetOpenTournaments or ideally all tournaments if available. Actually, just public ones.
 
 	var sb strings.Builder
 	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)

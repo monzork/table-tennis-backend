@@ -80,7 +80,7 @@ func (uc *RegenerateGroupSeedsUseCase) Execute(ctx context.Context, tournamentID
 		}
 	}
 
-	if err := t.AssignGroupsByDivisions(divsList); err != nil {
+	if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err != nil {
 		return err
 	}
 

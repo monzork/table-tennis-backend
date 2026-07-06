@@ -155,7 +155,7 @@ func (h *PlayerHandler) Search(c *fiber.Ctx) error {
 	query := c.Query("q")
 	players, err := h.searchPlayerUC.Execute(c.Context(), query)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	return c.Render("admin/partials/player-list-rows", fiber.Map{
 		"Players": players,
@@ -175,7 +175,7 @@ func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
 
 	players, err := h.searchPlayerSelectionUC.Execute(c.Context(), query, gender)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Build selected map: preserve existing selections OR select all returned

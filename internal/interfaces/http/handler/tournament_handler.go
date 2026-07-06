@@ -96,7 +96,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		NumTables      int    `form:"numTables" json:"numTables"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 
 	// Parse arrays directly from PostArgs since the form is application/x-www-form-urlencoded
@@ -202,7 +202,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		body.TeamFormat, body.NumTables, hasThirdPlaceMatch, divisionFormats,
 	)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	return c.Render("admin/partials/tournament-row", t)
@@ -249,7 +249,7 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	wg.Wait()
 
 	if res.err != nil {
-		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+		return ErrorHandler(res.err)
 	}
 	t := res.tournament
 	players := res.players
@@ -386,10 +386,10 @@ func (h *TournamentHandler) AddOfficial(c *fiber.Ctx) error {
 		PlayerID string `form:"playerId"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 	if err := h.getByID.AddOfficial(c.Context(), tournamentID, body.PlayerID); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
@@ -402,7 +402,7 @@ func (h *TournamentHandler) RemoveOfficial(c *fiber.Ctx) error {
 	tournamentID := c.Params("id")
 	playerID := c.Params("playerId")
 	if err := h.getByID.RemoveOfficial(c.Context(), tournamentID, playerID); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
@@ -415,7 +415,7 @@ func (h *TournamentHandler) RemoveParticipant(c *fiber.Ctx) error {
 	tournamentID := c.Params("id")
 	playerID := c.Params("playerId")
 	if err := h.removeParticipantUC.Execute(c.Context(), tournamentID, playerID); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
@@ -452,7 +452,7 @@ func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
 	wg.Wait()
 
 	if res.err != nil {
-		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+		return ErrorHandler(res.err)
 	}
 	return c.Render("admin/partials/tournament-edit-form", fiber.Map{
 		"Tournament": res.tournament,
@@ -476,7 +476,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		NumTables        int    `form:"numTables" json:"numTables"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 
 	var participantIDs []string
@@ -581,7 +581,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch, divisionFormats,
 	)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	if c.Get("HX-Request") != "" {
@@ -594,7 +594,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 func (h *TournamentHandler) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if err := h.deleteUC.Execute(c.Context(), id); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		if c.Get("HX-Current-URL") != "" && fmt.Sprintf("/admin/tournaments/%s", id) == c.Get("HX-Current-URL") {
@@ -608,7 +608,7 @@ func (h *TournamentHandler) Delete(c *fiber.Ctx) error {
 func (h *TournamentHandler) Finish(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	if err := h.finishUC.Execute(c.Context(), idStr); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
@@ -620,7 +620,7 @@ func (h *TournamentHandler) Finish(c *fiber.Ctx) error {
 func (h *TournamentHandler) RegenerateGroupSeeds(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	if err := h.regenerateSeedsUC.Execute(c.Context(), idStr); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Trigger", "reload-bracket, reload-matches")
@@ -637,13 +637,13 @@ func (h *TournamentHandler) UpdateParticipantEloBefore(c *fiber.Ctx) error {
 		DoublesElo int16  `form:"doublesElo"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 	if body.PlayerID == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "playerId is required")
 	}
 	if err := h.updateParticipantEloUC.Execute(c.Context(), idStr, body.PlayerID, body.SinglesElo, body.DoublesElo); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Trigger", "reload-bracket, reload-matches")
@@ -656,7 +656,7 @@ func (h *TournamentHandler) Export(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	csvBytes, err := h.exportUC.Execute(c.Context(), idStr)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	c.Set("Content-Type", "text/csv")
@@ -668,7 +668,7 @@ func (h *TournamentHandler) ExportPDF(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	pdfBytes, err := h.exportPdfUC.Execute(c.Context(), idStr)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	c.Set("Content-Type", "application/pdf")
@@ -684,7 +684,7 @@ func (h *TournamentHandler) MovePlayer(c *fiber.Ctx) error {
 		TargetIndex   *int   `json:"targetIndex" form:"targetIndex"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 
 	targetIndex := -1
@@ -693,7 +693,7 @@ func (h *TournamentHandler) MovePlayer(c *fiber.Ctx) error {
 	}
 
 	if err := h.movePlayerUC.Execute(c.Context(), id, body.PlayerID, body.TargetGroupID, targetIndex); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 
 	if c.Get("HX-Request") != "" {
@@ -709,10 +709,10 @@ func (h *TournamentHandler) CreateTeam(c *fiber.Ctx) error {
 		Name string `form:"name"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 	if _, err := h.createTeamUC.Execute(c.Context(), tournamentID, body.Name); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
@@ -725,7 +725,7 @@ func (h *TournamentHandler) DeleteTeam(c *fiber.Ctx) error {
 	tournamentID := c.Params("id")
 	teamID := c.Params("teamId")
 	if err := h.deleteTeamUC.Execute(c.Context(), teamID); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
@@ -741,10 +741,10 @@ func (h *TournamentHandler) AssignPlayerToTeam(c *fiber.Ctx) error {
 		PlayerID string `form:"playerId"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return ErrorHandler(err)
 	}
 	if err := h.assignPlayerToTeamUC.Execute(c.Context(), teamID, body.PlayerID); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
@@ -758,7 +758,7 @@ func (h *TournamentHandler) RemovePlayerFromTeam(c *fiber.Ctx) error {
 	teamID := c.Params("teamId")
 	playerID := c.Params("playerId")
 	if err := h.removePlayerFromTeamUC.Execute(c.Context(), teamID, playerID); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
@@ -771,7 +771,7 @@ func (h *TournamentHandler) PublicList(c *fiber.Ctx) error {
 	lang := getLang(c)
 	tournaments, err := h.getTournamentsUC.Execute(c.Context())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return ErrorHandler(err)
 	}
 	return c.Render("public/tournaments", merge(tMap(lang), fiber.Map{
 		"Tournaments":  tournaments,
@@ -811,7 +811,7 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	wg.Wait()
 
 	if res.err != nil {
-		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+		return ErrorHandler(res.err)
 	}
 	t := res.tournament
 	divisions := res.divisions
@@ -908,7 +908,7 @@ func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	wg.Wait()
 
 	if res.err != nil {
-		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+		return ErrorHandler(res.err)
 	}
 
 	tmap, _ := c.Locals("T").(map[string]string)
@@ -1375,7 +1375,7 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 	wg.Wait()
 
 	if res.err != nil {
-		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+		return ErrorHandler(res.err)
 	}
 	t := res.tournament
 	divs := res.divisions
@@ -1455,7 +1455,7 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	wg.Wait()
 
 	if res.err != nil {
-		return fiber.NewError(fiber.StatusNotFound, res.err.Error())
+		return ErrorHandler(res.err)
 	}
 	t := res.tournament
 	divs := res.divisions

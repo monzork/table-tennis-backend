@@ -201,10 +201,10 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 	wg.Wait()
 
 	if pErr != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, pErr.Error())
+		return ErrorHandler(pErr)
 	}
 	if dErr != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, dErr.Error())
+		return ErrorHandler(dErr)
 	}
 
 	var filteredDivisions []*divisionDomain.Division

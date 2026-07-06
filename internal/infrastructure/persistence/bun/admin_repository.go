@@ -18,7 +18,7 @@ func NewAdminRepository(db *bun.DB) *AdminRepository {
 
 func (r *AdminRepository) GetByUsername(ctx context.Context, username string) (*admin.Admin, error) {
 	var model AdminModel
-	err := r.db.NewSelect().Model(&model).Where("username = ?", username).Scan(ctx)
+	err := ExtractDB(ctx, r.db).NewSelect().Model(&model).Where("username = ?", username).Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (r *AdminRepository) Save(ctx context.Context, a *admin.Admin) error {
 		PasswordHash: a.PasswordHash,
 	}
 
-	_, err = r.db.NewInsert().
+	_, err = ExtractDB(ctx, r.db).NewInsert().
 		Model(model).
 		On("CONFLICT (id) DO UPDATE").
 		Set("username = EXCLUDED.username").
@@ -52,5 +52,5 @@ func (r *AdminRepository) Save(ctx context.Context, a *admin.Admin) error {
 }
 
 func (r *AdminRepository) Count(ctx context.Context) (int, error) {
-	return r.db.NewSelect().Model((*AdminModel)(nil)).Count(ctx)
+	return ExtractDB(ctx, r.db).NewSelect().Model((*AdminModel)(nil)).Count(ctx)
 }
