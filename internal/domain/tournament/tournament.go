@@ -107,6 +107,7 @@ type Tournament struct {
 	Type               string // "singles", "doubles", "teams"
 	EventCategory      string // "men", "women", "mixed", "open"
 	Format             string // "elimination", "groups_elimination", "round_robin"
+	DivisionFormats    map[string]string // overrides Format per division
 	Status             string // "in_progress", "finished"
 	WinnerName         string // Name of the winner (player or team)
 	Participants       []*player.Player
@@ -180,6 +181,16 @@ func NewTournament(id string, name string, tournamentType string, format string,
 	}
 
 	return t, nil
+}
+
+// GetDivisionFormat returns the specific format for a division if it exists, otherwise falls back to the global tournament format.
+func (t *Tournament) GetDivisionFormat(divisionID string) string {
+	if t.DivisionFormats != nil {
+		if fmt, ok := t.DivisionFormats[divisionID]; ok && fmt != "" {
+			return fmt
+		}
+	}
+	return t.Format
 }
 
 // GetEffectiveStageRule returns the stage rule to use for a match, considering division overrides.
@@ -316,6 +327,7 @@ func (t *Tournament) AutoAssignGroups() error {
 }
 
 type DivisionSeeding struct {
+	ID     string
 	Name   string
 	MinElo int16
 	MaxElo *int16
@@ -329,8 +341,9 @@ func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
 
 	// 1. Group participants by division
 	type DivGroup struct {
-		Name    string
-		Players []*player.Player
+		DivisionID string
+		Name       string
+		Players    []*player.Player
 	}
 
 	var divGroups []DivGroup
@@ -378,8 +391,9 @@ func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
 			}
 			if len(dPlayers) > 0 {
 				divGroups = append(divGroups, DivGroup{
-					Name:    d.Name,
-					Players: dPlayers,
+					DivisionID: d.ID,
+					Name:       d.Name,
+					Players:    dPlayers,
 				})
 			}
 		}
@@ -413,9 +427,11 @@ func (t *Tournament) AssignGroupsByDivisions(divs []DivisionSeeding) error {
 			return dg.Players[i].SinglesElo > dg.Players[j].SinglesElo
 		})
 
-		if t.Format == "round_robin" || t.Format == "elimination" {
+		divFormat := t.GetDivisionFormat(dg.DivisionID)
+
+		if divFormat == "round_robin" || divFormat == "elimination" {
 			groupName := fmt.Sprintf("%s - Round Robin", dg.Name)
-			if t.Format == "elimination" {
+			if divFormat == "elimination" {
 				groupName = fmt.Sprintf("%s - Bracket Draw", dg.Name)
 			}
 			t.Groups = append(t.Groups, Group{

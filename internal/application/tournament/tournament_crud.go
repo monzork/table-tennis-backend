@@ -52,6 +52,7 @@ func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (
 				for _, d := range divs {
 					if d.Category == "both" || d.Category == t.Type {
 						divsList = append(divsList, tournamentDomain.DivisionSeeding{
+							ID:     d.ID,
 							Name:   d.Name,
 							MinElo: d.MinElo,
 							MaxElo: d.MaxElo,
@@ -124,6 +125,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	teamFormat string,
 	numTables int,
 	hasThirdPlaceMatch bool,
+	divisionFormats map[string]string,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -167,6 +169,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	}
 	t.RegistrationOpen = registrationOpen
 	t.SkipElo = skipElo
+	t.DivisionFormats = divisionFormats
 	t.EventID = eventID
 	t.TeamFormat = teamFormat
 	t.NumTables = numTables
@@ -208,6 +211,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 					for _, d := range divs {
 						if d.Category == "both" || d.Category == tournamentType {
 							divsList = append(divsList, tournamentDomain.DivisionSeeding{
+								ID:     d.ID,
 								Name:   d.Name,
 								MinElo: d.MinElo,
 								MaxElo: d.MaxElo,
@@ -232,6 +236,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 				for _, d := range divs {
 					if d.Category == "both" || d.Category == tournamentType {
 						divsList = append(divsList, tournamentDomain.DivisionSeeding{
+							ID:     d.ID,
 							Name:   d.Name,
 							MinElo: d.MinElo,
 							MaxElo: d.MaxElo,

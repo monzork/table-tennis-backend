@@ -271,6 +271,18 @@
                 <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{.Name}}</span>
                 <input type="hidden" name="division_rule[division_id][]" value="{{.ID}}">
                 
+                {{$divFormat := ""}}
+                {{if $.Tournament.DivisionFormats}}{{$divFormat = index $.Tournament.DivisionFormats .ID}}{{end}}
+                <div class="space-y-1 mt-2 mb-3">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Format Override</label>
+                    <select name="division_formats[{{.ID}}]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                        <option value="" {{if not $divFormat}}selected{{end}}>-- Use Tournament Format --</option>
+                        <option value="elimination" {{if eq $divFormat "elimination"}}selected{{end}}>Elimination</option>
+                        <option value="groups_elimination" {{if eq $divFormat "groups_elimination"}}selected{{end}}>Group + Knockout</option>
+                        <option value="round_robin" {{if eq $divFormat "round_robin"}}selected{{end}}>All Against All</option>
+                    </select>
+                </div>
+                
                 <!-- Group -->
                 {{$groupRule := ""}}
                 {{range $.Tournament.DivisionRules}}{{if and (eq .DivisionID $divID) (eq .Stage "group")}}{{$groupRule = .}}{{end}}{{end}}

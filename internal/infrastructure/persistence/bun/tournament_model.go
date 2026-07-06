@@ -20,9 +20,11 @@ type TournamentModel struct {
 	EndDate            time.Time  `bun:"end_date,notnull"`
 	GroupPassCount     int        `bun:"group_pass_count,notnull,default:2"`
 	RegistrationOpen   bool       `bun:"registration_open,notnull,default:false"`
-	EventID            *uuid.UUID `bun:"event_id,type:uuid"`
-	SkipElo            bool       `bun:"skip_elo,notnull,default:false"`
-	TeamFormat         string     `bun:"team_format,nullzero"`
+	EventID            *uuid.UUID        `bun:"event_id,type:uuid"`
+	SkipElo            bool              `bun:"skip_elo,notnull,default:false"`
+	TeamFormat         string            `bun:"team_format,nullzero"`
+	DivisionFormats    map[string]string `bun:"division_formats,type:json"`
+
 	WinnerName         string     `bun:"winner_name,nullzero"`
 	NumTables          int        `bun:"num_tables,notnull,default:0"`
 	HasThirdPlaceMatch bool       `bun:"has_third_place_match,notnull,default:false"`

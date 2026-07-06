@@ -184,7 +184,23 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		eventID = &eIDStr
 	}
 
-	t, err := h.createUC.Execute(c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate, participantIDs, newPlayers, body.GroupPassCount, stageRules, divisionRules, skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch)
+	divisionFormats := make(map[string]string)
+	for _, divIDBytes := range divisionIDs {
+		divID := string(divIDBytes)
+		if divID == "" {
+			continue
+		}
+		dfStr := string(c.Request().PostArgs().Peek("division_formats[" + divID + "]"))
+		if dfStr != "" {
+			divisionFormats[divID] = dfStr
+		}
+	}
+
+	t, err := h.createUC.Execute(
+		c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
+		participantIDs, newPlayers, body.GroupPassCount, stageRules, divisionRules, skipElo, eventID,
+		body.TeamFormat, body.NumTables, hasThirdPlaceMatch, divisionFormats,
+	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -547,10 +563,22 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		eventID = &eIDStr
 	}
 
+	divisionFormats := make(map[string]string)
+	for _, divIDBytes := range divisionIDs {
+		divID := string(divIDBytes)
+		if divID == "" {
+			continue
+		}
+		dfStr := string(c.Request().PostArgs().Peek("division_formats[" + divID + "]"))
+		if dfStr != "" {
+			divisionFormats[divID] = dfStr
+		}
+	}
+
 	t, err := h.updateUC.Execute(
 		c.Context(), id, body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
 		body.RegistrationOpen, participantIDs, newPlayers, stageRules, divisionRules, body.GroupPassCount,
-		skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch,
+		skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch, divisionFormats,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
