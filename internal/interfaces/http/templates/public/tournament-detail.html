@@ -121,68 +121,29 @@
         </thead>
         <tbody id="public-matches-tbody" class="divide-y divide-white/10">
           {{range .Tournament.Matches}}
-          <tr class="hover:bg-white/10 transition-colors flex flex-col sm:table-row p-4 sm:p-0 border-b border-white/5 sm:border-white/10 relative block w-full mb-3 sm:mb-0 bg-white/5 sm:bg-transparent rounded-2xl sm:rounded-none">
-            
-            {{/* Mobile header (Type & Status) */}}
-            <td class="block sm:hidden p-0 mb-3 border-b border-white/5 pb-3">
-                <div class="flex justify-between items-center">
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                        {{.MatchType}}
-                        {{if .TableNumber}}
-                            <span class="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-mono">T-{{.TableNumber}}</span>
-                        {{end}}
-                    </div>
-                    <div class="flex flex-col items-end gap-1">
-                        {{if eq .Status "finished"}}
-                            <span class="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[9px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
-                            {{if .RefereeID}}
-                              {{$refName := index $.RefereeNames .RefereeID}}
-                              {{if $refName}}
-                                <span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">Updated by: {{$refName}}</span>
-                              {{end}}
-                            {{end}}
-                        {{else if eq .Status "in_progress"}}
-                            <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
-                        {{else}}
-                            <span class="px-2 py-0.5 rounded-full bg-white/5 text-gray-400 text-[9px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
-                        {{end}}
-                    </div>
-                </div>
-            </td>
-
-            {{/* Desktop Type */}}
-            <td class="hidden sm:table-cell p-4 text-gray-300 capitalize">
+          <!-- Desktop Row -->
+          <tr class="hidden sm:table-row hover:bg-white/10 transition-colors border-b border-white/10">
+            <td class="p-4 text-gray-300 capitalize">
               {{.MatchType}}
               {{if .TableNumber}}
               <div class="text-[9px] text-yellow-400 font-bold font-mono mt-1">TABLE {{.TableNumber}}</div>
               {{end}}
             </td>
-
-            {{/* Player A */}}
-            <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0 text-center sm:text-left">
+            <td class="p-4 text-left">
                 {{range .TeamA}}
-                    <div class="text-sm sm:text-xs {{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                    <div class="text-xs {{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
                         {{.FirstNameWithSecond}} <span class="uppercase font-bold">{{.LastNameWithSecond}}</span>
                     </div>
                 {{end}}
             </td>
-            
-            {{/* VS Badge for Mobile */}}
-            <td class="block sm:hidden p-0 mb-2 flex justify-center">
-                <span class="text-[10px] font-black italic text-gray-600 bg-black/40 px-2 py-0.5 rounded-full">VS</span>
-            </td>
-
-            {{/* Player B */}}
-            <td class="block sm:table-cell p-0 sm:p-4 mb-4 sm:mb-0 text-center sm:text-left">
+            <td class="p-4 text-left">
                 {{range .TeamB}}
-                    <div class="text-sm sm:text-xs {{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                    <div class="text-xs {{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
                         {{.FirstNameWithSecond}} <span class="uppercase font-bold">{{.LastNameWithSecond}}</span>
                     </div>
                 {{end}}
             </td>
-
-            {{/* Desktop Status */}}
-            <td class="hidden sm:table-cell p-4">
+            <td class="p-4">
                 <div class="flex flex-col items-start gap-1">
                   {{if eq .Status "finished"}}
                       <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
@@ -199,23 +160,96 @@
                   {{end}}
                 </div>
             </td>
-
-            {{/* Actions */}}
-            <td class="block sm:table-cell p-0 sm:p-4 text-center sm:text-right w-full sm:w-auto">
+            <td class="p-4 text-right">
               {{if eq .Status "scheduled"}}
                 <button hx-post="/public/matches/{{.ID}}/start?tournamentId={{$.Tournament.ID}}"
                         hx-swap="none"
-                        class="w-full sm:w-auto bg-white hover:bg-gray-200 text-black text-[11px] sm:text-[10px] font-bold py-2.5 sm:py-1.5 px-4 rounded-xl sm:rounded-full transition-all uppercase tracking-wider shadow-lg shadow-white/10 active:scale-95">
-                  {{t .T "pub_detail.start"}}
+                        class="bg-white hover:bg-gray-200 text-black text-[10px] font-bold py-1.5 px-4 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-white/10 active:scale-95">
+                  {{t $.T "pub_detail.start"}}
                 </button>
               {{else if eq .Status "in_progress"}}
                 <button hx-get="/public/matches/score/form?matchId={{.ID}}&tournamentId={{$.Tournament.ID}}&stage={{.Stage}}&bestOf=5"
                         hx-target="#public-score-modal-content"
                         hx-on:click="document.getElementById('public-score-modal').classList.remove('hidden')"
-                        class="w-full sm:w-auto bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black text-[11px] sm:text-[10px] font-bold py-2.5 sm:py-1.5 px-4 rounded-xl sm:rounded-full transition-all uppercase tracking-wider shadow-lg shadow-yellow-500/20 active:scale-95">
-                  {{t .T "pub_detail.score"}}
+                        class="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black text-[10px] font-bold py-1.5 px-4 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-yellow-500/20 active:scale-95">
+                  {{t $.T "pub_detail.score"}}
                 </button>
               {{end}}
+            </td>
+          </tr>
+
+          <!-- Mobile Card -->
+          <tr class="sm:hidden block w-full mb-4 bg-white/5 rounded-2xl overflow-hidden border border-white/10 shadow-lg">
+            <td class="block p-4 w-full">
+              <!-- Top bar: Type, Table, Status -->
+              <div class="flex justify-between items-center border-b border-white/5 pb-3 mb-4">
+                  <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                      {{.MatchType}}
+                      {{if .TableNumber}}
+                          <span class="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-mono">T-{{.TableNumber}}</span>
+                      {{end}}
+                  </div>
+                  <div>
+                      {{if eq .Status "finished"}}
+                          <span class="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[9px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
+                      {{else if eq .Status "in_progress"}}
+                          <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
+                      {{else}}
+                          <span class="px-2 py-0.5 rounded-full bg-white/5 text-gray-400 text-[9px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
+                      {{end}}
+                  </div>
+              </div>
+              
+              <!-- Matchup (Player A vs Player B) side-by-side -->
+              <div class="flex justify-between items-center mb-5 gap-2">
+                  <div class="flex-1 flex flex-col items-center text-center">
+                    {{range .TeamA}}
+                      <div class="text-[13px] leading-tight {{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                          {{.FirstNameWithSecond}} <span class="uppercase font-bold block">{{.LastNameWithSecond}}</span>
+                      </div>
+                    {{end}}
+                  </div>
+                  
+                  <div class="shrink-0 flex items-center justify-center">
+                      <span class="text-[9px] font-black italic text-gray-500 bg-black/40 px-2.5 py-1 rounded-full">VS</span>
+                  </div>
+
+                  <div class="flex-1 flex flex-col items-center text-center">
+                    {{range .TeamB}}
+                      <div class="text-[13px] leading-tight {{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                          {{.FirstNameWithSecond}} <span class="uppercase font-bold block">{{.LastNameWithSecond}}</span>
+                      </div>
+                    {{end}}
+                  </div>
+              </div>
+
+              <!-- Action Button / Referee info -->
+              <div class="flex flex-col gap-2">
+                {{if eq .Status "scheduled"}}
+                  <button hx-post="/public/matches/{{.ID}}/start?tournamentId={{$.Tournament.ID}}"
+                          hx-swap="none"
+                          class="w-full bg-white hover:bg-gray-200 text-black text-[11px] font-bold py-3.5 rounded-xl transition-all uppercase tracking-wider shadow-lg shadow-white/10 active:scale-95">
+                    {{t $.T "pub_detail.start"}}
+                  </button>
+                {{else if eq .Status "in_progress"}}
+                  <button hx-get="/public/matches/score/form?matchId={{.ID}}&tournamentId={{$.Tournament.ID}}&stage={{.Stage}}&bestOf=5"
+                          hx-target="#public-score-modal-content"
+                          hx-on:click="document.getElementById('public-score-modal').classList.remove('hidden')"
+                          class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black text-[11px] font-bold py-3.5 rounded-xl transition-all uppercase tracking-wider shadow-lg shadow-yellow-500/20 active:scale-95 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    {{t $.T "pub_detail.score"}}
+                  </button>
+                {{else if eq .Status "finished"}}
+                    {{if .RefereeID}}
+                      {{$refName := index $.RefereeNames .RefereeID}}
+                      {{if $refName}}
+                        <div class="w-full text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest pt-3 border-t border-white/5">
+                          Updated by: {{$refName}}
+                        </div>
+                      {{end}}
+                    {{end}}
+                {{end}}
+              </div>
             </td>
           </tr>
           {{else}}
