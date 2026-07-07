@@ -257,10 +257,33 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	snapshots := res.snapshots
 
 	statusFilter := c.Query("status", "all")
-	if statusFilter != "all" {
+	playerSearch := strings.ToLower(c.Query("player_search", ""))
+
+	if statusFilter != "all" || playerSearch != "" {
 		var filtered []tournamentDomain.Match
 		for _, m := range t.Matches {
-			if m.Status == statusFilter {
+			matchStatus := statusFilter == "all" || m.Status == statusFilter
+			matchPlayer := true
+			
+			if playerSearch != "" {
+				matchPlayer = false
+				for _, p := range m.TeamA {
+					if strings.Contains(strings.ToLower(p.FirstName), playerSearch) || strings.Contains(strings.ToLower(p.LastName), playerSearch) {
+						matchPlayer = true
+						break
+					}
+				}
+				if !matchPlayer {
+					for _, p := range m.TeamB {
+						if strings.Contains(strings.ToLower(p.FirstName), playerSearch) || strings.Contains(strings.ToLower(p.LastName), playerSearch) {
+							matchPlayer = true
+							break
+						}
+					}
+				}
+			}
+			
+			if matchStatus && matchPlayer {
 				filtered = append(filtered, m)
 			}
 		}
@@ -374,6 +397,7 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		"BracketViewModel":      vm,
 		"AvailableParticipants": availableParticipants,
 		"StatusFilter":          statusFilter,
+		"PlayerSearch":          c.Query("player_search", ""),
 		"PlayerPins":            playerPins,
 		"Officials":             res.officials,
 		"ParticipantRows":       rows,
@@ -817,10 +841,33 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	divisions := res.divisions
 
 	statusFilter := c.Query("status", "all")
-	if statusFilter != "all" {
+	playerSearch := strings.ToLower(c.Query("player_search", ""))
+
+	if statusFilter != "all" || playerSearch != "" {
 		var filtered []tournamentDomain.Match
 		for _, m := range t.Matches {
-			if m.Status == statusFilter {
+			matchStatus := statusFilter == "all" || m.Status == statusFilter
+			matchPlayer := true
+			
+			if playerSearch != "" {
+				matchPlayer = false
+				for _, p := range m.TeamA {
+					if strings.Contains(strings.ToLower(p.FirstName), playerSearch) || strings.Contains(strings.ToLower(p.LastName), playerSearch) {
+						matchPlayer = true
+						break
+					}
+				}
+				if !matchPlayer {
+					for _, p := range m.TeamB {
+						if strings.Contains(strings.ToLower(p.FirstName), playerSearch) || strings.Contains(strings.ToLower(p.LastName), playerSearch) {
+							matchPlayer = true
+							break
+						}
+					}
+				}
+			}
+			
+			if matchStatus && matchPlayer {
 				filtered = append(filtered, m)
 			}
 		}
@@ -870,6 +917,7 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 		"BracketViewModel": vm,
 		"Type":             "Tournaments",
 		"StatusFilter":     statusFilter,
+		"PlayerSearch":     c.Query("player_search", ""),
 		"RefereeNames":     refereeNames,
 		"CanonicalURL":     canonicalURL,
 		"OGImage":          c.BaseURL() + "/open_tdm.jpeg",

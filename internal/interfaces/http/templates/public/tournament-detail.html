@@ -96,17 +96,30 @@
            hx-swap="outerHTML">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
       <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "pub_detail.match_title"}}</h2>
-      <select name="status"
-              hx-get="/tournaments/{{.Tournament.ID}}"
-              hx-target="#public-matches-tbody"
-              hx-select="#public-matches-tbody"
-              hx-trigger="change"
-              class="w-full sm:w-auto bg-white/5 border border-white/10 rounded-full px-4 py-2 sm:py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-300 hover:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-white">
-        <option value="all" {{if eq .StatusFilter "all"}}selected{{end}}>{{t .T "status.all"}}</option>
-        <option value="scheduled" {{if eq .StatusFilter "scheduled"}}selected{{end}}>{{t .T "status.scheduled"}}</option>
-        <option value="in_progress" {{if eq .StatusFilter "in_progress"}}selected{{end}}>{{t .T "status.in_progress"}}</option>
-        <option value="finished" {{if eq .StatusFilter "finished"}}selected{{end}}>{{t .T "status.finished"}}</option>
-      </select>
+      <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+        <div class="relative w-full sm:w-auto">
+          <input type="text" name="player_search" placeholder="Search player..." value="{{.PlayerSearch}}"
+                 hx-get="/tournaments/{{.Tournament.ID}}"
+                 hx-target="#public-matches-tbody"
+                 hx-select="#public-matches-tbody"
+                 hx-trigger="keyup changed delay:500ms, search"
+                 hx-include="[name='status']"
+                 class="w-full sm:w-48 bg-white/5 border border-white/10 rounded-full pl-8 pr-4 py-2 sm:py-1.5 text-[10px] font-bold uppercase tracking-wider text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-white transition-all">
+          <svg class="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+        <select name="status"
+                hx-get="/tournaments/{{.Tournament.ID}}"
+                hx-target="#public-matches-tbody"
+                hx-select="#public-matches-tbody"
+                hx-trigger="change"
+                hx-include="[name='player_search']"
+                class="w-full sm:w-auto bg-white/5 border border-white/10 rounded-full px-4 py-2 sm:py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-300 hover:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-white">
+          <option value="all" {{if eq .StatusFilter "all"}}selected{{end}}>{{t .T "status.all"}}</option>
+          <option value="scheduled" {{if eq .StatusFilter "scheduled"}}selected{{end}}>{{t .T "status.scheduled"}}</option>
+          <option value="in_progress" {{if eq .StatusFilter "in_progress"}}selected{{end}}>{{t .T "status.in_progress"}}</option>
+          <option value="finished" {{if eq .StatusFilter "finished"}}selected{{end}}>{{t .T "status.finished"}}</option>
+        </select>
+      </div>
     </div>
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
       <table class="w-full text-left border-collapse text-xs font-medium">
