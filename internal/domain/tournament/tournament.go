@@ -57,6 +57,7 @@ type Match struct {
 	TableNumber  *int
 	Pin          string
 	RoundNumber  int
+	QueuePosition int
 }
 
 type MatchSet struct {

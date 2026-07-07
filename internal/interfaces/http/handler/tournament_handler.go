@@ -843,40 +843,108 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	statusFilter := c.Query("status", "all")
 	playerSearch := strings.ToLower(c.Query("player_search", ""))
 
-	if statusFilter != "all" || playerSearch != "" {
-		var filtered []tournamentDomain.Match
-		for _, m := range t.Matches {
-			matchStatus := statusFilter == "all" || m.Status == statusFilter
-			matchPlayer := true
+	// 1. Generate virtual scheduled matches and append to allMatches
+	allMatches := t.Matches
+	scheduledCards, _, _ := BuildBoardCards(t, divisions)
+	
+	queuePosMap := make(map[string]int)
+	for i, sc := range scheduledCards {
+		key := sc.MatchID
+		if key == "" {
+			key = fmt.Sprintf("virtual_%s_%s", sc.P1Id, sc.P2Id)
+		}
+		queuePosMap[key] = i + 1
+	}
+
+	for i := range allMatches {
+		if allMatches[i].ID != "" {
+			if pos, ok := queuePosMap[allMatches[i].ID]; ok {
+				allMatches[i].QueuePosition = pos
+			}
+		}
+	}
+
+	for _, sc := range scheduledCards {
+		if sc.MatchID == "" {
+			var teamA, teamB []*player.Player
 			
-			if playerSearch != "" {
-				matchPlayer = false
-				for _, p := range m.TeamA {
+			if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
+				for _, tm := range t.Teams {
+					if tm.ID == sc.P1Id {
+						avgElo := tm.AverageElo(t.Type)
+						teamA = append(teamA, &player.Player{
+							ID: tm.ID, FirstName: tm.Name, LastName: " (Team)", SinglesElo: avgElo, DoublesElo: avgElo,
+						})
+					}
+					if tm.ID == sc.P2Id {
+						avgElo := tm.AverageElo(t.Type)
+						teamB = append(teamB, &player.Player{
+							ID: tm.ID, FirstName: tm.Name, LastName: " (Team)", SinglesElo: avgElo, DoublesElo: avgElo,
+						})
+					}
+				}
+			} else {
+				for _, p := range t.Participants {
+					if p.ID == sc.P1Id {
+						teamA = append(teamA, p)
+					}
+					if p.ID == sc.P2Id {
+						teamB = append(teamB, p)
+					}
+				}
+			}
+
+			if len(teamA) > 0 && len(teamB) > 0 {
+				allMatches = append(allMatches, tournamentDomain.Match{
+					ID:           "",
+					TournamentID: t.ID,
+					MatchType:    t.Type,
+					TeamA:        teamA,
+					TeamB:        teamB,
+					Status:       "scheduled",
+					Stage:        sc.Stage,
+					QueuePosition: queuePosMap[fmt.Sprintf("virtual_%s_%s", sc.P1Id, sc.P2Id)],
+				})
+			}
+		}
+	}
+
+	// 2. Build the BracketViewModel using ALL matches
+	tmap, _ := c.Locals("T").(map[string]string)
+	tForVM := *t
+	tForVM.Matches = allMatches
+	vm := BuildTournamentViewModel(&tForVM, divisions, tmap)
+	vm.IsPublic = true
+
+	// 3. Filter matches for the list view below the bracket
+	var displayMatches []tournamentDomain.Match
+	for _, m := range allMatches {
+		matchStatus := statusFilter == "all" || m.Status == statusFilter
+		matchPlayer := true
+		
+		if playerSearch != "" {
+			matchPlayer = false
+			for _, p := range m.TeamA {
+				if strings.Contains(strings.ToLower(p.FirstName), playerSearch) || strings.Contains(strings.ToLower(p.LastName), playerSearch) {
+					matchPlayer = true
+					break
+				}
+			}
+			if !matchPlayer {
+				for _, p := range m.TeamB {
 					if strings.Contains(strings.ToLower(p.FirstName), playerSearch) || strings.Contains(strings.ToLower(p.LastName), playerSearch) {
 						matchPlayer = true
 						break
 					}
 				}
-				if !matchPlayer {
-					for _, p := range m.TeamB {
-						if strings.Contains(strings.ToLower(p.FirstName), playerSearch) || strings.Contains(strings.ToLower(p.LastName), playerSearch) {
-							matchPlayer = true
-							break
-						}
-					}
-				}
-			}
-			
-			if matchStatus && matchPlayer {
-				filtered = append(filtered, m)
 			}
 		}
-		t.Matches = filtered
+		
+		if matchStatus && matchPlayer {
+			displayMatches = append(displayMatches, m)
+		}
 	}
-
-	tmap, _ := c.Locals("T").(map[string]string)
-	vm := BuildTournamentViewModel(t, divisions, tmap)
-	vm.IsPublic = true
+	t.Matches = displayMatches
 
 	// Build a map of Referee IDs to Names
 	refereeNames := make(map[string]string)

@@ -170,12 +170,15 @@
                       <span class="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
                   {{else}}
                       <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
+                      {{if gt .QueuePosition 0}}
+                         <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap mt-1">{{if eq .QueuePosition 1}}Next Match{{else}}Queue: #{{.QueuePosition}}{{end}}</span>
+                      {{end}}
                   {{end}}
                 </div>
             </td>
             <td class="p-4 text-right">
               {{if eq .Status "scheduled"}}
-                <button hx-post="/public/matches/{{.ID}}/start?tournamentId={{$.Tournament.ID}}"
+                <button hx-post="/public/matches/{{if .ID}}{{.ID}}/start?tournamentId={{$.Tournament.ID}}{{else}}start?tournamentId={{$.Tournament.ID}}&p1Id={{(index .TeamA 0).ID}}&p2Id={{(index .TeamB 0).ID}}&stage={{.Stage}}{{end}}"
                         hx-swap="none"
                         class="bg-white hover:bg-gray-200 text-black text-[10px] font-bold py-1.5 px-4 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-white/10 active:scale-95">
                   {{t $.T "pub_detail.start"}}
@@ -208,6 +211,9 @@
                       {{else if eq .Status "in_progress"}}
                           <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
                       {{else}}
+                          {{if gt .QueuePosition 0}}
+                             <span class="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[9px] font-bold uppercase tracking-wider border border-indigo-500/20">{{if eq .QueuePosition 1}}Next{{else}}Queue: #{{.QueuePosition}}{{end}}</span>
+                          {{end}}
                           <span class="px-2 py-0.5 rounded-full bg-white/5 text-gray-400 text-[9px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
                       {{end}}
                   </div>
@@ -239,7 +245,7 @@
               <!-- Action Button / Referee info -->
               <div class="flex flex-col gap-2">
                 {{if eq .Status "scheduled"}}
-                  <button hx-post="/public/matches/{{.ID}}/start?tournamentId={{$.Tournament.ID}}"
+                  <button hx-post="/public/matches/{{if .ID}}{{.ID}}/start?tournamentId={{$.Tournament.ID}}{{else}}start?tournamentId={{$.Tournament.ID}}&p1Id={{(index .TeamA 0).ID}}&p2Id={{(index .TeamB 0).ID}}&stage={{.Stage}}{{end}}"
                           hx-swap="none"
                           class="w-full bg-white hover:bg-gray-200 text-black text-[11px] font-bold py-3.5 rounded-xl transition-all uppercase tracking-wider shadow-lg shadow-white/10 active:scale-95">
                     {{t $.T "pub_detail.start"}}
