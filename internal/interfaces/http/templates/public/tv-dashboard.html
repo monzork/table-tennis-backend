@@ -227,7 +227,10 @@
                                                     <span class="font-black text-sm uppercase tracking-widest text-gray-500">{{t $.T "tv.tbd"}}</span>
                                                 {{end}}
                                             </div>
-                                            <span class="px-2 py-1 rounded bg-white/5 text-[9px] uppercase tracking-widest text-gray-400 font-bold">{{.MatchType}}</span>
+                                            <div class="flex flex-col items-end gap-1">
+                                                <span class="px-2 py-1 rounded bg-white/5 text-[9px] uppercase tracking-widest text-gray-400 font-bold">{{.MatchType}}</span>
+                                                {{if gt .RoundNumber 0}}<span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Match #{{.RoundNumber}}</span>{{end}}
+                                            </div>
                                         </div>
 
                                         <!-- Desktop Table Box -->
@@ -258,6 +261,7 @@
                                             <div class="hidden sm:flex px-4 flex-col items-center justify-center shrink-0">
                                                 <span class="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1">{{t $.T "tv.vs"}}</span>
                                                 <span class="px-1.5 py-0.5 rounded bg-white/5 text-[8px] uppercase tracking-widest text-gray-400">{{.MatchType}}</span>
+                                                {{if gt .RoundNumber 0}}<span class="text-[8px] font-bold text-gray-500 uppercase mt-1">Match #{{.RoundNumber}}</span>{{end}}
                                             </div>
 
                                             <!-- Player B -->
@@ -298,7 +302,7 @@
                                     {{$scheduledCount = 1}}
                                     <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 sm:gap-3 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                                         <div class="flex justify-between items-center border-b border-yellow-500/20 pb-2">
-                                            <span class="text-[10px] font-bold uppercase tracking-widest text-yellow-400/80 truncate pr-2">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-widest text-yellow-400/80 truncate pr-2">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}{{if gt .RoundNumber 0}} • Match #{{.RoundNumber}}{{end}}</span>
                                             <span class="px-2 py-0.5 rounded bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest shrink-0 animate-pulse">{{t $.T "tv.table"}} {{.TableNumber}}</span>
                                         </div>
                                         <div class="flex flex-col sm:flex-row justify-center sm:justify-between items-stretch sm:items-center text-base sm:text-lg gap-1 sm:gap-0">
@@ -323,7 +327,7 @@
                                     {{$scheduledCount = 1}}
                                     <div class="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-lg opacity-70">
                                         <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 truncate pr-2">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 truncate pr-2">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}{{if gt .RoundNumber 0}} • Match #{{.RoundNumber}}{{end}}</span>
                                             <span class="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-white/10 shrink-0">{{t $.T "tv.waiting"}}</span>
                                         </div>
                                         <div class="flex flex-col sm:flex-row justify-center sm:justify-between items-stretch sm:items-center text-base sm:text-lg gap-1 sm:gap-0">

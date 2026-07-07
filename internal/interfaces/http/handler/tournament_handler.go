@@ -1034,6 +1034,32 @@ func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	vm.IsPublic = true
 
 	scheduled, inProgress, finished := BuildBoardCards(res.tournament, res.divisions)
+
+	playerSearch := strings.ToLower(c.Query("player_search", ""))
+	if playerSearch != "" {
+		searchTerms := strings.Fields(playerSearch)
+		filterCards := func(cards []BoardCard) []BoardCard {
+			var result []BoardCard
+			for _, card := range cards {
+				fullMatchString := strings.ToLower(fmt.Sprintf("%s %s", card.PlayerAName, card.PlayerBName))
+				match := true
+				for _, term := range searchTerms {
+					if !strings.Contains(fullMatchString, term) {
+						match = false
+						break
+					}
+				}
+				if match {
+					result = append(result, card)
+				}
+			}
+			return result
+		}
+		scheduled = filterCards(scheduled)
+		inProgress = filterCards(inProgress)
+		finished = filterCards(finished)
+	}
+
 	tables := buildTables(res.tournament, "", h.getOccupiedTables(c.Context(), res.tournament))
 
 	return c.Render("public/tv-dashboard", merge(tMap(lang), fiber.Map{
@@ -1067,6 +1093,8 @@ type BoardCard struct {
 	P2InMatch      bool
 	TournamentID   string
 	TournamentName string
+	QueuePosition  int
+	RoundNumber    int
 }
 
 type TableVM struct {
@@ -1209,6 +1237,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 			ScoreA:      m.ScoreA(),
 			ScoreB:      m.ScoreB(),
 			Pin:         m.Pin,
+			RoundNumber: m.RoundNumber,
 			GroupName: func() string {
 				if len(m.TeamA) > 0 {
 					return findGroupName(m.TeamA[0].ID)
@@ -1451,6 +1480,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 		if scheduled[i].P2Id != "" && inMatchPlayers[scheduled[i].P2Id] {
 			scheduled[i].P2InMatch = true
 		}
+		scheduled[i].QueuePosition = i + 1
 	}
 
 	return
