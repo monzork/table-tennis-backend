@@ -261,10 +261,6 @@
                     <a href="/tournaments" class="snap-start shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Tournaments"}}text-white border-b-2 border-white{{end}}">
                         {{t .T "nav.tournaments"}}
                     </a>
-                    <a href="/tournaments/register" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                        {{t .T "nav.register"}}
-                    </a>
                 </div>
 
                 <!-- Language switcher (Desktop) -->
@@ -311,13 +307,6 @@
         <a href="/tournaments" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors {{if eq .Type "Tournaments"}}text-white{{end}}">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
             <span class="text-[9px] font-bold uppercase tracking-widest">Events</span>
-        </a>
-        <a href="/tournaments/register" class="flex flex-col items-center gap-1 text-green-400 hover:text-green-300 transition-colors">
-            <div class="relative">
-                <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-            </div>
-            <span class="text-[9px] font-bold uppercase tracking-widest">Register</span>
         </a>
         <button type="button" onclick="window.requestPushPermission()" class="flex flex-col items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
