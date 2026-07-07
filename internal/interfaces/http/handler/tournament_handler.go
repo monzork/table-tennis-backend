@@ -923,19 +923,21 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 		matchPlayer := true
 		
 		if playerSearch != "" {
-			matchPlayer = false
+			searchTerms := strings.Fields(playerSearch)
+			var names []string
 			for _, p := range m.TeamA {
-				if strings.Contains(strings.ToLower(p.FirstName), playerSearch) || strings.Contains(strings.ToLower(p.LastName), playerSearch) {
-					matchPlayer = true
-					break
-				}
+				names = append(names, strings.ToLower(fmt.Sprintf("%s %s %s %s", p.FirstName, p.SecondName, p.LastName, p.SecondLastName)))
 			}
-			if !matchPlayer {
-				for _, p := range m.TeamB {
-					if strings.Contains(strings.ToLower(p.FirstName), playerSearch) || strings.Contains(strings.ToLower(p.LastName), playerSearch) {
-						matchPlayer = true
-						break
-					}
+			for _, p := range m.TeamB {
+				names = append(names, strings.ToLower(fmt.Sprintf("%s %s %s %s", p.FirstName, p.SecondName, p.LastName, p.SecondLastName)))
+			}
+			fullMatchString := strings.Join(names, " ")
+			
+			matchPlayer = true
+			for _, term := range searchTerms {
+				if !strings.Contains(fullMatchString, term) {
+					matchPlayer = false
+					break
 				}
 			}
 		}
