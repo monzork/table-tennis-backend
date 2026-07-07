@@ -115,6 +115,11 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 		_ = uc.tournamentRepo.UpdateParticipantsElo(ctx, tournamentID, updatedPlayers)
 	}
 
+	snapshots, _ := uc.tournamentRepo.GetParticipantSnapshots(ctx, tournamentID)
+
+	calculator := tournamentDomain.NewMetricsCalculator()
+	t.Metrics = calculator.Calculate(t, snapshots)
+
 	// Calculate and set the tournament winner name
 	t.WinnerName = uc.determineWinner(t)
 

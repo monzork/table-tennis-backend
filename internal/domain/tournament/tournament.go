@@ -99,6 +99,44 @@ type Group struct {
 	Matches      []Match
 }
 
+type EloUpset struct {
+	MatchID    string `json:"matchId"`
+	Difference int    `json:"difference"`
+}
+
+type DivisionMetric struct {
+	TotalMatchesPlayed          int     `json:"totalMatchesPlayed"`
+	AveragePointsPerMatch       float64 `json:"averagePointsPerMatch"`
+	AverageMatchDurationSeconds int     `json:"averageMatchDurationSeconds"`
+}
+
+type TournamentMetrics struct {
+	SchemaVersion int `json:"schemaVersion"`
+
+	TotalMatchesPlayed int `json:"totalMatchesPlayed"`
+	TotalSetsPlayed    int `json:"totalSetsPlayed"`
+	TotalPointsScored  int `json:"totalPointsScored"`
+
+	AveragePointsPerMatch float64 `json:"averagePointsPerMatch"`
+	AverageSetsPerMatch   float64 `json:"averageSetsPerMatch"`
+
+	CleanSweeps  int `json:"cleanSweeps"`
+	DecidingSets int `json:"decidingSets"`
+	Walkovers    int `json:"walkovers"`
+
+	LongestMatchID              string `json:"longestMatchId,omitempty"`
+	LongestMatchDurationSeconds int    `json:"longestMatchDurationSeconds"`
+
+	AverageMatchDurationSeconds int `json:"averageMatchDurationSeconds"`
+
+	AverageEloAtStart float64 `json:"averageEloAtStart"`
+
+	MostEloGainedPlayerID string    `json:"mostEloGainedPlayerId,omitempty"`
+	BiggestEloUpset       *EloUpset `json:"biggestEloUpset,omitempty"`
+
+	DivisionMetrics map[string]DivisionMetric `json:"divisionMetrics,omitempty"`
+}
+
 type Tournament struct {
 	ID                 string
 	Name               string
@@ -124,6 +162,7 @@ type Tournament struct {
 	TeamFormat         string // "olympic", "swaythling", or ""
 	NumTables          int
 	HasThirdPlaceMatch bool
+	Metrics            *TournamentMetrics
 }
 
 func NewTournament(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Tournament, error) {

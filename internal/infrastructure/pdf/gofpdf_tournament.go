@@ -1647,5 +1647,58 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 		}
 	}
 
+	// 5. TOURNAMENT METRICS
+	if t.Status == "finished" && t.Metrics != nil {
+		pdf.Ln(8)
+		writeHeader("ESTADÍSTICAS DEL TORNEO")
+		
+		pdf.SetFont("Arial", "", 10)
+		pdf.SetFillColor(245, 247, 250)
 
+		// Create a grid for metrics
+		// Row 1
+		pdf.CellFormat(60, 8, tr("Total Partidos: ")+fmt.Sprintf("%d", t.Metrics.TotalMatchesPlayed), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(60, 8, tr("Total Sets: ")+fmt.Sprintf("%d", t.Metrics.TotalSetsPlayed), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(60, 8, tr("Total Puntos: ")+fmt.Sprintf("%d", t.Metrics.TotalPointsScored), "1", 1, "L", true, 0, "")
+
+		// Row 2
+		pdf.CellFormat(60, 8, tr("Prom. Puntos/Partido: ")+fmt.Sprintf("%.1f", t.Metrics.AveragePointsPerMatch), "1", 0, "L", false, 0, "")
+		pdf.CellFormat(60, 8, tr("Prom. Sets/Partido: ")+fmt.Sprintf("%.1f", t.Metrics.AverageSetsPerMatch), "1", 0, "L", false, 0, "")
+		pdf.CellFormat(60, 8, tr("Barridas: ")+fmt.Sprintf("%d", t.Metrics.CleanSweeps), "1", 1, "L", false, 0, "")
+
+		// Row 3
+		pdf.CellFormat(90, 8, tr("Sets Decisivos: ")+fmt.Sprintf("%d", t.Metrics.DecidingSets), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(90, 8, tr("Prom. Elo Inicial: ")+fmt.Sprintf("%.1f", t.Metrics.AverageEloAtStart), "1", 1, "L", true, 0, "")
+
+		// Division Metrics
+		if len(t.Metrics.DivisionMetrics) > 0 {
+			pdf.Ln(4)
+			pdf.SetFont("Arial", "B", 9)
+			pdf.CellFormat(0, 8, tr("Métricas por División"), "", 1, "L", false, 0, "")
+
+			pdf.SetFont("Arial", "B", 8)
+			pdf.SetFillColor(245, 247, 250)
+			pdf.CellFormat(60, 6, tr("División"), "1", 0, "C", true, 0, "")
+			pdf.CellFormat(40, 6, tr("Partidos Jugados"), "1", 0, "C", true, 0, "")
+			pdf.CellFormat(40, 6, tr("Prom. Puntos"), "1", 1, "C", true, 0, "")
+
+			pdf.SetFont("Arial", "", 8)
+			for divID, dm := range t.Metrics.DivisionMetrics {
+				divName := divID
+				if divID == "default" {
+					divName = "Open"
+				} else {
+					for _, d := range divs {
+						if d.ID == divID {
+							divName = d.Name
+							break
+						}
+					}
+				}
+				pdf.CellFormat(60, 6, tr(strings.ToUpper(divName)), "1", 0, "L", false, 0, "")
+				pdf.CellFormat(40, 6, fmt.Sprintf("%d", dm.TotalMatchesPlayed), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(40, 6, fmt.Sprintf("%.1f", dm.AveragePointsPerMatch), "1", 1, "C", false, 0, "")
+			}
+		}
+	}
 }

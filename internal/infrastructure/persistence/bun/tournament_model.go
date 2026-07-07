@@ -3,6 +3,8 @@ package bun
 import (
 	"time"
 
+	"table-tennis-backend/internal/domain/tournament"
+
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 )
@@ -28,6 +30,7 @@ type TournamentModel struct {
 	WinnerName         string     `bun:"winner_name,nullzero"`
 	NumTables          int        `bun:"num_tables,notnull,default:0"`
 	HasThirdPlaceMatch bool       `bun:"has_third_place_match,notnull,default:false"`
+	Metrics            *tournament.TournamentMetrics `bun:"metrics,type:jsonb"`
 	CreatedAt          time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt          *time.Time `bun:"updated_at,nullzero"`
 
