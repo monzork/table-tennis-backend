@@ -177,13 +177,7 @@
                 </div>
             </td>
             <td class="p-4 text-right">
-              {{if eq .Status "scheduled"}}
-                <button hx-post="/public/matches/{{if .ID}}{{.ID}}/start?tournamentId={{$.Tournament.ID}}{{else}}start?tournamentId={{$.Tournament.ID}}&p1Id={{(index .TeamA 0).ID}}&p2Id={{(index .TeamB 0).ID}}&stage={{.Stage}}{{end}}"
-                        hx-swap="none"
-                        class="bg-white hover:bg-gray-200 text-black text-[10px] font-bold py-1.5 px-4 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-white/10 active:scale-95">
-                  {{t $.T "pub_detail.start"}}
-                </button>
-              {{else if eq .Status "in_progress"}}
+              {{if eq .Status "in_progress"}}
                 <button hx-get="/public/matches/score/form?matchId={{.ID}}&tournamentId={{$.Tournament.ID}}&stage={{.Stage}}&bestOf=5"
                         hx-target="#public-score-modal-content"
                         hx-on:click="document.getElementById('public-score-modal').classList.remove('hidden')"
@@ -244,13 +238,7 @@
 
               <!-- Action Button / Referee info -->
               <div class="flex flex-col gap-2">
-                {{if eq .Status "scheduled"}}
-                  <button hx-post="/public/matches/{{if .ID}}{{.ID}}/start?tournamentId={{$.Tournament.ID}}{{else}}start?tournamentId={{$.Tournament.ID}}&p1Id={{(index .TeamA 0).ID}}&p2Id={{(index .TeamB 0).ID}}&stage={{.Stage}}{{end}}"
-                          hx-swap="none"
-                          class="w-full bg-white hover:bg-gray-200 text-black text-[11px] font-bold py-3.5 rounded-xl transition-all uppercase tracking-wider shadow-lg shadow-white/10 active:scale-95">
-                    {{t $.T "pub_detail.start"}}
-                  </button>
-                {{else if eq .Status "in_progress"}}
+                {{if eq .Status "in_progress"}}
                   <button hx-get="/public/matches/score/form?matchId={{.ID}}&tournamentId={{$.Tournament.ID}}&stage={{.Stage}}&bestOf=5"
                           hx-target="#public-score-modal-content"
                           hx-on:click="document.getElementById('public-score-modal').classList.remove('hidden')"
