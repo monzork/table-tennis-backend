@@ -174,7 +174,7 @@ function printQRCode() {
     if (currentQRTableNumber) {
         html += `
                 <div class="page" style="page-break-after: auto;">
-                    <div class="label">Table</div>
+                    <div class="label">Mesa</div>
                     <div class="table-text">${currentQRTableNumber}</div>
                 </div>
         `;
@@ -250,7 +250,7 @@ function printAllTableQRs() {
                     <img class="qr-img" src="${src}" onload="if(++window.loadedCount === ${validUrls.length}) { window.print(); window.close(); }" />
                 </div>
                 <div class="page" style="${index === validUrls.length - 1 ? 'page-break-after: auto;' : ''}">
-                    <div class="label">Table</div>
+                    <div class="label">Mesa</div>
                     <div class="table-text">${item.tableNumber}</div>
                 </div>
         `;
