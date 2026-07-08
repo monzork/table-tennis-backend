@@ -9,12 +9,12 @@
     <div>
       <a href="/tournaments" class="text-xs text-gray-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1 mb-2">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-        All Tournaments
+        {{t .T "pub_detail.all_tournaments"}}
       </a>
       <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tighter uppercase">{{.Tournament.Name}}<span class="text-white">.</span></h1>
       <div class="flex gap-3 mt-2 flex-wrap">
         <span id="public-ws-status" class="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-[11px] uppercase tracking-widest text-yellow-400 font-bold">
-          ⏳ Connecting…
+          ⏳ {{t .T "pub_detail.connecting"}}
         </span>
         <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Tournament.Type}}</span>
         <span class="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[11px] uppercase tracking-widest text-white">{{.Tournament.Format}}</span>
@@ -22,11 +22,11 @@
           {{.Tournament.StartDate.Format "Jan 02"}} – {{.Tournament.EndDate.Format "Jan 02, 2006"}}
         </span>
         <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
-          {{len .Tournament.Participants}} players
+          {{len .Tournament.{{t .T "pub_detail.participants"}}}} {{t .T "pub_detail.players_count"}}
         </span>
         {{if eq .Tournament.Status "finished"}}
         <span class="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-[11px] uppercase tracking-widest text-green-400 font-bold">
-          Finished
+          {{t .T "status.finished"}}
         </span>
         {{end}}
       </div>
@@ -40,13 +40,13 @@
     </div>
   </header>
 
-  {{/* Participants */}}
+  {{/* {{t .T "pub_detail.participants"}} */}}
   <section class="space-y-3">
     <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest pl-1">
-      {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}Player Pool{{else}}Participants{{end}}
+      {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}{{t .T "pub_detail.player_pool"}}{{else}}{{t .T "pub_detail.participants"}}{{end}}
     </h2>
     <div class="flex overflow-x-auto gap-2 pb-2 sm:flex-wrap sm:pb-0 snap-x snap-mandatory px-1" style="scrollbar-width: none;">
-      {{range .Tournament.Participants}}
+      {{range .Tournament.{{t .T "pub_detail.participants"}}}}
       <div class="flex-shrink-0 snap-start flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
         <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
           {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
@@ -66,10 +66,10 @@
       <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "pub_detail.draw_title"}}</h2>
       <div class="sm:hidden text-[9px] font-bold text-gray-400 bg-white/5 border border-white/10 px-2 py-1 rounded-full uppercase tracking-widest flex items-center gap-1 animate-pulse">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-        Swipe to pan
+        {{t .T "pub_detail.swipe_pan"}}
       </div>
     </div>
-    {{$count := len .Tournament.Participants}}
+    {{$count := len .Tournament.{{t .T "pub_detail.participants"}}}}
     {{$teamCount := len .Tournament.Teams}}
     {{if or (gt $count 1) (gt $teamCount 1)}}
     <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar"
@@ -98,7 +98,7 @@
       <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "pub_detail.match_title"}}</h2>
       <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
         <div class="relative w-full sm:w-auto">
-          <input type="text" name="player_search" placeholder="Search player..." value="{{.PlayerSearch}}"
+          <input type="text" name="player_search" placeholder="{{t .T "pub_detail.search_player"}}" value="{{.PlayerSearch}}"
                  hx-get="/tournaments/{{.Tournament.ID}}"
                  hx-target="#public-matches-tbody"
                  hx-select="#public-matches-tbody"
@@ -139,10 +139,10 @@
             <td class="p-4 text-gray-300 capitalize">
               {{.MatchType}}
               {{if gt .RoundNumber 0}}
-              <div class="text-[9px] text-gray-500 font-bold uppercase mt-1">Match #{{.RoundNumber}}</div>
+              <div class="text-[9px] text-gray-500 font-bold uppercase mt-1">{{t $.T "pub_detail.match_number"}}{{.RoundNumber}}</div>
               {{end}}
               {{if .TableNumber}}
-              <div class="text-[9px] text-yellow-400 font-bold font-mono mt-1">TABLE {{.TableNumber}}</div>
+              <div class="text-[9px] text-yellow-400 font-bold font-mono mt-1">{{t $.T "pub_detail.table_caps"}} {{.TableNumber}}</div>
               {{end}}
             </td>
             <td class="p-4 text-left">
@@ -167,7 +167,7 @@
                       {{if .RefereeID}}
                         {{$refName := index $.RefereeNames .RefereeID}}
                         {{if $refName}}
-                          <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap mt-1">Updated by: {{$refName}}</span>
+                          <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap mt-1">{{t $.T "pub_detail.updated_by"}} {{$refName}}</span>
                         {{end}}
                       {{end}}
                   {{else if eq .Status "in_progress"}}
@@ -176,7 +176,7 @@
                   {{else}}
                       <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
                       {{if gt .QueuePosition 0}}
-                         <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap mt-1">{{if eq .QueuePosition 1}}Next Match{{else}}Queue: #{{.QueuePosition}}{{end}}</span>
+                         <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap mt-1">{{if eq .QueuePosition 1}}{{t $.T "pub_detail.next_match"}}{{else}}{{t $.T "pub_detail.queue_pos"}}{{.QueuePosition}}{{end}}</span>
                       {{end}}
                   {{end}}
                 </div>
@@ -200,7 +200,7 @@
               <div class="flex justify-between items-center border-b border-white/5 pb-3 mb-4">
                   <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex flex-wrap items-center gap-2">
                       {{.MatchType}}
-                      {{if gt .RoundNumber 0}}<span class="text-[9px] text-gray-500 uppercase">Match #{{.RoundNumber}}</span>{{end}}
+                      {{if gt .RoundNumber 0}}<span class="text-[9px] text-gray-500 uppercase">{{t $.T "pub_detail.match_number"}}{{.RoundNumber}}</span>{{end}}
                       {{if .TableNumber}}
                           <span class="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-mono">T-{{.TableNumber}}</span>
                       {{end}}
@@ -212,7 +212,7 @@
                           <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
                       {{else}}
                           {{if gt .QueuePosition 0}}
-                             <span class="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[9px] font-bold uppercase tracking-wider border border-indigo-500/20">{{if eq .QueuePosition 1}}Next{{else}}Queue: #{{.QueuePosition}}{{end}}</span>
+                             <span class="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[9px] font-bold uppercase tracking-wider border border-indigo-500/20">{{if eq .QueuePosition 1}}{{t $.T "pub_detail.next_match"}}{{else}}{{t $.T "pub_detail.queue_pos"}}{{.QueuePosition}}{{end}}</span>
                           {{end}}
                           <span class="px-2 py-0.5 rounded-full bg-white/5 text-gray-400 text-[9px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
                       {{end}}
@@ -261,7 +261,7 @@
                       {{$refName := index $.RefereeNames .RefereeID}}
                       {{if $refName}}
                         <div class="w-full text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest pt-3 border-t border-white/5">
-                          Updated by: {{$refName}}
+                          {{t $.T "pub_detail.updated_by"}} {{$refName}}
                         </div>
                       {{end}}
                     {{end}}

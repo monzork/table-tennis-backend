@@ -145,11 +145,11 @@
               if (!banner) return;
               
               if (isIOS && !isStandalone) {
-                  document.getElementById('push-prompt-title').innerText = "Get Live Alerts on iPhone";
-                  document.getElementById('push-prompt-desc').innerHTML = "Tap the <b>Share icon</b> (square with an up arrow) at the bottom of your screen and select <b>'Add to Home Screen'</b> to enable push notifications.";
+                  document.getElementById('push-prompt-title').innerText = "Get Live Alertas on iPhone";
+                  document.getElementById('push-prompt-desc').innerHTML = "{{t .T "nav.alerts_iphone_desc" | safeHTML}}";
                   
                   document.getElementById('push-prompt-actions').innerHTML = `
-                      <button onclick="dismissPushPrompt()" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">Got It</button>
+                      <button onclick="dismissPushPrompt()" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">{{t .T "nav.alerts_got_it"}}</button>
                   `;
                   
                   banner.classList.remove('hidden');
@@ -232,7 +232,7 @@
                     </div>
                     <div class="flex flex-col">
                         <span class="text-base lg:text-xl font-extrabold uppercase tracking-widest text-white leading-tight">Open TDM</span>
-                        <span class="text-[8px] lg:text-xs text-gray-400 font-bold uppercase tracking-widest">Global Rankings</span>
+                        <span class="text-[8px] lg:text-xs text-gray-400 font-bold uppercase tracking-widest">{{t .T "nav.global_rankings"}}</span>
                     </div>
                 </div>
                 
@@ -247,7 +247,7 @@
             <!-- Main Nav & Desktop Lang Switcher -->
             <div class="hidden lg:flex items-center justify-end gap-6 pb-0 overflow-x-auto hide-scrollbar w-auto snap-x">
                 <div class="flex flex-nowrap gap-5 lg:gap-6 font-bold text-[11px] lg:text-sm tracking-widest uppercase text-gray-400 min-w-max px-1 items-center">
-                    <button type="button" onclick="window.requestPushPermission()" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1 focus:outline-none" aria-label="Enable Notifications" title="Enable Notifications">
+                    <button type="button" onclick="window.requestPushPermission()" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1 focus:outline-none" aria-label="{{t .T "nav.alerts_enable"}} Notifications" title="{{t .T "nav.alerts_enable"}} Notifications">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                         </svg>
@@ -285,16 +285,16 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
             </div>
             <div>
-                <h3 id="push-prompt-title" class="text-sm font-bold text-white">Live Match Alerts</h3>
-                <p id="push-prompt-desc" class="text-xs text-gray-400 mt-1">Get instant push notifications when your matches are called to the table or finished.</p>
+                <h3 id="push-prompt-title" class="text-sm font-bold text-white">{{t .T "nav.alerts_title"}}</h3>
+                <p id="push-prompt-desc" class="text-xs text-gray-400 mt-1">{{t .T "nav.alerts_desc"}}</p>
             </div>
             <button onclick="dismissPushPrompt()" class="text-gray-500 hover:text-white transition-colors shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
         <div id="push-prompt-actions" class="flex gap-2 mt-2">
-            <button onclick="dismissPushPrompt()" class="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">Not Now</button>
-            <button onclick="acceptPushPrompt()" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">Enable</button>
+            <button onclick="dismissPushPrompt()" class="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">{{t .T "nav.alerts_not_now"}}</button>
+            <button onclick="acceptPushPrompt()" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">{{t .T "nav.alerts_enable"}}</button>
         </div>
     </div>
 
@@ -302,15 +302,15 @@
     <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-xl border-t border-white/10 flex justify-around items-center px-2 py-3 z-[100] pb-safe" style="padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);">
         <a href="/rankings/singles" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors {{if eq .Type "Singles"}}text-white{{end}}">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-            <span class="text-[9px] font-bold uppercase tracking-widest">Rankings</span>
+            <span class="text-[9px] font-bold uppercase tracking-widest">{{t .T "nav.mob_rankings"}}</span>
         </a>
         <a href="/tournaments" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors {{if eq .Type "Tournaments"}}text-white{{end}}">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-            <span class="text-[9px] font-bold uppercase tracking-widest">Events</span>
+            <span class="text-[9px] font-bold uppercase tracking-widest">{{t .T "nav.mob_events"}}</span>
         </a>
         <button type="button" onclick="window.requestPushPermission()" class="flex flex-col items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-            <span class="text-[9px] font-bold uppercase tracking-widest">Alerts</span>
+            <span class="text-[9px] font-bold uppercase tracking-widest">{{t .T "nav.mob_alerts"}}</span>
         </button>
     </div>
 </body>

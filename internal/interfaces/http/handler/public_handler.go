@@ -33,7 +33,7 @@ func getLang(c *fiber.Ctx) string {
 	if l := c.Cookies("lang"); l == "es" || l == "en" {
 		return l
 	}
-	return "en"
+	return "es"
 }
 
 // SetLang writes the chosen locale to a 1-year cookie and redirects the user
