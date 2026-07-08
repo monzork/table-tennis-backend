@@ -1,0 +1,29 @@
+html[data-theme="light"] body { background-color: #f3f4f6 !important; color: #111827 !important; }
+html[data-theme="light"] .text-white { color: #111827 !important; }
+html[data-theme="light"] .text-white\/90 { color: rgba(17, 24, 39, 0.9) !important; }
+html[data-theme="light"] .text-white\/80 { color: rgba(17, 24, 39, 0.8) !important; }
+html[data-theme="light"] .text-gray-400 { color: #6b7280 !important; }
+html[data-theme="light"] .text-gray-300 { color: #4b5563 !important; }
+html[data-theme="light"] .text-gray-200 { color: #374151 !important; }
+html[data-theme="light"] .text-gray-500 { color: #9ca3af !important; }
+html[data-theme="light"] .text-gray-600 { color: #9ca3af !important; }
+html[data-theme="light"] .text-gray-700 { color: #4b5563 !important; }
+html[data-theme="light"] .bg-black { background-color: #ffffff !important; }
+html[data-theme="light"] .bg-\[\#0a0a0a\] { background-color: #f3f4f6 !important; }
+html[data-theme="light"] .bg-black\/20 { background-color: rgba(0, 0, 0, 0.05) !important; }
+html[data-theme="light"] .bg-black\/40 { background-color: rgba(0, 0, 0, 0.08) !important; }
+html[data-theme="light"] .bg-black\/80 { background-color: rgba(255, 255, 255, 0.9) !important; }
+html[data-theme="light"] .bg-black\/90 { background-color: rgba(255, 255, 255, 0.95) !important; }
+html[data-theme="light"] .bg-club-panel { background-color: #ffffff !important; }
+html[data-theme="light"] .bg-white\/5 { background-color: rgba(0, 0, 0, 0.05) !important; }
+html[data-theme="light"] .bg-white\/10 { background-color: rgba(0, 0, 0, 0.1) !important; }
+html[data-theme="light"] .bg-white\/\[0\.02\], html[data-theme="light"] .bg-white\/\[0\.03\] { background-color: rgba(0, 0, 0, 0.03) !important; }
+html[data-theme="light"] .border-white\/5 { border-color: rgba(0, 0, 0, 0.05) !important; }
+html[data-theme="light"] .border-white\/10 { border-color: rgba(0, 0, 0, 0.1) !important; }
+html[data-theme="light"] .border-white\/20 { border-color: rgba(0, 0, 0, 0.2) !important; }
+html[data-theme="light"] .border-white\/30 { border-color: rgba(0, 0, 0, 0.3) !important; }
+html[data-theme="light"] .glass { background: rgba(255, 255, 255, 0.80) !important; border-color: rgba(0, 0, 0, 0.1) !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+html[data-theme="light"] input, html[data-theme="light"] select, html[data-theme="light"] textarea { background-color: #ffffff !important; color: #111827 !important; border-color: rgba(0, 0, 0, 0.2) !important; }
+html[data-theme="light"] .hover\:text-white:hover { color: #111827 !important; }
+html[data-theme="light"] .hover\:bg-white\/10:hover { background-color: rgba(0, 0, 0, 0.1) !important; }
+html[data-theme="light"] .hover\:bg-white\/5:hover { background-color: rgba(0, 0, 0, 0.05) !important; }

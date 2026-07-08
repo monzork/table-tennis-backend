@@ -30,7 +30,24 @@
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://unpkg.com/htmx.org@1.9.3/dist/ext/ws.js"></script>
     <link href="/static/dist/tailwind.css?v=4" rel="stylesheet">
+    <link href="/static/dist/light-theme.css?v=1" rel="stylesheet">
     <link id="font-outfit" href="/static/fonts/outfit.css" rel="stylesheet" hx-preserve="true">
+    
+    <script>
+      // Apply theme early to prevent flash
+      (function() {
+        var currentTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+      })();
+      
+      function toggleTheme() {
+        var html = document.documentElement;
+        var currentTheme = html.getAttribute('data-theme');
+        var newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+      }
+    </script>
     
     <!-- Service Worker Registration & Push -->
     <script>
@@ -247,6 +264,9 @@
             <!-- Main Nav & Desktop Lang Switcher -->
             <div class="hidden lg:flex items-center justify-end gap-6 pb-0 overflow-x-auto hide-scrollbar w-auto snap-x">
                 <div class="flex flex-nowrap gap-5 lg:gap-6 font-bold text-[11px] lg:text-sm tracking-widest uppercase text-gray-400 min-w-max px-1 items-center">
+                    <button type="button" onclick="toggleTheme()" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1 focus:outline-none" aria-label="Toggle Theme" title="Toggle Theme">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    </button>
                     <button type="button" onclick="window.requestPushPermission()" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1 focus:outline-none" aria-label="{{t .T "nav.alerts_enable"}} Notifications" title="{{t .T "nav.alerts_enable"}} Notifications">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
@@ -304,6 +324,10 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             <span class="text-[9px] font-bold uppercase tracking-widest">{{t .T "nav.mob_rankings"}}</span>
         </a>
+        <button type="button" onclick="toggleTheme()" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            <span class="text-[9px] font-bold uppercase tracking-widest">Theme</span>
+        </button>
         <a href="/tournaments" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors {{if eq .Type "Tournaments"}}text-white{{end}}">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
             <span class="text-[9px] font-bold uppercase tracking-widest">{{t .T "nav.mob_events"}}</span>

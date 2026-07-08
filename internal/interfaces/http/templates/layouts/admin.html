@@ -9,7 +9,23 @@
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <script src="https://unpkg.com/htmx.org@1.9.3/dist/ext/ws.js"></script>
     <link href="/static/dist/tailwind.css?v=4" rel="stylesheet">
+    <link href="/static/dist/light-theme.css?v=1" rel="stylesheet">
     <link id="font-outfit" href="/static/fonts/outfit.css" rel="stylesheet" hx-preserve="true">
+    <script>
+      // Apply theme early to prevent flash
+      (function() {
+        var currentTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+      })();
+      
+      function toggleColorTheme() {
+        var html = document.documentElement;
+        var currentTheme = html.getAttribute('data-theme');
+        var newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+      }
+    </script>
     
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{.CSRFToken}}">
@@ -234,7 +250,14 @@
                     </a>
                 </div>
 
-                <!-- ── Theme Switcher ── -->
+                <!-- ── Color Theme Switcher ── -->
+                <button onclick="toggleColorTheme()"
+                    class="ml-2 lg:ml-4 flex items-center justify-center w-8 h-8 rounded-full border border-white/20 text-white/80 hover:text-white hover:border-white/60 transition-all select-none"
+                    title="Toggle Light/Dark Theme">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+
+                <!-- ── Projector Mode Switcher ── -->
                 <button id="theme-toggle"
                     onclick="toggleTheme()"
                     class="ml-4 flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 text-white/80 hover:text-white hover:border-white/60 text-[11px] font-bold uppercase tracking-widest transition-all select-none"
