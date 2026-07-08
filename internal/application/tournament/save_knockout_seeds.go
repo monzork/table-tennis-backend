@@ -8,6 +8,7 @@ import (
 	"table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 	divisionDomain "table-tennis-backend/internal/domain/division"
+	"strings"
 )
 
 type SaveKnockoutSeedsUseCase struct {
@@ -35,10 +36,21 @@ func (uc *SaveKnockoutSeedsUseCase) Execute(ctx context.Context, tournamentID, d
 		return err
 	}
 	divName := ""
-	for _, d := range divs {
-		if d.ID == divID {
-			divName = d.Name
-			break
+	if divID == "" {
+		if t.SkipElo {
+			divName = "Open Bracket"
+		} else {
+			divName = "Unclassified"
+		}
+	} else {
+		for _, d := range divs {
+			if d.ID == divID {
+				divName = d.Name
+				break
+			}
+		}
+		if strings.HasSuffix(strings.ToLower(divName), " division") {
+			divName = divName[:len(divName)-9]
 		}
 	}
 

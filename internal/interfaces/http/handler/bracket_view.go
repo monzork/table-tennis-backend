@@ -406,6 +406,10 @@ func buildGroupEliminationGroups(t *tournament.Tournament, divID string, players
 	// Try to load saved groups containing any players in this division first
 	var divisionGroups []tournament.Group
 	for _, g := range t.Groups {
+		if strings.Contains(g.Name, "- Knockout Seeds") {
+			continue
+		}
+		
 		hasPlayer := false
 		for _, gp := range g.Players {
 			for _, dp := range players {
