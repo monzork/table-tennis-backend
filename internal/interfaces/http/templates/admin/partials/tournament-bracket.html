@@ -4,7 +4,7 @@
 
 <div class="flex flex-col gap-10">
   {{range .Divisions}}
-  <div class="glass rounded-2xl border border-white/10 p-6 overscroll-x-auto">
+  <div class="glass rounded-2xl border border-white/10 p-4 sm:p-6 overscroll-x-auto">
     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 mb-8 border-b border-white/10 pb-6 sm:pb-8">
       {{if not .IsUnclassified}}
       <div class="flex justify-between items-center w-full sm:w-auto">
@@ -60,34 +60,35 @@
         <h4 class="proj-section-title text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] mb-2 text-center border-b border-white/5 pb-2">{{.Name}} {{t $.T "bracket.standings"}}{{if .RoundRobinFinished}} <span class="text-green-400 ml-2" title="All matches finished">✅</span>{{end}}</h4>
         
         <!-- Standings Table -->
-        <div class="w-full glass rounded-3xl overflow-hidden border border-white/5 mb-8 mb-8 border-white/10 shadow-2xl">
-          <table class="proj-table w-full text-left text-sm font-bold tracking-tight">
+        <div class="w-full glass rounded-3xl overflow-hidden border border-white/5 mb-8 border-white/10 shadow-2xl">
+          <div class="overflow-x-auto custom-scrollbar">
+          <table class="proj-table w-full text-left text-sm font-bold tracking-tight min-w-[600px]">
             <thead>
               <tr class="bg-white/5 text-gray-500 uppercase tracking-[0.2em] text-[11px] border-b border-white/10">
-                <th class="p-4 w-16 text-center">{{t $.T "bracket.rank"}}</th>
-                <th class="p-4">{{t $.T "bracket.player"}}</th>
-                <th class="p-4 text-center">{{t $.T "bracket.played"}}</th>
-                <th class="p-4 text-center">{{t $.T "bracket.wins"}}</th>
-                <th class="p-4 text-center">{{t $.T "bracket.losses"}}</th>
-                <th class="p-4 text-center">{{t $.T "bracket.win_pct"}}</th>
+                <th class="px-2 py-3 sm:p-4 w-16 text-center">{{t $.T "bracket.rank"}}</th>
+                <th class="px-2 py-3 sm:p-4">{{t $.T "bracket.player"}}</th>
+                <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.played"}}</th>
+                <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.wins"}}</th>
+                <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.losses"}}</th>
+                <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.win_pct"}}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
               {{range $idx, $s := .Standings}}
               <tr class="{{if lt $idx 2}}bg-white/[0.03]{{end}} hover:bg-white/[0.05] transition-colors group">
-                <td class="p-4 text-center font-black {{if eq $idx 0}}text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]{{else if eq $idx 1}}text-gray-300{{else if eq $idx 2}}text-amber-600{{else}}opacity-40{{end}}">
+                <td class="px-2 py-3 sm:p-4 text-center font-black {{if eq $idx 0}}text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]{{else if eq $idx 1}}text-gray-300{{else if eq $idx 2}}text-amber-600{{else}}opacity-40{{end}}">
                    {{if eq $idx 0}}🏆{{else}}#{{$s.Rank}}{{end}}
                 </td>
-                <td class="p-4">
+                <td class="px-2 py-3 sm:p-4">
                    <div class="flex flex-col">
-                      <span class="proj-player-name text-white uppercase group-hover:translate-x-1 transition-transform inline-block">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</span>
-                      <span class="proj-elo text-[8px] text-gray-500 uppercase tracking-widest font-black mt-0.5">{{t $.T "bracket.elo"}}: {{if or (eq $vm.Type "doubles") (eq $vm.Type "mixed_doubles")}}{{.Player.DoublesElo}}{{else}}{{.Player.SinglesElo}}{{end}}</span>
+                      <span class="proj-player-name text-white uppercase group-hover:translate-x-1 transition-transform inline-block whitespace-nowrap">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</span>
+                      <span class="proj-elo text-[8px] text-gray-500 uppercase tracking-widest font-black mt-0.5 whitespace-nowrap">{{t $.T "bracket.elo"}}: {{if or (eq $vm.Type "doubles") (eq $vm.Type "mixed_doubles")}}{{.Player.DoublesElo}}{{else}}{{.Player.SinglesElo}}{{end}}</span>
                    </div>
                 </td>
-                <td class="p-4 text-center opacity-60 tabular-nums">{{.Played}}</td>
-                <td class="p-4 text-center font-black text-white tabular-nums">{{.Wins}}</td>
-                <td class="p-4 text-center opacity-40 tabular-nums">{{.Losses}}</td>
-                <td class="p-4 text-center">
+                <td class="px-2 py-3 sm:p-4 text-center opacity-60 tabular-nums">{{.Played}}</td>
+                <td class="px-2 py-3 sm:p-4 text-center font-black text-white tabular-nums">{{.Wins}}</td>
+                <td class="px-2 py-3 sm:p-4 text-center opacity-40 tabular-nums">{{.Losses}}</td>
+                <td class="px-2 py-3 sm:p-4 text-center">
                    <div class="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] text-gray-400">
                       {{.WinPercentage}}%
                    </div>
@@ -96,6 +97,7 @@
               {{end}}
             </tbody>
           </table>
+          </div>
         </div>
 
       </div>
@@ -120,7 +122,7 @@
             {{end}}
             <div 
               data-group-id="{{$currentGroupID}}"
-              class="group-card bg-black/20 rounded-3xl p-6 border border-white/5 shadow-lg relative transition-all duration-300"
+              class="group-card bg-black/20 rounded-3xl p-4 sm:p-6 border border-white/5 shadow-lg relative transition-all duration-300"
               {{if $canMove}}
                 data-tournament-id="{{$t.ID}}"
                 ondragover="onDragOver(event)"
@@ -143,14 +145,15 @@
 
               {{/* Standings mini */}}
               <div class="w-full glass rounded-3xl overflow-hidden border border-white/5 my-6 border-white/10 glass-dark scale-95 origin-top">
-                <table class="w-full text-left text-sm font-bold tracking-tight">
+                <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left text-sm font-bold tracking-tight min-w-[500px]">
                   <thead>
                     <tr class="bg-white/5 text-gray-500 uppercase tracking-[0.2em] text-[11px] border-b border-white/10">
-                      <th class="p-4 w-16 text-center">{{t $.T "bracket.rank"}}</th>
-                      <th class="p-4">{{t $.T "bracket.player"}}</th>
-                      <th class="p-4 text-center">{{t $.T "bracket.played"}}</th>
-                      <th class="p-4 text-center">{{t $.T "bracket.wins"}}</th>
-                      <th class="p-4 text-center">{{t $.T "bracket.losses"}}</th>
+                      <th class="px-2 py-3 sm:p-4 w-16 text-center">{{t $.T "bracket.rank"}}</th>
+                      <th class="px-2 py-3 sm:p-4">{{t $.T "bracket.player"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.played"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.wins"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.losses"}}</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-white/5">
@@ -171,26 +174,27 @@
                       {{else}}
                         class="hover:bg-white/5 transition-all duration-200"
                       {{end}}>
-                      <td class="p-4 text-center font-black {{if eq $idx 0}}text-yellow-400{{else if eq $idx 1}}text-gray-300{{else}}opacity-40{{end}}">
+                      <td class="px-2 py-3 sm:p-4 text-center font-black {{if eq $idx 0}}text-yellow-400{{else if eq $idx 1}}text-gray-300{{else}}opacity-40{{end}}">
                          #{{$s.Rank}}
                       </td>
-                      <td class="p-4 flex items-center justify-between gap-2">
+                      <td class="px-2 py-3 sm:p-4 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
                           {{if $canMove}}
-                            <svg class="proj-hide w-4 h-4 text-gray-500 hover:text-white cursor-grab active:cursor-grabbing mr-1 select-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="proj-hide w-4 h-4 text-gray-500 hover:text-white cursor-grab active:cursor-grabbing mr-1 select-none shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 8h16M4 16h16" />
                             </svg>
                           {{end}}
-                          <span class="text-white">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</span>
+                          <span class="text-white whitespace-nowrap">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</span>
                         </div>
                       </td>
-                      <td class="p-4 text-center opacity-60 tabular-nums">{{.Played}}</td>
-                      <td class="p-4 text-center font-black text-white tabular-nums">{{.Wins}}</td>
-                      <td class="p-4 text-center opacity-40 tabular-nums">{{.Losses}}</td>
+                      <td class="px-2 py-3 sm:p-4 text-center opacity-60 tabular-nums">{{.Played}}</td>
+                      <td class="px-2 py-3 sm:p-4 text-center font-black text-white tabular-nums">{{.Wins}}</td>
+                      <td class="px-2 py-3 sm:p-4 text-center opacity-40 tabular-nums">{{.Losses}}</td>
                     </tr>
                     {{end}}
                   </tbody>
                 </table>
+                </div>
               </div>
 
             </div>
@@ -530,9 +534,9 @@
           <table class="w-full text-left text-sm font-bold tracking-tight">
             <thead>
               <tr class="bg-white/[0.02] text-gray-500 uppercase tracking-[0.2em] text-[11px] border-b border-white/5">
-                <th class="p-4 w-12 text-center">{{t $.T "bracket.seed"}}</th>
-                <th class="p-4">Participant</th>
-                <th class="p-4 text-right">{{t $.T "bracket.rating"}}</th>
+                <th class="px-2 py-3 sm:p-4 w-12 text-center">{{t $.T "bracket.seed"}}</th>
+                <th class="px-2 py-3 sm:p-4">Participant</th>
+                <th class="px-2 py-3 sm:p-4 text-right">{{t $.T "bracket.rating"}}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
@@ -554,8 +558,8 @@
                 {{else}}
                   class="opacity-75"
                 {{end}}>
-                <td class="p-4 text-center font-black opacity-50 tabular-nums">#{{add $idx 1}}</td>
-                <td class="p-4">
+                <td class="px-2 py-3 sm:p-4 text-center font-black opacity-50 tabular-nums">#{{add $idx 1}}</td>
+                <td class="px-2 py-3 sm:p-4">
                   <div class="flex items-center gap-2">
                     {{if $canMove}}
                     <span class="proj-hide text-gray-600 font-normal cursor-grab active:cursor-grabbing text-xs select-none mr-1">⠿</span>
@@ -563,7 +567,7 @@
                     <span class="proj-player-name text-white uppercase">{{$p.FirstNameWithSecond}} {{$p.LastNameWithSecond}}</span>
                   </div>
                 </td>
-                <td class="p-4 text-right opacity-60 tabular-nums">
+                <td class="px-2 py-3 sm:p-4 text-right opacity-60 tabular-nums">
                   {{if or (eq $t.Type "doubles") (eq $t.Type "mixed_doubles")}}{{$p.DoublesElo}}{{else}}{{$p.SinglesElo}}{{end}}
                 </td>
               </tr>
