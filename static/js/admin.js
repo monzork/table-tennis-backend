@@ -166,7 +166,7 @@ function printQRCode() {
             </head>
             <body>
                 <div class="page">
-                    <div class="label">Scan for Score Entry</div>
+                    <div class="label">Escanear para Anotar</div>
                     <img class="qr-img" src="${src}" onload="window.print();window.close();" />
                 </div>
     `;
@@ -246,7 +246,7 @@ function printAllTableQRs() {
         
         html += `
                 <div class="page">
-                    <div class="label">Scan for Score Entry</div>
+                    <div class="label">Escanear para Anotar</div>
                     <img class="qr-img" src="${src}" onload="if(++window.loadedCount === ${validUrls.length}) { window.print(); window.close(); }" />
                 </div>
                 <div class="page" style="${index === validUrls.length - 1 ? 'page-break-after: auto;' : ''}">
@@ -467,7 +467,7 @@ function onDropKnockoutRow(event, el) {
     });
 }
 
-let currentQRTableNumber = '';
+var currentQRTableNumber = '';
 
 function showQRCodeModal(matchId, matchup, tableNumber, tournamentId, eventId) {
     const modal = document.getElementById('qr-modal');
