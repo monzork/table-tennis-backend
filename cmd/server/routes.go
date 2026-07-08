@@ -183,6 +183,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	admin.Post("/tournaments/:id/officials", c.TournamentHandler.AddOfficial)
 	admin.Delete("/tournaments/:id/officials/:playerId", c.TournamentHandler.RemoveOfficial)
 	admin.Post("/tournaments/:id/move-player", c.TournamentHandler.MovePlayer)
+	admin.Post("/tournaments/:id/save-knockout-seeds", c.TournamentHandler.SaveKnockoutSeeds)
 	admin.Post("/tournaments/:id/regenerate-seeds", c.TournamentHandler.RegenerateGroupSeeds)
 	admin.Post("/tournaments/:id/participants/elo-before", c.TournamentHandler.UpdateParticipantEloBefore)
 	api.Delete("/tournaments/:id/participants/:playerId", c.TournamentHandler.RemoveParticipant)

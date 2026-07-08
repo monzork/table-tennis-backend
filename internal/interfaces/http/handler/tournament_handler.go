@@ -37,6 +37,7 @@ type TournamentHandler struct {
 	regenerateSeedsUC      *tournament.RegenerateGroupSeedsUseCase
 	updateParticipantEloUC *tournament.UpdateParticipantEloBeforeUseCase
 	removeParticipantUC    *tournament.RemoveParticipantUseCase
+	saveKnockoutSeedsUC    *tournament.SaveKnockoutSeedsUseCase
 }
 
 func NewTournamentHandler(
@@ -59,6 +60,7 @@ func NewTournamentHandler(
 	regenerateSeedsUC *tournament.RegenerateGroupSeedsUseCase,
 	updateParticipantEloUC *tournament.UpdateParticipantEloBeforeUseCase,
 	removeParticipantUC *tournament.RemoveParticipantUseCase,
+	saveKnockoutSeedsUC *tournament.SaveKnockoutSeedsUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:               createUC,
@@ -80,6 +82,7 @@ func NewTournamentHandler(
 		regenerateSeedsUC:      regenerateSeedsUC,
 		updateParticipantEloUC: updateParticipantEloUC,
 		removeParticipantUC:    removeParticipantUC,
+		saveKnockoutSeedsUC:    saveKnockoutSeedsUC,
 	}
 }
 
@@ -735,6 +738,27 @@ func (h *TournamentHandler) MovePlayer(c *fiber.Ctx) error {
 	}
 
 	if err := h.movePlayerUC.Execute(c.Context(), id, body.PlayerID, body.TargetGroupID, targetIndex); err != nil {
+		return ErrorHandler(err)
+	}
+
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Trigger", "reload-bracket, reload-matches")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.SendString("OK")
+}
+
+func (h *TournamentHandler) SaveKnockoutSeeds(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var body struct {
+		DivID     string `json:"divId" form:"divId"`
+		PlayerIDs string `json:"playerIds" form:"playerIds"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return ErrorHandler(err)
+	}
+
+	if err := h.saveKnockoutSeedsUC.Execute(c.Context(), id, body.DivID, body.PlayerIDs); err != nil {
 		return ErrorHandler(err)
 	}
 

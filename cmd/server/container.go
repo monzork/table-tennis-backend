@@ -101,6 +101,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		regenerateSeedsUC,
 		updateParticipantEloUC,
 		tournament.NewRemoveParticipantUseCase(tournamentRepo),
+		tournament.NewSaveKnockoutSeedsUseCase(tournamentRepo, divisionRepo),
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
 	exportEventPdfUC := tournament.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGenerator)

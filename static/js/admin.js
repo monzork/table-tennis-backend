@@ -316,6 +316,35 @@ function onDropRow(event, el) {
     });
 }
 
+function onDropKnockoutRow(event, el) {
+    event.preventDefault();
+    event.stopPropagation();
+    el.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
+
+    const playerId = event.dataTransfer.getData('text/plain');
+    if (!playerId) return;
+
+    const tournamentId = el.dataset.tournamentId;
+    const divId = el.dataset.divId;
+    const targetIndex = parseInt(el.dataset.targetIndex ?? '-1', 10);
+
+    const tbody = el.closest('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr[data-player-id]'));
+    let playerIds = rows.map(r => r.dataset.playerId);
+
+    const sourceIndex = playerIds.indexOf(playerId);
+    if (sourceIndex > -1 && sourceIndex !== targetIndex) {
+        playerIds.splice(sourceIndex, 1);
+        playerIds.splice(targetIndex, 0, playerId);
+    }
+
+    htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/save-knockout-seeds', {
+        source: document.body,
+        swap: 'none',
+        values: { divId: divId, playerIds: JSON.stringify(playerIds) }
+    });
+}
+
 function showQRCodeModal(matchId, matchup, tableNumber, tournamentId, eventId) {
     const modal = document.getElementById('qr-modal');
     const matchupEl = document.getElementById('qr-matchup');

@@ -23,6 +23,7 @@ type TournamentViewModel struct {
 }
 
 type DivisionView struct {
+	ID             string
 	Name           string
 	Color          string
 	MinElo         int16
@@ -46,6 +47,9 @@ type DivisionView struct {
 	KnockoutRoundsLeft   []RoundView
 	KnockoutRoundsRight  []RoundView
 	KnockoutRoundsCenter []RoundView
+	
+	KnockoutGroupID   string
+	KnockoutAdvancing []*player.Player
 }
 
 type PlayerStanding = tournament.PlayerStanding
@@ -265,6 +269,7 @@ func getBestOfForStage(t *tournament.Tournament, stage string, divID string) int
 
 func buildDivisionView(t *tournament.Tournament, divID, name, color string, minElo int16, maxElo *int16, unclassified bool, players []*player.Player) DivisionView {
 	dv := DivisionView{
+		ID:             divID,
 		Name:           name,
 		Color:          color,
 		MinElo:         minElo,
@@ -290,27 +295,42 @@ func buildDivisionView(t *tournament.Tournament, divID, name, color string, minE
 
 		if dv.AllGroupsFinished {
 			var advancing []*player.Player
-			for _, g := range dv.Groups {
-				take := t.GetGroupPassCount(divID)
-				if take == 0 {
-					take = 2
-				}
-				if take > len(g.Standings) {
-					take = len(g.Standings)
-				}
-				for i := 0; i < take; i++ {
-					advancing = append(advancing, g.Standings[i].Player)
+			var knockoutGroup *tournament.Group
+			for i := range t.Groups {
+				if t.Groups[i].Name == name+" - Knockout Seeds" {
+					knockoutGroup = &t.Groups[i]
+					break
 				}
 			}
-			sort.Slice(advancing, func(i, j int) bool {
-				ei := advancing[i].SinglesElo
-				ej := advancing[j].SinglesElo
-				if t.Type == "doubles" {
-					ei = advancing[i].DoublesElo
-					ej = advancing[j].DoublesElo
+
+			if knockoutGroup != nil {
+				advancing = knockoutGroup.Players
+				dv.KnockoutGroupID = knockoutGroup.ID
+			} else {
+				for _, g := range dv.Groups {
+					take := t.GetGroupPassCount(divID)
+					if take == 0 {
+						take = 2
+					}
+					if take > len(g.Standings) {
+						take = len(g.Standings)
+					}
+					for i := 0; i < take; i++ {
+						advancing = append(advancing, g.Standings[i].Player)
+					}
 				}
-				return ei > ej
-			})
+				sort.Slice(advancing, func(i, j int) bool {
+					ei := advancing[i].SinglesElo
+					ej := advancing[j].SinglesElo
+					if t.Type == "doubles" {
+						ei = advancing[i].DoublesElo
+						ej = advancing[j].DoublesElo
+					}
+					return ei > ej
+				})
+				dv.KnockoutGroupID = "virtual-knockout-" + divID
+			}
+			dv.KnockoutAdvancing = advancing
 			dv.KnockoutRounds = buildBracketRounds(t, divID, advancing)
 		}
 	} else {

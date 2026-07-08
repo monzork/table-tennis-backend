@@ -204,6 +204,73 @@
         <div class="w-full mt-8 border-t border-white/10 pt-10">
           <h3 class="proj-section-title text-lg font-black uppercase text-white tracking-widest mb-8 text-center">{{t $.T "bracket.knockout_phase"}}</h3>
           {{if and .AllGroupsFinished (gt (len .Groups) 0)}}
+            <!-- KNOCKOUT SEEDS TABLE FOR DRAG AND DROP -->
+            <div class="mb-12 max-w-2xl mx-auto">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="text-sm font-bold uppercase tracking-widest text-white/80">Knockout Seeds</h4>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest">{{len .KnockoutAdvancing}} Players Advancing</p>
+              </div>
+              <div class="glass border border-white/5 rounded-2xl overflow-hidden shadow-2xl relative">
+                <div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>
+                <div class="overflow-x-auto relative">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="bg-white/5 text-gray-500 uppercase tracking-[0.2em] text-[11px] border-b border-white/10">
+                      <th class="px-2 py-3 sm:p-4 w-16 text-center">{{t $.T "bracket.seed"}}</th>
+                      <th class="px-2 py-3 sm:p-4">{{t $.T "bracket.player"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">Elo</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5">
+                    {{$divID := .ID}}
+                    {{$knockoutGroupID := .KnockoutGroupID}}
+                    {{$canMoveKnockout := and (not $.IsPublic) (not $.Tournament.HasMatchesStarted)}}
+                    {{range $idx, $p := .KnockoutAdvancing}}
+                    <tr 
+                      data-player-id="{{$p.ID}}"
+                      {{if $canMoveKnockout}}
+                        draggable="true"
+                        ondragstart="onDragStart(event, '{{$p.ID}}')"
+                        ondragend="onDragEnd(event)"
+                        data-tournament-id="{{$.Tournament.ID}}"
+                        data-div-id="{{$divID}}"
+                        data-target-index="{{$idx}}"
+                        ondragover="onDragOverRow(event)"
+                        ondragenter="onDragEnterRow(event, this)"
+                        ondragleave="onDragLeaveRow(event, this)"
+                        ondrop="onDropKnockoutRow(event, this)"
+                        class="cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all duration-200"
+                      {{else}}
+                        class="hover:bg-white/5 transition-all duration-200"
+                      {{end}}>
+                      <td class="px-2 py-3 sm:p-4 text-center font-black {{if eq $idx 0}}text-yellow-400{{else if eq $idx 1}}text-gray-300{{else}}opacity-40{{end}}">
+                         #{{add $idx 1}}
+                      </td>
+                      <td class="px-2 py-3 sm:p-4 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                          {{if $canMoveKnockout}}
+                            <svg class="proj-hide w-4 h-4 text-gray-500 hover:text-white cursor-grab active:cursor-grabbing mr-1 select-none shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 8h16M4 16h16" />
+                            </svg>
+                          {{end}}
+                          <span class="text-white whitespace-nowrap">{{$p.FirstNameWithSecond}} {{$p.LastNameWithSecond}}</span>
+                        </div>
+                      </td>
+                      <td class="px-2 py-3 sm:p-4 text-center font-mono text-gray-400 tabular-nums">
+                        {{if eq $.Tournament.Type "doubles"}}
+                          {{$p.DoublesElo}}
+                        {{else}}
+                          {{$p.SinglesElo}}
+                        {{end}}
+                      </td>
+                    </tr>
+                    {{end}}
+                  </tbody>
+                </table>
+                </div>
+              </div>
+            </div>
+
             <div class="block sm:hidden mb-8 text-center glass rounded-2xl p-6 border border-white/5">
                <div class="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2">📱 Mobile Optimized View</div>
                <p class="text-xs text-gray-400">The visual bracket tree is best viewed on larger screens. Please scroll down to the <strong class="text-white">Match List</strong> to see your upcoming games.</p>
