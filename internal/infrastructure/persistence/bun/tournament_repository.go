@@ -88,6 +88,7 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *tourna
 		NumTables:          t.NumTables,
 		HasThirdPlaceMatch: t.HasThirdPlaceMatch,
 		Metrics:            t.Metrics,
+		ManualSeedingLocked: t.ManualSeedingLocked,
 	}
 	if _, err := tx.NewInsert().Model(model).Exec(ctx); err != nil {
 		return err
@@ -255,6 +256,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			NumTables:          m.NumTables,
 			HasThirdPlaceMatch: m.HasThirdPlaceMatch,
 			Metrics:            m.Metrics,
+			ManualSeedingLocked: m.ManualSeedingLocked,
 			Participants:       participants,
 		}
 	}
@@ -624,6 +626,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		NumTables:          model.NumTables,
 		HasThirdPlaceMatch: model.HasThirdPlaceMatch,
 		Metrics:            model.Metrics,
+		ManualSeedingLocked: model.ManualSeedingLocked,
 	}, nil
 }
 
@@ -664,9 +667,10 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		NumTables:          t.NumTables,
 		HasThirdPlaceMatch: t.HasThirdPlaceMatch,
 		Metrics:            t.Metrics,
+		ManualSeedingLocked: t.ManualSeedingLocked,
 	}
 
-	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "metrics").Exec(ctx)
+	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "metrics", "manual_seeding_locked").Exec(ctx)
 	if err != nil {
 		return err
 	}

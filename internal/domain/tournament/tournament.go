@@ -165,6 +165,7 @@ type Tournament struct {
 	NumTables          int
 	HasThirdPlaceMatch bool
 	Metrics            *TournamentMetrics
+	ManualSeedingLocked bool
 }
 
 func NewTournament(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Tournament, error) {

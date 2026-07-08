@@ -38,6 +38,7 @@ type TournamentHandler struct {
 	updateParticipantEloUC *tournament.UpdateParticipantEloBeforeUseCase
 	removeParticipantUC    *tournament.RemoveParticipantUseCase
 	saveKnockoutSeedsUC    *tournament.SaveKnockoutSeedsUseCase
+	toggleSeedingLockUC    *tournament.ToggleSeedingLockUseCase
 }
 
 func NewTournamentHandler(
@@ -61,6 +62,7 @@ func NewTournamentHandler(
 	updateParticipantEloUC *tournament.UpdateParticipantEloBeforeUseCase,
 	removeParticipantUC *tournament.RemoveParticipantUseCase,
 	saveKnockoutSeedsUC *tournament.SaveKnockoutSeedsUseCase,
+	toggleSeedingLockUC *tournament.ToggleSeedingLockUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:               createUC,
@@ -83,6 +85,7 @@ func NewTournamentHandler(
 		updateParticipantEloUC: updateParticipantEloUC,
 		removeParticipantUC:    removeParticipantUC,
 		saveKnockoutSeedsUC:    saveKnockoutSeedsUC,
+		toggleSeedingLockUC:    toggleSeedingLockUC,
 	}
 }
 
@@ -1676,3 +1679,14 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 }
 
 
+
+func (h *TournamentHandler) ToggleSeedingLock(c *fiber.Ctx) error {
+	id := c.Params("id")
+	
+	if err := h.toggleSeedingLockUC.Execute(c.Context(), id); err != nil {
+		return c.Status(500).SendString("Failed to toggle seeding lock")
+	}
+
+	c.Set("HX-Trigger", "reload-board")
+	return c.SendStatus(200)
+}

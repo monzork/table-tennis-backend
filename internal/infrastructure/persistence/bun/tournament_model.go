@@ -32,6 +32,7 @@ type TournamentModel struct {
 	NumTables          int        `bun:"num_tables,notnull,default:0"`
 	HasThirdPlaceMatch bool       `bun:"has_third_place_match,notnull,default:false"`
 	Metrics            *tournament.TournamentMetrics `bun:"metrics,type:jsonb"`
+	ManualSeedingLocked bool       `bun:"manual_seeding_locked,notnull,default:false"`
 	CreatedAt          time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt          *time.Time `bun:"updated_at,nullzero"`
 
