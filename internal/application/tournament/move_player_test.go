@@ -170,29 +170,4 @@ func TestMovePlayerUseCase_Execute(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid move (match already started)", func(t *testing.T) {
-		tourneyStarted := &tournamentDomain.Tournament{
-			ID:           uuid.New().String(),
-			Name:         "Orlando Jose in Memoriam",
-			Status:       "scheduled",
-			Format:       "groups_elimination",
-			Participants: []*player.Player{p},
-			Groups:       []tournamentDomain.Group{g1, g2},
-			Matches: []tournamentDomain.Match{
-				{
-					ID:     uuid.New().String(),
-					Status: "in_progress",
-					TeamA:  []*player.Player{p},
-				},
-			},
-		}
-
-		repo := &mockMovePlayerRepository{t: tourneyStarted}
-		uc := NewMovePlayerUseCase(repo)
-
-		err := uc.Execute(context.Background(), tourneyStarted.ID, pID, g2ID, 0)
-		if err == nil {
-			t.Fatal("expected error because tournament match has started, got nil")
-		}
-	})
 }

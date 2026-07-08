@@ -41,8 +41,7 @@ func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (
 			totalGroupParticipants += len(g.Players)
 		}
 		if totalGroupParticipants != len(t.Teams) {
-			// Do not auto-reseed just because team count changed to prevent wiping manual seeds!
-			// needsGroupRegen = true
+			needsGroupRegen = true
 		}
 	}
 	if needsGroupRegen {
@@ -182,8 +181,9 @@ func (uc *UpdateTournamentUseCase) Execute(
 		t.Teams = existing.Teams
 
 		// Check if participants, format, type, or category changed
+		participantsChanged := false
 		if len(existing.Participants) != len(participants) {
-			// participants changed
+			participantsChanged = true
 		} else {
 			existingMap := make(map[string]bool)
 			for _, p := range existing.Participants {
@@ -191,6 +191,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 			}
 			for _, p := range participants {
 				if !existingMap[p.ID] {
+					participantsChanged = true
 					break
 				}
 			}
@@ -200,7 +201,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 		typeChanged := existing.Type != tournamentType
 		categoryChanged := existing.EventCategory != category
 
-		if !formatChanged && !typeChanged && !categoryChanged && len(existing.Groups) > 0 {
+		if !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && len(existing.Groups) > 0 {
 			t.Groups = existing.Groups
 		} else {
 			// Fetch divisions list to seed groups per-division

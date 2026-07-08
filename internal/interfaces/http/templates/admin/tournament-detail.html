@@ -42,15 +42,13 @@
         class="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-green-500/20 text-center">
         Finish Tournament
       </button>
-      {{if not .Tournament.HasMatchesStarted}}
       <button hx-post="/admin/tournaments/{{.Tournament.ID}}/regenerate-seeds"
         hx-swap="none"
-        hx-confirm="Regenerate group seeds from current player Elo? This re-groups players by division and deletes any matches created so far. Only do this if no matches have been played yet."
+        hx-confirm="Regenerate group seeds from current player Elo? This re-groups players by division and deletes any matches created so far."
         hx-on::response-error="showToast(event.detail.xhr.responseText, 'error')"
         class="w-full sm:w-auto bg-amber-500/20 hover:bg-amber-500/40 text-amber-400 border border-amber-500/30 text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-center">
         Regenerate Seeds
       </button>
-      {{end}}
       {{end}}
       <a href="/admin/tournaments/{{.Tournament.ID}}/board"
         class="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/20 text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider flex items-center justify-center gap-2">
@@ -405,13 +403,9 @@
           <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Doubles Elo</label>
           <input id="elo-edit-doubles" name="doublesElo" type="number" required class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
-        {{if not .Tournament.HasMatchesStarted}}
         <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">
           Save &amp; Regenerate Seeds
         </button>
-        {{else}}
-        <p class="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 p-2 rounded text-center">Cannot change Elo or reseed: matches have already begun.</p>
-        {{end}}
       </form>
     </div>
   </div>

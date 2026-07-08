@@ -328,11 +328,6 @@ func (t *Tournament) MovePlayer(playerID string, targetGroupID string, targetInd
 		return errors.New("player is not registered in this tournament")
 	}
 
-	for _, m := range t.Matches {
-		if m.Status == "in_progress" || m.Status == "finished" {
-			return errors.New("cannot move player: matches have already started for this tournament")
-		}
-	}
 
 	foundSource := false
 	var sourceGroupID string
