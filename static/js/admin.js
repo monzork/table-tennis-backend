@@ -144,6 +144,118 @@ function closeModal(modalId) {
     }
 }
 
+function printQRCode() {
+    const src = document.getElementById('qr-image').src.replace(/size=\d+/, 'size=1000');
+    const printWindow = window.open('', '', 'width=800,height=600');
+    
+    let html = `
+        <html>
+            <head>
+                <title>Print QR</title>
+                <style>
+                    body { font-family: sans-serif; margin: 0; padding: 0; text-align: center; }
+                    .page { page-break-after: always; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+                    .qr-img { width: 80vmin; height: 80vmin; max-width: 800px; max-height: 800px; }
+                    .table-text { font-size: 40vmin; font-weight: bold; margin: 0; line-height: 1; }
+                    .label { font-size: 6vmin; margin-bottom: 20px; color: #555; text-transform: uppercase; letter-spacing: 2px; }
+                    @media print {
+                        @page { margin: 0; }
+                        body { -webkit-print-color-adjust: exact; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="page">
+                    <div class="label">Scan for Score Entry</div>
+                    <img class="qr-img" src="${src}" onload="window.print();window.close();" />
+                </div>
+    `;
+    
+    if (currentQRTableNumber) {
+        html += `
+                <div class="page" style="page-break-after: auto;">
+                    <div class="label">Table</div>
+                    <div class="table-text">${currentQRTableNumber}</div>
+                </div>
+        `;
+    }
+    
+    html += `
+            </body>
+        </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
+function printAllTableQRs() {
+    const btns = document.querySelectorAll('.qr-table-btn');
+    if (btns.length === 0) {
+        alert("No tables found to print.");
+        return;
+    }
+    
+    const printWindow = window.open('', '', 'width=800,height=600');
+    let html = `
+        <html>
+            <head>
+                <title>Print All Tables QR</title>
+                <style>
+                    body { font-family: sans-serif; margin: 0; padding: 0; text-align: center; }
+                    .page { page-break-after: always; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+                    .qr-img { width: 80vmin; height: 80vmin; max-width: 800px; max-height: 800px; }
+                    .table-text { font-size: 40vmin; font-weight: bold; margin: 0; line-height: 1; }
+                    .label { font-size: 6vmin; margin-bottom: 20px; color: #555; text-transform: uppercase; letter-spacing: 2px; }
+                    @media print {
+                        @page { margin: 0; }
+                        body { -webkit-print-color-adjust: exact; }
+                    }
+                </style>
+            </head>
+            <body>
+    `;
+    
+    let loadedCount = 0;
+    
+    btns.forEach((btn, index) => {
+        const tableNumber = btn.dataset.table;
+        const tournamentId = btn.dataset.tournamentId;
+        const eventId = btn.dataset.eventId;
+        
+        let scoreUrl;
+        if (eventId && eventId !== "" && eventId !== "null" && eventId !== "undefined") {
+            scoreUrl = window.location.origin + '/score/e/' + eventId + '/table/' + tableNumber;
+        } else if (tournamentId && tournamentId !== "" && tournamentId !== "null" && tournamentId !== "undefined") {
+            scoreUrl = window.location.origin + '/score/t/' + tournamentId + '/table/' + tableNumber;
+        } else {
+            return; // Skip if we don't have event or tournament context
+        }
+        
+        const src = '/qr?size=1000&data=' + encodeURIComponent(scoreUrl);
+        
+        html += `
+                <div class="page">
+                    <div class="label">Scan for Score Entry</div>
+                    <img class="qr-img" src="${src}" onload="if(++window.loadedCount === ${btns.length}) { window.print(); window.close(); }" />
+                </div>
+                <div class="page" style="${index === btns.length - 1 ? 'page-break-after: auto;' : ''}">
+                    <div class="label">Table</div>
+                    <div class="table-text">${tableNumber}</div>
+                </div>
+        `;
+    });
+    
+    html += `
+            </body>
+            <script>window.loadedCount = 0;</script>
+        </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+}
+
 // ── Toasts & UI Notifications ──────────────────────────────────────────────────
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
@@ -345,12 +457,16 @@ function onDropKnockoutRow(event, el) {
     });
 }
 
+let currentQRTableNumber = '';
+
 function showQRCodeModal(matchId, matchup, tableNumber, tournamentId, eventId) {
     const modal = document.getElementById('qr-modal');
     const matchupEl = document.getElementById('qr-matchup');
     const imageEl = document.getElementById('qr-image');
     const copyBtn = document.getElementById('qr-copy-btn');
     const openBtn = document.getElementById('qr-open-btn');
+    
+    currentQRTableNumber = tableNumber || '';
     
     let scoreUrl;
     if (tableNumber && tableNumber !== "" && tableNumber !== "null" && tableNumber !== "undefined") {
@@ -366,7 +482,7 @@ function showQRCodeModal(matchId, matchup, tableNumber, tournamentId, eventId) {
     }
     
     matchupEl.textContent = matchup + (tableNumber ? ' (Table ' + tableNumber + ')' : '');
-    imageEl.src = '/qr?data=' + encodeURIComponent(scoreUrl);
+    imageEl.src = '/qr?size=1000&data=' + encodeURIComponent(scoreUrl);
     openBtn.href = scoreUrl;
     
     copyBtn.onclick = function() {
