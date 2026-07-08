@@ -216,9 +216,9 @@ function printAllTableQRs() {
             <body>
     `;
     
-    let loadedCount = 0;
+    let validUrls = [];
     
-    btns.forEach((btn, index) => {
+    btns.forEach(btn => {
         const tableNumber = btn.dataset.table;
         const tournamentId = btn.dataset.tournamentId;
         const eventId = btn.dataset.eventId;
@@ -229,19 +229,29 @@ function printAllTableQRs() {
         } else if (tournamentId && tournamentId !== "" && tournamentId !== "null" && tournamentId !== "undefined") {
             scoreUrl = window.location.origin + '/score/t/' + tournamentId + '/table/' + tableNumber;
         } else {
-            return; // Skip if we don't have event or tournament context
+            return;
         }
         
-        const src = '/qr?size=1000&data=' + encodeURIComponent(scoreUrl);
+        validUrls.push({ tableNumber, scoreUrl });
+    });
+    
+    if (validUrls.length === 0) {
+        alert("No valid URLs found to print.");
+        printWindow.close();
+        return;
+    }
+    
+    validUrls.forEach((item, index) => {
+        const src = '/qr?size=1000&data=' + encodeURIComponent(item.scoreUrl);
         
         html += `
                 <div class="page">
                     <div class="label">Scan for Score Entry</div>
-                    <img class="qr-img" src="${src}" onload="if(++window.loadedCount === ${btns.length}) { window.print(); window.close(); }" />
+                    <img class="qr-img" src="${src}" onload="if(++window.loadedCount === ${validUrls.length}) { window.print(); window.close(); }" />
                 </div>
-                <div class="page" style="${index === btns.length - 1 ? 'page-break-after: auto;' : ''}">
+                <div class="page" style="${index === validUrls.length - 1 ? 'page-break-after: auto;' : ''}">
                     <div class="label">Table</div>
-                    <div class="table-text">${tableNumber}</div>
+                    <div class="table-text">${item.tableNumber}</div>
                 </div>
         `;
     });
