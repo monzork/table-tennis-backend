@@ -291,7 +291,7 @@ func buildDivisionView(t *tournament.Tournament, divID, name, color string, minE
 		if dv.AllGroupsFinished {
 			var advancing []*player.Player
 			for _, g := range dv.Groups {
-				take := t.GroupPassCount
+				take := t.GetGroupPassCount(divID)
 				if take == 0 {
 					take = 2
 				}

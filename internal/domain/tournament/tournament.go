@@ -145,6 +145,7 @@ type Tournament struct {
 	EventCategory      string // "men", "women", "mixed", "open"
 	Format             string // "elimination", "groups_elimination", "round_robin"
 	DivisionFormats    map[string]string // overrides Format per division
+	DivisionGroupPassCounts map[string]int // overrides GroupPassCount per division
 	Status             string // "in_progress", "finished"
 	WinnerName         string // Name of the winner (player or team)
 	Participants       []*player.Player
@@ -229,6 +230,16 @@ func (t *Tournament) GetDivisionFormat(divisionID string) string {
 		}
 	}
 	return t.Format
+}
+
+// GetGroupPassCount returns the specific group pass count for a division if it exists, otherwise falls back to the global tournament pass count.
+func (t *Tournament) GetGroupPassCount(divisionID string) int {
+	if t.DivisionGroupPassCounts != nil {
+		if count, ok := t.DivisionGroupPassCounts[divisionID]; ok && count > 0 {
+			return count
+		}
+	}
+	return t.GroupPassCount
 }
 
 // GetEffectiveStageRule returns the stage rule to use for a match, considering division overrides.
@@ -424,4 +435,13 @@ type MatchRepository interface {
 	GetOccupiedTablesByTournament(ctx context.Context, tournamentID string) ([]int, error)
 	HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error)
 	DeleteByTournament(ctx context.Context, tournamentID string) error
+}
+
+func (t *Tournament) HasMatchesStarted() bool {
+	for _, m := range t.Matches {
+		if m.Status == "in_progress" || m.Status == "finished" {
+			return true
+		}
+	}
+	return false
 }

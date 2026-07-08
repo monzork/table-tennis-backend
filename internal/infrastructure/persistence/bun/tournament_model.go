@@ -26,6 +26,7 @@ type TournamentModel struct {
 	SkipElo            bool              `bun:"skip_elo,notnull,default:false"`
 	TeamFormat         string            `bun:"team_format,nullzero"`
 	DivisionFormats    map[string]string `bun:"division_formats,type:json"`
+	DivisionGroupPassCounts map[string]int `bun:"division_group_pass_counts,type:json"`
 
 	WinnerName         string     `bun:"winner_name,nullzero"`
 	NumTables          int        `bun:"num_tables,notnull,default:0"`

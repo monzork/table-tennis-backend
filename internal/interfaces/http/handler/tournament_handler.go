@@ -185,6 +185,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	}
 
 	divisionFormats := make(map[string]string)
+	divisionGroupPassCounts := make(map[string]int)
 	for _, divIDBytes := range divisionIDs {
 		divID := string(divIDBytes)
 		if divID == "" {
@@ -194,12 +195,20 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 		if dfStr != "" {
 			divisionFormats[divID] = dfStr
 		}
+		dgpcStr := string(c.Request().PostArgs().Peek("division_group_pass_counts[" + divID + "]"))
+		if dgpcStr != "" {
+			dgpc := 0
+			fmt.Sscanf(dgpcStr, "%d", &dgpc)
+			if dgpc > 0 {
+				divisionGroupPassCounts[divID] = dgpc
+			}
+		}
 	}
 
 	t, err := h.createUC.Execute(
 		c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
 		participantIDs, newPlayers, body.GroupPassCount, stageRules, divisionRules, skipElo, eventID,
-		body.TeamFormat, body.NumTables, hasThirdPlaceMatch, divisionFormats,
+		body.TeamFormat, body.NumTables, hasThirdPlaceMatch, divisionFormats, divisionGroupPassCounts,
 	)
 	if err != nil {
 		return ErrorHandler(err)
@@ -588,6 +597,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	}
 
 	divisionFormats := make(map[string]string)
+	divisionGroupPassCounts := make(map[string]int)
 	for _, divIDBytes := range divisionIDs {
 		divID := string(divIDBytes)
 		if divID == "" {
@@ -597,12 +607,20 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		if dfStr != "" {
 			divisionFormats[divID] = dfStr
 		}
+		dgpcStr := string(c.Request().PostArgs().Peek("division_group_pass_counts[" + divID + "]"))
+		if dgpcStr != "" {
+			dgpc := 0
+			fmt.Sscanf(dgpcStr, "%d", &dgpc)
+			if dgpc > 0 {
+				divisionGroupPassCounts[divID] = dgpc
+			}
+		}
 	}
 
 	t, err := h.updateUC.Execute(
 		c.Context(), id, body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
 		body.RegistrationOpen, participantIDs, newPlayers, stageRules, divisionRules, body.GroupPassCount,
-		skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch, divisionFormats,
+		skipElo, eventID, body.TeamFormat, body.NumTables, hasThirdPlaceMatch, divisionFormats, divisionGroupPassCounts,
 	)
 	if err != nil {
 		return ErrorHandler(err)

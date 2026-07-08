@@ -41,7 +41,8 @@ func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (
 			totalGroupParticipants += len(g.Players)
 		}
 		if totalGroupParticipants != len(t.Teams) {
-			needsGroupRegen = true
+			// Do not auto-reseed just because team count changed to prevent wiping manual seeds!
+			// needsGroupRegen = true
 		}
 	}
 	if needsGroupRegen {
@@ -125,7 +126,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	teamFormat string,
 	numTables int,
 	hasThirdPlaceMatch bool,
-	divisionFormats map[string]string,
+	divisionFormats map[string]string, divisionGroupPassCounts map[string]int,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -170,6 +171,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	t.RegistrationOpen = registrationOpen
 	t.SkipElo = skipElo
 	t.DivisionFormats = divisionFormats
+	t.DivisionGroupPassCounts = divisionGroupPassCounts
 	t.EventID = eventID
 	t.TeamFormat = teamFormat
 	t.NumTables = numTables
@@ -180,9 +182,8 @@ func (uc *UpdateTournamentUseCase) Execute(
 		t.Teams = existing.Teams
 
 		// Check if participants, format, type, or category changed
-		participantsChanged := false
 		if len(existing.Participants) != len(participants) {
-			participantsChanged = true
+			// participants changed
 		} else {
 			existingMap := make(map[string]bool)
 			for _, p := range existing.Participants {
@@ -190,7 +191,6 @@ func (uc *UpdateTournamentUseCase) Execute(
 			}
 			for _, p := range participants {
 				if !existingMap[p.ID] {
-					participantsChanged = true
 					break
 				}
 			}
@@ -200,7 +200,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 		typeChanged := existing.Type != tournamentType
 		categoryChanged := existing.EventCategory != category
 
-		if !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && len(existing.Groups) > 0 {
+		if !formatChanged && !typeChanged && !categoryChanged && len(existing.Groups) > 0 {
 			t.Groups = existing.Groups
 		} else {
 			// Fetch divisions list to seed groups per-division

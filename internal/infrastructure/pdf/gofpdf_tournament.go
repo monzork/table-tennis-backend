@@ -1026,7 +1026,20 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 					})
 
 					var advancing []*player.Player
-					take := t.GroupPassCount
+										var divID string
+					for _, m := range t.Matches {
+						if m.TeamMatchID != nil { continue }
+						p1InGroup := false
+						for _, gp := range g.Players {
+							if len(m.TeamA) > 0 && gp.ID == m.TeamA[0].ID { p1InGroup = true; break }
+							if len(m.TeamB) > 0 && gp.ID == m.TeamB[0].ID { p1InGroup = true; break }
+						}
+						if p1InGroup && m.DivisionID != "" {
+							divID = m.DivisionID
+							break
+						}
+					}
+					take := t.GetGroupPassCount(divID)
 					if take == 0 {
 						take = 2
 					}

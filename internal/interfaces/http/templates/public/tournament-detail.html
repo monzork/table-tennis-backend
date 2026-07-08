@@ -22,7 +22,7 @@
           {{.Tournament.StartDate.Format "Jan 02"}} – {{.Tournament.EndDate.Format "Jan 02, 2006"}}
         </span>
         <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
-          {{len .Tournament.{{t .T "pub_detail.participants"}}}} {{t .T "pub_detail.players_count"}}
+          {{len .Tournament.Participants}} {{t .T "pub_detail.players_count"}}
         </span>
         {{if eq .Tournament.Status "finished"}}
         <span class="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-[11px] uppercase tracking-widest text-green-400 font-bold">
@@ -40,13 +40,13 @@
     </div>
   </header>
 
-  {{/* {{t .T "pub_detail.participants"}} */}}
+  {{/* Participants */}}
   <section class="space-y-3">
     <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest pl-1">
       {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}{{t .T "pub_detail.player_pool"}}{{else}}{{t .T "pub_detail.participants"}}{{end}}
     </h2>
     <div class="flex overflow-x-auto gap-2 pb-2 sm:flex-wrap sm:pb-0 snap-x snap-mandatory px-1" style="scrollbar-width: none;">
-      {{range .Tournament.{{t .T "pub_detail.participants"}}}}
+      {{range .Tournament.Participants}}
       <div class="flex-shrink-0 snap-start flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
         <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
           {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
@@ -69,7 +69,7 @@
         {{t .T "pub_detail.swipe_pan"}}
       </div>
     </div>
-    {{$count := len .Tournament.{{t .T "pub_detail.participants"}}}}
+    {{$count := len .Tournament.Participants}}
     {{$teamCount := len .Tournament.Teams}}
     {{if or (gt $count 1) (gt $teamCount 1)}}
     <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar"

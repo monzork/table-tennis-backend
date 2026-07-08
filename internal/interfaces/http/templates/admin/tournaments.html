@@ -332,12 +332,16 @@
                         
                         <div class="space-y-1 mt-2 mb-3">
                             <label class="text-[10px] text-gray-500 uppercase tracking-widest">Format Override</label>
-                            <select name="division_formats[{{.ID}}]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                            <select name="division_formats[{{.ID}}]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none" onchange="this.value === 'groups_elimination' ? document.getElementById('division-group-pass-count-{{.ID}}').style.display = 'block' : document.getElementById('division-group-pass-count-{{.ID}}').style.display = 'none'">
                                 <option value="" selected>-- Use Tournament Format --</option>
                                 <option value="elimination">Elimination</option>
                                 <option value="groups_elimination">Group + Knockout</option>
                                 <option value="round_robin">All Against All</option>
                             </select>
+                        </div>
+                        <div id="division-group-pass-count-{{.ID}}" class="space-y-1 mt-2 mb-3" style="display: none;">
+                            <label class="text-[10px] text-gray-500 uppercase tracking-widest">Knockout Pass Count</label>
+                            <input type="number" name="division_group_pass_counts[{{.ID}}]" value="" min="1" placeholder="Leave empty for default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                         </div>
                         
                         <!-- Group -->
