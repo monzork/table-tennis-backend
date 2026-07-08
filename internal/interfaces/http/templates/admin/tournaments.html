@@ -133,21 +133,21 @@
                 <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Competition Format</label>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <label class="cursor-pointer group">
-                        <input type="radio" name="format" value="elimination" checked class="hidden peer format-radio">
+                        <input type="radio" name="format" value="elimination" checked class="hidden peer format-radio" onchange="document.querySelectorAll('select[name^=\'division_formats\']').forEach(s => s.dispatchEvent(new Event('change')))">
                         <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center h-full flex flex-col justify-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Elimination</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">Knockout</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
-                        <input type="radio" name="format" value="groups_elimination" class="hidden peer format-radio">
+                        <input type="radio" name="format" value="groups_elimination" class="hidden peer format-radio" onchange="document.querySelectorAll('select[name^=\'division_formats\']').forEach(s => s.dispatchEvent(new Event('change')))">
                         <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center h-full flex flex-col justify-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Group + Knockout</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">Standard</span>
                         </div>
                     </label>
                     <label class="cursor-pointer group">
-                        <input type="radio" name="format" value="round_robin" class="hidden peer format-radio">
+                        <input type="radio" name="format" value="round_robin" class="hidden peer format-radio" onchange="document.querySelectorAll('select[name^=\'division_formats\']').forEach(s => s.dispatchEvent(new Event('change')))">
                         <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center h-full flex flex-col justify-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">All Against All</span>
                             <span class="text-[9px] text-gray-500 uppercase mt-1">Round Robin</span>
@@ -332,7 +332,7 @@
                         
                         <div class="space-y-1 mt-2 mb-3">
                             <label class="text-[10px] text-gray-500 uppercase tracking-widest">Format Override</label>
-                            <select name="division_formats[{{.ID}}]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none" onchange="this.value === 'groups_elimination' ? document.getElementById('division-group-pass-count-{{.ID}}').style.display = 'block' : document.getElementById('division-group-pass-count-{{.ID}}').style.display = 'none'">
+                            <select name="division_formats[{{.ID}}]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none" onchange="const globalFormat = document.querySelector('input[name=format]:checked'); const isGroupElim = this.value === 'groups_elimination' || (this.value === '' && globalFormat && globalFormat.value === 'groups_elimination'); document.getElementById('division-group-pass-count-{{.ID}}').style.display = isGroupElim ? 'block' : 'none'">
                                 <option value="" selected>-- Use Tournament Format --</option>
                                 <option value="elimination">Elimination</option>
                                 <option value="groups_elimination">Group + Knockout</option>

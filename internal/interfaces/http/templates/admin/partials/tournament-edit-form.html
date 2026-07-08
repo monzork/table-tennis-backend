@@ -22,7 +22,7 @@
         </div>
         <div class="space-y-2">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Format</label>
-            <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" hx-on:change="this.value === 'groups_elimination' ? (document.getElementById('edit-group-pass-count-container').classList.remove('hidden'), document.getElementById('edit-group-pass-count-input').disabled = false) : (document.getElementById('edit-group-pass-count-container').classList.add('hidden'), document.getElementById('edit-group-pass-count-input').disabled = true)">
+            <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" hx-on:change="this.value === 'groups_elimination' ? (document.getElementById('edit-group-pass-count-container').classList.remove('hidden'), document.getElementById('edit-group-pass-count-input').disabled = false) : (document.getElementById('edit-group-pass-count-container').classList.add('hidden'), document.getElementById('edit-group-pass-count-input').disabled = true); document.querySelectorAll('select[name^=\'division_formats\']').forEach(s => s.dispatchEvent(new Event('change')))">
                 <option value="elimination" {{if eq .Tournament.Format "elimination"}}selected{{end}}>Elimination</option>
                 <option value="groups_elimination" {{if eq .Tournament.Format "groups_elimination"}}selected{{end}}>Group + Knockout</option>
                 <option value="round_robin" {{if eq .Tournament.Format "round_robin"}}selected{{end}}>All Against All</option>
@@ -275,12 +275,18 @@
                 {{if $.Tournament.DivisionFormats}}{{$divFormat = index $.Tournament.DivisionFormats .ID}}{{end}}
                 <div class="space-y-1 mt-2 mb-3">
                     <label class="text-[10px] text-gray-500 uppercase tracking-widest">Format Override</label>
-                    <select name="division_formats[{{.ID}}]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+                    <select name="division_formats[{{.ID}}]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none" onchange="const isGroupElim = this.value === 'groups_elimination' || (this.value === '' && document.getElementById('edit-format-select').value === 'groups_elimination'); document.getElementById('edit-division-group-pass-count-{{.ID}}').style.display = isGroupElim ? 'block' : 'none'">
                         <option value="" {{if not $divFormat}}selected{{end}}>-- Use Tournament Format --</option>
                         <option value="elimination" {{if eq $divFormat "elimination"}}selected{{end}}>Elimination</option>
                         <option value="groups_elimination" {{if eq $divFormat "groups_elimination"}}selected{{end}}>Group + Knockout</option>
                         <option value="round_robin" {{if eq $divFormat "round_robin"}}selected{{end}}>All Against All</option>
                     </select>
+                </div>
+                {{$divPassCount := ""}}
+                {{if $.Tournament.DivisionGroupPassCounts}}{{$divPassCount = index $.Tournament.DivisionGroupPassCounts .ID}}{{end}}
+                <div id="edit-division-group-pass-count-{{.ID}}" class="space-y-1 mt-2 mb-3" style="display: {{if or (eq $divFormat "groups_elimination") (and (not $divFormat) (eq $.Tournament.Format "groups_elimination"))}}block{{else}}none{{end}};">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Knockout Pass Count</label>
+                    <input type="number" name="division_group_pass_counts[{{.ID}}]" value="{{if $divPassCount}}{{$divPassCount}}{{end}}" min="1" placeholder="Leave empty for default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                 </div>
                 
                 <!-- Group -->
