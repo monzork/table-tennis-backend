@@ -41,13 +41,16 @@
   </header>
 
   {{/* Participants */}}
-  <section class="space-y-3">
-    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest pl-1">
-      {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}{{t .T "pub_detail.player_pool"}}{{else}}{{t .T "pub_detail.participants"}}{{end}}
-    </h2>
-    <div class="flex overflow-x-auto gap-2 pb-2 sm:flex-wrap sm:pb-0 snap-x snap-mandatory px-1" style="scrollbar-width: none;">
+  <details class="space-y-3 group outline-none cursor-pointer">
+    <summary class="flex flex-wrap items-center gap-3 cursor-pointer list-none select-none outline-none">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest pl-1 flex items-center gap-2">
+        <svg class="w-4 h-4 transition-transform group-open:rotate-90 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        {{if or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles")}}{{t .T "pub_detail.player_pool"}}{{else}}{{t .T "pub_detail.participants"}}{{end}}
+      </h2>
+    </summary>
+    <div class="flex overflow-x-auto gap-2 pb-2 sm:flex-wrap sm:pb-0 snap-x snap-mandatory px-1 mt-3" style="scrollbar-width: none;">
       {{range .Tournament.Participants}}
-      <div class="flex-shrink-0 snap-start flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+      <div class="flex-shrink-0 snap-start flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 cursor-default">
         <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
           {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
         </div>
@@ -55,10 +58,10 @@
         <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
       </div>
       {{else}}
-      <p class="text-sm text-gray-600 pl-1">{{t .T "pub_detail.no_parts"}}</p>
+      <p class="text-sm text-gray-600 pl-1 cursor-default">{{t .T "pub_detail.no_parts"}}</p>
       {{end}}
     </div>
-  </section>
+  </details>
 
   {{/* Bracket/Groups Draw Area */}}
   <section class="space-y-6 relative">

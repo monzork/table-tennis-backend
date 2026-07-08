@@ -81,12 +81,15 @@
 
   {{/* ── Participants ─────────────────────────────────────────── */}}
   {{if not (or (eq .Tournament.Type "teams") (eq .Tournament.Type "doubles") (eq .Tournament.Type "mixed_doubles"))}}
-  <section class="space-y-3" id="participants-section">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">
-        All Participants <span class="text-gray-700 ml-1">({{len .Tournament.Participants}})</span>
-      </h2>
+  <details class="space-y-3 group" id="participants-section">
+    <summary class="flex flex-wrap items-center justify-between gap-3 cursor-pointer list-none select-none outline-none">
       <div class="flex items-center gap-2">
+        <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest flex items-center gap-2">
+          <svg class="w-4 h-4 transition-transform group-open:rotate-90 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          All Participants <span class="text-gray-700 ml-1">({{len .Tournament.Participants}})</span>
+        </h2>
+      </div>
+      <div class="flex items-center gap-2" onclick="event.preventDefault()">
         <span class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Sort:</span>
         <button onclick="sortParticipants('elo')" id="sort-elo-btn"
           class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white text-black border-white">
@@ -97,9 +100,9 @@
           Name
         </button>
       </div>
-    </div>
+    </summary>
 
-    <div class="glass rounded-2xl border border-white/10 overflow-hidden" id="participants-table-wrap">
+    <div class="glass rounded-2xl border border-white/10 overflow-hidden mt-3" id="participants-table-wrap">
       <table class="w-full text-sm" id="participants-table">
         <thead>
           <tr class="border-b border-white/10 bg-white/[0.03]">
@@ -182,7 +185,7 @@
         </tbody>
       </table>
     </div>
-  </section>
+  </details>
   <script>
   let _sortMode = 'elo';
   function sortParticipants(mode) {
