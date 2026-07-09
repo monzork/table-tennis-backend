@@ -205,10 +205,16 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []
 	needed := (stageRule.BestOf / 2) + 1
 	winsA, winsB := 0, 0
 	for _, s := range sets {
-		if s.ScoreA > s.ScoreB {
-			winsA++
-		} else if s.ScoreB > s.ScoreA {
-			winsB++
+		diff := s.ScoreA - s.ScoreB
+		if diff < 0 {
+			diff = -diff
+		}
+		if (s.ScoreA >= stageRule.PointsToWin || s.ScoreB >= stageRule.PointsToWin) && diff >= stageRule.PointsMargin {
+			if s.ScoreA > s.ScoreB {
+				winsA++
+			} else if s.ScoreB > s.ScoreA {
+				winsB++
+			}
 		}
 	}
 

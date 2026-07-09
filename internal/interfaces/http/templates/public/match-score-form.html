@@ -17,6 +17,8 @@
     hx-trigger="confirmed"
     hx-target="#public-score-result"
     hx-swap="innerHTML"
+    hx-on::before-request="const btn = this.querySelector('button[type=\'submit\']'); if(btn) { btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed'); }"
+    hx-on::after-request="const btn = this.querySelector('button[type=\'submit\']'); if(btn) { btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed'); }"
     class="space-y-3 mb-4">
     
     <input type="hidden" name="tournamentId" value="{{.TournamentID}}">

@@ -1145,6 +1145,13 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		}
 	}
 
+	var prevStatus string
+	if mUUID, err := uuid.Parse(matchID); err == nil {
+		if prevMatch, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil {
+			prevStatus = prevMatch.Status
+		}
+	}
+
 	if err := h.updateScoreUC.Execute(c.Context(), matchID, body.Scores, body.TournamentID, body.Stage); err != nil {
 		return ErrorHandler(err)
 	}
@@ -1193,7 +1200,9 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	}
 	if scored != nil && scored.Status == "finished" {
 		broadcastData["matchStatus"] = "finished"
-		broadcastData["message"] = fmt.Sprintf("Match finished: %s", matchName)
+		if prevStatus != "finished" {
+			broadcastData["message"] = fmt.Sprintf("Match finished: %s", matchName)
+		}
 	}
 
 	h.broadcastToTournamentOrEvent(c, body.TournamentID, broadcastData)
@@ -1518,7 +1527,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 
 	// Fetch updated status to check if finished
 	updatedMatch, err := h.matchRepo.GetByID(c.Context(), m.ID)
-	if err == nil && updatedMatch.Status == "finished" {
+	if err == nil && m.Status != "finished" && updatedMatch.Status == "finished" {
 		// If it's a referee submission, notify admin
 		if isRefereeSubmission && m.RefereeID != nil {
 			refPlayer, _ := h.playerRepo.GetById(c.Context(), m.RefereeID.String())
@@ -1604,12 +1613,14 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 				winStr = nameB + " defeated " + nameA
 			}
 		}
-		broadcastData["message"] = fmt.Sprintf("Match finished: %s", winStr)
+		if m.Status != "finished" {
+			broadcastData["message"] = fmt.Sprintf("Match finished: %s", winStr)
+		}
 	}
 
 	h.broadcastToTournamentOrEvent(c, body.TournamentID, broadcastData)
 
-	if updatedMatch != nil && updatedMatch.Status == "finished" && h.broadcastPushUC != nil {
+	if m.Status != "finished" && updatedMatch != nil && updatedMatch.Status == "finished" && h.broadcastPushUC != nil {
 		winStr := broadcastData["message"] // "Match finished: nameA defeated nameB"
 		go func() {
 			_ = h.broadcastPushUC.Execute(notification.PushMessage{

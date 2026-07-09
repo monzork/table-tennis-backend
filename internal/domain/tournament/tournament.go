@@ -72,8 +72,14 @@ func (m Match) ScoreA() int {
 	}
 	score := 0
 	for _, s := range m.Sets {
-		if s.ScoreA > s.ScoreB {
-			score++
+		diff := s.ScoreA - s.ScoreB
+		if diff < 0 {
+			diff = -diff
+		}
+		if (s.ScoreA >= 11 || s.ScoreB >= 11) && diff >= 2 {
+			if s.ScoreA > s.ScoreB {
+				score++
+			}
 		}
 	}
 	return score
@@ -85,8 +91,14 @@ func (m Match) ScoreB() int {
 	}
 	score := 0
 	for _, s := range m.Sets {
-		if s.ScoreB > s.ScoreA {
-			score++
+		diff := s.ScoreA - s.ScoreB
+		if diff < 0 {
+			diff = -diff
+		}
+		if (s.ScoreA >= 11 || s.ScoreB >= 11) && diff >= 2 {
+			if s.ScoreB > s.ScoreA {
+				score++
+			}
 		}
 	}
 	return score
