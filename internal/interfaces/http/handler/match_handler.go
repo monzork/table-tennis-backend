@@ -1622,6 +1622,22 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 
 	if c.Get("HX-Request") != "" {
 		if updatedMatch != nil && updatedMatch.Status == "finished" {
+			if updatedMatch.TeamMatchID != nil {
+				return c.SendString(`
+				<div id="public-score-form" hx-swap-oob="outerHTML" class="text-center py-8 animate-fade-in">
+					<div class="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+						<svg class="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+						</svg>
+					</div>
+					<h3 class="text-2xl font-black uppercase tracking-tight text-white mb-2">Set Finished!</h3>
+					<p class="text-gray-400 text-sm font-mono mb-8">The set results have been successfully recorded.</p>
+					<button type="button" onclick="document.getElementById('public-score-modal')?.classList.add('hidden')" class="bg-white hover:bg-gray-200 text-black font-black py-4 px-10 rounded-2xl transition-all uppercase tracking-widest text-xs shadow-lg">
+						Return to Bracket
+					</button>
+				</div>`)
+			}
+
 			// Return a beautiful success component to replace the form out-of-band
 			return c.SendString(`
 			<div id="public-score-form" hx-swap-oob="outerHTML" class="text-center py-8 animate-fade-in">
@@ -1632,9 +1648,10 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 				</div>
 				<h3 class="text-2xl font-black uppercase tracking-tight text-white mb-2">Match Finished!</h3>
 				<p class="text-gray-400 text-sm font-mono mb-8">The match results have been successfully recorded and the bracket has been updated.</p>
-				<button type="button" onclick="document.getElementById('public-score-modal').classList.add('hidden')" class="bg-white hover:bg-gray-200 text-black font-black py-4 px-10 rounded-2xl transition-all uppercase tracking-widest text-xs shadow-lg">
-					Return to Bracket
+				<button type="button" onclick="window.close(); document.getElementById('public-score-modal')?.classList.add('hidden')" class="bg-white hover:bg-gray-200 text-black font-black py-4 px-10 rounded-2xl transition-all uppercase tracking-widest text-xs shadow-lg">
+					You can close this tab
 				</button>
+				<script>setTimeout(() => window.close(), 3000);</script>
 			</div>`)
 		} else {
 			// Match still in progress, just show an inline success message in the #public-score-result div
