@@ -307,27 +307,11 @@ func buildDivisionView(t *tournament.Tournament, divID, name, color string, minE
 				advancing = knockoutGroup.Players
 				dv.KnockoutGroupID = knockoutGroup.ID
 			} else {
-				for _, g := range dv.Groups {
-					take := t.GetGroupPassCount(divID)
-					if take == 0 {
-						take = 2
-					}
-					if take > len(g.Standings) {
-						take = len(g.Standings)
-					}
-					for i := 0; i < take; i++ {
-						advancing = append(advancing, g.Standings[i].Player)
-					}
+				passCount := t.GetGroupPassCount(divID)
+				if passCount == 0 {
+					passCount = 2
 				}
-				sort.Slice(advancing, func(i, j int) bool {
-					ei := advancing[i].SinglesElo
-					ej := advancing[j].SinglesElo
-					if t.Type == "doubles" {
-						ei = advancing[i].DoublesElo
-						ej = advancing[j].DoublesElo
-					}
-					return ei > ej
-				})
+				advancing = buildITTFKnockoutSeeds(dv.Groups, passCount)
 				dv.KnockoutGroupID = "virtual-knockout-" + divID
 			}
 			dv.KnockoutAdvancing = advancing
@@ -539,6 +523,111 @@ func nextPow2(n int) int {
 	}
 	return p
 }
+
+// buildITTFKnockoutSeeds arranges advancing players per ITTF rules:
+//   - Group winners occupy seeds 1..numGroups (in group order).
+//   - Each subsequent layer (runners-up, etc.) is placed into the OPPOSITE
+//     bracket half from that group's winner, ensuring same-group players
+//     cannot meet before the final/semi-final.
+func buildITTFKnockoutSeeds(groups []GroupView, passCount int) []*player.Player {
+	numGroups := len(groups)
+	if numGroups == 0 || passCount == 0 {
+		return nil
+	}
+
+	totalAdvancing := 0
+	for _, g := range groups {
+		take := passCount
+		if take > len(g.Standings) {
+			take = len(g.Standings)
+		}
+		totalAdvancing += take
+	}
+	if totalAdvancing == 0 {
+		return nil
+	}
+
+	bracketSize := nextPow2(totalAdvancing)
+	arrangement := getSeedingArrangement(bracketSize)
+
+	// Determine which seed numbers fall in the top half of the bracket.
+	halfSize := len(arrangement) / 2
+	topHalfSeeds := make(map[int]bool, halfSize)
+	for _, s := range arrangement[:halfSize] {
+		topHalfSeeds[s] = true
+	}
+
+	// Result slice: index i → player with seed (i+1).
+	result := make([]*player.Player, totalAdvancing)
+
+	// Layer 0: place group winners at seeds 1..numGroups.
+	winnerInTop := make([]bool, numGroups)
+	for gi, g := range groups {
+		if len(g.Standings) == 0 {
+			continue
+		}
+		result[gi] = g.Standings[0].Player
+		winnerInTop[gi] = topHalfSeeds[gi+1]
+	}
+
+	// Layers 1+: runners-up, 3rd-place, etc.
+	// For each layer, groups whose winner is in the top half send their
+	// player to a bottom-half slot, and vice versa.
+	nextSlot := numGroups // first available seed index after layer 0
+
+	for layer := 1; layer < passCount; layer++ {
+		// Collect open top and bottom slots for this layer.
+		layerSize := numGroups
+		var topSlots, bottomSlots []int
+		for i := nextSlot; i < nextSlot+layerSize && i < totalAdvancing; i++ {
+			seedNum := i + 1
+			if topHalfSeeds[seedNum] {
+				topSlots = append(topSlots, i)
+			} else {
+				bottomSlots = append(bottomSlots, i)
+			}
+		}
+
+		tsi, bsi := 0, 0
+		for gi, g := range groups {
+			if layer >= len(g.Standings) {
+				continue
+			}
+			p := g.Standings[layer].Player
+			if winnerInTop[gi] {
+				// Winner is in top half → this layer player goes to bottom.
+				if bsi < len(bottomSlots) {
+					result[bottomSlots[bsi]] = p
+					bsi++
+				} else if tsi < len(topSlots) {
+					result[topSlots[tsi]] = p
+					tsi++
+				}
+			} else {
+				// Winner is in bottom half → this layer player goes to top.
+				if tsi < len(topSlots) {
+					result[topSlots[tsi]] = p
+					tsi++
+				} else if bsi < len(bottomSlots) {
+					result[bottomSlots[bsi]] = p
+					bsi++
+				}
+			}
+		}
+
+		nextSlot += layerSize
+	}
+
+	// Compact: remove any nil gaps (shouldn't happen, but guard anyway).
+	out := result[:0]
+	for _, p := range result {
+		if p != nil {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
 
 func getSeedingArrangement(size int) []int {
 	rounds := int(math.Log2(float64(size)))
