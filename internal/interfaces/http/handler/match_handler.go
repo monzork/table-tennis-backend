@@ -1447,13 +1447,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 		return c.SendString("<div class='text-red-400 font-mono text-sm'>Match not found</div>")
 	}
 
-	submittedPin := c.FormValue("pin")
 
-	// Validate PIN against tournament participants and officials
-	updaterPlayerID, err := h.tournamentRepo.GetParticipantOrOfficialByPIN(c.Context(), m.TournamentID.String(), submittedPin)
-	if err != nil || updaterPlayerID == "" {
-		return c.SendString("<div class='text-red-400 font-mono text-sm'>Invalid Verification PIN. Please try again.</div>")
-	}
 
 	// Update table number if provided
 	tableNumberStr := c.FormValue("tableNumber")
@@ -1491,15 +1485,12 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 		m.TableNumber = nil
 	}
 
-	// Update referee if provided, otherwise default to the PIN owner
+	// Update referee if provided
 	if refereeIDStr != "" {
 		refUUID, err := uuid.Parse(refereeIDStr)
 		if err == nil {
 			m.RefereeID = &refUUID
 		}
-	} else {
-		refUUID, _ := uuid.Parse(updaterPlayerID)
-		m.RefereeID = &refUUID
 	}
 
 	// Persist referee and table number
@@ -2242,7 +2233,7 @@ func (h *MatchHandler) Reset(c *fiber.Ctx) error {
 
 // ShowMatchScorePage renders the standalone public score page for a match.
 // Accessed via /score/:matchId (shareable QR-code URL).
-// Step 1: show PIN entry. Step 2 (POST): validate PIN, then show the score form inline.
+// Renders the score form directly without requiring a PIN.
 func (h *MatchHandler) ShowMatchScorePage(c *fiber.Ctx) error {
 	matchIDStr := c.Params("matchId")
 	if matchIDStr == "" {
@@ -2269,21 +2260,64 @@ func (h *MatchHandler) ShowMatchScorePage(c *fiber.Ctx) error {
 	lang := getLang(c)
 	tMap := i18n.PrecomputedMaps[lang]
 
-	return c.Render("public/match-pin-entry", fiber.Map{
-		"MatchID":     matchIDStr,
-		"PlayerA":     playerAName,
-		"PlayerB":     playerBName,
-		"TableNumber": m.TableNumber,
-		"Status":      m.Status,
-		"T":           tMap,
-		"Lang":        lang,
-		"CSRFToken":   c.Locals("csrf"),
+	// Load full match data for score form
+	t, _ := h.tournamentRepo.GetByID(c.Context(), m.TournamentID.String())
+	bestOf := 5
+	if t != nil {
+		for _, sr := range t.StageRules {
+			if sr.Stage == m.Stage {
+				bestOf = sr.BestOf
+				break
+			}
+		}
+	}
+
+	type setVM struct {
+		Number int
+		ScoreA interface{}
+		ScoreB interface{}
+	}
+	var sets []setVM
+	existingScores := make(map[int]bun.MatchSetModel)
+	if s, err := h.matchRepo.GetSets(c.Context(), matchIDStr); err == nil {
+		for _, sm := range s {
+			existingScores[sm.SetNumber] = sm
+		}
+	}
+	for i := 1; i <= bestOf; i++ {
+		valA, valB := interface{}(""), interface{}("")
+		if sm, ok := existingScores[i]; ok {
+			valA = sm.ScoreA
+			valB = sm.ScoreB
+		}
+		sets = append(sets, setVM{Number: i, ScoreA: valA, ScoreB: valB})
+	}
+
+	tournamentID := ""
+	if t != nil {
+		tournamentID = t.ID
+	}
+
+	return c.Render("public/match-score-page", fiber.Map{
+		"MatchID":      matchIDStr,
+		"TournamentID": tournamentID,
+		"Stage":        m.Stage,
+		"BestOf":       bestOf,
+		"PlayerA":      playerAName,
+		"PlayerB":      playerBName,
+		"Sets":         sets,
+		"P1Id":         m.TeamAPlayer1ID.String(),
+		"P2Id":         m.TeamBPlayer1ID.String(),
+		"IsDoubles":    m.MatchType == "doubles",
+		"TableNumber":  m.TableNumber,
+		"T":            tMap,
+		"Lang":         lang,
 	})
 }
 
 // ShowTableScorePage renders the standalone public score page for a table.
 // Accessed via /score/table/:tableNumber (shareable table QR-code URL).
-// If an active match (in_progress) is found on the table, it renders the PIN entry page.
+// If an active match (in_progress) is found on the table, it renders the score form directly.
 // Otherwise, it renders the table-no-match page.
 func (h *MatchHandler) ShowTableScorePage(c *fiber.Ctx) error {
 	tournamentIDStr := c.Params("tournamentId")
@@ -2346,15 +2380,60 @@ func (h *MatchHandler) ShowTableScorePage(c *fiber.Ctx) error {
 		playerBName = p.FullName()
 	}
 
-	return c.Render("public/match-pin-entry", fiber.Map{
-		"MatchID":     m.ID.String(),
-		"PlayerA":     playerAName,
-		"PlayerB":     playerBName,
-		"TableNumber": m.TableNumber,
-		"Status":      m.Status,
-		"T":           tMap,
-		"Lang":        lang,
-		"CSRFToken":   c.Locals("csrf"),
+	matchIDStr := m.ID.String()
+
+	// Load full match data for score form
+	t, _ := h.tournamentRepo.GetByID(c.Context(), m.TournamentID.String())
+	bestOf := 5
+	if t != nil {
+		for _, sr := range t.StageRules {
+			if sr.Stage == m.Stage {
+				bestOf = sr.BestOf
+				break
+			}
+		}
+	}
+
+	type setVM struct {
+		Number int
+		ScoreA interface{}
+		ScoreB interface{}
+	}
+	var sets []setVM
+	existingScores := make(map[int]bun.MatchSetModel)
+	if s, err := h.matchRepo.GetSets(c.Context(), matchIDStr); err == nil {
+		for _, sm := range s {
+			existingScores[sm.SetNumber] = sm
+		}
+	}
+	for i := 1; i <= bestOf; i++ {
+		valA, valB := interface{}(""), interface{}("")
+		if sm, ok := existingScores[i]; ok {
+			valA = sm.ScoreA
+			valB = sm.ScoreB
+		}
+		sets = append(sets, setVM{Number: i, ScoreA: valA, ScoreB: valB})
+	}
+
+	tournamentID := ""
+	if t != nil {
+		tournamentID = t.ID
+	}
+
+	return c.Render("public/match-score-page", fiber.Map{
+		"MatchID":      matchIDStr,
+		"TournamentID": tournamentID,
+		"Stage":        m.Stage,
+		"BestOf":       bestOf,
+		"PlayerA":      playerAName,
+		"PlayerB":      playerBName,
+		"Sets":         sets,
+		"P1Id":         m.TeamAPlayer1ID.String(),
+		"P2Id":         m.TeamBPlayer1ID.String(),
+		"IsDoubles":    m.MatchType == "doubles",
+		"TableNumber":  m.TableNumber,
+		"T":            tMap,
+		"Lang":         lang,
 	})
 }
 

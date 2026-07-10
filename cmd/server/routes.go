@@ -80,7 +80,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	app.Get("/score/:matchId", c.MatchHandler.ShowMatchScorePage)
 	app.Get("/score/t/:tournamentId/table/:tableNumber", c.MatchHandler.ShowTableScorePage)
 	app.Get("/score/e/:eventId/table/:tableNumber", c.MatchHandler.ShowTableScorePage)
-	app.Post("/score/:matchId/verify", c.MatchHandler.ValidateMatchPIN)
+
 
 	// QR Code generation endpoint
 	app.Get("/qr", c.QRHandler.Generate)

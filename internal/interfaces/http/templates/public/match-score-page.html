@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="{{if .Lang}}{{.Lang}}{{else}}en{{end}}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <title>{{t .T "pin.score_entry"}}</title>
+  <meta name="description" content="Submit scores for this table tennis match."/>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/dist/tailwind.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #08090c;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: #fff;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 90% 90%, rgba(20,184,166,0.08), transparent);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2rem 1.75rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1.75rem;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .vs-section {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      padding: 1.25rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    .player-names {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .player-name {
+      font-size: 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #fff;
+    }
+    .vs-badge {
+      font-size: 0.6rem;
+      font-weight: 900;
+      color: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 2px 8px;
+      letter-spacing: 0.15em;
+    }
+    .table-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 0.75rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 4px 12px;
+    }
+
+    /* Language Switcher */
+    .lang-switcher {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      display: flex;
+      gap: 0.5rem;
+      z-index: 10;
+    }
+    .lang-btn {
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 0.25rem 0.5rem;
+      border-radius: 1rem;
+      text-decoration: none;
+      color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: all 0.2s ease;
+    }
+    .lang-btn.active {
+      color: #fff;
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(255,255,255,0.4);
+    }
+  </style>
+</head>
+<body>
+  <!-- Language Switcher -->
+  <div class="lang-switcher">
+    <a href="/lang/en" class="lang-btn {{if eq .Lang "en"}}active{{end}}">EN</a>
+    <a href="/lang/es" class="lang-btn {{if eq .Lang "es"}}active{{end}}">ES</a>
+  </div>
+
+  <div class="card">
+    <!-- Logo -->
+    <div class="logo">
+      <div class="logo-icon">🏓</div>
+      <span class="logo-text">{{t .T "pin.score_entry"}}</span>
+    </div>
+
+    <!-- Match Info -->
+    <div class="vs-section">
+      <div class="player-names">
+        <span class="player-name">{{.PlayerA}}</span>
+        <span class="vs-badge">VS</span>
+        <span class="player-name">{{.PlayerB}}</span>
+      </div>
+      {{if .TableNumber}}
+      <div class="table-badge">
+        🏓 Table {{.TableNumber}}
+      </div>
+      {{end}}
+    </div>
+
+    <!-- Score Form -->
+    <h2 class="text-xl font-extrabold uppercase mb-1 tracking-tighter">{{t .T "score_pub.title"}} <span class="text-white">{{t .T "score_pub.score"}}</span></h2>
+    <p class="text-xs text-gray-500 mb-4 font-mono">
+        {{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}
+        {{if .IsDoubles}}
+        <br/>
+        <span class="text-gray-400 font-sans mt-1.5 block leading-relaxed">
+            <span class="text-white/60">{{t .T "score_pub.players"}}</span> {{.PlayerANames}} <span class="text-white/30">vs</span> {{.PlayerBNames}}
+        </span>
+        {{end}}
+    </p>
+
+    <form
+        id="public-score-form"
+        data-player-a="{{.PlayerA}}"
+        data-player-b="{{.PlayerB}}"
+        hx-post="/public/matches/score/update"
+        hx-trigger="confirmed"
+        hx-target="#public-score-result"
+        hx-swap="innerHTML"
+        hx-on::before-request="const btn = this.querySelector('button[type=\'submit\']'); if(btn) { btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed'); }"
+        hx-on::after-request="const btn = this.querySelector('button[type=\'submit\']'); if(btn) { btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed'); }"
+        class="space-y-3 mb-4">
+
+        <input type="hidden" name="tournamentId" value="{{.TournamentID}}">
+        <input type="hidden" name="stage" value="{{.Stage}}">
+        <input type="hidden" name="matchId" value="{{.MatchID}}">
+        <input type="hidden" name="p1Id" value="{{.P1Id}}">
+        <input type="hidden" name="p2Id" value="{{.P2Id}}">
+
+        <!-- Sets Scores -->
+        <div class="space-y-2 mb-4">
+            {{range .Sets}}
+            <div class="flex items-center gap-3">
+                <span class="text-[10px] font-bold text-gray-500 w-10 text-right uppercase tracking-widest">{{t $.T "score_pub.set"}} {{.Number}}</span>
+                <input name="scores[]_a" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="99" placeholder="A" value="{{.ScoreA}}"
+                    class="flex-1 bg-white/[0.04] border border-white/10 rounded-xl p-4 text-white text-center text-2xl font-black focus:outline-none focus:border-white/30 transition-colors shadow-inner">
+                <span class="text-gray-600 font-bold text-lg">–</span>
+                <input name="scores[]_b" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="99" placeholder="B" value="{{.ScoreB}}"
+                    class="flex-1 bg-white/[0.04] border border-white/10 rounded-xl p-4 text-white text-center text-2xl font-black focus:outline-none focus:border-white/30 transition-colors shadow-inner">
+            </div>
+            {{end}}
+        </div>
+
+        <div id="public-score-result" class="hidden text-sm text-red-400 mb-2 font-mono text-center"></div>
+
+        <div class="flex gap-3">
+            <button type="submit"
+                class="w-full bg-white hover:bg-gray-100 text-black font-black py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg text-xs">
+                {{t .T "score_pub.submit"}}
+            </button>
+        </div>
+    </form>
+  </div>
+
+  <!-- Custom CSS Confirmation Modal -->
+  <div id="custom-confirm-modal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md">
+      <div class="bg-[#111] p-8 rounded-3xl border border-white/10 shadow-2xl max-w-sm w-full mx-4 transform transition-all text-center relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+          <h3 class="text-xl font-black uppercase tracking-widest text-white mb-4">Confirm Score</h3>
+          <p id="custom-confirm-msg" class="text-sm text-gray-400 font-mono mb-8 whitespace-pre-wrap leading-relaxed"></p>
+          <div class="flex gap-4 relative z-10">
+              <button type="button" onclick="document.getElementById('custom-confirm-modal').classList.add('hidden')" class="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl uppercase tracking-widest text-xs transition-colors border border-white/10">Cancel</button>
+              <button type="button" onclick="document.getElementById('custom-confirm-modal').classList.add('hidden'); htmx.trigger('#public-score-form', 'confirmed');" class="flex-1 bg-green-500 hover:bg-green-400 text-black font-black py-3 rounded-xl uppercase tracking-widest text-xs transition-colors shadow-[0_0_15px_rgba(34,197,94,0.3)]">Confirm</button>
+          </div>
+      </div>
+  </div>
+
+  <script>
+  document.getElementById('public-score-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      let setsA = 0; let setsB = 0;
+      let inputsA = this.querySelectorAll('input[name=\'scores[]_a\']');
+      let inputsB = this.querySelectorAll('input[name=\'scores[]_b\']');
+      let hasScores = false;
+
+      for (let i = 0; i < inputsA.length; i++) {
+          let a = parseInt(inputsA[i].value);
+          let b = parseInt(inputsB[i].value);
+          if (!isNaN(a) && !isNaN(b)) {
+              hasScores = true;
+              if (a > b) setsA++;
+              else if (b > a) setsB++;
+          }
+      }
+
+      if (hasScores) {
+          let pA = this.getAttribute('data-player-a');
+          let pB = this.getAttribute('data-player-b');
+          let msg = "Are you sure the result is:\n\n";
+
+          if (setsA > setsB) {
+              msg += `<span class="text-white font-bold">${pA}</span> wins <span class="text-green-400 font-black">${setsA} - ${setsB}</span> over <span class="text-white font-bold">${pB}</span>`;
+          } else if (setsB > setsA) {
+              msg += `<span class="text-white font-bold">${pB}</span> wins <span class="text-green-400 font-black">${setsB} - ${setsA}</span> over <span class="text-white font-bold">${pA}</span>`;
+          } else {
+              msg += `Tie <span class="text-yellow-400 font-black">${setsA} - ${setsB}</span>`;
+          }
+
+          document.getElementById('custom-confirm-msg').innerHTML = msg;
+          document.getElementById('custom-confirm-modal').classList.remove('hidden');
+      } else {
+          htmx.trigger(this, 'confirmed');
+      }
+  });
+
+  // Show error div when it has content
+  document.getElementById('public-score-result').addEventListener('DOMSubtreeModified', function() {
+      if (this.textContent.trim() !== '') {
+          this.classList.remove('hidden');
+      }
+  });
+  </script>
+</body>
+</html>
