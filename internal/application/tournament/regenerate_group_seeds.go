@@ -72,6 +72,7 @@ func (uc *RegenerateGroupSeedsUseCase) Execute(ctx context.Context, tournamentID
 		for _, d := range divs {
 			if d.Category == "both" || d.Category == t.Type {
 				divsList = append(divsList, tournamentDomain.DivisionSeeding{
+					ID:     d.ID,
 					Name:   d.Name,
 					MinElo: d.MinElo,
 					MaxElo: d.MaxElo,

@@ -316,4 +316,48 @@ func TestTournamentHandler(t *testing.T) {
 			t.Errorf("player was not added to group B")
 		}
 	})
+
+	t.Run("Regenerate Seeds with Group Count", func(t *testing.T) {
+		p1.UpdateSinglesElo(1500)
+		playerRepo.Save(ctx, p1)
+
+		divID := uuid.New().String()
+		maxElo := int16(1800)
+		divModel := &bunRepo.DivisionModel{
+			ID:           divID,
+			Name:         "Division 2",
+			DisplayOrder: 2,
+			MinElo:       1400,
+			MaxElo:       &maxElo,
+			Category:     "both",
+			Color:        "#ffffff",
+		}
+		_, err := db.NewInsert().Model(divModel).Exec(context.Background())
+		if err != nil {
+			t.Fatalf("failed to insert division: %v", err)
+		}
+
+		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Regen Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
+		tourney.DivisionGroupCounts = map[string]int{divID: 5} // override group count to 5
+		tournamentRepo.Save(ctx, tourney)
+
+		req := httptest.NewRequest("POST", fmt.Sprintf("/admin/tournaments/%s/regenerate-seeds", tourney.ID), nil)
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("failed to post regenerate-seeds: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Fatalf("expected 200 OK for regenerate-seeds, got %v", resp.StatusCode)
+		}
+
+		tourneyReloaded, err := tournamentRepo.GetByID(ctx, tourney.ID)
+		if err != nil {
+			t.Fatalf("failed to reload tourney: %v", err)
+		}
+		if len(tourneyReloaded.Groups) != 5 {
+			t.Errorf("expected 5 groups after seed regeneration, got %d", len(tourneyReloaded.Groups))
+		}
+	})
 }

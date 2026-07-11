@@ -337,6 +337,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Get("/tournaments/:id/export", tournamentHandler.Export)
 	admin.Get("/tournaments/:id/export/pdf", tournamentHandler.ExportPDF)
 	admin.Post("/tournaments/:id/move-player", tournamentHandler.MovePlayer)
+	admin.Post("/tournaments/:id/regenerate-seeds", tournamentHandler.RegenerateGroupSeeds)
 
 	return app, db, store, nil
 }
