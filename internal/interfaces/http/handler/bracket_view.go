@@ -268,6 +268,7 @@ func getBestOfForStage(t *tournament.Tournament, stage string, divID string) int
 }
 
 func buildDivisionView(t *tournament.Tournament, divID, name, color string, minElo int16, maxElo *int16, unclassified bool, players []*player.Player) DivisionView {
+	divFormat := t.GetDivisionFormat(divID)
 	dv := DivisionView{
 		ID:             divID,
 		Name:           name,
@@ -276,10 +277,10 @@ func buildDivisionView(t *tournament.Tournament, divID, name, color string, minE
 		MaxElo:         maxElo,
 		IsUnclassified: unclassified,
 		Players:        players,
-		Format:         t.Format,
+		Format:         divFormat,
 	}
 
-	if t.Format == "round_robin" {
+	if divFormat == "round_robin" {
 		dv.Standings = buildStandings(players, t.Matches)
 		dv.RoundRobinMatches = buildRRMatches(t, divID, players, "group")
 		expectedMatches := len(players) * (len(players) - 1) / 2
@@ -290,8 +291,8 @@ func buildDivisionView(t *tournament.Tournament, divID, name, color string, minE
 			}
 		}
 		dv.RoundRobinFinished = expectedMatches > 0 && finishedMatches >= expectedMatches
-	} else if t.Format == "groups_elimination" {
-		dv.Groups, dv.AllGroupsFinished = buildGroupEliminationGroups(t, divID, players)
+	} else if divFormat == "groups_elimination" {
+		dv.Groups, dv.AllGroupsFinished = buildGroupEliminationGroups(t, divID, name, players)
 
 		if dv.AllGroupsFinished {
 			var advancing []*player.Player
@@ -386,7 +387,7 @@ func buildRRMatches(t *tournament.Tournament, divID string, players []*player.Pl
 	return results
 }
 
-func buildGroupEliminationGroups(t *tournament.Tournament, divID string, players []*player.Player) ([]GroupView, bool) {
+func buildGroupEliminationGroups(t *tournament.Tournament, divID string, divisionName string, players []*player.Player) ([]GroupView, bool) {
 	// Try to load saved groups containing any players in this division first
 	var divisionGroups []tournament.Group
 	for _, g := range t.Groups {
@@ -394,19 +395,26 @@ func buildGroupEliminationGroups(t *tournament.Tournament, divID string, players
 			continue
 		}
 		
-		hasPlayer := false
-		for _, gp := range g.Players {
-			for _, dp := range players {
-				if gp.ID == dp.ID {
-					hasPlayer = true
+		belongsToDiv := false
+		prefix := divisionName + " - "
+		if strings.HasPrefix(g.Name, prefix) {
+			belongsToDiv = true
+		} else if divisionName == "Open Bracket" && strings.HasPrefix(g.Name, "Group ") {
+			belongsToDiv = true
+		} else {
+			for _, gp := range g.Players {
+				for _, dp := range players {
+					if gp.ID == dp.ID {
+						belongsToDiv = true
+						break
+					}
+				}
+				if belongsToDiv {
 					break
 				}
 			}
-			if hasPlayer {
-				break
-			}
 		}
-		if hasPlayer {
+		if belongsToDiv {
 			divisionGroups = append(divisionGroups, g)
 		}
 	}

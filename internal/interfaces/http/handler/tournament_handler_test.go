@@ -13,6 +13,7 @@ import (
 	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
+	"table-tennis-backend/internal/interfaces/http/handler"
 )
 
 func TestTournamentHandler(t *testing.T) {
@@ -358,6 +359,42 @@ func TestTournamentHandler(t *testing.T) {
 		}
 		if len(tourneyReloaded.Groups) != 5 {
 			t.Errorf("expected 5 groups after seed regeneration, got %d", len(tourneyReloaded.Groups))
+		}
+	})
+
+	t.Run("Add Group to Tournament", func(t *testing.T) {
+		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Add Group Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, true)
+		tournamentRepo.Save(ctx, tourney)
+
+		data := url.Values{}
+		data.Set("divisionName", "Open Bracket")
+
+		req := httptest.NewRequest("POST", fmt.Sprintf("/admin/tournaments/%s/groups", tourney.ID), strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("failed to post add group: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Fatalf("expected 200 OK for add group, got %v", resp.StatusCode)
+		}
+
+		tourneyReloaded, err := tournamentRepo.GetByID(ctx, tourney.ID)
+		if err != nil {
+			t.Fatalf("failed to reload tourney: %v", err)
+		}
+		if len(tourneyReloaded.Groups) != 2 {
+			t.Errorf("expected 2 groups after adding group, got %d", len(tourneyReloaded.Groups))
+		}
+
+		vm := handler.BuildTournamentViewModel(tourneyReloaded, nil, nil)
+		if len(vm.Divisions) == 0 {
+			t.Fatalf("expected at least one division")
+		}
+		if len(vm.Divisions[0].Groups) != 2 {
+			t.Errorf("expected 2 groups in the division view model, got %d", len(vm.Divisions[0].Groups))
 		}
 	})
 }

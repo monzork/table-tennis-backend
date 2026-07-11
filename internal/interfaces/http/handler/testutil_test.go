@@ -135,11 +135,18 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	getTournamentsUC = tournament.NewGetTournamentsUseCase(tournamentRepo)
 	regenerateSeedsUC := tournament.NewRegenerateGroupSeedsUseCase(tournamentRepo, matchRepo, divisionRepo)
 	updateParticipantEloUC := tournament.NewUpdateParticipantEloBeforeUseCase(tournamentRepo, regenerateSeedsUC)
+	getOccupiedTablesUC := tournament.NewGetOccupiedTablesUseCase(matchRepo)
+	removeParticipantUC := tournament.NewRemoveParticipantUseCase(tournamentRepo)
+	saveKnockoutSeedsUC := tournament.NewSaveKnockoutSeedsUseCase(tournamentRepo, divisionRepo)
+	toggleSeedingLockUC := tournament.NewToggleSeedingLockUseCase(tournamentRepo)
+	addGroupUC := tournament.NewAddGroupUseCase(tournamentRepo)
+
 	tournamentHandler := handler.NewTournamentHandler(
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,
 		leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC,
 		movePlayerUC, createTeamUC, deleteTeamUC, assignPlayerToTeamUC, removePlayerFromTeamUC,
-		getTournamentsUC, nil, regenerateSeedsUC, updateParticipantEloUC, nil, nil, nil, nil,
+		getTournamentsUC, getOccupiedTablesUC, regenerateSeedsUC, updateParticipantEloUC,
+		removeParticipantUC, saveKnockoutSeedsUC, toggleSeedingLockUC, addGroupUC,
 	)
 
 	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)
@@ -338,6 +345,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Get("/tournaments/:id/export/pdf", tournamentHandler.ExportPDF)
 	admin.Post("/tournaments/:id/move-player", tournamentHandler.MovePlayer)
 	admin.Post("/tournaments/:id/regenerate-seeds", tournamentHandler.RegenerateGroupSeeds)
+	admin.Post("/tournaments/:id/groups", tournamentHandler.AddGroup)
 
 	return app, db, store, nil
 }
