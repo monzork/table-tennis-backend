@@ -158,6 +158,7 @@ type Tournament struct {
 	Format             string // "elimination", "groups_elimination", "round_robin"
 	DivisionFormats    map[string]string // overrides Format per division
 	DivisionGroupPassCounts map[string]int // overrides GroupPassCount per division
+	DivisionGroupCounts     map[string]int // overrides number of groups per division
 	Status             string // "in_progress", "finished"
 	WinnerName         string // Name of the winner (player or team)
 	Participants       []*player.Player
@@ -253,6 +254,16 @@ func (t *Tournament) GetGroupPassCount(divisionID string) int {
 		}
 	}
 	return t.GroupPassCount
+}
+
+// GetDivisionGroupCount returns the specific group count for a division if it exists, otherwise returns 0 (which means it should be calculated dynamically).
+func (t *Tournament) GetDivisionGroupCount(divisionID string) int {
+	if t.DivisionGroupCounts != nil {
+		if count, ok := t.DivisionGroupCounts[divisionID]; ok && count > 0 {
+			return count
+		}
+	}
+	return 0
 }
 
 // GetEffectiveStageRule returns the stage rule to use for a match, considering division overrides.

@@ -125,7 +125,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	teamFormat string,
 	numTables int,
 	hasThirdPlaceMatch bool,
-	divisionFormats map[string]string, divisionGroupPassCounts map[string]int,
+	divisionFormats map[string]string, divisionGroupPassCounts map[string]int, divisionGroupCounts map[string]int,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -171,6 +171,7 @@ func (uc *UpdateTournamentUseCase) Execute(
 	t.SkipElo = skipElo
 	t.DivisionFormats = divisionFormats
 	t.DivisionGroupPassCounts = divisionGroupPassCounts
+	t.DivisionGroupCounts = divisionGroupCounts
 	t.EventID = eventID
 	t.TeamFormat = teamFormat
 	t.NumTables = numTables

@@ -275,18 +275,24 @@
                 {{if $.Tournament.DivisionFormats}}{{$divFormat = index $.Tournament.DivisionFormats .ID}}{{end}}
                 <div class="space-y-1 mt-2 mb-3">
                     <label class="text-[10px] text-gray-500 uppercase tracking-widest">Format Override</label>
-                    <select name="division_formats[{{.ID}}]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none" onchange="const isGroupElim = this.value === 'groups_elimination' || (this.value === '' && document.getElementById('edit-format-select').value === 'groups_elimination'); document.getElementById('edit-division-group-pass-count-{{.ID}}').style.display = isGroupElim ? 'block' : 'none'">
+                    <select name="division_formats[{{.ID}}]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none" onchange="const isGroupElim = this.value === 'groups_elimination' || (this.value === '' && document.getElementById('edit-format-select').value === 'groups_elimination'); document.getElementById('edit-division-group-settings-{{.ID}}').style.display = isGroupElim ? 'grid' : 'none'">
                         <option value="" {{if not $divFormat}}selected{{end}}>-- Use Tournament Format --</option>
                         <option value="elimination" {{if eq $divFormat "elimination"}}selected{{end}}>Elimination</option>
                         <option value="groups_elimination" {{if eq $divFormat "groups_elimination"}}selected{{end}}>Group + Knockout</option>
                         <option value="round_robin" {{if eq $divFormat "round_robin"}}selected{{end}}>All Against All</option>
                     </select>
                 </div>
-                {{$divPassCount := ""}}
-                {{if $.Tournament.DivisionGroupPassCounts}}{{$divPassCount = index $.Tournament.DivisionGroupPassCounts .ID}}{{end}}
-                <div id="edit-division-group-pass-count-{{.ID}}" class="space-y-1 mt-2 mb-3" style="display: {{if or (eq $divFormat "groups_elimination") (and (not $divFormat) (eq $.Tournament.Format "groups_elimination"))}}block{{else}}none{{end}};">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Knockout Pass Count</label>
-                    <input type="number" name="division_group_pass_counts[{{.ID}}]" value="{{if $divPassCount}}{{$divPassCount}}{{end}}" min="1" placeholder="Leave empty for default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                <div class="grid grid-cols-2 gap-3" id="edit-division-group-settings-{{.ID}}" style="display: {{if or (eq $divFormat "groups_elimination") (and (not $divFormat) (eq $.Tournament.Format "groups_elimination"))}}grid{{else}}none{{end}};">
+                    <div class="space-y-1 mt-2 mb-3">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Knockout Pass Count</label>
+                        <input type="number" name="division_group_pass_counts[{{.ID}}]" value="{{if $divPassCount}}{{$divPassCount}}{{end}}" min="1" placeholder="Leave empty for default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                    </div>
+                    {{$divGroupCount := ""}}
+                    {{if $.Tournament.DivisionGroupCounts}}{{$divGroupCount = index $.Tournament.DivisionGroupCounts .ID}}{{end}}
+                    <div class="space-y-1 mt-2 mb-3">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Number of Groups</label>
+                        <input type="number" name="division_group_counts[{{.ID}}]" value="{{if $divGroupCount}}{{$divGroupCount}}{{end}}" min="1" placeholder="Leave empty for auto (4 players/group)" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                    </div>
                 </div>
                 
                 <!-- Group -->

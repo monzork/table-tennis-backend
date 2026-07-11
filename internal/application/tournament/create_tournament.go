@@ -38,7 +38,7 @@ func (uc *CreateTournamentUseCase) Execute(
 	stageRuleOverrides []StageRuleOverride,
 	divisionRules []tournamentDomain.DivisionRule,
 	skipElo bool, eventID *string, teamFormat string, numTables int, hasThirdPlaceMatch bool,
-	divisionFormats map[string]string, divisionGroupPassCounts map[string]int,
+	divisionFormats map[string]string, divisionGroupPassCounts map[string]int, divisionGroupCounts map[string]int,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startStr)
 	if err != nil {
@@ -100,6 +100,7 @@ func (uc *CreateTournamentUseCase) Execute(
 	t.SkipElo = skipElo
 	t.DivisionFormats = divisionFormats
 	t.DivisionGroupPassCounts = divisionGroupPassCounts
+	t.DivisionGroupCounts = divisionGroupCounts
 
 	// Save the tournament to DB
 	t.TeamFormat = teamFormat
@@ -168,6 +169,7 @@ func (uc *CreateTournamentUseCase) Execute(
 			pairT.EventID = eventID
 			pairT.DivisionFormats = divisionFormats
 			pairT.DivisionGroupPassCounts = divisionGroupPassCounts
+			pairT.DivisionGroupCounts = divisionGroupCounts
 			if pairT.Format == "groups_elimination" || pairT.Format == "round_robin" || pairT.Format == "elimination" {
 				(&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(pairT)
 			}

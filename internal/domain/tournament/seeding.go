@@ -215,9 +215,12 @@ func (s *DivisionSeeder) AssignGroups(t *Tournament) error {
 			continue
 		}
 
-		numGroups := n / 4
-		if n%4 != 0 {
-			numGroups++
+		numGroups := t.GetDivisionGroupCount(dg.DivisionID)
+		if numGroups <= 0 {
+			numGroups = n / 4
+			if n%4 != 0 {
+				numGroups++
+			}
 		}
 
 		divGroupsList := make([]Group, numGroups)
