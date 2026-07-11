@@ -319,6 +319,9 @@ func (t *Tournament) RemoveMatch(matchID string) error {
 }
 
 func (t *Tournament) MovePlayer(playerID string, targetGroupID string, targetIndex int) error {
+	if t.ManualSeedingLocked {
+		return errors.New("cannot move player: seeding is locked")
+	}
 	var movingPlayer *player.Player
 	if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
 		var foundTeam *Team

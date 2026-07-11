@@ -42,6 +42,7 @@
         class="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-green-500/20 text-center">
         Finish Tournament
       </button>
+      {{if not .Tournament.ManualSeedingLocked}}
       <button hx-post="/admin/tournaments/{{.Tournament.ID}}/regenerate-seeds"
         hx-swap="none"
         hx-confirm="Regenerate group seeds from current player Elo? This re-groups players by division and deletes any matches created so far."
@@ -49,6 +50,7 @@
         class="w-full sm:w-auto bg-amber-500/20 hover:bg-amber-500/40 text-amber-400 border border-amber-500/30 text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-center">
         Regenerate Seeds
       </button>
+      {{end}}
       {{end}}
       <a href="/admin/tournaments/{{.Tournament.ID}}/board"
         class="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/20 text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider flex items-center justify-center gap-2">
@@ -160,6 +162,7 @@
                   <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 21.031c-1.558 0-3.078-.396-4.437-1.144l-.318-.178-3.3.864.881-3.218-.195-.311c-.819-1.309-1.252-2.825-1.252-4.402 0-4.631 3.774-8.406 8.411-8.406 2.25 0 4.364.877 5.955 2.47 1.591 1.593 2.467 3.708 2.467 5.959 0 4.631-3.774 8.366-8.212 8.366zM12.031 5.373c-3.993 0-7.248 3.253-7.248 7.246 0 1.277.332 2.525.962 3.626l1.378 2.404-1.253 4.58 4.693-1.231 2.378 1.348c1.08.612 2.302.936 3.551.936 3.993 0 7.248-3.254 7.248-7.247 0-1.938-.755-3.759-2.126-5.13-1.37-1.372-3.193-2.128-5.132-2.128h-.001m4.053 9.771c-.222-.111-1.314-.648-1.518-.722-.204-.074-.352-.111-.5.111-.148.222-.574.722-.704.87-.13.148-.26.167-.481.056-.222-.111-.938-.346-1.787-1.107-.66-.593-1.106-1.326-1.236-1.548-.13-.222-.014-.343.097-.453.1-.1.222-.259.333-.389.111-.13.148-.222.222-.37.074-.148.037-.278-.019-.389-.056-.111-.5-.1.204-1.204-.076-.481-.148-.962-.352-.102-.019-.204-.019h-.176c-.148 0-.389.056-.593.278-.204.222-.778.759-.778 1.852 0 1.093.796 2.148.907 2.296.111.148 1.556 2.37 3.759 3.333.519.222.926.352 1.241.463.519.167.981.148 1.352.093.414-.056 1.314-.537 1.5-1.056.185-.519.185-.963.13-1.056-.056-.093-.204-.148-.426-.259z"/></svg>
                 </a>
                 {{end}}
+                {{if not $.Tournament.ManualSeedingLocked}}
                 <button type="button"
                   title="Edit seeded Elo"
                   onclick="document.getElementById('elo-edit-player-id').value='{{.Player.ID}}';
@@ -176,6 +179,7 @@
                   class="text-gray-700 hover:text-red-400 transition-colors p-1 opacity-0 group-hover/row:opacity-100">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
+                {{end}}
               </div>
             </td>
           </tr>
@@ -219,6 +223,7 @@
             <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 21.031c-1.558 0-3.078-.396-4.437-1.144l-.318-.178-3.3.864.881-3.218-.195-.311c-.819-1.309-1.252-2.825-1.252-4.402 0-4.631 3.774-8.406 8.411-8.406 2.25 0 4.364.877 5.955 2.47 1.591 1.593 2.467 3.708 2.467 5.959 0 4.631-3.774 8.366-8.212 8.366zM12.031 5.373c-3.993 0-7.248 3.253-7.248 7.246 0 1.277.332 2.525.962 3.626l1.378 2.404-1.253 4.58 4.693-1.231 2.378 1.348c1.08.612 2.302.936 3.551.936 3.993 0 7.248-3.254 7.248-7.247 0-1.938-.755-3.759-2.126-5.13-1.37-1.372-3.193-2.128-5.132-2.128h-.001m4.053 9.771c-.222-.111-1.314-.648-1.518-.722-.204-.074-.352-.111-.5.111-.148.222-.574.722-.704.87-.13.148-.26.167-.481.056-.222-.111-.938-.346-1.787-1.107-.66-.593-1.106-1.326-1.236-1.548-.13-.222-.014-.343.097-.453.1-.1.222-.259.333-.389.111-.13.148-.222.222-.37.074-.148.037-.278-.019-.389-.056-.111-.5-.1.204-1.204-.076-.481-.148-.962-.352-.102-.019-.204-.019h-.176c-.148 0-.389.056-.593.278-.204.222-.778.759-.778 1.852 0 1.093.796 2.148.907 2.296.111.148 1.556 2.37 3.759 3.333.519.222.926.352 1.241.463.519.167.981.148 1.352.093.414-.056 1.314-.537 1.5-1.056.185-.519.185-.963.13-1.056-.056-.093-.204-.148-.426-.259z"/></svg>
           </a>
           {{end}}
+          {{if not $.Tournament.ManualSeedingLocked}}
           <button type="button"
             onclick="document.getElementById('elo-edit-player-id').value='{{.ID}}';
                      document.getElementById('elo-edit-name').textContent='{{.FirstNameWithSecond}} {{.LastNameWithSecond}}';
@@ -226,6 +231,7 @@
                      document.getElementById('elo-edit-doubles').value='{{.DoublesElo}}';
                      document.getElementById('edit-elo-modal').classList.remove('hidden');"
             class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold ml-1" title="Correct this player's seeded Elo for this tournament">✎</button>
+          {{end}}
         </div>
         {{else}}
         <p class="text-sm text-gray-600">No participants available.</p>

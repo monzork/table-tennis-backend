@@ -363,7 +363,8 @@ func TestTournamentHandler(t *testing.T) {
 	})
 
 	t.Run("Add Group to Tournament", func(t *testing.T) {
-		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Add Group Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, true)
+		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Add Group Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
+		tourney.SkipElo = true
 		tournamentRepo.Save(ctx, tourney)
 
 		data := url.Values{}
@@ -389,12 +390,53 @@ func TestTournamentHandler(t *testing.T) {
 			t.Errorf("expected 2 groups after adding group, got %d", len(tourneyReloaded.Groups))
 		}
 
+		for _, g := range tourneyReloaded.Groups {
+			t.Logf("Reloaded Group Name: %q", g.Name)
+		}
 		vm := handler.BuildTournamentViewModel(tourneyReloaded, nil, nil)
+		for _, d := range vm.Divisions {
+			t.Logf("VM Division Name: %q", d.Name)
+			for _, g := range d.Groups {
+				t.Logf("  Group Name: %q", g.Name)
+			}
+		}
 		if len(vm.Divisions) == 0 {
 			t.Fatalf("expected at least one division")
 		}
 		if len(vm.Divisions[0].Groups) != 2 {
 			t.Errorf("expected 2 groups in the division view model, got %d", len(vm.Divisions[0].Groups))
+		}
+	})
+
+	t.Run("Seeding Locked Operations Blocked", func(t *testing.T) {
+		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Locked Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
+		tourney.ManualSeedingLocked = true
+		tournamentRepo.Save(ctx, tourney)
+
+		// 1. Check regenerate seeds fails
+		reqRegen := httptest.NewRequest("POST", fmt.Sprintf("/admin/tournaments/%s/regenerate-seeds", tourney.ID), nil)
+		reqRegen.Header.Set("Cookie", sessionCookie)
+		respRegen, err := app.Test(reqRegen)
+		if err != nil {
+			t.Fatalf("failed to post regenerate-seeds: %v", err)
+		}
+		if respRegen.StatusCode == 200 {
+			t.Errorf("expected regenerate seeds to fail when seeding is locked, got 200 OK")
+		}
+
+		// 2. Check move player fails
+		moveData := url.Values{}
+		moveData.Set("playerId", p1.ID)
+		moveData.Set("targetGroupId", uuid.New().String())
+		reqMove := httptest.NewRequest("POST", fmt.Sprintf("/admin/tournaments/%s/move-player", tourney.ID), strings.NewReader(moveData.Encode()))
+		reqMove.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		reqMove.Header.Set("Cookie", sessionCookie)
+		respMove, err := app.Test(reqMove)
+		if err != nil {
+			t.Fatalf("failed to post move-player: %v", err)
+		}
+		if respMove.StatusCode == 200 {
+			t.Errorf("expected move player to fail when seeding is locked, got 200 OK")
 		}
 	})
 }

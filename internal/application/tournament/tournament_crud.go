@@ -227,7 +227,12 @@ func (uc *UpdateTournamentUseCase) Execute(
 			}
 		}
 
-		if !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && !divGroupCountsChanged && !divFormatsChanged && len(existing.Groups) > 0 {
+		preserveGroups := !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && !divGroupCountsChanged && !divFormatsChanged && len(existing.Groups) > 0
+		if existing.ManualSeedingLocked {
+			preserveGroups = true
+		}
+
+		if preserveGroups {
 			t.Groups = existing.Groups
 		} else {
 			// Fetch divisions list to seed groups per-division

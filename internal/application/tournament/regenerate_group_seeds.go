@@ -63,6 +63,10 @@ func (uc *RegenerateGroupSeedsUseCase) Execute(ctx context.Context, tournamentID
 		return errors.New("cannot regenerate seeds: tournament is already finished")
 	}
 
+	if t.ManualSeedingLocked {
+		return errors.New("cannot regenerate seeds: tournament seeding is locked")
+	}
+
 	if hasActivity {
 		return errors.New("cannot regenerate seeds: matches have already been started or finished")
 	}
