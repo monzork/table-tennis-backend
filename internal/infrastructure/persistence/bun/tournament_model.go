@@ -27,6 +27,7 @@ type TournamentModel struct {
 	TeamFormat         string            `bun:"team_format,nullzero"`
 	DivisionFormats    map[string]string `bun:"division_formats,type:json"`
 	DivisionGroupPassCounts map[string]int `bun:"division_group_pass_counts,type:json"`
+	DivisionGroupCounts map[string]int `bun:"division_group_counts,type:json"`
 
 	WinnerName         string     `bun:"winner_name,nullzero"`
 	NumTables          int        `bun:"num_tables,notnull,default:0"`
