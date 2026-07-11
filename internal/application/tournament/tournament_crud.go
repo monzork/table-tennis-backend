@@ -202,7 +202,32 @@ func (uc *UpdateTournamentUseCase) Execute(
 		typeChanged := existing.Type != tournamentType
 		categoryChanged := existing.EventCategory != category
 
-		if !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && len(existing.Groups) > 0 {
+		// Check if division group counts or division formats changed
+		divGroupCountsChanged := false
+		if len(existing.DivisionGroupCounts) != len(divisionGroupCounts) {
+			divGroupCountsChanged = true
+		} else {
+			for k, v := range divisionGroupCounts {
+				if existing.DivisionGroupCounts[k] != v {
+					divGroupCountsChanged = true
+					break
+				}
+			}
+		}
+
+		divFormatsChanged := false
+		if len(existing.DivisionFormats) != len(divisionFormats) {
+			divFormatsChanged = true
+		} else {
+			for k, v := range divisionFormats {
+				if existing.DivisionFormats[k] != v {
+					divFormatsChanged = true
+					break
+				}
+			}
+		}
+
+		if !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && !divGroupCountsChanged && !divFormatsChanged && len(existing.Groups) > 0 {
 			t.Groups = existing.Groups
 		} else {
 			// Fetch divisions list to seed groups per-division

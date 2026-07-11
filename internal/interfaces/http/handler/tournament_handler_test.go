@@ -73,6 +73,22 @@ func TestTournamentHandler(t *testing.T) {
 	})
 
 	t.Run("Update Tournament", func(t *testing.T) {
+		divID := uuid.New().String()
+		maxElo := int16(1200)
+		divModel := &bunRepo.DivisionModel{
+			ID:           divID,
+			Name:         "Division 1",
+			DisplayOrder: 1,
+			MinElo:       800,
+			MaxElo:       &maxElo,
+			Category:     "both",
+			Color:        "#ffffff",
+		}
+		_, err := db.NewInsert().Model(divModel).Exec(context.Background())
+		if err != nil {
+			t.Fatalf("failed to insert division: %v", err)
+		}
+
 		data := url.Values{}
 		data.Set("name", "Grand Slam Updated")
 		data.Set("type", "singles")
@@ -83,7 +99,6 @@ func TestTournamentHandler(t *testing.T) {
 		data.Add("participant_ids[]", p1.ID)
 
 		// division group counts, pass counts, and formats overrides
-		divID := uuid.New().String()
 		data.Add("division_rule[division_id][]", divID)
 		data.Set("division_formats["+divID+"]", "groups_elimination")
 		data.Set("division_group_pass_counts["+divID+"]", "3")
@@ -118,6 +133,15 @@ func TestTournamentHandler(t *testing.T) {
 		}
 		if tm.DivisionGroupCounts[divID] != 4 {
 			t.Errorf("expected division group counts override, got %v", tm.DivisionGroupCounts)
+		}
+
+		// Verify 4 groups were generated
+		tourneyReloaded, err := tournamentRepo.GetByID(ctx, createdTournamentID)
+		if err != nil {
+			t.Fatalf("failed to load tourney: %v", err)
+		}
+		if len(tourneyReloaded.Groups) != 4 {
+			t.Errorf("expected 4 groups to be generated, got %d", len(tourneyReloaded.Groups))
 		}
 	})
 
