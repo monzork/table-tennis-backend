@@ -39,6 +39,7 @@ type TournamentHandler struct {
 	removeParticipantUC    *tournament.RemoveParticipantUseCase
 	saveKnockoutSeedsUC    *tournament.SaveKnockoutSeedsUseCase
 	toggleSeedingLockUC    *tournament.ToggleSeedingLockUseCase
+	addGroupUC             *tournament.AddGroupUseCase
 }
 
 func NewTournamentHandler(
@@ -63,6 +64,7 @@ func NewTournamentHandler(
 	removeParticipantUC *tournament.RemoveParticipantUseCase,
 	saveKnockoutSeedsUC *tournament.SaveKnockoutSeedsUseCase,
 	toggleSeedingLockUC *tournament.ToggleSeedingLockUseCase,
+	addGroupUC *tournament.AddGroupUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:               createUC,
@@ -86,6 +88,7 @@ func NewTournamentHandler(
 		removeParticipantUC:    removeParticipantUC,
 		saveKnockoutSeedsUC:    saveKnockoutSeedsUC,
 		toggleSeedingLockUC:    toggleSeedingLockUC,
+		addGroupUC:             addGroupUC,
 	}
 }
 
@@ -762,6 +765,26 @@ func (h *TournamentHandler) SaveKnockoutSeeds(c *fiber.Ctx) error {
 	}
 
 	if err := h.saveKnockoutSeedsUC.Execute(c.Context(), id, body.DivID, body.PlayerIDs); err != nil {
+		return ErrorHandler(err)
+	}
+
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Trigger", "reload-bracket, reload-matches")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.SendString("OK")
+}
+
+func (h *TournamentHandler) AddGroup(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var body struct {
+		DivisionName string `json:"divisionName" form:"divisionName"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return ErrorHandler(err)
+	}
+
+	if err := h.addGroupUC.Execute(c.Context(), id, body.DivisionName); err != nil {
 		return ErrorHandler(err)
 	}
 
