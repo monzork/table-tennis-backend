@@ -72,6 +72,55 @@ func TestTournamentHandler(t *testing.T) {
 		createdTournamentID = tm.ID.String()
 	})
 
+	t.Run("Update Tournament", func(t *testing.T) {
+		data := url.Values{}
+		data.Set("name", "Grand Slam Updated")
+		data.Set("type", "singles")
+		data.Set("format", "elimination")
+		data.Set("startDate", time.Now().Format("2006-01-02"))
+		data.Set("endDate", time.Now().Add(48*time.Hour).Format("2006-01-02"))
+		data.Set("groupPassCount", "2")
+		data.Add("participant_ids[]", p1.ID)
+
+		// division group counts, pass counts, and formats overrides
+		divID := uuid.New().String()
+		data.Add("division_rule[division_id][]", divID)
+		data.Set("division_formats["+divID+"]", "groups_elimination")
+		data.Set("division_group_pass_counts["+divID+"]", "3")
+		data.Set("division_group_counts["+divID+"]", "4")
+
+		req := httptest.NewRequest("PUT", fmt.Sprintf("/tournaments/%s", createdTournamentID), strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+
+		var tm bunRepo.TournamentModel
+		err = db.NewSelect().Model(&tm).Where("id = ?", createdTournamentID).Scan(context.Background())
+		if err != nil {
+			t.Fatalf("failed to find tournament in DB: %v", err)
+		}
+		if tm.Name != "Grand Slam Updated" {
+			t.Errorf("expected updated name 'Grand Slam Updated', got '%s'", tm.Name)
+		}
+		if tm.DivisionFormats[divID] != "groups_elimination" {
+			t.Errorf("expected division formats override, got %v", tm.DivisionFormats)
+		}
+		if tm.DivisionGroupPassCounts[divID] != 3 {
+			t.Errorf("expected division group pass counts override, got %v", tm.DivisionGroupPassCounts)
+		}
+		if tm.DivisionGroupCounts[divID] != 4 {
+			t.Errorf("expected division group counts override, got %v", tm.DivisionGroupCounts)
+		}
+	})
+
 	t.Run("Finish Tournament", func(t *testing.T) {
 		req := httptest.NewRequest("POST", fmt.Sprintf("/admin/tournaments/%s/finish", createdTournamentID), nil)
 		req.Header.Set("Cookie", sessionCookie)

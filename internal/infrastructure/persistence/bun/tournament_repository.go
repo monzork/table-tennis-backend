@@ -674,7 +674,7 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		ManualSeedingLocked: t.ManualSeedingLocked,
 	}
 
-	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "metrics", "manual_seeding_locked").Exec(ctx)
+	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "event_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "metrics", "manual_seeding_locked", "division_formats", "division_group_pass_counts", "division_group_counts").Exec(ctx)
 	if err != nil {
 		return err
 	}

@@ -139,7 +139,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,
 		leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC,
 		movePlayerUC, createTeamUC, deleteTeamUC, assignPlayerToTeamUC, removePlayerFromTeamUC,
-		getTournamentsUC, nil, regenerateSeedsUC, updateParticipantEloUC, nil, nil, nil,
+		getTournamentsUC, nil, regenerateSeedsUC, updateParticipantEloUC, nil, nil, nil, nil,
 	)
 
 	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)

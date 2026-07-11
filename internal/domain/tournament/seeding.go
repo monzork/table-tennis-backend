@@ -153,7 +153,7 @@ func (s *DivisionSeeder) AssignGroups(t *Tournament) error {
 					continue
 				}
 				elo := p.SinglesElo
-				if t.Type == "doubles" {
+				if t.Type == "doubles" || t.Type == "mixed_doubles" {
 					elo = p.DoublesElo
 				}
 				if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
@@ -193,7 +193,7 @@ func (s *DivisionSeeder) AssignGroups(t *Tournament) error {
 		}
 
 		sort.Slice(dg.Players, func(i, j int) bool {
-			if t.Type == "doubles" {
+			if t.Type == "doubles" || t.Type == "mixed_doubles" {
 				return dg.Players[i].DoublesElo > dg.Players[j].DoublesElo
 			}
 			return dg.Players[i].SinglesElo > dg.Players[j].SinglesElo

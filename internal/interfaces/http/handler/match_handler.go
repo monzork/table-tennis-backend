@@ -1238,11 +1238,11 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 			return c.SendString("<div class='text-red-400 font-mono text-sm'>Match not found: " + err.Error() + "</div>")
 		}
 
-		// Validate PIN against tournament participants and officials
+		// Validate PIN against tournament participants and officials if provided (optional)
 		submittedPin := c.FormValue("pin")
-		updaterPlayerID, err := h.tournamentRepo.GetParticipantOrOfficialByPIN(c.Context(), parent.TournamentID.String(), submittedPin)
-		if err != nil || updaterPlayerID == "" {
-			return c.SendString("<div class='text-red-400 font-mono text-sm'>Invalid PIN. Please try again.</div>")
+		var updaterPlayerID string
+		if submittedPin != "" {
+			updaterPlayerID, _ = h.tournamentRepo.GetParticipantOrOfficialByPIN(c.Context(), parent.TournamentID.String(), submittedPin)
 		}
 
 		p1A, _ := uuid.Parse(c.FormValue("squad_a_p1"))
@@ -1365,13 +1365,13 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 			parent.TableNumber = nil
 		}
 		if refereeIDStr != "" {
-			refUUID, err := uuid.Parse(refereeIDStr)
-			if err == nil {
+			if refUUID, err := uuid.Parse(refereeIDStr); err == nil {
 				parent.RefereeID = &refUUID
 			}
-		} else {
-			refUUID, _ := uuid.Parse(updaterPlayerID)
-			parent.RefereeID = &refUUID
+		} else if updaterPlayerID != "" {
+			if refUUID, err := uuid.Parse(updaterPlayerID); err == nil {
+				parent.RefereeID = &refUUID
+			}
 		}
 		_, _ = h.matchRepo.DB().NewUpdate().Model(parent).WherePK().Column("referee_id", "table_number").Exec(c.Context())
 
@@ -1446,8 +1446,6 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendString("<div class='text-red-400 font-mono text-sm'>Match not found</div>")
 	}
-
-
 
 	// Update table number if provided
 	tableNumberStr := c.FormValue("tableNumber")
