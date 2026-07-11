@@ -283,6 +283,8 @@
                     </select>
                 </div>
                 <div class="grid grid-cols-2 gap-3" id="edit-division-group-settings-{{.ID}}" style="display: {{if or (eq $divFormat "groups_elimination") (and (not $divFormat) (eq $.Tournament.Format "groups_elimination"))}}grid{{else}}none{{end}};">
+                    {{$divPassCount := ""}}
+                    {{if $.Tournament.DivisionGroupPassCounts}}{{$divPassCount = index $.Tournament.DivisionGroupPassCounts .ID}}{{end}}
                     <div class="space-y-1 mt-2 mb-3">
                         <label class="text-[10px] text-gray-500 uppercase tracking-widest">Knockout Pass Count</label>
                         <input type="number" name="division_group_pass_counts[{{.ID}}]" value="{{if $divPassCount}}{{$divPassCount}}{{end}}" min="1" placeholder="Leave empty for default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">

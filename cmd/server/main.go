@@ -58,22 +58,31 @@ func main() {
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
 			msg := "Internal Server Error"
+			actualErr := err.Error()
 			if e, ok := err.(*fiber.Error); ok {
 				code = e.Code
 				msg = e.Message
+			} else {
+				msg = actualErr
 			}
-			slog.Error("HTTP error", "status", code, "path", ctx.Path(), "msg", msg, "ip", ctx.IP())
+			slog.Error("HTTP error", "status", code, "path", ctx.Path(), "msg", msg, "actual_error", actualErr, "ip", ctx.IP())
 
 			if code == fiber.StatusNotFound {
 				if ctx.Get("HX-Request") != "" {
 					return ctx.Status(code).SendString(msg)
 				}
-				return ctx.Status(code).Render("errors/404", fiber.Map{"Message": msg})
+				if renderErr := ctx.Status(code).Render("errors/404", fiber.Map{"Message": msg}); renderErr != nil {
+					return ctx.Status(code).SendString(msg)
+				}
+				return nil
 			}
 			if ctx.Get("HX-Request") != "" {
 				return ctx.Status(code).SendString(msg)
 			}
-			return ctx.Status(code).Render("errors/500", fiber.Map{"Message": msg})
+			if renderErr := ctx.Status(code).Render("errors/500", fiber.Map{"Message": msg}); renderErr != nil {
+				return ctx.Status(code).SendString(msg)
+			}
+			return nil
 		},
 	})
 
