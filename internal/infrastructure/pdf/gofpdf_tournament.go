@@ -569,6 +569,15 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 			}
 			
 			if len(dPlayers) > 0 {
+				sort.Slice(dPlayers, func(i, j int) bool {
+					eloI := dPlayers[i].SinglesElo
+					eloJ := dPlayers[j].SinglesElo
+					if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
+						eloI = dPlayers[i].DoublesElo
+						eloJ = dPlayers[j].DoublesElo
+					}
+					return eloI > eloJ
+				})
 				divPlayers[d.ID] = dPlayers
 			}
 		}
@@ -608,6 +617,15 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 		}
 
 		if len(unassigned) > 0 {
+			sort.Slice(unassigned, func(i, j int) bool {
+				eloI := unassigned[i].SinglesElo
+				eloJ := unassigned[j].SinglesElo
+				if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
+					eloI = unassigned[i].DoublesElo
+					eloJ = unassigned[j].DoublesElo
+				}
+				return eloI > eloJ
+			})
 			pdf.SetFillColor(240, 240, 240)
 			pdf.SetFont("Arial", "B", 9)
 			headerText := "  JUGADORES SIN CLASIFICAR"
