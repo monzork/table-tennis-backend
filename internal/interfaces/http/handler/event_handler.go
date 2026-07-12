@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -275,29 +276,36 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 	
 	divs, _ := h.divisionUC.GetAll(ctx)
 	
-	var unstartedPools [][]BoardCard
-	var virtualPools [][]BoardCard
 	var inProgress []BoardCard
 	var finished []BoardCard
 
-	// Global tracker for player activity
+	type activePool struct {
+		id             string
+		tournamentID   string
+		divisionName   string
+		tournamentName string
+		pool           []BoardCard
+	}
+	var activePools []activePool
+
+	divPlayerCounts := make(map[string]int)
+
+	// Global tracker for initial player availability based on finished matches
 	lastActivity := make(map[string]time.Time)
 
 	for _, t := range e.Tournaments {
 		s, i, f := BuildBoardCards(t, divs)
 		
-		var u []BoardCard
-		var v []BoardCard
-		
-		// Inject TournamentName into the cards for display
+		// Build the view model to get player counts per division
+		vm := BuildTournamentViewModel(t, divs, nil)
+		for _, dv := range vm.Divisions {
+			divPlayerCounts[dv.Name] += len(dv.Players)
+		}
+
+		// Inject TournamentName and TournamentID into cards
 		for idx := range s {
 			s[idx].TournamentName = t.Name
 			s[idx].TournamentID = t.ID
-			if s[idx].MatchID == "" {
-				v = append(v, s[idx])
-			} else {
-				u = append(u, s[idx])
-			}
 		}
 		for idx := range i {
 			i[idx].TournamentName = t.Name
@@ -307,19 +315,57 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 			f[idx].TournamentName = t.Name
 			f[idx].TournamentID = t.ID
 		}
-		
-		if len(u) > 0 {
-			unstartedPools = append(unstartedPools, u)
+
+		// Group scheduled cards by division
+		scheduledByDiv := make(map[string][]BoardCard)
+		for _, card := range s {
+			scheduledByDiv[card.DivisionName] = append(scheduledByDiv[card.DivisionName], card)
 		}
-		if len(v) > 0 {
-			virtualPools = append(virtualPools, v)
+
+		// Group in-progress cards by division
+		inProgressByDiv := make(map[string][]BoardCard)
+		for _, card := range i {
+			inProgressByDiv[card.DivisionName] = append(inProgressByDiv[card.DivisionName], card)
 		}
+
+		// Collect all active divisions in this tournament
+		allDivNamesMap := make(map[string]bool)
+		for _, card := range s {
+			allDivNamesMap[card.DivisionName] = true
+		}
+		for _, card := range i {
+			allDivNamesMap[card.DivisionName] = true
+		}
+
+		for divName := range allDivNamesMap {
+			var u []BoardCard
+			var v []BoardCard
+			for _, card := range scheduledByDiv[divName] {
+				if card.MatchID == "" {
+					v = append(v, card)
+				} else {
+					u = append(u, card)
+				}
+			}
+
+			pool := append(u, v...)
+			poolKey := fmt.Sprintf("%s:%s", t.ID, divName)
+
+			activePools = append(activePools, activePool{
+				id:             poolKey,
+				tournamentID:   t.ID,
+				divisionName:   divName,
+				tournamentName: t.Name,
+				pool:           pool,
+			})
+		}
+
 		inProgress = append(inProgress, i...)
 		finished = append(finished, f...)
 
-		// Track last activity across all tournaments in this event
+		// Track last activity based on database finished matches
 		for _, m := range t.Matches {
-			if m.Status == "in_progress" || m.Status == "finished" {
+			if m.Status == "finished" {
 				tAct := time.Time{}
 				if m.UpdatedAt != nil {
 					tAct = *m.UpdatedAt
@@ -338,76 +384,262 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 		}
 	}
 
-	simClock := time.Now().Add(24 * time.Hour)
-
-	scheduleMergeGreedy := func(pools [][]BoardCard) []BoardCard {
-		var result []BoardCard
-		scheduledCounts := make(map[string]int)
-
-		for {
-			bestPoolIdx := -1
-			var bestCard BoardCard
-			var bestPenalty time.Time
-			var bestSum int64
-
-			for poolIdx, pool := range pools {
-				if len(pool) == 0 {
-					continue
-				}
-				c := pool[0]
-				t1 := lastActivity[c.P1Id]
-				t2 := lastActivity[c.P2Id]
-				penalty := t1
-				if t2.After(t1) {
-					penalty = t2
-				}
-				sum := t1.UnixNano() + t2.UnixNano()
-
-				isBetter := false
-				if bestPoolIdx == -1 {
-					isBetter = true
-				} else if penalty.Before(bestPenalty) {
-					isBetter = true
-				} else if penalty.Equal(bestPenalty) {
-					if sum < bestSum {
-						isBetter = true
-					} else if sum == bestSum {
-						if scheduledCounts[c.TournamentID] < scheduledCounts[bestCard.TournamentID] {
-							isBetter = true
-						}
-					}
-				}
-
-				if isBetter {
-					bestPoolIdx = poolIdx
-					bestCard = c
-					bestPenalty = penalty
-					bestSum = sum
-				}
-			}
-
-			if bestPoolIdx == -1 {
-				break
-			}
-
-			result = append(result, bestCard)
-			scheduledCounts[bestCard.TournamentID]++
-
-			if bestCard.P1Id != "" {
-				lastActivity[bestCard.P1Id] = simClock
-			}
-			if bestCard.P2Id != "" {
-				lastActivity[bestCard.P2Id] = simClock
-			}
-			simClock = simClock.Add(time.Second)
-
-			pools[bestPoolIdx] = pools[bestPoolIdx][1:]
-		}
-		return result
+	// Calculate unique active divisions across all tournaments
+	activeDivisionsMap := make(map[string]bool)
+	for _, ap := range activePools {
+		activeDivisionsMap[ap.divisionName] = true
 	}
 
-	// Merge real scheduled matches first, then virtual ones
-	globalScheduled := append(scheduleMergeGreedy(unstartedPools), scheduleMergeGreedy(virtualPools)...)
+	type activeDivInfo struct {
+		name        string
+		playerCount int
+	}
+	var activeDivs []activeDivInfo
+	totalPlayers := 0
+
+	for divName := range activeDivisionsMap {
+		pCount := divPlayerCounts[divName]
+		if pCount <= 0 {
+			pCount = 1
+		}
+		activeDivs = append(activeDivs, activeDivInfo{
+			name:        divName,
+			playerCount: pCount,
+		})
+		totalPlayers += pCount
+	}
+
+	// 1. Proportional Table Allocation (Hamilton Method) globally by Division Name
+	maxTables := e.NumTables
+	if maxTables <= 0 {
+		maxTables = 6 // default fallback
+	}
+
+	allocated := make(map[string]int)
+	remainingTables := maxTables
+	numActiveDivs := len(activeDivs)
+
+	if numActiveDivs > 0 {
+		if remainingTables >= numActiveDivs {
+			for _, ad := range activeDivs {
+				allocated[ad.name] = 1
+				remainingTables--
+			}
+		} else {
+			// Sort active divisions by player count descending
+			sort.Slice(activeDivs, func(i, j int) bool {
+				return activeDivs[i].playerCount > activeDivs[j].playerCount
+			})
+			for _, ad := range activeDivs {
+				if remainingTables > 0 {
+					allocated[ad.name] = 1
+					remainingTables--
+				} else {
+					allocated[ad.name] = 0
+				}
+			}
+		}
+
+		if remainingTables > 0 && totalPlayers > 0 {
+			type remainderInfo struct {
+				name      string
+				remainder float64
+			}
+			var remainders []remainderInfo
+			allocatedSum := 0
+
+			for _, ad := range activeDivs {
+				share := float64(ad.playerCount) / float64(totalPlayers) * float64(remainingTables)
+				intShare := int(share)
+				allocated[ad.name] += intShare
+				allocatedSum += intShare
+				remainders = append(remainders, remainderInfo{
+					name:      ad.name,
+					remainder: share - float64(intShare),
+				})
+			}
+
+			leftover := remainingTables - allocatedSum
+			sort.Slice(remainders, func(i, j int) bool {
+				return remainders[i].remainder > remainders[j].remainder
+			})
+			for i := 0; i < leftover && i < len(remainders); i++ {
+				allocated[remainders[i].name]++
+			}
+		}
+	}
+
+	// 2. Event-Driven queue scheduling simulation
+	pools := make(map[string][]BoardCard)
+	for _, ap := range activePools {
+		pools[ap.id] = ap.pool
+	}
+
+	var globalScheduled []BoardCard
+	type runningMatch struct {
+		divisionName string
+		endTime      time.Time
+	}
+	var runningMatches []runningMatch
+
+	simClock := time.Now()
+	availableTime := make(map[string]time.Time)
+	scheduledCounts := make(map[string]int)
+
+	// Pre-fill player availableTime from database finished matches
+	for pID, tAct := range lastActivity {
+		availableTime[pID] = tAct.Add(10 * time.Minute) // 10 minutes of rest after their last finished match
+	}
+
+	// Initialize in-progress matches
+	for _, c := range inProgress {
+		avail := time.Now().Add(25 * time.Minute) // 15 mins play + 10 mins rest
+		if c.P1Id != "" {
+			availableTime[c.P1Id] = avail
+		}
+		if c.P2Id != "" {
+			availableTime[c.P2Id] = avail
+		}
+		runningMatches = append(runningMatches, runningMatch{
+			divisionName: c.DivisionName,
+			endTime:      time.Now().Add(15 * time.Minute),
+		})
+	}
+
+	getPlayerAvail := func(playerID string) time.Time {
+		if playerID == "" {
+			return time.Time{}
+		}
+		if t, ok := availableTime[playerID]; ok {
+			return t
+		}
+		return time.Time{}
+	}
+
+	for {
+		// Clean up finished matches at current simClock
+		var nextRunning []runningMatch
+		activeCount := make(map[string]int)
+		for _, rm := range runningMatches {
+			if rm.endTime.After(simClock) {
+				nextRunning = append(nextRunning, rm)
+				activeCount[rm.divisionName]++
+			}
+		}
+		runningMatches = nextRunning
+
+		// Identify candidates
+		type candidate struct {
+			card         BoardCard
+			maxAvail     time.Time
+			ratio        float64
+			poolIdx      string
+			divisionName string
+		}
+		var candidates []candidate
+
+		for id, pool := range pools {
+			if len(pool) == 0 {
+				continue
+			}
+			c := pool[0]
+			t1 := getPlayerAvail(c.P1Id)
+			t2 := getPlayerAvail(c.P2Id)
+			maxAvail := t1
+			if t2.After(t1) {
+				maxAvail = t2
+			}
+
+			divName := c.DivisionName
+			alloc := allocated[divName]
+			var ratio float64
+			if alloc > 0 {
+				ratio = float64(activeCount[divName]) / float64(alloc)
+			} else {
+				ratio = float64(activeCount[divName]) / 0.5
+			}
+
+			candidates = append(candidates, candidate{
+				card:         c,
+				maxAvail:     maxAvail,
+				ratio:        ratio,
+				poolIdx:      id,
+				divisionName: divName,
+			})
+		}
+
+		if len(candidates) == 0 {
+			break
+		}
+
+		// Check available candidates
+		var availableCandidates []candidate
+		for _, cand := range candidates {
+			if !cand.maxAvail.After(simClock) {
+				availableCandidates = append(availableCandidates, cand)
+			}
+		}
+
+		var chosen candidate
+		if len(availableCandidates) > 0 {
+			sort.Slice(availableCandidates, func(i, j int) bool {
+				c1, c2 := availableCandidates[i], availableCandidates[j]
+				u1 := c1.ratio < 1.0
+				u2 := c2.ratio < 1.0
+				if u1 != u2 {
+					return u1
+				}
+				if c1.ratio != c2.ratio {
+					return c1.ratio < c2.ratio
+				}
+				// Prioritize the division with the larger player count (allocated tables)
+				alloc1 := allocated[c1.divisionName]
+				alloc2 := allocated[c2.divisionName]
+				if alloc1 != alloc2 {
+					return alloc1 > alloc2 // descending
+				}
+				// Alternate between tournaments of the same division to prevent category starvation
+				count1 := scheduledCounts[c1.poolIdx]
+				count2 := scheduledCounts[c2.poolIdx]
+				if count1 != count2 {
+					return count1 < count2
+				}
+				if !c1.maxAvail.Equal(c2.maxAvail) {
+					return c1.maxAvail.Before(c2.maxAvail)
+				}
+				return c1.poolIdx < c2.poolIdx
+			})
+			chosen = availableCandidates[0]
+		} else {
+			// Time warp
+			sort.Slice(candidates, func(i, j int) bool {
+				return candidates[i].maxAvail.Before(candidates[j].maxAvail)
+			})
+			simClock = candidates[0].maxAvail
+			continue
+		}
+
+		globalScheduled = append(globalScheduled, chosen.card)
+		scheduledCounts[chosen.poolIdx]++
+
+		// Occupy table globally by division name
+		runningMatches = append(runningMatches, runningMatch{
+			divisionName: chosen.divisionName,
+			endTime:      simClock.Add(20 * time.Minute),
+		})
+
+		// Lock players
+		avail := simClock.Add(30 * time.Minute)
+		if chosen.card.P1Id != "" {
+			availableTime[chosen.card.P1Id] = avail
+		}
+		if chosen.card.P2Id != "" {
+			availableTime[chosen.card.P2Id] = avail
+		}
+
+		// Advance pool
+		pools[chosen.poolIdx] = pools[chosen.poolIdx][1:]
+	}
 
 	// Mark players currently in a match across the entire event and set global QueuePosition
 	inMatchPlayers := make(map[string]bool)
@@ -443,26 +675,40 @@ func (h *EventHandler) AdminBoard(c *fiber.Ctx) error {
 		return ErrorHandler(err)
 	}
 
-	// Build AllDivisions from the board cards (same approach as tournament Board handler)
+	// Build AllDivisions and AllCategories from the board cards
 	uniqueDivsMap := make(map[string]bool)
+	uniqueCatsMap := make(map[string]bool)
 	for _, card := range scheduled {
 		if card.DivisionName != "" {
 			uniqueDivsMap[card.DivisionName] = true
+		}
+		if card.Category != "" {
+			uniqueCatsMap[card.Category] = true
 		}
 	}
 	for _, card := range inProgress {
 		if card.DivisionName != "" {
 			uniqueDivsMap[card.DivisionName] = true
 		}
+		if card.Category != "" {
+			uniqueCatsMap[card.Category] = true
+		}
 	}
 	for _, card := range finished {
 		if card.DivisionName != "" {
 			uniqueDivsMap[card.DivisionName] = true
 		}
+		if card.Category != "" {
+			uniqueCatsMap[card.Category] = true
+		}
 	}
 	var allDivs []string
 	for d := range uniqueDivsMap {
 		allDivs = append(allDivs, d)
+	}
+	var allCats []string
+	for cat := range uniqueCatsMap {
+		allCats = append(allCats, cat)
 	}
 
 	// Parse filter params
@@ -471,28 +717,39 @@ func (h *EventHandler) AdminBoard(c *fiber.Ctx) error {
 	for _, d := range c.Request().URI().QueryArgs().PeekMulti("div") {
 		selectedDivs = append(selectedDivs, string(d))
 	}
-	if c.Query("q") != "" || len(selectedDivs) > 0 {
-		scheduled = FilterBoardCards(scheduled, q, selectedDivs)
-		inProgress = FilterBoardCards(inProgress, q, selectedDivs)
-		finished = FilterBoardCards(finished, q, selectedDivs)
+	var selectedCats []string
+	for _, cat := range c.Request().URI().QueryArgs().PeekMulti("cat") {
+		selectedCats = append(selectedCats, string(cat))
+	}
+
+	if c.Query("q") != "" || len(selectedDivs) > 0 || len(selectedCats) > 0 {
+		scheduled = FilterEventBoardCards(scheduled, q, selectedDivs, selectedCats)
+		inProgress = FilterEventBoardCards(inProgress, q, selectedDivs, selectedCats)
+		finished = FilterEventBoardCards(finished, q, selectedDivs, selectedCats)
 	}
 	selectedDivsMap := make(map[string]bool)
 	for _, d := range selectedDivs {
 		selectedDivsMap[d] = true
+	}
+	selectedCatsMap := make(map[string]bool)
+	for _, cat := range selectedCats {
+		selectedCatsMap[cat] = true
 	}
 
 	// Build tables from event NumTables
 	tables := buildEventTables(e, inProgress)
 
 	return c.Render("admin/event-board", merge(tMap(lang), fiber.Map{
-		"Event":        e,
-		"Scheduled":    scheduled,
-		"InProgress":   inProgress,
-		"Finished":     finished,
-		"AllDivisions": allDivs,
-		"QueryQ":       c.Query("q"),
-		"SelectedDivs": selectedDivsMap,
-		"Tables":       tables,
+		"Event":         e,
+		"Scheduled":     scheduled,
+		"InProgress":    inProgress,
+		"Finished":      finished,
+		"AllDivisions":  allDivs,
+		"AllCategories": allCats,
+		"QueryQ":        c.Query("q"),
+		"SelectedDivs":  selectedDivsMap,
+		"SelectedCats":  selectedCatsMap,
+		"Tables":        tables,
 	}), "layouts/admin")
 }
 
@@ -526,11 +783,15 @@ func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
 	for _, d := range c.Request().URI().QueryArgs().PeekMulti("div") {
 		selectedDivs = append(selectedDivs, string(d))
 	}
+	var selectedCats []string
+	for _, cat := range c.Request().URI().QueryArgs().PeekMulti("cat") {
+		selectedCats = append(selectedCats, string(cat))
+	}
 
-	if c.Query("q") != "" || len(selectedDivs) > 0 {
-		scheduled = FilterBoardCards(scheduled, q, selectedDivs)
-		inProgress = FilterBoardCards(inProgress, q, selectedDivs)
-		finished = FilterBoardCards(finished, q, selectedDivs)
+	if c.Query("q") != "" || len(selectedDivs) > 0 || len(selectedCats) > 0 {
+		scheduled = FilterEventBoardCards(scheduled, q, selectedDivs, selectedCats)
+		inProgress = FilterEventBoardCards(inProgress, q, selectedDivs, selectedCats)
+		finished = FilterEventBoardCards(finished, q, selectedDivs, selectedCats)
 	}
 
 	// Build tables from event NumTables
@@ -612,4 +873,34 @@ func (h *EventHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 	return c.Redirect("/admin/events/" + id)
+}
+
+func FilterEventBoardCards(cards []BoardCard, q string, divs []string, cats []string) []BoardCard {
+	if q == "" && len(divs) == 0 && len(cats) == 0 {
+		return cards
+	}
+
+	divMap := make(map[string]bool)
+	for _, d := range divs {
+		divMap[d] = true
+	}
+
+	catMap := make(map[string]bool)
+	for _, cat := range cats {
+		catMap[cat] = true
+	}
+
+	var filtered []BoardCard
+	for _, card := range cards {
+		matchesSearch := q == "" || strings.Contains(strings.ToLower(card.PlayerAName), q) ||
+			strings.Contains(strings.ToLower(card.PlayerBName), q) ||
+			strings.Contains(strings.ToLower(card.GroupName), q)
+		matchesDiv := len(divMap) == 0 || divMap[card.DivisionName]
+		matchesCat := len(catMap) == 0 || catMap[card.Category]
+
+		if matchesSearch && matchesDiv && matchesCat {
+			filtered = append(filtered, card)
+		}
+	}
+	return filtered
 }

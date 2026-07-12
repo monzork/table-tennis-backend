@@ -1181,6 +1181,7 @@ type BoardCard struct {
 	TournamentName string
 	QueuePosition  int
 	RoundNumber    int
+	Category       string
 }
 
 type TableVM struct {
@@ -1324,6 +1325,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 			ScoreB:      m.ScoreB(),
 			Pin:         m.Pin,
 			RoundNumber: m.RoundNumber,
+			Category:    t.EventCategory,
 			GroupName: func() string {
 				if len(m.TeamA) > 0 {
 					return findGroupName(m.TeamA[0].ID)
@@ -1370,6 +1372,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 							Pin:          "",
 							GroupName:    groupName,
 							DivisionName: dv.Name,
+							Category:     t.EventCategory,
 						})
 					}
 				}
@@ -1394,6 +1397,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 								Pin:          "",
 								GroupName:    g.Name,
 								DivisionName: dv.Name,
+								Category:     t.EventCategory,
 							})
 						}
 					}
@@ -1419,6 +1423,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 									Pin:          "",
 									GroupName:    "",
 									DivisionName: dv.Name,
+									Category:     t.EventCategory,
 								})
 							}
 						}
@@ -1445,6 +1450,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 								Pin:          "",
 								GroupName:    "",
 								DivisionName: dv.Name,
+								Category:     t.EventCategory,
 							})
 						}
 					}

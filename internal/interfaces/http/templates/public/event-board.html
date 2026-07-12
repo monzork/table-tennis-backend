@@ -110,7 +110,14 @@
                                         
                                         <div class="px-4 flex flex-col items-center justify-center">
                                             <span class="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1">{{t $.T "tv.vs"}}</span>
-                                            <span class="px-1.5 py-0.5 rounded bg-white/5 text-[8px] uppercase tracking-widest text-gray-400">{{if .TournamentName}}{{.TournamentName}}{{else}}{{.Stage}}{{end}}</span>
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="px-1.5 py-0.5 rounded bg-white/5 text-[8px] uppercase tracking-widest text-gray-400">{{if .TournamentName}}{{.TournamentName}}{{else}}{{.Stage}}{{end}}</span>
+                                                {{if eq .Category "men"}}
+                                                    <span class="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] uppercase tracking-widest font-black">M</span>
+                                                {{else if eq .Category "women"}}
+                                                    <span class="px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[8px] uppercase tracking-widest font-black">F</span>
+                                                {{end}}
+                                            </div>
                                         </div>
 
                                         <div class="flex flex-col items-start flex-1 text-left">
@@ -139,7 +146,14 @@
                             {{range .Scheduled}}
                                 <div class="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-3 shadow-lg opacity-80">
                                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">{{if .TournamentName}}{{.TournamentName}}{{else}}{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}}{{end}} • {{.Stage}}</span>
+                                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+                                            {{if .TournamentName}}{{.TournamentName}}{{else}}{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}}{{end}} • {{.Stage}}
+                                            {{if eq .Category "men"}}
+                                                <span class="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-black">M</span>
+                                            {{else if eq .Category "women"}}
+                                                <span class="px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[8px] font-black">F</span>
+                                            {{end}}
+                                        </span>
                                         {{if .TableNumber}}
                                             <span class="px-2 py-0.5 rounded bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest animate-pulse">{{t $.T "tv.table"}} {{.TableNumber}}</span>
                                         {{else}}
@@ -175,7 +189,14 @@
                         <div class="lg:absolute lg:inset-0 lg:overflow-y-auto pr-2 space-y-3 auto-scroll-container">
                             {{range .Finished}}
                                 <div class="bg-black/30 border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
-                                    <span class="text-[9px] font-bold uppercase tracking-widest text-gray-500">{{if .TournamentName}}{{.TournamentName}}{{end}} • {{.Stage}}</span>
+                                    <span class="text-[9px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+                                        {{if .TournamentName}}{{.TournamentName}}{{end}} • {{.Stage}}
+                                        {{if eq .Category "men"}}
+                                            <span class="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[7px] font-black">M</span>
+                                        {{else if eq .Category "women"}}
+                                            <span class="px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[7px] font-black">F</span>
+                                        {{end}}
+                                    </span>
                                     <div class="flex-1 flex justify-between items-center text-sm sm:text-base">
                                         <div class="w-[45%] text-right pr-2 {{if gt .ScoreA .ScoreB}}text-white font-extrabold{{else}}text-gray-500{{end}} truncate">
                                             {{.PlayerAName}}
