@@ -275,7 +275,8 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 	
 	divs, _ := h.divisionUC.GetAll(ctx)
 	
-	var tournamentsScheduled [][]BoardCard
+	var unstartedPools [][]BoardCard
+	var virtualPools [][]BoardCard
 	var inProgress []BoardCard
 	var finished []BoardCard
 
@@ -284,10 +285,19 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 
 	for _, t := range e.Tournaments {
 		s, i, f := BuildBoardCards(t, divs)
+		
+		var u []BoardCard
+		var v []BoardCard
+		
 		// Inject TournamentName into the cards for display
 		for idx := range s {
 			s[idx].TournamentName = t.Name
 			s[idx].TournamentID = t.ID
+			if s[idx].MatchID == "" {
+				v = append(v, s[idx])
+			} else {
+				u = append(u, s[idx])
+			}
 		}
 		for idx := range i {
 			i[idx].TournamentName = t.Name
@@ -298,8 +308,11 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 			f[idx].TournamentID = t.ID
 		}
 		
-		if len(s) > 0 {
-			tournamentsScheduled = append(tournamentsScheduled, s)
+		if len(u) > 0 {
+			unstartedPools = append(unstartedPools, u)
+		}
+		if len(v) > 0 {
+			virtualPools = append(virtualPools, v)
 		}
 		inProgress = append(inProgress, i...)
 		finished = append(finished, f...)
@@ -325,42 +338,23 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 		}
 	}
 
-	var globalScheduled []BoardCard
-	maxLen := 0
-	for _, s := range tournamentsScheduled {
-		if len(s) > maxLen {
-			maxLen = len(s)
-		}
-	}
-	for step := 0; step < maxLen; step++ {
-		for _, s := range tournamentsScheduled {
-			if step < len(s) {
-				globalScheduled = append(globalScheduled, s[step])
-			}
-		}
-	}
-
-	var reordered []BoardCard
-	var unstarted []BoardCard
-	var virtualScheduled []BoardCard
-
-	for _, c := range globalScheduled {
-		if c.MatchID == "" {
-			virtualScheduled = append(virtualScheduled, c)
-		} else {
-			unstarted = append(unstarted, c)
-		}
-	}
-
 	simClock := time.Now().Add(24 * time.Hour)
-	
-	scheduleMatchGreedy := func(pool *[]BoardCard) {
-		for len(*pool) > 0 {
-			bestIdx := -1
+
+	scheduleMergeGreedy := func(pools [][]BoardCard) []BoardCard {
+		var result []BoardCard
+		scheduledCounts := make(map[string]int)
+
+		for {
+			bestPoolIdx := -1
+			var bestCard BoardCard
 			var bestPenalty time.Time
 			var bestSum int64
 
-			for i, c := range *pool {
+			for poolIdx, pool := range pools {
+				if len(pool) == 0 {
+					continue
+				}
+				c := pool[0]
 				t1 := lastActivity[c.P1Id]
 				t2 := lastActivity[c.P2Id]
 				penalty := t1
@@ -369,26 +363,77 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 				}
 				sum := t1.UnixNano() + t2.UnixNano()
 
-				if bestIdx == -1 || penalty.Before(bestPenalty) || (penalty.Equal(bestPenalty) && sum < bestSum) {
-					bestIdx = i
+				isBetter := false
+				if bestPoolIdx == -1 {
+					isBetter = true
+				} else if penalty.Before(bestPenalty) {
+					isBetter = true
+				} else if penalty.Equal(bestPenalty) {
+					if sum < bestSum {
+						isBetter = true
+					} else if sum == bestSum {
+						if scheduledCounts[c.TournamentID] < scheduledCounts[bestCard.TournamentID] {
+							isBetter = true
+						}
+					}
+				}
+
+				if isBetter {
+					bestPoolIdx = poolIdx
+					bestCard = c
 					bestPenalty = penalty
 					bestSum = sum
 				}
 			}
-			
-			bestCard := (*pool)[bestIdx]
-			reordered = append(reordered, bestCard)
-			lastActivity[bestCard.P1Id] = simClock
-			lastActivity[bestCard.P2Id] = simClock
+
+			if bestPoolIdx == -1 {
+				break
+			}
+
+			result = append(result, bestCard)
+			scheduledCounts[bestCard.TournamentID]++
+
+			if bestCard.P1Id != "" {
+				lastActivity[bestCard.P1Id] = simClock
+			}
+			if bestCard.P2Id != "" {
+				lastActivity[bestCard.P2Id] = simClock
+			}
 			simClock = simClock.Add(time.Second)
-			*pool = append((*pool)[:bestIdx], (*pool)[bestIdx+1:]...)
+
+			pools[bestPoolIdx] = pools[bestPoolIdx][1:]
 		}
+		return result
 	}
 
-	scheduleMatchGreedy(&unstarted)
-	scheduleMatchGreedy(&virtualScheduled)
+	// Merge real scheduled matches first, then virtual ones
+	globalScheduled := append(scheduleMergeGreedy(unstartedPools), scheduleMergeGreedy(virtualPools)...)
 
-	return e, divs, reordered, inProgress, finished, nil
+	// Mark players currently in a match across the entire event and set global QueuePosition
+	inMatchPlayers := make(map[string]bool)
+	for _, c := range inProgress {
+		if c.P1Id != "" {
+			inMatchPlayers[c.P1Id] = true
+		}
+		if c.P2Id != "" {
+			inMatchPlayers[c.P2Id] = true
+		}
+	}
+	for i := range globalScheduled {
+		if globalScheduled[i].P1Id != "" && inMatchPlayers[globalScheduled[i].P1Id] {
+			globalScheduled[i].P1InMatch = true
+		} else {
+			globalScheduled[i].P1InMatch = false
+		}
+		if globalScheduled[i].P2Id != "" && inMatchPlayers[globalScheduled[i].P2Id] {
+			globalScheduled[i].P2InMatch = true
+		} else {
+			globalScheduled[i].P2InMatch = false
+		}
+		globalScheduled[i].QueuePosition = i + 1
+	}
+
+	return e, divs, globalScheduled, inProgress, finished, nil
 }
 
 func (h *EventHandler) AdminBoard(c *fiber.Ctx) error {
