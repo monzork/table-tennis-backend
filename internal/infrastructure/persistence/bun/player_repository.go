@@ -179,8 +179,11 @@ func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.
 	var models []PlayerModel
 	q := ExtractDB(ctx, r.db).NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc)
 	if query != "" {
-		lowerQuery := "%" + strings.ToLower(query) + "%"
-		q = q.Where("LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?", lowerQuery, lowerQuery, lowerQuery, lowerQuery)
+		terms := strings.Fields(strings.ToLower(query))
+		for _, term := range terms {
+			lowerTerm := "%" + term + "%"
+			q = q.Where("LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?", lowerTerm, lowerTerm, lowerTerm, lowerTerm)
+		}
 	}
 	if err := q.Scan(ctx); err != nil {
 		return nil, err
@@ -197,8 +200,11 @@ func (r *PlayerRepository) SearchForSelection(ctx context.Context, query, gender
 		Column("id", "first_name", "second_name", "last_name", "second_last_name", "gender", "singles_elo").
 		OrderBy("singles_elo", bun.OrderDesc)
 	if query != "" {
-		lowerQuery := "%" + strings.ToLower(query) + "%"
-		q = q.Where("LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?", lowerQuery, lowerQuery, lowerQuery, lowerQuery)
+		terms := strings.Fields(strings.ToLower(query))
+		for _, term := range terms {
+			lowerTerm := "%" + term + "%"
+			q = q.Where("LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?", lowerTerm, lowerTerm, lowerTerm, lowerTerm)
+		}
 	}
 	if gender != "" {
 		q = q.Where("gender = ?", gender)
