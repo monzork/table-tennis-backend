@@ -1665,7 +1665,6 @@ func (h *MatchHandler) renderTeamMatchForm(c *fiber.Ctx, matchID, tournamentID, 
 
 func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, tournamentID, stage string, templateName string) error {
 	parentUUID, _ := uuid.Parse(matchID)
-	tUUID, _ := uuid.Parse(tournamentID)
 
 	t, err := h.tournamentRepo.GetByID(c.Context(), tournamentID)
 	if err != nil {
@@ -1678,8 +1677,8 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, tourna
 	}
 
 	bestOf := 5
-	if stageRule, err := bun.GetStageRule(c.Context(), h.matchRepo.DB(), tUUID, stage); err == nil {
-		bestOf = stageRule.BestOf
+	if t != nil {
+		bestOf = t.GetEffectiveStageRule(stage, parent.DivisionID).BestOf
 	}
 
 	teamFormat := t.TeamFormat
@@ -2258,12 +2257,7 @@ func (h *MatchHandler) ShowMatchScorePage(c *fiber.Ctx) error {
 	t, _ := h.tournamentRepo.GetByID(c.Context(), m.TournamentID.String())
 	bestOf := 5
 	if t != nil {
-		for _, sr := range t.StageRules {
-			if sr.Stage == m.Stage {
-				bestOf = sr.BestOf
-				break
-			}
-		}
+		bestOf = t.GetEffectiveStageRule(m.Stage, m.DivisionID).BestOf
 	}
 
 	type setVM struct {
@@ -2380,12 +2374,7 @@ func (h *MatchHandler) ShowTableScorePage(c *fiber.Ctx) error {
 	t, _ := h.tournamentRepo.GetByID(c.Context(), m.TournamentID.String())
 	bestOf := 5
 	if t != nil {
-		for _, sr := range t.StageRules {
-			if sr.Stage == m.Stage {
-				bestOf = sr.BestOf
-				break
-			}
-		}
+		bestOf = t.GetEffectiveStageRule(m.Stage, m.DivisionID).BestOf
 	}
 
 	type setVM struct {
@@ -2461,12 +2450,7 @@ func (h *MatchHandler) ValidateMatchPIN(c *fiber.Ctx) error {
 	t, _ := h.tournamentRepo.GetByID(c.Context(), m.TournamentID.String())
 	bestOf := 5
 	if t != nil {
-		for _, sr := range t.StageRules {
-			if sr.Stage == m.Stage {
-				bestOf = sr.BestOf
-				break
-			}
-		}
+		bestOf = t.GetEffectiveStageRule(m.Stage, m.DivisionID).BestOf
 	}
 
 	playerAName, playerBName := "Player A", "Player B"
