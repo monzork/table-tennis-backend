@@ -412,10 +412,10 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		refereeIDStr = matchRefereeID.String()
 	}
 
-	// Fetch tournament if tournamentId is provided
+	// Fetch tournament if tournamentId is provided (lite: skip heavy Matches relation)
 	var tourney *tournament.Tournament
 	if tID != "" {
-		if t, err := h.tournamentRepo.GetByID(c.Context(), tID); err == nil {
+		if t, err := h.tournamentRepo.GetByIDLite(c.Context(), tID); err == nil {
 			tourney = t
 		}
 	}
@@ -627,10 +627,8 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		}
 
 		var participants []*player.Player
-		if tID != "" {
-			if t, err := h.tournamentRepo.GetByID(c.Context(), tID); err == nil {
-				participants = t.Participants
-			}
+		if tourney != nil {
+			participants = tourney.Participants
 		}
 
 		var teamMatchTemplateName string
@@ -850,10 +848,8 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 	}
 
 	var participants []*player.Player
-	if tID != "" {
-		if t, err := h.tournamentRepo.GetByID(c.Context(), tID); err == nil {
-			participants = t.Participants
-		}
+	if tourney != nil {
+		participants = tourney.Participants
 	}
 
 	return c.Render(templateName, fiber.Map{

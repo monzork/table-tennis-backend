@@ -41,6 +41,8 @@ type TournamentModel struct {
 	Groups       []GroupModel                 `bun:"rel:has-many,join:id=tournament_id"`
 	Teams        []TeamModel                  `bun:"rel:has-many,join:id=tournament_id"`
 	Matches      []MatchModel                 `bun:"rel:has-many,join:id=tournament_id"`
+	StageRules   []StageRuleModel             `bun:"rel:has-many,join:id=tournament_id"`
+	DivisionRules []DivisionRuleModel         `bun:"rel:has-many,join:id=tournament_id"`
 }
 
 // join table — no back-refs to avoid circular resolution at RegisterModel time

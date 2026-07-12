@@ -74,8 +74,15 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 	}
 
 	// Get effective stage rule (division rules will be applied if match has division info)
-	// For score updates, we use the stage rule directly since division is determined at creation
-	stageRule := t.GetEffectiveStageRule(stage, "")
+	var divisionID string
+	for i := range t.Matches {
+		if t.Matches[i].ID == matchIDStr {
+			divisionID = t.Matches[i].DivisionID
+			break
+		}
+	}
+
+	stageRule := t.GetEffectiveStageRule(stage, divisionID)
 
 	return uc.matchRepo.UpdateScore(ctx, matchIDStr, sets, stageRule)
 }
