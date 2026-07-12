@@ -1355,7 +1355,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 		if vm.Format == "round_robin" {
 			for _, mv := range dv.RoundRobinMatches {
 				if mv.Player1 != nil && mv.Player2 != nil {
-					if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID) {
+					if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID, mv.Stage) {
 						groupName := findGroupName(mv.Player1.ID)
 						scheduled = append(scheduled, BoardCard{
 							MatchID:      "",
@@ -1381,7 +1381,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 			for _, g := range dv.Groups {
 				for _, mv := range g.Matches {
 					if mv.Player1 != nil && mv.Player2 != nil {
-						if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID) {
+						if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID, mv.Stage) {
 							scheduled = append(scheduled, BoardCard{
 								MatchID:      "",
 								Status:       "scheduled",
@@ -1407,7 +1407,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 				for _, round := range dv.KnockoutRounds {
 					for _, bmv := range round.Matches {
 						if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
-							if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID) {
+							if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID, bmv.Stage) {
 								scheduled = append(scheduled, BoardCard{
 									MatchID:      "",
 									Status:       "scheduled",
@@ -1434,7 +1434,7 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 			for _, round := range dv.KnockoutRounds {
 				for _, bmv := range round.Matches {
 					if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
-						if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID) {
+						if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID, bmv.Stage) {
 							scheduled = append(scheduled, BoardCard{
 								MatchID:      "",
 								Status:       "scheduled",
@@ -1578,9 +1578,12 @@ func BuildBoardCards(t *tournamentDomain.Tournament, divs []*divisionDomain.Divi
 	return
 }
 
-func matchExists(matches []tournamentDomain.Match, p1ID, p2ID string) bool {
+func matchExists(matches []tournamentDomain.Match, p1ID, p2ID string, stage string) bool {
 	for _, m := range matches {
 		if m.TeamMatchID != nil {
+			continue
+		}
+		if m.Stage != stage {
 			continue
 		}
 		if len(m.TeamA) > 0 && len(m.TeamB) > 0 {
