@@ -800,22 +800,22 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 				}
 				pdf.SetTextColor(0, 0, 0)
 
-				// --- PART B: Cross-Table Matrix (Middle, width 55 + 8*N mm) ---
+				// --- PART B: Cross-Table Matrix ---
 				n := len(gs.Players)
-				pdf.SetXY(15+42+5, startY)
+				pdf.SetXY(15+42+3, startY)
 				pdf.SetFont("Arial", "B", 7)
 				pdf.SetFillColor(254, 254, 212)
-				pdf.CellFormat(55, 5, tr("   ")+tr(strings.ToUpper(gs.GroupName)), "1", 0, "L", true, 0, "")
+				pdf.CellFormat(48, 5, tr("   ")+tr(strings.ToUpper(gs.GroupName)), "1", 0, "L", true, 0, "")
 				for col := 1; col <= n; col++ {
 					pdf.CellFormat(8, 5, fmt.Sprintf("%d", col), "1", 0, "C", true, 0, "")
 				}
 				pdf.Ln(5)
 
 				for rowIdx, p1 := range gs.Players {
-					pdf.SetX(15 + 42 + 5)
+					pdf.SetX(15 + 42 + 3)
 					// Draw player/team info cell
 					startX, currY := pdf.GetXY()
-					pdf.CellFormat(55, 5, "", "1", 0, "L", false, 0, "")
+					pdf.CellFormat(48, 5, "", "1", 0, "L", false, 0, "")
 
 					// Draw custom colored texts inside the cell
 					pdf.SetXY(startX+2, currY+1)
@@ -825,10 +825,10 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 
 					pdf.SetX(startX + 6)
 					pdf.SetTextColor(0, 0, 0) // black name
-					pdf.Text(pdf.GetX(), pdf.GetY()+2.5, tr(truncateStr(formatPlayerName(p1), 25)))
+					pdf.Text(pdf.GetX(), pdf.GetY()+2.5, tr(truncateStr(formatPlayerName(p1), 21)))
 
 					pdf.SetTextColor(0, 0, 0)
-					pdf.SetXY(startX+55, currY)
+					pdf.SetXY(startX+48, currY)
 
 					// Draw columns
 					pdf.SetFont("Arial", "", 7)
@@ -857,31 +857,41 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 					pdf.Ln(5)
 				}
 
-				// --- PART C: Points & Positions (Right, width 21mm) ---
-				pdf.SetXY(15+42+5+55+float64(n)*8+5, startY)
+				// --- PART C: Points & Positions ---
+				pdf.SetXY(15+42+3+48+float64(n)*8+3, startY)
 				pdf.SetFont("Arial", "B", 7)
 				pdf.SetFillColor(254, 254, 212)
-				pdf.CellFormat(11, 5, tr("Puntos"), "1", 0, "C", true, 0, "")
-				pdf.CellFormat(10, 5, "Pos.", "1", 1, "C", true, 0, "")
+				pdf.CellFormat(8, 5, tr("Pts"), "1", 0, "C", true, 0, "")
+				pdf.CellFormat(14, 5, tr("Sets"), "1", 0, "C", true, 0, "")
+				pdf.CellFormat(16, 5, tr("Puntos"), "1", 0, "C", true, 0, "")
+				pdf.CellFormat(8, 5, "Pos.", "1", 1, "C", true, 0, "")
 
 				for _, p := range gs.Players {
-					pdf.SetX(15 + 42 + 5 + 55 + float64(n)*8 + 5)
+					pdf.SetX(15 + 42 + 3 + 48 + float64(n)*8 + 3)
 
-					var wins, losses int
+					var wins, losses, setsW, setsL, ptsW, ptsL int
 					for _, std := range gs.Standings {
 						if std.Player.ID == p.ID {
 							wins = std.Wins
 							losses = std.Losses
+							setsW = std.SetsWon
+							setsL = std.SetsLost
+							ptsW = std.PointsWon
+							ptsL = std.PointsLost
 							break
 						}
 					}
 					pts := wins*2 + losses
 					posVal := standingMap[p.ID]
+					setsStr := fmt.Sprintf("%d/%d", setsW, setsL)
+					ptsStr := fmt.Sprintf("%d/%d", ptsW, ptsL)
 
 					pdf.SetFont("Arial", "", 7)
-					pdf.CellFormat(11, 5, fmt.Sprintf("%d", pts), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(8, 5, fmt.Sprintf("%d", pts), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(14, 5, setsStr, "1", 0, "C", false, 0, "")
+					pdf.CellFormat(16, 5, ptsStr, "1", 0, "C", false, 0, "")
 					pdf.SetFont("Arial", "B", 7)
-					pdf.CellFormat(10, 5, fmt.Sprintf("%d", posVal), "1", 1, "C", false, 0, "")
+					pdf.CellFormat(8, 5, fmt.Sprintf("%d", posVal), "1", 1, "C", false, 0, "")
 				}
 
 				pdf.SetXY(15, startY+float64(n+1)*5+3)

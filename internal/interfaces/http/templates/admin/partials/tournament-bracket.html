@@ -87,6 +87,8 @@
                 <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.played"}}</th>
                 <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.wins"}}</th>
                 <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.losses"}}</th>
+                <th class="px-2 py-3 sm:p-4 text-center">Sets (W/L)</th>
+                <th class="px-2 py-3 sm:p-4 text-center">Points (W/L)</th>
                 <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.win_pct"}}</th>
               </tr>
             </thead>
@@ -105,6 +107,8 @@
                 <td class="px-2 py-3 sm:p-4 text-center opacity-60 tabular-nums">{{.Played}}</td>
                 <td class="px-2 py-3 sm:p-4 text-center font-black text-white tabular-nums">{{.Wins}}</td>
                 <td class="px-2 py-3 sm:p-4 text-center opacity-40 tabular-nums">{{.Losses}}</td>
+                <td class="px-2 py-3 sm:p-4 text-center opacity-80 tabular-nums text-xs whitespace-nowrap">{{.SetsWon}} / {{.SetsLost}}</td>
+                <td class="px-2 py-3 sm:p-4 text-center opacity-80 tabular-nums text-xs whitespace-nowrap">{{.PointsWon}} / {{.PointsLost}}</td>
                 <td class="px-2 py-3 sm:p-4 text-center">
                    <div class="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] text-gray-400">
                       {{.WinPercentage}}%
@@ -174,6 +178,8 @@
                       <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.played"}}</th>
                       <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.wins"}}</th>
                       <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.losses"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">Sets (W/L)</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">Points (W/L)</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-white/5">
@@ -210,6 +216,8 @@
                       <td class="px-2 py-3 sm:p-4 text-center opacity-60 tabular-nums">{{.Played}}</td>
                       <td class="px-2 py-3 sm:p-4 text-center font-black text-white tabular-nums">{{.Wins}}</td>
                       <td class="px-2 py-3 sm:p-4 text-center opacity-40 tabular-nums">{{.Losses}}</td>
+                      <td class="px-2 py-3 sm:p-4 text-center opacity-80 tabular-nums text-xs whitespace-nowrap">{{.SetsWon}} / {{.SetsLost}}</td>
+                      <td class="px-2 py-3 sm:p-4 text-center opacity-80 tabular-nums text-xs whitespace-nowrap">{{.PointsWon}} / {{.PointsLost}}</td>
                     </tr>
                     {{end}}
                   </tbody>

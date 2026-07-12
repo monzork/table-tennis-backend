@@ -124,14 +124,18 @@ func ResolveITTFTies(tied []*PlayerStanding, allMatches []Match, depth int) []*P
 			sB.wins++
 		}
 
+		matchScoreA := m.ScoreA()
+		matchScoreB := m.ScoreB()
+
+		sA.setsWon += matchScoreA
+		sA.setsLost += matchScoreB
+		sB.setsWon += matchScoreB
+		sB.setsLost += matchScoreA
+
 		for _, s := range m.Sets {
-			sA.setsWon += s.ScoreA
-			sA.setsLost += s.ScoreB
 			sA.ptsWon += s.ScoreA
 			sA.ptsLost += s.ScoreB
 
-			sB.setsWon += s.ScoreB
-			sB.setsLost += s.ScoreA
 			sB.ptsWon += s.ScoreB
 			sB.ptsLost += s.ScoreA
 		}
@@ -310,15 +314,22 @@ func buildMatchStats(p *player.Player, matches []Match) (wins, losses, setsWon, 
 		} else {
 			losses++
 		}
+		matchScoreA := m.ScoreA()
+		matchScoreB := m.ScoreB()
+
+		if isA {
+			setsWon += matchScoreA
+			setsLost += matchScoreB
+		} else {
+			setsWon += matchScoreB
+			setsLost += matchScoreA
+		}
+
 		for _, s := range m.Sets {
 			if isA {
-				setsWon += s.ScoreA
-				setsLost += s.ScoreB
 				ptsWon += s.ScoreA
 				ptsLost += s.ScoreB
 			} else {
-				setsWon += s.ScoreB
-				setsLost += s.ScoreA
 				ptsWon += s.ScoreB
 				ptsLost += s.ScoreA
 			}
