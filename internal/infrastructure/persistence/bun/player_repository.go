@@ -182,7 +182,7 @@ func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.
 		terms := strings.Fields(strings.ToLower(query))
 		for _, term := range terms {
 			lowerTerm := "%" + term + "%"
-			q = q.Where("LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?", lowerTerm, lowerTerm, lowerTerm, lowerTerm)
+			q = q.Where("(LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?)", lowerTerm, lowerTerm, lowerTerm, lowerTerm)
 		}
 	}
 	if err := q.Scan(ctx); err != nil {
@@ -203,7 +203,7 @@ func (r *PlayerRepository) SearchForSelection(ctx context.Context, query, gender
 		terms := strings.Fields(strings.ToLower(query))
 		for _, term := range terms {
 			lowerTerm := "%" + term + "%"
-			q = q.Where("LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?", lowerTerm, lowerTerm, lowerTerm, lowerTerm)
+			q = q.Where("(LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?)", lowerTerm, lowerTerm, lowerTerm, lowerTerm)
 		}
 	}
 	if gender != "" {
