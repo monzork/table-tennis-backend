@@ -275,7 +275,7 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 	
 	divs, _ := h.divisionUC.GetAll(ctx)
 	
-	var globalScheduled []BoardCard
+	var tournamentsScheduled [][]BoardCard
 	var inProgress []BoardCard
 	var finished []BoardCard
 
@@ -298,7 +298,9 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 			f[idx].TournamentID = t.ID
 		}
 		
-		globalScheduled = append(globalScheduled, s...)
+		if len(s) > 0 {
+			tournamentsScheduled = append(tournamentsScheduled, s)
+		}
 		inProgress = append(inProgress, i...)
 		finished = append(finished, f...)
 
@@ -319,6 +321,21 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 						lastActivity[p.ID] = tAct
 					}
 				}
+			}
+		}
+	}
+
+	var globalScheduled []BoardCard
+	maxLen := 0
+	for _, s := range tournamentsScheduled {
+		if len(s) > maxLen {
+			maxLen = len(s)
+		}
+	}
+	for step := 0; step < maxLen; step++ {
+		for _, s := range tournamentsScheduled {
+			if step < len(s) {
+				globalScheduled = append(globalScheduled, s[step])
 			}
 		}
 	}
