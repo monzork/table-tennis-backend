@@ -911,6 +911,9 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	var allTeamModels []TeamModel
 	var allTPModels []TeamPlayerModel
 
+	var allGroupModels []GroupModel
+	var allGPModels []GroupParticipantModel
+
 	var matchModels []MatchModel
 	var allSetModels []MatchSetModel
 
@@ -929,6 +932,21 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 				teamIDs[i] = tm.ID
 			}
 			return ExtractDB(ctx, r.db).NewSelect().Model(&allTPModels).Where("team_id IN (?)", bun.List(teamIDs)).Scan(egCtx)
+		}
+		return nil
+	})
+
+	eg.Go(func() error {
+		err := ExtractDB(ctx, r.db).NewSelect().Model(&allGroupModels).Where("tournament_id IN (?)", bun.List(tournamentIDs)).Order("name ASC").Scan(egCtx)
+		if err != nil {
+			return err
+		}
+		if len(allGroupModels) > 0 {
+			groupIDs := make([]uuid.UUID, len(allGroupModels))
+			for i, gm := range allGroupModels {
+				groupIDs[i] = gm.ID
+			}
+			return ExtractDB(ctx, r.db).NewSelect().Model(&allGPModels).Where("group_id IN (?)", bun.In(groupIDs)).Relation("Player").OrderExpr("position ASC").Scan(egCtx)
 		}
 		return nil
 	})
@@ -989,6 +1007,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 			SinglesElo:     pm.SinglesElo,
 			DoublesElo:     pm.DoublesElo,
 			Country:        pm.Country,
+			Department:     pm.Department,
 		}
 	}
 
@@ -1140,13 +1159,53 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 		}
 	}
 
+	// Index groups by tournament and group participants by group
+	groupsByTournament := make(map[uuid.UUID][]GroupModel)
+	for _, gm := range allGroupModels {
+		groupsByTournament[gm.TournamentID] = append(groupsByTournament[gm.TournamentID], gm)
+	}
+	gpByGroup := make(map[uuid.UUID][]GroupParticipantModel)
+	for _, gp := range allGPModels {
+		gpByGroup[gp.GroupID] = append(gpByGroup[gp.GroupID], gp)
+	}
+
+	snapshotSinglesElo := make(map[uuid.UUID]map[uuid.UUID]int16)
+	snapshotDoublesElo := make(map[uuid.UUID]map[uuid.UUID]int16)
+	for _, pt := range allPartModels {
+		if _, ok := snapshotSinglesElo[pt.TournamentID]; !ok {
+			snapshotSinglesElo[pt.TournamentID] = make(map[uuid.UUID]int16)
+			snapshotDoublesElo[pt.TournamentID] = make(map[uuid.UUID]int16)
+		}
+		if pt.EloBeforeSingles != nil {
+			snapshotSinglesElo[pt.TournamentID][pt.PlayerID] = *pt.EloBeforeSingles
+		} else if pm, ok := playerCache[pt.PlayerID]; ok {
+			snapshotSinglesElo[pt.TournamentID][pt.PlayerID] = pm.SinglesElo
+		}
+		if pt.EloBeforeDoubles != nil {
+			snapshotDoublesElo[pt.TournamentID][pt.PlayerID] = *pt.EloBeforeDoubles
+		} else if pm, ok := playerCache[pt.PlayerID]; ok {
+			snapshotDoublesElo[pt.TournamentID][pt.PlayerID] = pm.DoublesElo
+		}
+	}
+
 	// Assemble tournaments
 	tournaments := make([]*tournament.Tournament, len(models))
 	for i, m := range models {
 		var participantPlayers []*player.Player
 		for _, pt := range partsByTournament[m.ID] {
 			if pm, ok := playerCache[pt.PlayerID]; ok {
-				participantPlayers = append(participantPlayers, toPlayer(pm))
+				p := toPlayer(pm)
+				if snapMap, ok := snapshotSinglesElo[m.ID]; ok {
+					if snap, ok := snapMap[pt.PlayerID]; ok {
+						p.SinglesElo = snap
+					}
+				}
+				if snapMap, ok := snapshotDoublesElo[m.ID]; ok {
+					if snap, ok := snapMap[pt.PlayerID]; ok {
+						p.DoublesElo = snap
+					}
+				}
+				participantPlayers = append(participantPlayers, p)
 			}
 		}
 
@@ -1155,7 +1214,18 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 			var teamPlayers []*player.Player
 			for _, tp := range tpByTeam[tm.ID] {
 				if pm, ok := playerCache[tp.PlayerID]; ok {
-					teamPlayers = append(teamPlayers, toPlayer(pm))
+					p := toPlayer(pm)
+					if snapMap, ok := snapshotSinglesElo[m.ID]; ok {
+						if snap, ok := snapMap[tp.PlayerID]; ok {
+							p.SinglesElo = snap
+						}
+					}
+					if snapMap, ok := snapshotDoublesElo[m.ID]; ok {
+						if snap, ok := snapMap[tp.PlayerID]; ok {
+							p.DoublesElo = snap
+						}
+					}
+					teamPlayers = append(teamPlayers, p)
 				}
 			}
 			teams = append(teams, &tournament.Team{
@@ -1163,6 +1233,80 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 				TournamentID: tm.TournamentID.String(),
 				Name:         tm.Name,
 				Players:      teamPlayers,
+			})
+		}
+
+		// Index teams by ID for doubles/teams group participants
+		teamMapDomain := make(map[uuid.UUID]*tournament.Team)
+		for _, tm := range teams {
+			uid, _ := uuid.Parse(tm.ID)
+			teamMapDomain[uid] = tm
+		}
+
+		var groups []tournament.Group
+		isTeamType := m.Type == "doubles" || m.Type == "mixed_doubles" || m.Type == "teams"
+		for _, gm := range groupsByTournament[m.ID] {
+			var groupPlayers []*player.Player
+			for _, gp := range gpByGroup[gm.ID] {
+				if gp.Player != nil {
+					p := toPlayer(gp.Player)
+					if snapMap, ok := snapshotSinglesElo[m.ID]; ok {
+						if snap, ok := snapMap[gp.PlayerID]; ok {
+							p.SinglesElo = snap
+						}
+					}
+					if snapMap, ok := snapshotDoublesElo[m.ID]; ok {
+						if snap, ok := snapMap[gp.PlayerID]; ok {
+							p.DoublesElo = snap
+						}
+					}
+					groupPlayers = append(groupPlayers, p)
+				} else if isTeamType {
+					if tm, ok := teamMapDomain[gp.PlayerID]; ok {
+						avgElo := int16(1000)
+						tps := tm.Players
+						if len(tps) > 0 {
+							sum := int32(0)
+							for _, tp := range tps {
+								tpUID := uuid.MustParse(tp.ID)
+								if m.Type == "doubles" || m.Type == "mixed_doubles" {
+									if snapMap, ok := snapshotDoublesElo[m.ID]; ok {
+										if e, ok := snapMap[tpUID]; ok {
+											sum += int32(e)
+										} else {
+											sum += int32(tp.DoublesElo)
+										}
+									} else {
+										sum += int32(tp.DoublesElo)
+									}
+								} else {
+									if snapMap, ok := snapshotSinglesElo[m.ID]; ok {
+										if e, ok := snapMap[tpUID]; ok {
+											sum += int32(e)
+										} else {
+											sum += int32(tp.SinglesElo)
+										}
+									} else {
+										sum += int32(tp.SinglesElo)
+									}
+								}
+							}
+							avgElo = int16(sum / int32(len(tps)))
+						}
+						groupPlayers = append(groupPlayers, &player.Player{
+							ID:         tm.ID,
+							FirstName:  tm.Name,
+							LastName:   "",
+							SinglesElo: avgElo,
+							DoublesElo: avgElo,
+						})
+					}
+				}
+			}
+			groups = append(groups, tournament.Group{
+				ID:      gm.ID.String(),
+				Name:    gm.Name,
+				Players: groupPlayers,
 			})
 		}
 
@@ -1195,6 +1339,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 			SkipElo:            m.SkipElo,
 			WinnerName:         m.WinnerName,
 			Participants:       participantPlayers,
+			Groups:             groups,
 			Rules:              []tournament.Rule{},
 			Matches:            matches,
 			Teams:              teams,
