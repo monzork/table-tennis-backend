@@ -938,97 +938,191 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 		}
 		var brackets []divisionBracket
 
-		for i := range t.Groups {
-			g := &t.Groups[i]
-			if strings.HasSuffix(g.Name, " - Bracket Draw") {
-				divName := g.Name[:len(g.Name)-15]
-				var rounds []pdfRoundView
-				if t.Format == "groups_elimination" {
-					var divRRGroups []*tournament.Group
-					for j := range t.Groups {
-						rg := &t.Groups[j]
-						if !strings.HasSuffix(rg.Name, " - Bracket Draw") && strings.HasPrefix(rg.Name, divName+" - ") {
-							divRRGroups = append(divRRGroups, rg)
+		// Determine divisions that should be checked
+		type divisionToCheck struct {
+			ID      string
+			Name    string
+			Players []*player.Player
+		}
+		var divsToCheck []divisionToCheck
+
+		if t.SkipElo || len(divs) == 0 {
+			var pList []*player.Player
+			if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
+				for _, team := range t.Teams {
+					avgElo := team.AverageElo(t.Type)
+					pList = append(pList, &player.Player{
+						ID:         team.ID,
+						FirstName:  team.Name,
+						LastName:   " (Team)",
+						SinglesElo: avgElo,
+						DoublesElo: avgElo,
+					})
+				}
+			} else {
+				pList = t.Participants
+			}
+			divsToCheck = append(divsToCheck, divisionToCheck{
+				ID:      "",
+				Name:    "Open Bracket",
+				Players: pList,
+			})
+		} else {
+			// Find players per division. We do snake-style/elo-range mapping like seeding.go
+			assigned := make(map[string]bool)
+			var units []*player.Player
+			if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
+				for _, team := range t.Teams {
+					avgElo := team.AverageElo(t.Type)
+					units = append(units, &player.Player{
+						ID:         team.ID,
+						FirstName:  team.Name,
+						LastName:   " (Team)",
+						SinglesElo: avgElo,
+						DoublesElo: avgElo,
+					})
+				}
+			} else {
+				units = make([]*player.Player, len(t.Participants))
+				copy(units, t.Participants)
+			}
+
+			// Sort by Elo
+			sort.Slice(units, func(i, j int) bool {
+				if t.Type == "doubles" || t.Type == "mixed_doubles" {
+					return units[i].DoublesElo > units[j].DoublesElo
+				}
+				return units[i].SinglesElo > units[j].SinglesElo
+			})
+
+			for _, d := range divs {
+				if d.MinElo == 0 && d.MaxElo == nil {
+					continue // Skip 'No Division'
+				}
+				if d.Category != "both" && d.Category != t.Type {
+					continue
+				}
+				var dPlayers []*player.Player
+				for _, p := range units {
+					if assigned[p.ID] {
+						continue
+					}
+					elo := p.SinglesElo
+					if t.Type == "doubles" || t.Type == "mixed_doubles" {
+						elo = p.DoublesElo
+					}
+					if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
+						dPlayers = append(dPlayers, p)
+						assigned[p.ID] = true
+					}
+				}
+				if len(dPlayers) > 0 {
+					name := d.Name
+					if strings.HasSuffix(strings.ToLower(name), " division") {
+						name = name[:len(name)-9]
+					}
+					divsToCheck = append(divsToCheck, divisionToCheck{
+						ID:      d.ID,
+						Name:    name,
+						Players: dPlayers,
+					})
+				}
+			}
+
+			// Unclassified
+			var unassigned []*player.Player
+			for _, p := range units {
+				if !assigned[p.ID] {
+					unassigned = append(unassigned, p)
+				}
+			}
+			if len(unassigned) > 0 {
+				divsToCheck = append(divsToCheck, divisionToCheck{
+					ID:      "",
+					Name:    "Unclassified",
+					Players: unassigned,
+				})
+			}
+		}
+
+		for _, dt := range divsToCheck {
+			// 1. Look for saved group
+			var savedGroup *tournament.Group
+			for i := range t.Groups {
+				g := &t.Groups[i]
+				if g.Name == dt.Name+" - Bracket Draw" || g.Name == dt.Name+" - Knockout Seeds" {
+					savedGroup = g
+					break
+				}
+			}
+
+			var bracketPlayers []*player.Player
+			var ok = false
+
+			if savedGroup != nil {
+				bracketPlayers = savedGroup.Players
+				ok = true
+			} else if t.Format == "groups_elimination" {
+				// Try to calculate it dynamically
+				// Find round robin groups for this division
+				var divRRGroups []*tournament.Group
+				for i := range t.Groups {
+					g := &t.Groups[i]
+					if strings.Contains(g.Name, "- Knockout Seeds") || strings.Contains(g.Name, " - Bracket Draw") {
+						continue
+					}
+					belongsToDiv := false
+					prefix := dt.Name + " - "
+					if strings.HasPrefix(g.Name, prefix) {
+						belongsToDiv = true
+					} else if dt.Name == "Open Bracket" && (strings.HasPrefix(g.Name, "Group ") || strings.HasPrefix(g.Name, "Open Bracket - Group ")) {
+						belongsToDiv = true
+					} else {
+						for _, gp := range g.Players {
+							for _, dp := range dt.Players {
+								if gp.ID == dp.ID {
+									belongsToDiv = true
+									break
+								}
+							}
+							if belongsToDiv {
+								break
+							}
 						}
 					}
-					sort.Slice(divRRGroups, func(a, b int) bool {
-						return divRRGroups[a].Name < divRRGroups[b].Name
-					})
+					if belongsToDiv {
+						divRRGroups = append(divRRGroups, g)
+					}
+				}
 
-					var advancing []*player.Player
-					var divID string
-					for _, m := range t.Matches {
-						if m.TeamMatchID != nil {
-							continue
-						}
-						p1InGroup := false
-						for _, gp := range g.Players {
-							if len(m.TeamA) > 0 && gp.ID == m.TeamA[0].ID {
-								p1InGroup = true
-								break
-							}
-							if len(m.TeamB) > 0 && gp.ID == m.TeamB[0].ID {
-								p1InGroup = true
-								break
-							}
-						}
-						if p1InGroup && m.DivisionID != "" {
-							divID = m.DivisionID
+				// Sort groups by name to keep ordering stable
+				sort.Slice(divRRGroups, func(a, b int) bool {
+					return divRRGroups[a].Name < divRRGroups[b].Name
+				})
+
+				if len(divRRGroups) > 0 {
+					// Check if all groups are finished
+					allFinished := true
+					for _, rg := range divRRGroups {
+						if !isGroupFinished(t, rg) {
+							allFinished = false
 							break
 						}
 					}
-					take := t.GetGroupPassCount(divID)
-					if take == 0 {
-						take = 2
-					}
-					for _, rg := range divRRGroups {
-						var rgMatches []tournament.Match
-						for _, m := range t.Matches {
-							if m.TeamMatchID != nil {
-								continue
-							}
-							if len(m.TeamA) > 0 && len(m.TeamB) > 0 {
-								p1InGroup, p2InGroup := false, false
-								for _, gp := range rg.Players {
-									if gp.ID == m.TeamA[0].ID {
-										p1InGroup = true
-									}
-									if gp.ID == m.TeamB[0].ID {
-										p2InGroup = true
-									}
-								}
-								if p1InGroup && p2InGroup && strings.ToLower(m.Stage) == "group" {
-									rgMatches = append(rgMatches, m)
-								}
-							}
-						}
-						st := tournament.BuildStandings(rg.Players, rgMatches)
-						limit := int(take)
-						if limit > len(st) {
-							limit = len(st)
-						}
-						for k := 0; k < limit; k++ {
-							advancing = append(advancing, st[k].Player)
-						}
-					}
-					sort.Slice(advancing, func(a, b int) bool {
-						ea := advancing[a].SinglesElo
-						eb := advancing[b].SinglesElo
-						if t.Type == "doubles" || t.Type == "mixed_doubles" {
-							ea = advancing[a].DoublesElo
-							eb = advancing[b].DoublesElo
-						}
-						return ea > eb
-					})
-					rounds = buildPdfBracketRounds(t, advancing)
-				} else {
-					rounds = buildPdfBracketRounds(t, g.Players)
-				}
 
+					if allFinished {
+						bracketPlayers = getITTFKnockoutSeeds(t, dt.ID, dt.Name, dt.Players, divRRGroups)
+						ok = true
+					}
+				}
+			}
+
+			if ok && len(bracketPlayers) > 0 {
+				rounds := buildPdfBracketRounds(t, bracketPlayers)
 				if len(rounds) > 0 {
 					brackets = append(brackets, divisionBracket{
-						Name:   divName,
-						Group:  g,
+						Name:   dt.Name,
+						Group:  savedGroup, // could be nil if virtual, but that's fine
 						Rounds: rounds,
 					})
 				}
@@ -1128,7 +1222,7 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 
 						pdf.SetFont("Arial", "B", 6)
 						pdf.SetTextColor(0, 0, 0)
-						champName := "BYE"
+						champName := tr("TBD")
 						if m.Player1 != nil && m.Player1.Player != nil {
 							champName = strings.ToUpper(formatPlayerName(m.Player1.Player))
 						}
@@ -1137,6 +1231,7 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 						pdf.SetTextColor(0, 0, 0) // black name
 						pdf.Text(x+2, y+boxH/2+1, tr("🏆 "+truncateStr(champName, 22)))
 
+						continue
 					}
 
 					// Draw Player 1 box (top half)
@@ -1273,4 +1368,163 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 			}
 		}
 	}
+}
+
+type GroupStanding struct {
+	Players   []*player.Player
+	Standings []tournament.PlayerStanding
+}
+
+func isGroupFinished(t *tournament.Tournament, g *tournament.Group) bool {
+	expectedMatches := len(g.Players) * (len(g.Players) - 1) / 2
+	finished := 0
+	for _, m := range t.Matches {
+		if m.TeamMatchID != nil {
+			continue
+		}
+		if m.Stage != "group" {
+			continue
+		}
+		if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
+			continue
+		}
+		p1InGroup, p2InGroup := false, false
+		for _, p := range g.Players {
+			if m.TeamA[0].ID == p.ID {
+				p1InGroup = true
+			}
+			if m.TeamB[0].ID == p.ID {
+				p2InGroup = true
+			}
+		}
+		if p1InGroup && p2InGroup {
+			if m.Status == "finished" {
+				finished++
+			}
+		}
+	}
+	return expectedMatches > 0 && finished >= expectedMatches
+}
+
+func getITTFKnockoutSeeds(t *tournament.Tournament, divID, divName string, players []*player.Player, divRRGroups []*tournament.Group) []*player.Player {
+	passCount := t.GetGroupPassCount(divID)
+	if passCount == 0 {
+		passCount = 2
+	}
+
+	var groupsStandings []GroupStanding
+	for _, g := range divRRGroups {
+		var rgMatches []tournament.Match
+		for _, m := range t.Matches {
+			if m.TeamMatchID != nil {
+				continue
+			}
+			if m.Stage != "group" {
+				continue
+			}
+			if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
+				continue
+			}
+			p1InGroup, p2InGroup := false, false
+			for _, gp := range g.Players {
+				if gp.ID == m.TeamA[0].ID {
+					p1InGroup = true
+				}
+				if gp.ID == m.TeamB[0].ID {
+					p2InGroup = true
+				}
+			}
+			if p1InGroup && p2InGroup {
+				rgMatches = append(rgMatches, m)
+			}
+		}
+		st := tournament.BuildStandings(g.Players, rgMatches)
+		groupsStandings = append(groupsStandings, GroupStanding{
+			Players:   g.Players,
+			Standings: st,
+		})
+	}
+
+	numGroups := len(groupsStandings)
+	totalAdvancing := 0
+	for _, g := range groupsStandings {
+		take := int(passCount)
+		if take > len(g.Standings) {
+			take = len(g.Standings)
+		}
+		totalAdvancing += take
+	}
+	if totalAdvancing == 0 {
+		return nil
+	}
+
+	bracketSize := nextPow2(totalAdvancing)
+	arrangement := getSeedingArrangement(bracketSize)
+
+	halfSize := len(arrangement) / 2
+	topHalfSeeds := make(map[int]bool, halfSize)
+	for _, s := range arrangement[:halfSize] {
+		topHalfSeeds[s] = true
+	}
+
+	result := make([]*player.Player, totalAdvancing)
+
+	winnerInTop := make([]bool, numGroups)
+	for gi, g := range groupsStandings {
+		if len(g.Standings) == 0 {
+			continue
+		}
+		result[gi] = g.Standings[0].Player
+		winnerInTop[gi] = topHalfSeeds[gi+1]
+	}
+
+	nextSlot := numGroups
+
+	for layer := 1; layer < int(passCount); layer++ {
+		layerSize := numGroups
+		var topSlots, bottomSlots []int
+		for i := nextSlot; i < nextSlot+layerSize && i < totalAdvancing; i++ {
+			seedNum := i + 1
+			if topHalfSeeds[seedNum] {
+				topSlots = append(topSlots, i)
+			} else {
+				bottomSlots = append(bottomSlots, i)
+			}
+		}
+
+		tsi, bsi := 0, 0
+		for gi, g := range groupsStandings {
+			if layer >= len(g.Standings) {
+				continue
+			}
+			p := g.Standings[layer].Player
+			if winnerInTop[gi] {
+				if bsi < len(bottomSlots) {
+					result[bottomSlots[bsi]] = p
+					bsi++
+				} else if tsi < len(topSlots) {
+					result[topSlots[tsi]] = p
+					tsi++
+				}
+			} else {
+				if tsi < len(topSlots) {
+					result[topSlots[tsi]] = p
+					tsi++
+				} else if bsi < len(bottomSlots) {
+					result[bottomSlots[bsi]] = p
+					bsi++
+				}
+			}
+		}
+
+		nextSlot += layerSize
+	}
+
+	var out []*player.Player
+	for _, p := range result {
+		if p != nil {
+			out = append(out, p)
+		}
+	}
+	return out
 }
