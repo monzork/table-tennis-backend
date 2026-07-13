@@ -299,6 +299,9 @@ func buildMatchStats(p *player.Player, matches []Match) (wins, losses, setsWon, 
 		if m.Status != "finished" {
 			continue
 		}
+		if m.Stage != "group" {
+			continue
+		}
 		var isA, isB bool
 		if len(m.TeamA) > 0 {
 			isA = m.TeamA[0].ID == p.ID
@@ -346,6 +349,9 @@ func matchesBetween(players []*player.Player, matches []Match) []Match {
 	var result []Match
 	for _, m := range matches {
 		if m.Status != "finished" {
+			continue
+		}
+		if m.Stage != "group" {
 			continue
 		}
 		if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
