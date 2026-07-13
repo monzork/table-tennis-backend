@@ -336,6 +336,12 @@
     if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) {
         speechSynthesis.onvoiceschanged = () => {};
     }
+
+    document.body.addEventListener('match-started', function(evt) {
+        if (typeof announceMatch === 'function' && evt.detail) {
+            announceMatch(evt.detail.p1, evt.detail.p2, evt.detail.table);
+        }
+    });
     </script>
 
     <!-- External admin JS (cacheable) -->

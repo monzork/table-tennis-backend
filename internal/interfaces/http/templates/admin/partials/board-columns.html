@@ -74,8 +74,7 @@
       <div class="flex flex-col gap-2 mt-1 w-full">
         {{if .MatchID}}
         <form hx-post="/matches/{{.MatchID}}/start" hx-swap="none" class="flex gap-1.5 items-center w-full"
-              data-p1="{{.PlayerAName}}" data-p2="{{.PlayerBName}}"
-              hx-on::submit="if(typeof announceMatch === 'function') announceMatch(this.dataset.p1, this.dataset.p2, this.querySelector('select[name=tableNumber]').value)">
+              data-p1="{{.PlayerAName}}" data-p2="{{.PlayerBName}}">
           <select name="tableNumber" class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
             <option value="">{{t $.T "board.auto"}}</option>
             {{range $.Tables}}
@@ -92,8 +91,7 @@
         </form>
         {{else}}
         <form hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}&stage={{.Stage}}" hx-swap="none" class="flex gap-1.5 items-center w-full"
-              data-p1="{{.PlayerAName}}" data-p2="{{.PlayerBName}}"
-              hx-on::submit="if(typeof announceMatch === 'function') announceMatch(this.dataset.p1, this.dataset.p2, this.querySelector('select[name=tableNumber]').value)">
+              data-p1="{{.PlayerAName}}" data-p2="{{.PlayerBName}}">
           <select name="tableNumber" class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
             <option value="">{{t $.T "board.auto"}}</option>
             {{range $.Tables}}

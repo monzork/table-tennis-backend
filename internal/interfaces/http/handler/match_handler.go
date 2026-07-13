@@ -2165,6 +2165,15 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 				URL:   "/tournaments/" + m.TournamentID.String() + "/tv",
 			})
 		}()
+
+		// Trigger voice announcement on the client
+		tblNum := ""
+		if m.TableNumber != nil {
+			tblNum = fmt.Sprintf("%d", *m.TableNumber)
+		}
+		
+		// Encode to avoid JSON injection
+		c.Append("HX-Trigger", fmt.Sprintf(`{"match-started": {"p1": %q, "p2": %q, "table": %q}}`, pAName, pBName, tblNum))
 	}
 
 	// Refresh tournament to get updated matches

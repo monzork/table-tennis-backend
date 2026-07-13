@@ -63,7 +63,6 @@
             <button hx-post="/matches/{{.ID}}/start" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.ID}}" 
                     data-p1="{{range $i, $p := .TeamA}}{{if $i}} y {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
                     data-p2="{{range $i, $p := .TeamB}}{{if $i}} y {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
-                    hx-on::click="if(typeof announceMatch === 'function') announceMatch(this.dataset.p1, this.dataset.p2, '')"
                     class="w-full sm:w-auto bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
                 Start Match
             </button>
