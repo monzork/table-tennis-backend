@@ -3,6 +3,8 @@ package tournament
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log/slog"
 	"sort"
 	"time"
 
@@ -64,6 +66,52 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 
 	// Apply Elo changes match by match in order of UpdatedAt if NOT skip_elo
 	if !t.SkipElo {
+		// 1. Initialize player Elo map from participant snapshots (which are the true EloBefore snapshots)
+		snapshots, err := uc.tournamentRepo.GetParticipantSnapshots(ctx, tournamentID)
+		if err != nil {
+			return err
+		}
+
+		type eloState struct {
+			Singles int16
+			Doubles int16
+			Player  *player.Player
+		}
+		playerElos := make(map[string]*eloState)
+
+		partMap := make(map[string]*player.Player)
+		for _, p := range t.Participants {
+			partMap[p.ID] = p
+		}
+
+		for _, snap := range snapshots {
+			p, ok := partMap[snap.PlayerID]
+			if !ok {
+				continue
+			}
+			singlesElo := p.SinglesElo
+			if snap.EloBeforeSingles != nil {
+				singlesElo = *snap.EloBeforeSingles
+			}
+			doublesElo := p.DoublesElo
+			if snap.EloBeforeDoubles != nil {
+				doublesElo = *snap.EloBeforeDoubles
+			}
+
+			slog.Info("Participant starting Elo loaded",
+				"tournamentID", tournamentID,
+				"playerName", fmt.Sprintf("%s %s", p.FirstName, p.LastName),
+				"singlesElo", singlesElo,
+				"doublesElo", doublesElo,
+			)
+
+			playerElos[snap.PlayerID] = &eloState{
+				Singles: singlesElo,
+				Doubles: doublesElo,
+				Player:  p,
+			}
+		}
+
 		// Sort the tournament matches in-memory by UpdatedAt
 		sort.SliceStable(t.Matches, func(i, j int) bool {
 			tI := time.Time{}
@@ -77,32 +125,119 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 			return tI.Before(tJ)
 		})
 
-		var allUpdatedPlayers []*player.Player
+		// 2. Process matches chronologically
 		for _, m := range t.Matches {
-			if m.WinnerTeam == "" {
+			if m.WinnerTeam == "" || m.MatchType == "teams" {
 				continue
 			}
 
-			if len(m.TeamA) > 0 && len(m.TeamB) > 0 {
-				match.CalculateAndApplyElo(m.MatchType, m.TeamA, m.TeamB, m.WinnerTeam)
-				allUpdatedPlayers = append(allUpdatedPlayers, m.TeamA...)
-				allUpdatedPlayers = append(allUpdatedPlayers, m.TeamB...)
+			var resolvedA, resolvedB []*player.Player
+			for _, p := range m.TeamA {
+				state, ok := playerElos[p.ID]
+				if !ok {
+					state = &eloState{Singles: p.SinglesElo, Doubles: p.DoublesElo, Player: p}
+					playerElos[p.ID] = state
+				}
+				p.SinglesElo = state.Singles
+				p.DoublesElo = state.Doubles
+				resolvedA = append(resolvedA, p)
+			}
+			for _, p := range m.TeamB {
+				state, ok := playerElos[p.ID]
+				if !ok {
+					state = &eloState{Singles: p.SinglesElo, Doubles: p.DoublesElo, Player: p}
+					playerElos[p.ID] = state
+				}
+				p.SinglesElo = state.Singles
+				p.DoublesElo = state.Doubles
+				resolvedB = append(resolvedB, p)
+			}
+
+			if len(resolvedA) > 0 && len(resolvedB) > 0 {
+				var beforeA, beforeB []int16
+				for _, p := range resolvedA {
+					if m.MatchType == "doubles" {
+						beforeA = append(beforeA, p.DoublesElo)
+					} else {
+						beforeA = append(beforeA, p.SinglesElo)
+					}
+				}
+				for _, p := range resolvedB {
+					if m.MatchType == "doubles" {
+						beforeB = append(beforeB, p.DoublesElo)
+					} else {
+						beforeB = append(beforeB, p.SinglesElo)
+					}
+				}
+
+				match.CalculateAndApplyElo(m.MatchType, resolvedA, resolvedB, m.WinnerTeam)
+
+				var afterA, afterB []int16
+				for _, p := range resolvedA {
+					if m.MatchType == "doubles" {
+						afterA = append(afterA, p.DoublesElo)
+					} else {
+						afterA = append(afterA, p.SinglesElo)
+					}
+				}
+				for _, p := range resolvedB {
+					if m.MatchType == "doubles" {
+						afterB = append(afterB, p.DoublesElo)
+					} else {
+						afterB = append(afterB, p.SinglesElo)
+					}
+				}
+
+				descA := ""
+				for i, p := range resolvedA {
+					descA += fmt.Sprintf("%s %s (Elo: %d -> %d)", p.FirstName, p.LastName, beforeA[i], afterA[i])
+					if i < len(resolvedA)-1 {
+						descA += " & "
+					}
+				}
+				descB := ""
+				for i, p := range resolvedB {
+					descB += fmt.Sprintf("%s %s (Elo: %d -> %d)", p.FirstName, p.LastName, beforeB[i], afterB[i])
+					if i < len(resolvedB)-1 {
+						descB += " & "
+					}
+				}
+
+				slog.Info("Elo recalculation match processed",
+					"matchID", m.ID,
+					"matchType", m.MatchType,
+					"stage", m.Stage,
+					"winnerTeam", m.WinnerTeam,
+					"teamA", descA,
+					"teamB", descB,
+				)
+
+				for _, p := range resolvedA {
+					playerElos[p.ID].Singles = p.SinglesElo
+					playerElos[p.ID].Doubles = p.DoublesElo
+				}
+				for _, p := range resolvedB {
+					playerElos[p.ID].Singles = p.SinglesElo
+					playerElos[p.ID].Doubles = p.DoublesElo
+				}
 			}
 		}
 
-		if len(allUpdatedPlayers) > 0 {
-			// deduplicate players by ID if needed, though SaveMultiple with ON CONFLICT handles it.
-			// however, we've updated their Elo in memory, so the latest instance in the slice
-			// has the most recent Elo. Saving them all works if ordered correctly, but better to dedup.
-			latestPlayers := make(map[string]*player.Player)
-			for _, p := range allUpdatedPlayers {
-				latestPlayers[p.ID] = p
+		// 3. Save final updated Elos to database
+		var pids []string
+		for id := range playerElos {
+			pids = append(pids, id)
+		}
+
+		dbPlayers, err := uc.playerRepo.GetByIDs(ctx, pids)
+		if err == nil && len(dbPlayers) > 0 {
+			for _, dbP := range dbPlayers {
+				if state, ok := playerElos[dbP.ID]; ok {
+					dbP.UpdateSinglesElo(state.Singles)
+					dbP.UpdateDoublesElo(state.Doubles)
+				}
 			}
-			var deduplicated []*player.Player
-			for _, p := range latestPlayers {
-				deduplicated = append(deduplicated, p)
-			}
-			_ = uc.playerRepo.SaveMultiple(ctx, deduplicated)
+			_ = uc.playerRepo.SaveMultiple(ctx, dbPlayers)
 		}
 	}
 

@@ -188,6 +188,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	admin.Post("/tournaments/:id/toggle-seeding-lock", c.TournamentHandler.ToggleSeedingLock)
 	admin.Post("/tournaments/:id/regenerate-seeds", c.TournamentHandler.RegenerateGroupSeeds)
 	admin.Post("/tournaments/:id/participants/elo-before", c.TournamentHandler.UpdateParticipantEloBefore)
+	admin.Post("/tournaments/:id/recalculate-elo", c.TournamentHandler.RecalculateElo)
 	api.Delete("/tournaments/:id/participants/:playerId", c.TournamentHandler.RemoveParticipant)
 
 	// Events API

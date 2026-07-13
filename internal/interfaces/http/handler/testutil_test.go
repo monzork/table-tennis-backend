@@ -73,6 +73,7 @@ func SetupTestDB() (*bun.DB, error) {
 		(*bunRepo.TeamPlayerModel)(nil),
 		(*bunRepo.TournamentOfficialModel)(nil),
 		(*bunRepo.PushSubscriptionModel)(nil),
+		(*bunRepo.DivisionRuleModel)(nil),
 	}
 
 	ctx := context.Background()
@@ -140,13 +141,14 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	saveKnockoutSeedsUC := tournament.NewSaveKnockoutSeedsUseCase(tournamentRepo, divisionRepo)
 	toggleSeedingLockUC := tournament.NewToggleSeedingLockUseCase(tournamentRepo)
 	addGroupUC := tournament.NewAddGroupUseCase(tournamentRepo)
+	recalculateEloUC := tournament.NewRecalculateTournamentEloUseCase(tournamentRepo, playerRepo)
 
 	tournamentHandler := handler.NewTournamentHandler(
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,
 		leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC,
 		movePlayerUC, createTeamUC, deleteTeamUC, assignPlayerToTeamUC, removePlayerFromTeamUC,
 		getTournamentsUC, getOccupiedTablesUC, regenerateSeedsUC, updateParticipantEloUC,
-		removeParticipantUC, saveKnockoutSeedsUC, toggleSeedingLockUC, addGroupUC,
+		removeParticipantUC, saveKnockoutSeedsUC, toggleSeedingLockUC, addGroupUC, recalculateEloUC,
 	)
 
 	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)

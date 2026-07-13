@@ -830,13 +830,22 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 		return err
 	}
 
-	// Load existing participant PINs BEFORE scrubbing, so we can re-assign them after re-insert
+	// Load existing participant PINs and Elo snapshots BEFORE scrubbing, so we can re-assign them after re-insert
 	existingPINs := make(map[string]string)
+	existingEloBeforeSingles := make(map[string]*int16)
+	existingEloBeforeDoubles := make(map[string]*int16)
+	existingEloAfterSingles := make(map[string]*int16)
+	existingEloAfterDoubles := make(map[string]*int16)
 	{
 		var existingParts []TournamentParticipantModel
-		_ = tx.NewSelect().Model(&existingParts).Column("player_id", "pin").Where("tournament_id = ?", tID).Scan(ctx)
+		_ = tx.NewSelect().Model(&existingParts).Column("player_id", "pin", "elo_before_singles", "elo_before_doubles", "elo_after_singles", "elo_after_doubles").Where("tournament_id = ?", tID).Scan(ctx)
 		for _, ep := range existingParts {
-			existingPINs[ep.PlayerID.String()] = ep.Pin
+			pIDStr := ep.PlayerID.String()
+			existingPINs[pIDStr] = ep.Pin
+			existingEloBeforeSingles[pIDStr] = ep.EloBeforeSingles
+			existingEloBeforeDoubles[pIDStr] = ep.EloBeforeDoubles
+			existingEloAfterSingles[pIDStr] = ep.EloAfterSingles
+			existingEloAfterDoubles[pIDStr] = ep.EloAfterDoubles
 		}
 	}
 
@@ -867,12 +876,25 @@ func (r *TournamentRepository) Update(ctx context.Context, t *tournament.Tournam
 			if pin == "" || pin == "0000" {
 				pin = generateUniqueTournamentPIN(usedPINs)
 			}
+
+			// Preserve existing Elo Before/After if present in DB; fallback to player current Elo
+			eloBeforeS := &p.SinglesElo
+			if existingS, ok := existingEloBeforeSingles[p.ID]; ok && existingS != nil {
+				eloBeforeS = existingS
+			}
+			eloBeforeD := &p.DoublesElo
+			if existingD, ok := existingEloBeforeDoubles[p.ID]; ok && existingD != nil {
+				eloBeforeD = existingD
+			}
+
 			partModels[i] = TournamentParticipantModel{
 				TournamentID:     tID,
 				PlayerID:         pID,
 				Pin:              pin,
-				EloBeforeSingles: &p.SinglesElo,
-				EloBeforeDoubles: &p.DoublesElo,
+				EloBeforeSingles: eloBeforeS,
+				EloBeforeDoubles: eloBeforeD,
+				EloAfterSingles:  existingEloAfterSingles[p.ID],
+				EloAfterDoubles:  existingEloAfterDoubles[p.ID],
 			}
 		}
 		if _, err = tx.NewInsert().Model(&partModels).Exec(ctx); err != nil {

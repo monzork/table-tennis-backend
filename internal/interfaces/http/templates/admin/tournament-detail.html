@@ -50,6 +50,15 @@
         class="w-full sm:w-auto text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-center {{if .Tournament.ManualSeedingLocked}}bg-gray-800 text-gray-500 border border-gray-700 cursor-not-allowed opacity-50{{else}}bg-amber-500/20 hover:bg-amber-500/40 text-amber-400 border border-amber-500/30{{end}}">
         Regenerate Seeds
       </button>
+      {{else}}
+      {{if not .Tournament.SkipElo}}
+      <button hx-post="/admin/tournaments/{{.Tournament.ID}}/recalculate-elo"
+        hx-confirm="Are you sure you want to recalculate ELO for all matches in this tournament?"
+        hx-on::response-error="showToast(event.detail.xhr.responseText, 'error')"
+        class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-amber-500/20 text-center font-bold">
+        Recalculate ELO
+      </button>
+      {{end}}
       {{end}}
       <a href="/admin/tournaments/{{.Tournament.ID}}/board"
         class="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/20 text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider flex items-center justify-center gap-2">

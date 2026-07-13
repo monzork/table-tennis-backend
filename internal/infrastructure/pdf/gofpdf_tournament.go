@@ -482,111 +482,185 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 		return tVal.Format("15:04")
 	}
 
+	type divisionToCheck struct {
+		ID      string
+		Name    string
+		Players []*player.Player
+	}
+	var divsToCheck []divisionToCheck
+
+	if t.SkipElo || len(divs) == 0 {
+		var pList []*player.Player
+		if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
+			for _, team := range t.Teams {
+				avgElo := team.AverageElo(t.Type)
+				pList = append(pList, &player.Player{
+					ID:         team.ID,
+					FirstName:  team.Name,
+					LastName:   " (Team)",
+					SinglesElo: avgElo,
+					DoublesElo: avgElo,
+				})
+			}
+		} else {
+			pList = t.Participants
+		}
+		divsToCheck = append(divsToCheck, divisionToCheck{
+			ID:      "",
+			Name:    "Open Bracket",
+			Players: pList,
+		})
+	} else {
+		// Find players per division. We do snake-style/elo-range mapping like seeding.go
+		assigned := make(map[string]bool)
+		var units []*player.Player
+		if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
+			for _, team := range t.Teams {
+				avgElo := team.AverageElo(t.Type)
+				units = append(units, &player.Player{
+					ID:         team.ID,
+					FirstName:  team.Name,
+					LastName:   " (Team)",
+					SinglesElo: avgElo,
+					DoublesElo: avgElo,
+				})
+			}
+		} else {
+			units = make([]*player.Player, len(t.Participants))
+			copy(units, t.Participants)
+		}
+
+		// Sort by Elo
+		sort.Slice(units, func(i, j int) bool {
+			if t.Type == "doubles" || t.Type == "mixed_doubles" {
+				return units[i].DoublesElo > units[j].DoublesElo
+			}
+			return units[i].SinglesElo > units[j].SinglesElo
+		})
+
+		for _, d := range divs {
+			if d.MinElo == 0 && d.MaxElo == nil {
+				continue // Skip 'No Division'
+			}
+			if d.Category != "both" && d.Category != t.Type {
+				continue
+			}
+			var dPlayers []*player.Player
+			for _, p := range units {
+				if assigned[p.ID] {
+					continue
+				}
+				elo := p.SinglesElo
+				if t.Type == "doubles" || t.Type == "mixed_doubles" {
+					elo = p.DoublesElo
+				}
+				if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
+					dPlayers = append(dPlayers, p)
+					assigned[p.ID] = true
+				}
+			}
+			if len(dPlayers) > 0 {
+				name := d.Name
+				if strings.HasSuffix(strings.ToLower(name), " division") {
+					name = name[:len(name)-9]
+				}
+				divsToCheck = append(divsToCheck, divisionToCheck{
+					ID:      d.ID,
+					Name:    name,
+					Players: dPlayers,
+				})
+			}
+		}
+
+		// Unclassified
+		var unassigned []*player.Player
+		for _, p := range units {
+			if !assigned[p.ID] {
+				unassigned = append(unassigned, p)
+			}
+		}
+		if len(unassigned) > 0 {
+			divsToCheck = append(divsToCheck, divisionToCheck{
+				ID:      "",
+				Name:    "Unclassified",
+				Players: unassigned,
+			})
+		}
+	}
+
 	// 1. FINAL STANDINGS / PLACINGS
 	if t.Status == "finished" {
-		first, second, third := tournament.GetTournamentPlaces(t)
-		if first != "" || second != "" || third != "" {
+		hasPlaces := false
+		for _, dt := range divsToCheck {
+			f, s, td := GetDivisionPlaces(t, dt.ID, dt.Players)
+			if f != "" || s != "" || td != "" {
+				hasPlaces = true
+				break
+			}
+		}
+
+		if hasPlaces {
 			writeHeader("POSICIONES FINALES")
+			for _, dt := range divsToCheck {
+				first, second, third := GetDivisionPlaces(t, dt.ID, dt.Players)
+				if first != "" || second != "" || third != "" {
+					pdf.SetFillColor(245, 247, 250) // clean light grey background
+					pdf.SetFont("Arial", "B", 10)
+					pdf.CellFormat(0, 8, tr("  "+strings.ToUpper(dt.Name)), "1", 1, "L", true, 0, "")
 
-			pdf.SetFillColor(245, 247, 250) // clean light grey background
-			pdf.SetFont("Arial", "B", 10)
-			pdf.CellFormat(0, 8, tr("  POSICIONES FINALES"), "1", 1, "L", true, 0, "")
-
-			pdf.SetFont("Arial", "", 9)
-			if first != "" {
-				pdf.CellFormat(45, 7, tr("  1er Lugar (Campeón):"), "1", 0, "L", false, 0, "")
-				pdf.SetFont("Arial", "B", 9)
-				pdf.CellFormat(0, 7, tr("  "+strings.ToUpper(first)), "1", 1, "L", false, 0, "")
-				pdf.SetFont("Arial", "", 9)
-			}
-			if second != "" {
-				pdf.CellFormat(45, 7, tr("  2do Lugar:"), "1", 0, "L", false, 0, "")
-				pdf.CellFormat(0, 7, tr("  "+strings.ToUpper(second)), "1", 1, "L", false, 0, "")
-			}
-			if third != "" {
-				pdf.CellFormat(45, 7, tr("  3er Lugar:"), "1", 0, "L", false, 0, "")
-				pdf.CellFormat(0, 7, tr("  "+strings.ToUpper(third)), "1", 1, "L", false, 0, "")
+					pdf.SetFont("Arial", "", 9)
+					if first != "" {
+						pdf.CellFormat(45, 7, tr("  1er Lugar (Campeón):"), "1", 0, "L", false, 0, "")
+						pdf.SetFont("Arial", "B", 9)
+						pdf.CellFormat(0, 7, tr("  "+strings.ToUpper(first)), "1", 1, "L", false, 0, "")
+						pdf.SetFont("Arial", "", 9)
+					}
+					if second != "" {
+						pdf.CellFormat(45, 7, tr("  2do Lugar:"), "1", 0, "L", false, 0, "")
+						pdf.CellFormat(0, 7, tr("  "+strings.ToUpper(second)), "1", 1, "L", false, 0, "")
+					}
+					if third != "" {
+						pdf.CellFormat(45, 7, tr("  3er Lugar:"), "1", 0, "L", false, 0, "")
+						pdf.CellFormat(0, 7, tr("  "+strings.ToUpper(third)), "1", 1, "L", false, 0, "")
+					}
+					pdf.Ln(4)
+				}
 			}
 		}
 	}
 
-	// 2. PARTICIPANTS LIST (SINGLE TABLE)
-	if len(t.Participants) > 0 {
-		pdf.Ln(8)
-		writeHeader(fmt.Sprintf("LISTA DE INSCRITOS - %d JUGADORES", len(t.Participants)))
-
-		assignedMap := make(map[string]bool)
-
-		var validDivs []*division.Division
-		for _, d := range divs {
-			if !t.SkipElo && d.MinElo == 0 && d.MaxElo == nil {
-				continue
-			}
-			if d.Category == "both" || d.Category == t.Type {
-				validDivs = append(validDivs, d)
-			}
+	// 2. PARTICIPANTS LIST (SEPARATED BY DIVISION)
+	hasParticipants := false
+	for _, dt := range divsToCheck {
+		if len(dt.Players) > 0 {
+			hasParticipants = true
+			break
 		}
+	}
 
-		divPlayers := make(map[string][]*player.Player)
+	if hasParticipants {
+		for _, dt := range divsToCheck {
+			if len(dt.Players) > 0 {
+				pdf.Ln(4)
+				writeHeader(fmt.Sprintf("LISTA DE INSCRITOS - %s (%d JUGADORES)", strings.ToUpper(dt.Name), len(dt.Players)))
 
-		for _, d := range validDivs {
-			var dPlayers []*player.Player
+				pdf.SetFont("Arial", "B", 10)
+				pdf.CellFormat(30, 8, "Elo", "1", 0, "C", false, 0, "")
+				pdf.CellFormat(150, 8, tr("NOMBRE"), "1", 1, "C", false, 0, "")
 
-			// Find if there is a Bracket Draw group for this division (for elimination)
-			expectedGroupName := d.Name + " - Bracket Draw"
-			for i := range t.Groups {
-				if t.Groups[i].Name == expectedGroupName {
-					dPlayers = t.Groups[i].Players
-					for _, p := range dPlayers {
-						assignedMap[p.ID] = true
-					}
-					break
-				}
-			}
-
-			if len(dPlayers) == 0 {
-				for _, p := range t.Participants {
-					if assignedMap[p.ID] {
-						continue
-					}
-					elo := p.SinglesElo
+				// Sort division players by Elo descending
+				sort.Slice(dt.Players, func(i, j int) bool {
+					eloI := dt.Players[i].SinglesElo
+					eloJ := dt.Players[j].SinglesElo
 					if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
-						elo = p.DoublesElo
-					}
-					if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
-						dPlayers = append(dPlayers, p)
-						assignedMap[p.ID] = true
-					}
-				}
-			}
-
-			if len(dPlayers) > 0 {
-				sort.Slice(dPlayers, func(i, j int) bool {
-					eloI := dPlayers[i].SinglesElo
-					eloJ := dPlayers[j].SinglesElo
-					if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
-						eloI = dPlayers[i].DoublesElo
-						eloJ = dPlayers[j].DoublesElo
+						eloI = dt.Players[i].DoublesElo
+						eloJ = dt.Players[j].DoublesElo
 					}
 					return eloI > eloJ
 				})
-				divPlayers[d.ID] = dPlayers
-			}
-		}
-
-		pdf.SetFont("Arial", "B", 10)
-		pdf.CellFormat(30, 8, "Elo", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(150, 8, tr("NOMBRE"), "1", 1, "C", false, 0, "")
-
-		for _, d := range validDivs {
-			players := divPlayers[d.ID]
-			if len(players) > 0 {
-				pdf.SetFillColor(240, 240, 240)
-				pdf.SetFont("Arial", "B", 9)
-				pdf.CellFormat(180, 8, tr("  "+strings.ToUpper(d.Name)), "1", 1, "L", true, 0, "")
 
 				pdf.SetFont("Arial", "", 10)
-				for _, p := range players {
+				for _, p := range dt.Players {
 					elo := p.SinglesElo
 					if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
 						elo = p.DoublesElo
@@ -598,46 +672,6 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 					pdf.CellFormat(30, 8, fmt.Sprintf("%d", elo), "1", 0, "C", false, 0, "")
 					pdf.CellFormat(150, 8, tr(fullName), "1", 1, "L", false, 0, "")
 				}
-			}
-		}
-
-		var unassigned []*player.Player
-		for _, p := range t.Participants {
-			if !assignedMap[p.ID] {
-				unassigned = append(unassigned, p)
-			}
-		}
-
-		if len(unassigned) > 0 {
-			sort.Slice(unassigned, func(i, j int) bool {
-				eloI := unassigned[i].SinglesElo
-				eloJ := unassigned[j].SinglesElo
-				if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
-					eloI = unassigned[i].DoublesElo
-					eloJ = unassigned[j].DoublesElo
-				}
-				return eloI > eloJ
-			})
-			pdf.SetFillColor(240, 240, 240)
-			pdf.SetFont("Arial", "B", 9)
-			headerText := "  JUGADORES SIN CLASIFICAR"
-			if len(validDivs) == 0 {
-				headerText = "  TODOS LOS JUGADORES"
-			}
-			pdf.CellFormat(180, 8, tr(headerText), "1", 1, "L", true, 0, "")
-
-			pdf.SetFont("Arial", "", 10)
-			for _, p := range unassigned {
-				elo := p.SinglesElo
-				if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
-					elo = p.DoublesElo
-				}
-				fullName := p.FirstNameWithSecond()
-				if strings.TrimSpace(p.LastName) != "(Team)" && strings.TrimSpace(p.LastName) != "" {
-					fullName += " " + p.LastNameWithSecond()
-				}
-				pdf.CellFormat(30, 8, fmt.Sprintf("%d", elo), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(150, 8, tr(fullName), "1", 1, "L", false, 0, "")
 			}
 		}
 	}
@@ -938,112 +972,7 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 		}
 		var brackets []divisionBracket
 
-		// Determine divisions that should be checked
-		type divisionToCheck struct {
-			ID      string
-			Name    string
-			Players []*player.Player
-		}
-		var divsToCheck []divisionToCheck
 
-		if t.SkipElo || len(divs) == 0 {
-			var pList []*player.Player
-			if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
-				for _, team := range t.Teams {
-					avgElo := team.AverageElo(t.Type)
-					pList = append(pList, &player.Player{
-						ID:         team.ID,
-						FirstName:  team.Name,
-						LastName:   " (Team)",
-						SinglesElo: avgElo,
-						DoublesElo: avgElo,
-					})
-				}
-			} else {
-				pList = t.Participants
-			}
-			divsToCheck = append(divsToCheck, divisionToCheck{
-				ID:      "",
-				Name:    "Open Bracket",
-				Players: pList,
-			})
-		} else {
-			// Find players per division. We do snake-style/elo-range mapping like seeding.go
-			assigned := make(map[string]bool)
-			var units []*player.Player
-			if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
-				for _, team := range t.Teams {
-					avgElo := team.AverageElo(t.Type)
-					units = append(units, &player.Player{
-						ID:         team.ID,
-						FirstName:  team.Name,
-						LastName:   " (Team)",
-						SinglesElo: avgElo,
-						DoublesElo: avgElo,
-					})
-				}
-			} else {
-				units = make([]*player.Player, len(t.Participants))
-				copy(units, t.Participants)
-			}
-
-			// Sort by Elo
-			sort.Slice(units, func(i, j int) bool {
-				if t.Type == "doubles" || t.Type == "mixed_doubles" {
-					return units[i].DoublesElo > units[j].DoublesElo
-				}
-				return units[i].SinglesElo > units[j].SinglesElo
-			})
-
-			for _, d := range divs {
-				if d.MinElo == 0 && d.MaxElo == nil {
-					continue // Skip 'No Division'
-				}
-				if d.Category != "both" && d.Category != t.Type {
-					continue
-				}
-				var dPlayers []*player.Player
-				for _, p := range units {
-					if assigned[p.ID] {
-						continue
-					}
-					elo := p.SinglesElo
-					if t.Type == "doubles" || t.Type == "mixed_doubles" {
-						elo = p.DoublesElo
-					}
-					if elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
-						dPlayers = append(dPlayers, p)
-						assigned[p.ID] = true
-					}
-				}
-				if len(dPlayers) > 0 {
-					name := d.Name
-					if strings.HasSuffix(strings.ToLower(name), " division") {
-						name = name[:len(name)-9]
-					}
-					divsToCheck = append(divsToCheck, divisionToCheck{
-						ID:      d.ID,
-						Name:    name,
-						Players: dPlayers,
-					})
-				}
-			}
-
-			// Unclassified
-			var unassigned []*player.Player
-			for _, p := range units {
-				if !assigned[p.ID] {
-					unassigned = append(unassigned, p)
-				}
-			}
-			if len(unassigned) > 0 {
-				divsToCheck = append(divsToCheck, divisionToCheck{
-					ID:      "",
-					Name:    "Unclassified",
-					Players: unassigned,
-				})
-			}
-		}
 
 		for _, dt := range divsToCheck {
 			// 1. Look for saved group
@@ -1311,60 +1240,63 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *tournament.Tournament, divs 
 						}
 					}
 				}
-				// 5. TOURNAMENT METRICS
-				if t.Status == "finished" && t.Metrics != nil {
-					pdf.Ln(8)
-					writeHeader("ESTADÍSTICAS DEL TORNEO")
+			}
+		}
+	}
 
-					pdf.SetFont("Arial", "", 10)
-					pdf.SetFillColor(245, 247, 250)
+	// 5. TOURNAMENT METRICS
+	if t.Status == "finished" && t.Metrics != nil {
+		pdf.AddPageFormat("P", gofpdf.SizeType{Wd: 210, Ht: 297})
+		pdf.SetMargins(15, 52, 15)
 
-					// Create a grid for metrics
-					// Row 1
-					pdf.CellFormat(60, 8, tr("Total Partidos: ")+fmt.Sprintf("%d", t.Metrics.TotalMatchesPlayed), "1", 0, "L", true, 0, "")
-					pdf.CellFormat(60, 8, tr("Total Sets: ")+fmt.Sprintf("%d", t.Metrics.TotalSetsPlayed), "1", 0, "L", true, 0, "")
-					pdf.CellFormat(60, 8, tr("Total Puntos: ")+fmt.Sprintf("%d", t.Metrics.TotalPointsScored), "1", 1, "L", true, 0, "")
+		writeHeader("ESTADÍSTICAS DEL TORNEO")
 
-					// Row 2
-					pdf.CellFormat(60, 8, tr("Prom. Puntos/Partido: ")+fmt.Sprintf("%.1f", t.Metrics.AveragePointsPerMatch), "1", 0, "L", false, 0, "")
-					pdf.CellFormat(60, 8, tr("Prom. Sets/Partido: ")+fmt.Sprintf("%.1f", t.Metrics.AverageSetsPerMatch), "1", 0, "L", false, 0, "")
-					pdf.CellFormat(60, 8, tr("Barridas: ")+fmt.Sprintf("%d", t.Metrics.CleanSweeps), "1", 1, "L", false, 0, "")
+		pdf.SetFont("Arial", "", 10)
+		pdf.SetFillColor(245, 247, 250)
 
-					// Row 3
-					pdf.CellFormat(90, 8, tr("Sets Decisivos: ")+fmt.Sprintf("%d", t.Metrics.DecidingSets), "1", 0, "L", true, 0, "")
-					pdf.CellFormat(90, 8, tr("Prom. Elo Inicial: ")+fmt.Sprintf("%.1f", t.Metrics.AverageEloAtStart), "1", 1, "L", true, 0, "")
+		// Create a grid for metrics
+		// Row 1
+		pdf.CellFormat(60, 8, tr("Total Partidos: ")+fmt.Sprintf("%d", t.Metrics.TotalMatchesPlayed), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(60, 8, tr("Total Sets: ")+fmt.Sprintf("%d", t.Metrics.TotalSetsPlayed), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(60, 8, tr("Total Puntos: ")+fmt.Sprintf("%d", t.Metrics.TotalPointsScored), "1", 1, "L", true, 0, "")
 
-					// Division Metrics
-					if len(t.Metrics.DivisionMetrics) > 0 {
-						pdf.Ln(4)
-						pdf.SetFont("Arial", "B", 9)
-						pdf.CellFormat(0, 8, tr("Métricas por División"), "", 1, "L", false, 0, "")
+		// Row 2
+		pdf.CellFormat(60, 8, tr("Prom. Puntos/Partido: ")+fmt.Sprintf("%.1f", t.Metrics.AveragePointsPerMatch), "1", 0, "L", false, 0, "")
+		pdf.CellFormat(60, 8, tr("Prom. Sets/Partido: ")+fmt.Sprintf("%.1f", t.Metrics.AverageSetsPerMatch), "1", 0, "L", false, 0, "")
+		pdf.CellFormat(60, 8, tr("Barridas: ")+fmt.Sprintf("%d", t.Metrics.CleanSweeps), "1", 1, "L", false, 0, "")
 
-						pdf.SetFont("Arial", "B", 8)
-						pdf.SetFillColor(245, 247, 250)
-						pdf.CellFormat(60, 6, tr("División"), "1", 0, "C", true, 0, "")
-						pdf.CellFormat(40, 6, tr("Partidos Jugados"), "1", 0, "C", true, 0, "")
-						pdf.CellFormat(40, 6, tr("Prom. Puntos"), "1", 1, "C", true, 0, "")
+		// Row 3
+		pdf.CellFormat(90, 8, tr("Sets Decisivos: ")+fmt.Sprintf("%d", t.Metrics.DecidingSets), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(90, 8, tr("Prom. Elo Inicial: ")+fmt.Sprintf("%.1f", t.Metrics.AverageEloAtStart), "1", 1, "L", true, 0, "")
 
-						pdf.SetFont("Arial", "", 8)
-						for divID, dm := range t.Metrics.DivisionMetrics {
-							divName := divID
-							if divID == "default" {
-								divName = "Open"
-							} else {
-								for _, d := range divs {
-									if d.ID == divID {
-										divName = d.Name
-										break
-									}
-								}
-							}
-							pdf.CellFormat(60, 6, tr(strings.ToUpper(divName)), "1", 0, "L", false, 0, "")
-							pdf.CellFormat(40, 6, fmt.Sprintf("%d", dm.TotalMatchesPlayed), "1", 0, "C", false, 0, "")
-							pdf.CellFormat(40, 6, fmt.Sprintf("%.1f", dm.AveragePointsPerMatch), "1", 1, "C", false, 0, "")
+		// Division Metrics
+		if len(t.Metrics.DivisionMetrics) > 0 {
+			pdf.Ln(4)
+			pdf.SetFont("Arial", "B", 9)
+			pdf.CellFormat(0, 8, tr("Métricas por División"), "", 1, "L", false, 0, "")
+
+			pdf.SetFont("Arial", "B", 8)
+			pdf.SetFillColor(245, 247, 250)
+			pdf.CellFormat(60, 6, tr("División"), "1", 0, "C", true, 0, "")
+			pdf.CellFormat(40, 6, tr("Partidos Jugados"), "1", 0, "C", true, 0, "")
+			pdf.CellFormat(40, 6, tr("Prom. Puntos"), "1", 1, "C", true, 0, "")
+
+			pdf.SetFont("Arial", "", 8)
+			for divID, dm := range t.Metrics.DivisionMetrics {
+				divName := divID
+				if divID == "default" {
+					divName = "Open"
+				} else {
+					for _, d := range divs {
+						if d.ID == divID {
+							divName = d.Name
+							break
 						}
 					}
 				}
+				pdf.CellFormat(60, 6, tr(strings.ToUpper(divName)), "1", 0, "L", false, 0, "")
+				pdf.CellFormat(40, 6, fmt.Sprintf("%d", dm.TotalMatchesPlayed), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(40, 6, fmt.Sprintf("%.1f", dm.AveragePointsPerMatch), "1", 1, "C", false, 0, "")
 			}
 		}
 	}
@@ -1528,3 +1460,70 @@ func getITTFKnockoutSeeds(t *tournament.Tournament, divID, divName string, playe
 	}
 	return out
 }
+
+func GetDivisionPlaces(t *tournament.Tournament, divisionID string, divisionPlayers []*player.Player) (first, second, third string) {
+	if t.Status != "finished" {
+		return "", "", ""
+	}
+
+	if t.Format == "elimination" || t.Format == "groups_elimination" {
+		// 1st and 2nd Place: Final Match for this division
+		var finalMatch *tournament.Match
+		for i := range t.Matches {
+			m := &t.Matches[i]
+			if m.Stage == "final" && m.Status == "finished" && m.TeamMatchID == nil && m.DivisionID == divisionID {
+				finalMatch = m
+				break
+			}
+		}
+		if finalMatch != nil && finalMatch.WinnerTeam != "" {
+			if finalMatch.WinnerTeam == "A" {
+				first = tournament.GetTeamDisplayName(finalMatch.TeamA, t.Type)
+				second = tournament.GetTeamDisplayName(finalMatch.TeamB, t.Type)
+			} else {
+				first = tournament.GetTeamDisplayName(finalMatch.TeamB, t.Type)
+				second = tournament.GetTeamDisplayName(finalMatch.TeamA, t.Type)
+			}
+		}
+
+		// 3rd Place: Semifinal losers for this division
+		var semiLosers []string
+		for i := range t.Matches {
+			m := &t.Matches[i]
+			if m.Stage == "semifinal" && m.Status == "finished" && m.TeamMatchID == nil && m.DivisionID == divisionID {
+				if m.WinnerTeam == "A" {
+					semiLosers = append(semiLosers, tournament.GetTeamDisplayName(m.TeamB, t.Type))
+				} else if m.WinnerTeam == "B" {
+					semiLosers = append(semiLosers, tournament.GetTeamDisplayName(m.TeamA, t.Type))
+				}
+			}
+		}
+		if len(semiLosers) > 0 {
+			third = strings.Join(semiLosers, " & ")
+		}
+
+	} else if t.Format == "round_robin" {
+		if len(divisionPlayers) > 0 {
+			// Find matches for this division
+			var divMatches []tournament.Match
+			for _, m := range t.Matches {
+				if m.DivisionID == divisionID && m.TeamMatchID == nil {
+					divMatches = append(divMatches, m)
+				}
+			}
+			standings := tournament.BuildStandings(divisionPlayers, divMatches)
+			if len(standings) > 0 {
+				first = tournament.GetTeamDisplayName([]*player.Player{standings[0].Player}, t.Type)
+			}
+			if len(standings) > 1 {
+				second = tournament.GetTeamDisplayName([]*player.Player{standings[1].Player}, t.Type)
+			}
+			if len(standings) > 2 {
+				third = tournament.GetTeamDisplayName([]*player.Player{standings[2].Player}, t.Type)
+			}
+		}
+	}
+
+	return first, second, third
+}
+

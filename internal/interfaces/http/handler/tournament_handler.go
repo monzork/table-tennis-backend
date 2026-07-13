@@ -40,6 +40,7 @@ type TournamentHandler struct {
 	saveKnockoutSeedsUC    *tournament.SaveKnockoutSeedsUseCase
 	toggleSeedingLockUC    *tournament.ToggleSeedingLockUseCase
 	addGroupUC             *tournament.AddGroupUseCase
+	recalculateEloUC       *tournament.RecalculateTournamentEloUseCase
 }
 
 func NewTournamentHandler(
@@ -63,8 +64,9 @@ func NewTournamentHandler(
 	updateParticipantEloUC *tournament.UpdateParticipantEloBeforeUseCase,
 	removeParticipantUC *tournament.RemoveParticipantUseCase,
 	saveKnockoutSeedsUC *tournament.SaveKnockoutSeedsUseCase,
-	toggleSeedingLockUC *tournament.ToggleSeedingLockUseCase,
-	addGroupUC *tournament.AddGroupUseCase,
+	toggleSeedingLockUC    *tournament.ToggleSeedingLockUseCase,
+	addGroupUC             *tournament.AddGroupUseCase,
+	recalculateEloUC       *tournament.RecalculateTournamentEloUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:               createUC,
@@ -89,6 +91,7 @@ func NewTournamentHandler(
 		saveKnockoutSeedsUC:    saveKnockoutSeedsUC,
 		toggleSeedingLockUC:    toggleSeedingLockUC,
 		addGroupUC:             addGroupUC,
+		recalculateEloUC:       recalculateEloUC,
 	}
 }
 
@@ -1739,4 +1742,16 @@ func (h *TournamentHandler) ToggleSeedingLock(c *fiber.Ctx) error {
 
 	c.Set("HX-Trigger", "reload-board")
 	return c.SendStatus(200)
+}
+
+func (h *TournamentHandler) RecalculateElo(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if err := h.recalculateEloUC.Execute(c.Context(), id); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.JSON(fiber.Map{"status": "recalculated"})
 }
