@@ -1620,6 +1620,9 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 
 	if c.Get("HX-Request") != "" {
 		if updatedMatch != nil && updatedMatch.Status == "finished" {
+			// Immediately replace the URL in the browser to prevent users from refreshing and getting the next match on the same table.
+			c.Set("HX-Replace-Url", "/tournaments/"+updatedMatch.TournamentID.String())
+
 			if updatedMatch.TeamMatchID != nil {
 				return c.SendString(`
 				<div id="public-score-form" hx-swap-oob="outerHTML" class="text-center py-8 animate-fade-in">
@@ -1646,10 +1649,15 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 				</div>
 				<h3 class="text-2xl font-black uppercase tracking-tight text-white mb-2">Match Finished!</h3>
 				<p class="text-gray-400 text-sm font-mono mb-8">The match results have been successfully recorded and the bracket has been updated.</p>
-				<button type="button" onclick="window.close(); document.getElementById('public-score-modal')?.classList.add('hidden')" class="bg-white hover:bg-gray-200 text-black font-black py-4 px-10 rounded-2xl transition-all uppercase tracking-widest text-xs shadow-lg">
-					You can close this tab
+				<button type="button" onclick="window.close(); window.location.replace('/tournaments/` + updatedMatch.TournamentID.String() + `')" class="bg-white hover:bg-gray-200 text-black font-black py-4 px-10 rounded-2xl transition-all uppercase tracking-widest text-xs shadow-lg">
+					Close / Return to Bracket
 				</button>
-				<script>setTimeout(() => window.close(), 3000);</script>
+				<script>
+					setTimeout(() => {
+						window.close();
+						setTimeout(() => window.location.replace('/tournaments/` + updatedMatch.TournamentID.String() + `'), 100);
+					}, 3000);
+				</script>
 			</div>`)
 		} else {
 			// Match still in progress, just show an inline success message in the #public-score-result div
