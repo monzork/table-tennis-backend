@@ -1040,6 +1040,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 			Where("team_match_id IS NULL").
 			Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
 				p1UUID, p2UUID, p2UUID, p1UUID).
+			Where("stage = ?", body.Stage).
 			Scan(c.Context())
 		if err == nil {
 			matchID = existing.ID.String()
@@ -1404,6 +1405,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 			Where("team_match_id IS NULL").
 			Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
 				p1UUID, p2UUID, p2UUID, p1UUID).
+			Where("stage = ?", body.Stage).
 			Scan(c.Context())
 		if err == nil {
 			matchID = existing.ID.String()
@@ -1940,6 +1942,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 				Where("team_match_id IS NULL").
 				Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
 					p1UUID, p2UUID, p2UUID, p1UUID).
+				Where("stage = ?", stage).
 				Scan(c.Context())
 			if err == nil {
 				m = &existing

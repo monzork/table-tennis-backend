@@ -426,6 +426,12 @@ func buildGroupEliminationGroups(t *tournament.Tournament, divID string, divisio
 			expectedMatches := len(g.Players) * (len(g.Players) - 1) / 2
 			finished := 0
 			for _, m := range t.Matches {
+				if m.TeamMatchID != nil {
+					continue
+				}
+				if m.Stage != "group" {
+					continue
+				}
 				if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
 					continue
 				}
