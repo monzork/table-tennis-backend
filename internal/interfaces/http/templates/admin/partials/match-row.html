@@ -39,7 +39,7 @@
     <td class="block sm:table-cell p-0 sm:p-4">
         {{if eq .Status "in_progress"}}
             <div class="flex flex-col gap-1.5">
-                <form hx-post="/matches/finish" hx-swap="outerHTML" hx-target="#match-row-{{.ID}}" hx-confirm="Confirm match result?" class="flex gap-2">
+                <form hx-post="/matches/finish" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.ID}}" hx-confirm="Confirm match result?" class="flex gap-2">
                     <input type="hidden" name="matchId" value="{{.ID}}">
                     <select name="winnerTeam" class="flex-1 sm:flex-none bg-black/50 border border-white/10 rounded px-2 py-2 sm:py-1 text-xs text-white uppercase" required>
                         <option value="" disabled selected>Winner</option>
@@ -60,11 +60,15 @@
                 {{end}}
             </div>
         {{else if eq .Status "scheduled"}}
-            <button hx-post="/matches/{{.ID}}/start" hx-swap="outerHTML" hx-target="#match-row-{{.ID}}" class="w-full sm:w-auto bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
+            <button hx-post="/matches/{{.ID}}/start" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.ID}}" 
+                    data-p1="{{range $i, $p := .TeamA}}{{if $i}} y {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
+                    data-p2="{{range $i, $p := .TeamB}}{{if $i}} y {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
+                    hx-on::click="if(typeof announceMatch === 'function') announceMatch(this.dataset.p1, this.dataset.p2, '')"
+                    class="w-full sm:w-auto bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
                 Start Match
             </button>
         {{else if eq .Status "finished"}}
-            <button hx-post="/matches/{{.ID}}/reset" hx-swap="outerHTML" hx-target="#match-row-{{.ID}}" hx-confirm="Are you sure you want to undo this match result? This will erase the scores and clear the winner." class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
+            <button hx-post="/matches/{{.ID}}/reset" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.ID}}" hx-confirm="Are you sure you want to undo this match result? This will erase the scores and clear the winner." class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
                 Undo Score
             </button>
         {{end}}

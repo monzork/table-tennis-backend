@@ -462,7 +462,7 @@
          hx-trigger="reload-bracket, reload-bracket from:body"
          hx-select="#bracket-container > *"
          hx-target="#bracket-container"
-         hx-swap="innerHTML">
+         hx-swap="innerHTML focus-scroll:false scroll:none">
       {{template "admin/partials/tournament-bracket" .BracketViewModel}}
     </div>
     {{else}}

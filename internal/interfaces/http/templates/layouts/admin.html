@@ -204,7 +204,7 @@
         #global-spinner.htmx-indicator.htmx-request { display: flex; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col" hx-indicator="#global-spinner" hx-boost="true">
+<body class="min-h-screen flex flex-col" hx-boost="true">
     <!-- Global HTMX Spinner Overlay -->
     <div id="global-spinner" class="htmx-indicator fixed inset-0 z-[9999] items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
         <div class="bg-black/60 p-6 rounded-3xl border border-white/20 shadow-2xl flex flex-col items-center gap-4">
@@ -303,6 +303,40 @@
             </div>
         </div>
     </div>
+
+    <!-- Speech Synthesis logic -->
+    <script>
+    function announceMatch(playerA, playerB, table) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        
+        let text = `Partido de ${playerA} contra ${playerB}.`;
+        if (table && table.trim() !== '') {
+            text += ` Mesa ${table}.`;
+        }
+        
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'es-LA'; // Spanish Latin America
+        msg.rate = 0.9;
+        
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+            const esVoice = voices.find(v => v.lang.startsWith('es-') && (v.lang.includes('LA') || v.lang.includes('MX') || v.lang.includes('US')));
+            if (esVoice) {
+                msg.voice = esVoice;
+            } else {
+                const anyEs = voices.find(v => v.lang.startsWith('es'));
+                if (anyEs) msg.voice = anyEs;
+            }
+        }
+        
+        window.speechSynthesis.speak(msg);
+    }
+    
+    if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = () => {};
+    }
+    </script>
 
     <!-- External admin JS (cacheable) -->
     <script src="/static/js/admin.js?v=10"></script>

@@ -96,7 +96,7 @@
            hx-trigger="reload-matches, reload-matches from:body"
            hx-select="#match-list-container"
            hx-target="this"
-           hx-swap="outerHTML">
+           hx-swap="outerHTML focus-scroll:false scroll:none">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
       <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "pub_detail.match_title"}}</h2>
       <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
