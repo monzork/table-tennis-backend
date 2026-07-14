@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/domain/tournament"
+	"table-tennis-backend/internal/domain/event"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,7 +18,7 @@ type MatchModel struct {
 	bun.BaseModel `bun:"table:matches"`
 
 	ID             uuid.UUID  `bun:"id,pk,type:uuid"`
-	TournamentID   uuid.UUID  `bun:"tournament_id,notnull"`
+	TournamentID   uuid.UUID  `bun:"event_id,notnull"`
 	MatchType      string     `bun:"match_type,notnull,default:'singles'"`
 	TeamAPlayer1ID uuid.UUID  `bun:"team_a_player_1_id,notnull"`
 	TeamAPlayer2ID *uuid.UUID `bun:"team_a_player_2_id"`
@@ -85,7 +85,7 @@ func (r *MatchRepository) GenerateUniquePin(ctx context.Context) string {
 	}
 }
 
-func (r *MatchRepository) Save(ctx context.Context, m *tournament.Match) error {
+func (r *MatchRepository) Save(ctx context.Context, m *event.Match) error {
 	mID, err := uuid.Parse(m.ID)
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (r *MatchRepository) GetSets(ctx context.Context, matchID string) ([]MatchS
 
 // UpdateScore replaces all set scores, resolves winner, persists, updates players' Elo,
 // and advances the winner into the next match if configured.
-func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []tournament.MatchSet, stageRule tournament.StageRule) error {
+func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []event.MatchSet, stageRule event.StageRule) error {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return err
@@ -369,7 +369,7 @@ func (r *MatchRepository) CountUnfinishedMatches(ctx context.Context, tournament
 	}
 	return ExtractDB(ctx, r.db).NewSelect().
 		Model((*MatchModel)(nil)).
-		Where("tournament_id = ?", tID).
+		Where("event_id = ?", tID).
 		Where("status != ?", "finished").
 		Where("team_match_id IS NULL").
 		Count(ctx)
@@ -382,13 +382,13 @@ func (r *MatchRepository) CountFinishedMatches(ctx context.Context, tournamentID
 	}
 	return ExtractDB(ctx, r.db).NewSelect().
 		Model((*MatchModel)(nil)).
-		Where("tournament_id = ?", tID).
+		Where("event_id = ?", tID).
 		Where("status = ?", "finished").
 		Where("team_match_id IS NULL").
 		Count(ctx)
 }
 
-// HasStartedOrFinishedMatches reports whether any match for the tournament has
+// HasStartedOrFinishedMatches reports whether any match for the event has
 // already been played or is being played, i.e. it's unsafe to wipe and regenerate.
 func (r *MatchRepository) HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error) {
 	tID, err := uuid.Parse(tournamentID)
@@ -397,7 +397,7 @@ func (r *MatchRepository) HasStartedOrFinishedMatches(ctx context.Context, tourn
 	}
 	count, err := ExtractDB(ctx, r.db).NewSelect().
 		Model((*MatchModel)(nil)).
-		Where("tournament_id = ?", tID).
+		Where("event_id = ?", tID).
 		Where("status != ?", "scheduled").
 		Count(ctx)
 	if err != nil {
@@ -406,7 +406,7 @@ func (r *MatchRepository) HasStartedOrFinishedMatches(ctx context.Context, tourn
 	return count > 0, nil
 }
 
-// DeleteByTournament removes all matches (and their sets) for a tournament.
+// DeleteByTournament removes all matches (and their sets) for a event.
 // Callers must ensure no match has been started/finished first.
 func (r *MatchRepository) DeleteByTournament(ctx context.Context, tournamentID string) error {
 	tID, err := uuid.Parse(tournamentID)
@@ -416,17 +416,17 @@ func (r *MatchRepository) DeleteByTournament(ctx context.Context, tournamentID s
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 		if _, err := tx.NewDelete().TableExpr("match_sets").
-			Where("match_id IN (SELECT id FROM matches WHERE tournament_id = ?)", tID).Exec(ctx); err != nil {
+			Where("match_id IN (SELECT id FROM matches WHERE event_id = ?)", tID).Exec(ctx); err != nil {
 			return err
 		}
 		// Clear self-referencing FKs before deleting matches
 		if _, err := tx.NewUpdate().TableExpr("matches").
 			Set("next_match_id = NULL, team_match_id = NULL").
-			Where("tournament_id = ?", tID).Exec(ctx); err != nil {
+			Where("event_id = ?", tID).Exec(ctx); err != nil {
 			return err
 		}
 		if _, err := tx.NewDelete().TableExpr("matches").
-			Where("tournament_id = ?", tID).Exec(ctx); err != nil {
+			Where("event_id = ?", tID).Exec(ctx); err != nil {
 			return err
 		}
 
@@ -434,7 +434,7 @@ func (r *MatchRepository) DeleteByTournament(ctx context.Context, tournamentID s
 	})
 }
 
-func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, error) {
+func (r *MatchRepository) GetAll(ctx context.Context) ([]*event.Match, error) {
 	var models []MatchModel
 	if err := ExtractDB(ctx, r.db).NewSelect().Model(&models).Order("created_at DESC").Scan(ctx); err != nil {
 		return nil, err
@@ -491,10 +491,10 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, erro
 
 	// 3. Batch-load all match sets in a single query
 	var setModels []MatchSetModel
-	setsByMatch := make(map[string][]tournament.MatchSet)
+	setsByMatch := make(map[string][]event.MatchSet)
 	if err := ExtractDB(ctx, r.db).NewSelect().Model(&setModels).Where("match_id IN (?)", bun.List(matchIDs)).Order("set_number ASC").Scan(ctx); err == nil {
 		for _, sm := range setModels {
-			setsByMatch[sm.MatchID] = append(setsByMatch[sm.MatchID], tournament.MatchSet{
+			setsByMatch[sm.MatchID] = append(setsByMatch[sm.MatchID], event.MatchSet{
 				Number: sm.SetNumber,
 				ScoreA: sm.ScoreA,
 				ScoreB: sm.ScoreB,
@@ -503,7 +503,7 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, erro
 	}
 
 	// 4. Assemble the domain matches
-	matches := make([]*tournament.Match, 0, len(models))
+	matches := make([]*event.Match, 0, len(models))
 	for _, m := range models {
 		teamA := []*player.Player{}
 		if p, ok := playerCache[m.TeamAPlayer1ID]; ok {
@@ -541,7 +541,7 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*tournament.Match, erro
 			refereeIDPtr = &s
 		}
 
-		matches = append(matches, &tournament.Match{
+		matches = append(matches, &event.Match{
 			ID:           m.ID.String(),
 			TournamentID: m.TournamentID.String(),
 			MatchType:    m.MatchType,
@@ -567,7 +567,7 @@ func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID 
 	err := ExtractDB(ctx, r.db).NewSelect().
 		Model((*TournamentModel)(nil)).
 		Column("id").
-		Where("event_id = ?", eventID).
+		Where("tournament_id = ?", eventID).
 		Scan(ctx, &tids)
 	if err != nil || len(tids) == 0 {
 		return nil, err
@@ -577,7 +577,7 @@ func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID 
 	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(&activeMatches).
 		Where("status = 'in_progress' AND table_number IS NOT NULL").
-		Where("tournament_id IN (?)", bun.List(tids)).
+		Where("event_id IN (?)", bun.List(tids)).
 		Scan(ctx)
 	if err != nil {
 		return nil, err
@@ -597,7 +597,7 @@ func (r *MatchRepository) GetOccupiedTablesByTournament(ctx context.Context, tou
 	err := ExtractDB(ctx, r.db).NewSelect().
 		Model(&activeMatches).
 		Where("status = 'in_progress' AND table_number IS NOT NULL").
-		Where("tournament_id = ?", tournamentID).
+		Where("event_id = ?", tournamentID).
 		Scan(ctx)
 	if err != nil {
 		return nil, err

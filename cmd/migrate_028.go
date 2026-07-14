@@ -53,12 +53,12 @@ func main() {
 
 	ctx := context.Background()
 
-	// ── Index: matches.tournament_id_table_number_status (Partial) ─────────
-	// Used for scoped tournament table lookups and active table status queries.
+	// ── Index: matches.event_id_table_number_status (Partial) ─────────
+	// Used for scoped event table lookups and active table status queries.
 	// Only indexes active ('in_progress') matches to keep the index tiny and ultra-fast.
 	_, err = bunDB.NewRaw(`
 		CREATE INDEX IF NOT EXISTS idx_matches_tourney_table_status
-		ON matches(tournament_id, table_number)
+		ON matches(event_id, table_number)
 		WHERE status = 'in_progress'
 	`).Exec(ctx)
 	if err != nil {

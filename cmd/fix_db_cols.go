@@ -37,12 +37,12 @@ func main() {
 	ctx := context.Background()
 
 	// Add missing columns
-	_, err := bunDB.NewRaw(`ALTER TABLE tournament_division_rules ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`).Exec(ctx)
+	_, err := bunDB.NewRaw(`ALTER TABLE event_division_rules ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`).Exec(ctx)
 	if err != nil {
 		log.Fatal("Failed to add created_at column:", err)
 	}
 
-	_, err = bunDB.NewRaw(`ALTER TABLE tournament_division_rules ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`).Exec(ctx)
+	_, err = bunDB.NewRaw(`ALTER TABLE event_division_rules ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`).Exec(ctx)
 	if err != nil {
 		log.Fatal("Failed to add updated_at column:", err)
 	}

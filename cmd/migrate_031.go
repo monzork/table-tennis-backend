@@ -58,16 +58,16 @@ func main() {
 	// Create division_rules table (no foreign key to avoid type mismatch)
 	if isPostgres {
 		_, err = bunDB.NewRaw(`
-			CREATE TABLE IF NOT EXISTS tournament_division_rules (
+			CREATE TABLE IF NOT EXISTS event_division_rules (
 				id TEXT PRIMARY KEY,
-				tournament_id TEXT NOT NULL,
+				event_id TEXT NOT NULL,
 				division_id TEXT NOT NULL,
 				best_of INTEGER NOT NULL,
 				points_to_win INTEGER NOT NULL,
 				points_margin INTEGER NOT NULL,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				UNIQUE(tournament_id, division_id)
+				UNIQUE(event_id, division_id)
 			)
 		`).Exec(ctx)
 		if err != nil {
@@ -75,16 +75,16 @@ func main() {
 		}
 	} else {
 		_, err = bunDB.NewRaw(`
-			CREATE TABLE IF NOT EXISTS tournament_division_rules (
+			CREATE TABLE IF NOT EXISTS event_division_rules (
 				id TEXT PRIMARY KEY,
-				tournament_id TEXT NOT NULL,
+				event_id TEXT NOT NULL,
 				division_id TEXT NOT NULL,
 				best_of INTEGER NOT NULL,
 				points_to_win INTEGER NOT NULL,
 				points_margin INTEGER NOT NULL,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				UNIQUE(tournament_id, division_id)
+				UNIQUE(event_id, division_id)
 			)
 		`).Exec(ctx)
 		if err != nil {

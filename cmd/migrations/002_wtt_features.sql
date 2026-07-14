@@ -11,13 +11,13 @@ UPDATE players SET singles_elo = elo, doubles_elo = elo;
 -- Drop old elo column (Requires SQLite 3.35.0+)
 ALTER TABLE players DROP COLUMN elo;
 
--- 2. Tournaments Table
-ALTER TABLE tournaments ADD COLUMN type TEXT NOT NULL DEFAULT 'singles';
+-- 2. Events Table
+ALTER TABLE events ADD COLUMN type TEXT NOT NULL DEFAULT 'singles';
 
 -- 3. Matches Table (Recreating to handle foreign keys and drop constraints safely in SQLite)
 CREATE TABLE matches_new (
     id TEXT PRIMARY KEY,
-    tournament_id TEXT NOT NULL,
+    event_id TEXT NOT NULL,
     match_type TEXT NOT NULL DEFAULT 'singles', -- 'singles' or 'doubles'
     team_a_player_1_id TEXT NOT NULL,
     team_a_player_2_id TEXT,
@@ -27,7 +27,7 @@ CREATE TABLE matches_new (
     winner_team TEXT, -- 'A', 'B', or NULL
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT,
-    FOREIGN KEY (tournament_id) REFERENCES tournaments(id),
+    FOREIGN KEY (event_id) REFERENCES events(id),
     FOREIGN KEY (team_a_player_1_id) REFERENCES players(id),
     FOREIGN KEY (team_a_player_2_id) REFERENCES players(id),
     FOREIGN KEY (team_b_player_1_id) REFERENCES players(id),
@@ -35,12 +35,12 @@ CREATE TABLE matches_new (
 );
 
 INSERT INTO matches_new (
-    id, tournament_id, match_type,
+    id, event_id, match_type,
     team_a_player_1_id, team_b_player_1_id,
     status, created_at, updated_at
 )
 SELECT 
-    id, tournament_id, 'singles',
+    id, event_id, 'singles',
     player_a_id, player_b_id,
     status, created_at, updated_at
 FROM matches;

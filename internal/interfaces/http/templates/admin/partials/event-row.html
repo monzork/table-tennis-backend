@@ -1,53 +1,44 @@
 {{define "admin/partials/event-row"}}
-<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-5 sm:p-0 relative gap-1.5 sm:gap-0" id="event-{{.ID}}">
-    <td class="block sm:table-cell p-0 sm:p-4 w-auto sm:w-12 mb-1 sm:mb-0">
-        <div class="flex items-center gap-2 bg-white/5 sm:bg-transparent px-3 py-2 sm:p-0 rounded border border-white/10 sm:border-0 mb-2 sm:mb-0">
-            <input type="checkbox" name="ids" value="{{.ID}}" class="event-checkbox accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
-            <span class="sm:hidden text-xs text-gray-500 font-bold uppercase tracking-widest">Select Event</span>
-        </div>
-    </td>
+<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-5 sm:p-0 relative gap-1 sm:gap-0" id="event-{{.ID}}">
     <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0">
-        <div class="flex flex-col">
-            <span class="font-bold uppercase text-white tracking-widest text-xl sm:text-base">{{.Name}}</span>
-            <div class="flex gap-1.5 mt-1">
-                {{if .SkipElo}}
-                <span class="text-[8px] font-black uppercase tracking-tighter text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded w-fit border border-yellow-500/20">Non-Rated (No Elo)</span>
-                {{else}}
-                <span class="text-[8px] font-black uppercase tracking-tighter text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded w-fit border border-blue-500/20">Rated (Elo)</span>
+        <div class="flex flex-col gap-1 sm:gap-0">
+            <span class="font-bold uppercase text-white tracking-widest text-lg sm:text-base">{{.Name}}</span>
+            {{if eq .Status "finished"}}
+            <div class="flex gap-1.5 items-center mt-1">
+                <span class="text-[8px] font-black uppercase tracking-tighter text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Finished</span>
+                {{if .WinnerName}}
+                <span class="text-[8px] font-black uppercase tracking-tighter text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-400/30 flex items-center gap-1">
+                    🏆 {{.WinnerName}}
+                </span>
                 {{end}}
             </div>
-        </div>
-    </td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 capitalize tracking-widest text-xs mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
-        <div class="flex items-center gap-2 justify-between w-full sm:justify-start">
-            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500">Division:</span>
-            {{if .SkipElo}}
-            <span class="px-2.5 py-1 rounded bg-white/5 border border-white/5 text-gray-500 font-bold">—</span>
+            {{else if .RegistrationOpen}}
+            <span class="text-[8px] font-black uppercase tracking-tighter text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded w-fit mt-1 border border-green-500/20">Registration Open</span>
             {{else}}
-            <span class="px-2.5 py-1 rounded bg-white/5 border border-white/10 font-bold">{{len .DivisionIDs}} Divisions</span>
+            <span class="text-[8px] font-black uppercase tracking-tighter text-gray-500 bg-white/5 px-1.5 py-0.5 rounded w-fit mt-1 border border-white/5">Registration Closed</span>
             {{end}}
         </div>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 capitalize tracking-widest text-xs font-bold mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Categories:</span><span>{{len .Tournaments}} Categories</span>
+    <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0 text-gray-400 capitalize tracking-widest text-xs flex justify-between sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Type:</span><span>{{.Type}} / {{.Format}}</span>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-mono text-xs mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Start Date:</span><span>{{.StartDate.Format "Jan 02, 2006"}}</span>
+    <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0 text-gray-400 font-mono text-xs flex justify-between sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">Start:</span><span>{{.StartDate.Format "Jan 02, 2006"}}</span>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-mono text-xs mb-3 sm:mb-0 flex justify-between items-center sm:table-cell">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">End Date:</span><span>{{.EndDate.Format "Jan 02, 2006"}}</span>
+    <td class="block sm:table-cell p-0 sm:p-4 mb-3 sm:mb-0 text-gray-400 font-mono text-xs flex justify-between sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">End:</span><span>{{.EndDate.Format "Jan 02, 2006"}}</span>
     </td>
-    <td class="block sm:table-cell p-0 sm:p-4 mt-3 sm:mt-0 pt-4 sm:pt-0 border-t border-white/10 sm:border-t-0 w-full sm:w-auto">
+    <td class="block sm:table-cell p-0 sm:p-4 mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-white/10 sm:border-t-0 w-full sm:w-auto">
         <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-between sm:justify-end w-full">
-            <a href="/admin/events/{{.ID}}" class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 sm:py-1.5 rounded-lg transition-all text-center flex-1 sm:flex-none">
-                Manage
+            <a href="/admin/events/{{.ID}}" class="flex-1 sm:flex-none text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 sm:py-1.5 rounded-lg transition-all">
+                View
             </a>
             <button 
                 hx-delete="/events/{{.ID}}" 
-                hx-confirm="Delete this parent event? Child tournaments will NOT be deleted, but they will be unlinked."
+                hx-confirm="Delete this event and all its data?"
                 hx-target="closest tr" 
                 hx-swap="outerHTML swap:0.5s"
-                class="text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-700 border border-red-900/50 hover:border-red-700 px-3 py-2 sm:py-1.5 rounded-lg transition-all flex-1 sm:flex-none text-center">
+                class="flex-1 sm:flex-none text-center text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-700 border border-red-900/50 hover:border-red-700 px-3 py-2 sm:py-1.5 rounded-lg transition-all">
                 Delete
             </button>
         </div>

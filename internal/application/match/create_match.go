@@ -6,34 +6,34 @@ import (
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/player"
-	tournament "table-tennis-backend/internal/domain/tournament"
+	event "table-tennis-backend/internal/domain/event"
 )
 
 type CreateMatchUseCase struct {
-	matchRepo      tournament.MatchRepository
+	matchRepo      event.MatchRepository
 	playerRepo     player.Repository
-	tournamentRepo tournament.Repository
+	tournamentRepo event.Repository
 	divisionRepo   divisionDomain.Repository
 }
 
 func NewCreateMatchUseCase(
-	matchRepo tournament.MatchRepository,
+	matchRepo event.MatchRepository,
 	players player.Repository,
-	tournaments tournament.Repository,
+	events event.Repository,
 	divisions divisionDomain.Repository,
 ) *CreateMatchUseCase {
 	return &CreateMatchUseCase{
 		matchRepo:      matchRepo,
 		playerRepo:     players,
-		tournamentRepo: tournaments,
+		tournamentRepo: events,
 		divisionRepo:   divisions,
 	}
 }
 
-func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, matchType string, teamAPlayerIDs, teamBPlayerIDs []string, opts ...string) (*tournament.Match, error) {
+func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, matchType string, teamAPlayerIDs, teamBPlayerIDs []string, opts ...string) (*event.Match, error) {
 	t, err := uc.tournamentRepo.GetByID(ctx, tournamentID)
 	if err != nil {
-		return nil, errors.New("tournament not found")
+		return nil, errors.New("event not found")
 	}
 
 	isTeamBased := matchType == "doubles" || matchType == "teams"
@@ -52,7 +52,7 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 			if players, ok := teamPlayersMap[id]; ok && len(players) > 0 {
 				teamA = append(teamA, players...)
 			} else {
-				return nil, errors.New("team A not found in tournament")
+				return nil, errors.New("team A not found in event")
 			}
 		}
 	} else if len(teamAPlayerIDs) > 0 {
@@ -69,7 +69,7 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 			if players, ok := teamPlayersMap[id]; ok && len(players) > 0 {
 				teamB = append(teamB, players...)
 			} else {
-				return nil, errors.New("team B not found in tournament")
+				return nil, errors.New("team B not found in event")
 			}
 		}
 	} else if len(teamBPlayerIDs) > 0 {
@@ -92,19 +92,19 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 	// Determine division ID for this match based on player Elo
 	divisionID := uc.determinePlayerDivision(ctx, t, teamA, teamB, matchType)
 
-	m := &tournament.Match{
+	m := &event.Match{
 		ID:           idgen.Generate(),
 		TournamentID: tournamentID,
 		MatchType:    matchType,
 		TeamA:        teamA,
 		TeamB:        teamB,
 		Status:       "in_progress",
-		Sets:         []tournament.MatchSet{},
+		Sets:         []event.MatchSet{},
 		Stage:        stage,
 		DivisionID:   divisionID,
 	}
 
-	// Add match to tournament
+	// Add match to event
 	t.AddMatch(*m)
 
 	// Save match via repository
@@ -116,7 +116,7 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 }
 
 // determinePlayerDivision finds which division a match belongs to based on player Elo ratings.
-func (uc *CreateMatchUseCase) determinePlayerDivision(ctx context.Context, t *tournament.Tournament, teamA, teamB []*player.Player, matchType string) string {
+func (uc *CreateMatchUseCase) determinePlayerDivision(ctx context.Context, t *event.Event, teamA, teamB []*player.Player, matchType string) string {
 	if len(t.DivisionRules) == 0 || len(teamA) == 0 {
 		return ""
 	}

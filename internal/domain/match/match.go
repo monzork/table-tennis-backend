@@ -4,17 +4,17 @@ import (
 	"context"
 	"math"
 	"table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/domain/tournament"
+	"table-tennis-backend/internal/domain/event"
 )
 
 // Repository defines the data access methods for the Match domain.
 // Used to decouple the HTTP/Application layers from the underlying database driver (e.g. Bun).
 type Repository interface {
-	GetByID(ctx context.Context, id string) (*tournament.Match, error)
-	Update(ctx context.Context, m *tournament.Match) error
-	GetActiveMatchByTable(ctx context.Context, tableNumber int, tournamentID string, eventID string) (*tournament.Match, error)
+	GetByID(ctx context.Context, id string) (*event.Match, error)
+	Update(ctx context.Context, m *event.Match) error
+	GetActiveMatchByTable(ctx context.Context, tableNumber int, tournamentID string, eventID string) (*event.Match, error)
 	DeleteMatchSets(ctx context.Context, matchID string) error
-	GetSubMatches(ctx context.Context, parentID string) ([]*tournament.Match, error)
+	GetSubMatches(ctx context.Context, parentID string) ([]*event.Match, error)
 }
 
 

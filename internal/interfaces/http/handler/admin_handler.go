@@ -6,30 +6,30 @@ import (
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/application/player"
-	"table-tennis-backend/internal/application/tournament"
+	"table-tennis-backend/internal/application/event"
 
 	"github.com/gofiber/fiber/v2"
-	eventUC "table-tennis-backend/internal/application/event"
+	eventUC "table-tennis-backend/internal/application/tournament"
 )
 
 type AdminHandler struct {
 	playerUC       *player.RegisterPlayerUseCase
-	tournamentUC   *tournament.CreateTournamentUseCase
+	tournamentUC   *event.CreateTournamentUseCase
 	matchCreate    *match.CreateMatchUseCase
 	matchList      *match.GetMatchesUseCase
 	leaderboard    *leaderboard.GetLeaderboardUseCase
-	getTournaments *tournament.GetTournamentsUseCase
+	getTournaments *event.GetTournamentsUseCase
 	divisionUC     *division.DivisionUseCase
 	eventGetAll    *eventUC.GetAllEventsUseCase
 }
 
 func NewAdminHandler(
 	p *player.RegisterPlayerUseCase,
-	t *tournament.CreateTournamentUseCase,
+	t *event.CreateTournamentUseCase,
 	mc *match.CreateMatchUseCase,
 	ml *match.GetMatchesUseCase,
 	l *leaderboard.GetLeaderboardUseCase,
-	gt *tournament.GetTournamentsUseCase,
+	gt *event.GetTournamentsUseCase,
 	duc *division.DivisionUseCase,
 	ega *eventUC.GetAllEventsUseCase,
 ) *AdminHandler {
@@ -47,8 +47,8 @@ func NewAdminHandler(
 
 func (h *AdminHandler) Dashboard(c *fiber.Ctx) error {
 	type result struct {
-		events      any
-		tournaments any
+		tournaments      any
+		events any
 		players     any
 		divisions   any
 	}
@@ -59,12 +59,12 @@ func (h *AdminHandler) Dashboard(c *fiber.Ctx) error {
 	go func() {
 		defer wg.Done()
 		e, _ := h.eventGetAll.Execute(c.Context())
-		res.events = e
+		res.tournaments = e
 	}()
 	go func() {
 		defer wg.Done()
 		t, _ := h.getTournaments.Execute(c.Context())
-		res.tournaments = t
+		res.events = t
 	}()
 	go func() {
 		defer wg.Done()
@@ -79,8 +79,8 @@ func (h *AdminHandler) Dashboard(c *fiber.Ctx) error {
 	wg.Wait()
 
 	return c.Render("admin/dashboard", fiber.Map{
-		"Events":      res.events,
-		"Tournaments": res.tournaments,
+		"Tournaments":      res.tournaments,
+		"Events": res.events,
 		"Players":     res.players,
 		"Divisions":   res.divisions,
 	}, "layouts/admin")
@@ -92,10 +92,10 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
-	tournaments, err := h.getTournaments.Execute(c.Context())
+	events, err := h.getTournaments.Execute(c.Context())
 	var activeTournaments []any
 	if err == nil {
-		for _, t := range tournaments {
+		for _, t := range events {
 			if t.Status != "finished" {
 				activeTournaments = append(activeTournaments, t)
 			}
@@ -103,14 +103,14 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 	}
 	return c.Render("admin/players", fiber.Map{
 		"Players":     board,
-		"Tournaments": activeTournaments,
+		"Events": activeTournaments,
 	}, "layouts/admin")
 }
 
-func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
+func (h *AdminHandler) Events(c *fiber.Ctx) error {
 	type result struct {
 		players     any
-		tournaments any
+		events any
 		divisions   any
 	}
 	var res result
@@ -125,7 +125,7 @@ func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 	go func() {
 		defer wg.Done()
 		t, _ := h.getTournaments.Execute(c.Context())
-		res.tournaments = t
+		res.events = t
 	}()
 	go func() {
 		defer wg.Done()
@@ -134,16 +134,16 @@ func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 	}()
 	wg.Wait()
 
-	return c.Render("admin/tournaments", fiber.Map{
+	return c.Render("admin/events", fiber.Map{
 		"Players":     res.players,
-		"Tournaments": res.tournaments,
+		"Events": res.events,
 		"Divisions":   res.divisions,
 	}, "layouts/admin")
 }
 
-func (h *AdminHandler) Events(c *fiber.Ctx) error {
+func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 	type result struct {
-		events     any
+		tournaments     any
 		divisions  any
 		players    any
 		standalone any
@@ -155,7 +155,7 @@ func (h *AdminHandler) Events(c *fiber.Ctx) error {
 	go func() {
 		defer wg.Done()
 		e, _ := h.eventGetAll.Execute(c.Context())
-		res.events = e
+		res.tournaments = e
 	}()
 	go func() {
 		defer wg.Done()
@@ -171,7 +171,7 @@ func (h *AdminHandler) Events(c *fiber.Ctx) error {
 		defer wg.Done()
 		t, _ := h.getTournaments.Execute(c.Context())
 		var sa []any
-		// We use type assertion since it returns []*tournamentDomain.Tournament
+		// We use type assertion since it returns []*tournamentDomain.Event
 		for _, tourney := range t {
 			if tourney.EventID == nil || *tourney.EventID == "" {
 				sa = append(sa, tourney)
@@ -181,8 +181,8 @@ func (h *AdminHandler) Events(c *fiber.Ctx) error {
 	}()
 	wg.Wait()
 
-	return c.Render("admin/events", fiber.Map{
-		"Events":     res.events,
+	return c.Render("admin/tournaments", fiber.Map{
+		"Tournaments":     res.tournaments,
 		"Divisions":  res.divisions,
 		"Players":    res.players,
 		"Standalone": res.standalone,
@@ -198,7 +198,7 @@ func (h *AdminHandler) Divisions(c *fiber.Ctx) error {
 	}, "layouts/admin")
 }
 
-// NewPlayerField returns an empty player field row for inline new-player entry in tournament creation.
+// NewPlayerField returns an empty player field row for inline new-player entry in event creation.
 func (h *AdminHandler) NewPlayerField(c *fiber.Ctx) error {
 	return c.Render("admin/partials/new-player-field", nil)
 }

@@ -19,14 +19,14 @@ CREATE TABLE IF NOT EXISTS players (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP
 );
--- 2. Table: tournaments
-CREATE TABLE IF NOT EXISTS tournaments (
+-- 2. Table: events
+CREATE TABLE IF NOT EXISTS events (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
     type TEXT NOT NULL DEFAULT 'singles',
     format TEXT NOT NULL DEFAULT 'elimination',
     status TEXT NOT NULL DEFAULT 'in_progress',
-    event_category TEXT NOT NULL DEFAULT 'open',
+    tournament_category TEXT NOT NULL DEFAULT 'open',
     start_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
     group_pass_count INTEGER NOT NULL DEFAULT 2,
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS rules (
 -- 4. Table: groups
 CREATE TABLE IF NOT EXISTS groups (
     id UUID PRIMARY KEY,
-    tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     name TEXT NOT NULL
 );
 -- 5. Table: group_participants
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS group_participants (
 -- 6. Table: matches
 CREATE TABLE IF NOT EXISTS matches (
     id UUID PRIMARY KEY,
-    tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     match_type TEXT NOT NULL DEFAULT 'singles',
     -- 'singles' or 'doubles'
     team_a_player_1_id UUID NOT NULL REFERENCES players(id),
@@ -84,20 +84,20 @@ CREATE TABLE IF NOT EXISTS match_sets (
     score_b INTEGER NOT NULL DEFAULT 0,
     UNIQUE(match_id, set_number)
 );
--- 8. Table: tournament_participants (Registration record)
-CREATE TABLE IF NOT EXISTS tournament_participants (
-    tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+-- 8. Table: event_participants (Registration record)
+CREATE TABLE IF NOT EXISTS event_participants (
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
     elo_before_singles INTEGER,
     elo_before_doubles INTEGER,
     elo_after_singles INTEGER,
     elo_after_doubles INTEGER,
-    PRIMARY KEY (tournament_id, player_id)
+    PRIMARY KEY (event_id, player_id)
 );
--- 9. Table: tournament_stage_rules
-CREATE TABLE IF NOT EXISTS tournament_stage_rules (
+-- 9. Table: event_stage_rules
+CREATE TABLE IF NOT EXISTS event_stage_rules (
     id UUID PRIMARY KEY,
-    tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     stage TEXT NOT NULL,
     best_of INTEGER NOT NULL DEFAULT 5,
     points_to_win INTEGER NOT NULL DEFAULT 11,
@@ -134,8 +134,8 @@ INSERT INTO divisions (id, name, display_order, min_elo, max_elo, category, colo
     ('none', 'No Division', 99, 0, 9999, 'both', '#7B8794')
 ON CONFLICT (id) DO NOTHING;
 
--- 12. Table: events
-CREATE TABLE IF NOT EXISTS events (
+-- 12. Table: tournaments
+CREATE TABLE IF NOT EXISTS tournaments (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
     division_id TEXT NOT NULL REFERENCES divisions(id),
@@ -146,6 +146,12 @@ CREATE TABLE IF NOT EXISTS events (
     updated_at TIMESTAMP
 );
 
--- Alter table tournaments to add event_id and skip_elo
-ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS event_id UUID REFERENCES events(id) ON DELETE SET NULL;
-ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS skip_elo BOOLEAN NOT NULL DEFAULT FALSE;
+-- Alter table events to add tournament_id and skip_elo
+ALTER TABLE events ADD COLUMN IF NOT EXISTS tournament_id UUID REFERENCES tournaments(id) ON DELETE SET NULL;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS skip_elo BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS knockout_stage_started BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS manual_seeding_locked BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Alter table tournaments to add new features
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS num_tables INT NOT NULL DEFAULT 4;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS table_priorities JSONB;

@@ -3,7 +3,7 @@ package handler
 import (
 	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/domain/tournament"
+	"table-tennis-backend/internal/domain/event"
 	"testing"
 )
 
@@ -36,7 +36,7 @@ func TestBuildTournamentViewModel_GroupPassCount(t *testing.T) {
 
 	players := []*player.Player{p1, p2, p3, p4, p5, p6}
 
-	trn := &tournament.Tournament{
+	trn := &event.Event{
 		ID:           "t1",
 		Format:       "groups_elimination",
 		Type:         "singles",
@@ -45,7 +45,7 @@ func TestBuildTournamentViewModel_GroupPassCount(t *testing.T) {
 			"div1": 2,
 			"div2": 3,
 		},
-		Groups: []tournament.Group{
+		Groups: []event.Group{
 			{
 				ID:   "g1",
 				Name: "Division 1 - Group A",
@@ -57,17 +57,17 @@ func TestBuildTournamentViewModel_GroupPassCount(t *testing.T) {
 				Players: []*player.Player{p4, p5, p6},
 			},
 		},
-		Matches: []tournament.Match{},
+		Matches: []event.Match{},
 	}
 
 	// We need matches to make the groups "finished"
 	// Match p1 vs p2, p2 vs p3, p1 vs p3
 	addMatch := func(a, b *player.Player, scoreA, scoreB int) {
-		m := tournament.Match{
+		m := event.Match{
 			TeamA: []*player.Player{a},
 			TeamB: []*player.Player{b},
 			Status: "finished",
-			Sets: []tournament.MatchSet{
+			Sets: []event.MatchSet{
 				{ScoreA: scoreA, ScoreB: scoreB},
 			},
 		}

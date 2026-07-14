@@ -7,16 +7,16 @@ const ASSETS_TO_CACHE = [
   '/static/manifest.json'
 ];
 
-self.addEventListener('install', event => {
-  event.waitUntil(
+self.addEventListener('install', tournament => {
+  tournament.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(ASSETS_TO_CACHE))
       .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(
+self.addEventListener('activate', tournament => {
+  tournament.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
         keys.filter(key => key !== CACHE_NAME)
@@ -27,19 +27,19 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', tournament => {
   // Only cache GET requests to our origin
-  if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
+  if (tournament.request.method !== 'GET' || !tournament.request.url.startsWith(self.location.origin)) {
     return;
   }
   
   // For static assets, do a cache-first approach
-  if (event.request.url.includes('/static/') || event.request.url.includes('.jpeg') || event.request.url.includes('.ico')) {
-    event.respondWith(
-      caches.match(event.request).then(cachedResponse => {
-        return cachedResponse || fetch(event.request).then(response => {
+  if (tournament.request.url.includes('/static/') || tournament.request.url.includes('.jpeg') || tournament.request.url.includes('.ico')) {
+    tournament.respondWith(
+      caches.match(tournament.request).then(cachedResponse => {
+        return cachedResponse || fetch(tournament.request).then(response => {
           return caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, response.clone());
+            cache.put(tournament.request, response.clone());
             return response;
           });
         });
@@ -49,46 +49,46 @@ self.addEventListener('fetch', event => {
   }
 
   // For HTML pages (HTML/HTMX requests), do a network-first approach
-  event.respondWith(
-    fetch(event.request)
+  tournament.respondWith(
+    fetch(tournament.request)
       .then(response => {
         // Optionally cache the HTML pages if you want offline support
         return response;
       })
       .catch(() => {
-        return caches.match(event.request);
+        return caches.match(tournament.request);
       })
   );
 });
 
-self.addEventListener('push', function(event) {
+self.addEventListener('push', function(tournament) {
   let data = {};
-  if (event.data) {
+  if (tournament.data) {
     try {
-      data = event.data.json();
+      data = tournament.data.json();
     } catch (e) {
-      data = { title: 'New Notification', body: event.data.text() };
+      data = { title: 'New Notification', body: tournament.data.text() };
     }
   }
 
   const options = {
-    body: data.body || 'A new event occurred',
+    body: data.body || 'A new tournament occurred',
     icon: '/open_tdm.jpeg',
     badge: '/open_tdm.jpeg',
     vibrate: [100, 50, 100],
     data: { url: data.url || '/' }
   };
 
-  event.waitUntil(
+  tournament.waitUntil(
     self.registration.showNotification(data.title || 'Open TDM', options)
   );
 });
 
-self.addEventListener('notificationclick', function(event) {
-  event.notification.close();
-  const url = event.notification.data.url;
+self.addEventListener('notificationclick', function(tournament) {
+  tournament.notification.close();
+  const url = tournament.notification.data.url;
   
-  event.waitUntil(
+  tournament.waitUntil(
     clients.matchAll({ type: 'window' }).then(windowClients => {
       // Check if there is already a window/tab open with the target URL
       for (var i = 0; i < windowClients.length; i++) {

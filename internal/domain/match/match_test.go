@@ -28,7 +28,7 @@ func TestFFTTPoints(t *testing.T) {
 		// Gap 500+, upset win — 40 points
 		{500, 1100, true, 1.0, 40.0, "gap 600 upset win"},
 		// Coefficient halves all points
-		{1000, 1010, true, 0.5, 3.0, "local tournament coeff 0.5"},
+		{1000, 1010, true, 0.5, 3.0, "local event coeff 0.5"},
 	}
 
 	for _, c := range cases {

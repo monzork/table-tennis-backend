@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	playerDomain "table-tennis-backend/internal/domain/player"
-	tournamentDomain "table-tennis-backend/internal/domain/tournament"
+	tournamentDomain "table-tennis-backend/internal/domain/event"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
@@ -36,14 +36,14 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 		t.Fatalf("failed to save existing player: %v", err)
 	}
 
-	// Create a tournament that is open for registration
+	// Create a event that is open for registration
 	tourney, err := tournamentDomain.NewTournament(uuid.New().String(), "Open Championship", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, nil, false)
 	if err != nil {
-		t.Fatalf("failed to create tournament: %v", err)
+		t.Fatalf("failed to create event: %v", err)
 	}
 	tourney.RegistrationOpen = true
 	if err := tournamentRepo.Save(ctx, tourney); err != nil {
-		t.Fatalf("failed to save tournament: %v", err)
+		t.Fatalf("failed to save event: %v", err)
 	}
 
 	t.Run("Register existing player", func(t *testing.T) {
@@ -53,7 +53,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 		data.Set("lastName", "Doe")
 		data.Set("country", "NIC")
 
-		req := httptest.NewRequest("POST", "/tournaments/register", strings.NewReader(data.Encode()))
+		req := httptest.NewRequest("POST", "/events/register", strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		resp, err := app.Test(req)
@@ -65,10 +65,10 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
 
-		// Verify participant was added to tournament in DB
+		// Verify participant was added to event in DB
 		updatedTourney, err := tournamentRepo.GetByID(ctx, tourney.ID)
 		if err != nil {
-			t.Fatalf("failed to get tournament: %v", err)
+			t.Fatalf("failed to get event: %v", err)
 		}
 
 		found := false
@@ -92,7 +92,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 		data.Set("lastName", "Newguy")
 		data.Set("country", "CRC")
 
-		req := httptest.NewRequest("POST", "/tournaments/register", strings.NewReader(data.Encode()))
+		req := httptest.NewRequest("POST", "/events/register", strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		resp, err := app.Test(req)
@@ -130,10 +130,10 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 			t.Errorf("expected new player to have starting Elo 500, got Singles=%v, Doubles=%v", createdPlayer.SinglesElo, createdPlayer.DoublesElo)
 		}
 
-		// Verify participant was added to tournament
+		// Verify participant was added to event
 		updatedTourney, err := tournamentRepo.GetByID(ctx, tourney.ID)
 		if err != nil {
-			t.Fatalf("failed to get tournament: %v", err)
+			t.Fatalf("failed to get event: %v", err)
 		}
 
 		found := false
@@ -157,7 +157,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 		data.Set("lastName", "")
 		data.Set("country", "USA")
 
-		req := httptest.NewRequest("POST", "/tournaments/register", strings.NewReader(data.Encode()))
+		req := httptest.NewRequest("POST", "/events/register", strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		resp, err := app.Test(req)

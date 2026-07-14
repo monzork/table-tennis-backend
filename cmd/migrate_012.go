@@ -17,10 +17,10 @@ func main() {
 	defer db.Close()
 
 	queries := []string{
-		`ALTER TABLE tournament_participants ADD COLUMN elo_before_singles INTEGER;`,
-		`ALTER TABLE tournament_participants ADD COLUMN elo_before_doubles INTEGER;`,
-		`ALTER TABLE tournament_participants ADD COLUMN elo_after_singles INTEGER;`,
-		`ALTER TABLE tournament_participants ADD COLUMN elo_after_doubles INTEGER;`,
+		`ALTER TABLE event_participants ADD COLUMN elo_before_singles INTEGER;`,
+		`ALTER TABLE event_participants ADD COLUMN elo_before_doubles INTEGER;`,
+		`ALTER TABLE event_participants ADD COLUMN elo_after_singles INTEGER;`,
+		`ALTER TABLE event_participants ADD COLUMN elo_after_doubles INTEGER;`,
 	}
 	for _, q := range queries {
 		_, err = db.Exec(q)

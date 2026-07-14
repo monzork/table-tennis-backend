@@ -57,9 +57,9 @@ func main() {
 	_, err = sqldb.Exec(`
 		CREATE TABLE IF NOT EXISTS teams (
 			id ` + uuidType + ` PRIMARY KEY,
-			tournament_id ` + uuidType + ` NOT NULL,
+			event_id ` + uuidType + ` NOT NULL,
 			name TEXT NOT NULL,
-			FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE
+			FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 		);
 	`)
 	if err != nil {

@@ -52,20 +52,20 @@ func main() {
 		log.Println("Added pin column to players.")
 	}
 
-	// 2. Add num_tables to events
-	_, err = sqldb.Exec(`ALTER TABLE events ADD COLUMN num_tables INT NOT NULL DEFAULT 4;`)
-	if err != nil {
-		log.Printf("Warning adding num_tables to events: %v (might already exist)", err)
-	} else {
-		log.Println("Added num_tables column to events.")
-	}
-
-	// 3. Add num_tables to tournaments
-	_, err = sqldb.Exec(`ALTER TABLE tournaments ADD COLUMN num_tables INT NOT NULL DEFAULT 0;`)
+	// 2. Add num_tables to tournaments
+	_, err = sqldb.Exec(`ALTER TABLE tournaments ADD COLUMN num_tables INT NOT NULL DEFAULT 4;`)
 	if err != nil {
 		log.Printf("Warning adding num_tables to tournaments: %v (might already exist)", err)
 	} else {
 		log.Println("Added num_tables column to tournaments.")
+	}
+
+	// 3. Add num_tables to events
+	_, err = sqldb.Exec(`ALTER TABLE events ADD COLUMN num_tables INT NOT NULL DEFAULT 0;`)
+	if err != nil {
+		log.Printf("Warning adding num_tables to events: %v (might already exist)", err)
+	} else {
+		log.Println("Added num_tables column to events.")
 	}
 
 	// 4. Add referee_id to matches

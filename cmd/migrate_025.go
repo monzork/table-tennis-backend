@@ -46,32 +46,32 @@ func main() {
 	}
 	defer sqldb.Close()
 
-	// Create tournament_officials table
+	// Create event_officials table
 	var createTableQuery string
 	if isPostgres {
 		createTableQuery = `
-			CREATE TABLE IF NOT EXISTS tournament_officials (
-				tournament_id UUID NOT NULL,
+			CREATE TABLE IF NOT EXISTS event_officials (
+				event_id UUID NOT NULL,
 				player_id UUID NOT NULL,
 				pin TEXT NOT NULL,
-				PRIMARY KEY (tournament_id, player_id)
+				PRIMARY KEY (event_id, player_id)
 			);
 		`
 	} else {
 		createTableQuery = `
-			CREATE TABLE IF NOT EXISTS tournament_officials (
-				tournament_id TEXT NOT NULL,
+			CREATE TABLE IF NOT EXISTS event_officials (
+				event_id TEXT NOT NULL,
 				player_id TEXT NOT NULL,
 				pin TEXT NOT NULL,
-				PRIMARY KEY (tournament_id, player_id)
+				PRIMARY KEY (event_id, player_id)
 			);
 		`
 	}
 
 	_, err = sqldb.Exec(createTableQuery)
 	if err != nil {
-		log.Fatalf("Error creating tournament_officials table: %v", err)
+		log.Fatalf("Error creating event_officials table: %v", err)
 	}
 
-	log.Println("Migration 025 complete: tournament_officials table created.")
+	log.Println("Migration 025 complete: event_officials table created.")
 }

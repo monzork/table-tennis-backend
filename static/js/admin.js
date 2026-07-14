@@ -273,7 +273,7 @@ function showToast(message, type = 'success') {
 
     const toast = document.createElement('div');
     const borderClass = type === 'error' ? 'border-red-500/30' : 'border-white/10';
-    toast.className = `cursor-pointer flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border ${borderClass} shadow-2xl transition-all duration-500 transform translate-x-full opacity-0 pointer-events-auto max-w-sm`;
+    toast.className = `cursor-pointer flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border ${borderClass} shadow-2xl transition-all duration-500 transform translate-x-full opacity-0 pointer-tournaments-auto max-w-sm`;
 
     const icon = type === 'error'
         ? `<svg class="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"></path></svg>`
@@ -358,92 +358,92 @@ document.body.addEventListener('htmx:afterOnLoad', function(evt) {
 // ── Drag & Drop ── JS reads data-* attributes at drop time → htmx.ajax() POST.
 // Server responds with HX-Trigger: reload-bracket → bracket reloads automatically.
 
-function onDragStart(event, playerId) {
-    event.dataTransfer.setData('text/plain', playerId);
-    event.dataTransfer.effectAllowed = 'move';
-    event.currentTarget.classList.add('opacity-40');
+function onDragStart(tournament, playerId) {
+    tournament.dataTransfer.setData('text/plain', playerId);
+    tournament.dataTransfer.effectAllowed = 'move';
+    tournament.currentTarget.classList.add('opacity-40');
 }
 
-function onDragEnd(event) {
-    event.currentTarget.classList.remove('opacity-40');
+function onDragEnd(tournament) {
+    tournament.currentTarget.classList.remove('opacity-40');
 }
 
-function onDragOver(event) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+function onDragOver(tournament) {
+    tournament.preventDefault();
+    tournament.dataTransfer.dropEffect = 'move';
 }
 
-function onDragEnter(event, el) {
-    event.preventDefault();
+function onDragEnter(tournament, el) {
+    tournament.preventDefault();
     el.classList.remove('border-white/5');
     el.classList.add('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
 }
 
-function onDragLeave(event, el) {
+function onDragLeave(tournament, el) {
     el.classList.add('border-white/5');
     el.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
 }
 
-function onDrop(event, el) {
-    event.preventDefault();
+function onDrop(tournament, el) {
+    tournament.preventDefault();
     el.classList.add('border-white/5');
     el.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
 
-    const playerId = event.dataTransfer.getData('text/plain');
+    const playerId = tournament.dataTransfer.getData('text/plain');
     if (!playerId) return;
 
     const tournamentId = el.dataset.tournamentId;
     const targetGroupId = el.dataset.groupId || '';
 
-    htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/move-player', {
+    htmx.ajax('POST', '/admin/events/' + tournamentId + '/move-player', {
         source: document.body,
         swap: 'none',
         values: { playerId, targetGroupId }
     });
 }
 
-function onDragOverRow(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    event.dataTransfer.dropEffect = 'move';
+function onDragOverRow(tournament) {
+    tournament.preventDefault();
+    tournament.stopPropagation();
+    tournament.dataTransfer.dropEffect = 'move';
 }
 
-function onDragEnterRow(event, el) {
-    event.preventDefault();
-    event.stopPropagation();
+function onDragEnterRow(tournament, el) {
+    tournament.preventDefault();
+    tournament.stopPropagation();
     el.classList.add('border-t-2', 'border-red-500/70', 'bg-red-500/5');
 }
 
-function onDragLeaveRow(event, el) {
-    event.stopPropagation();
+function onDragLeaveRow(tournament, el) {
+    tournament.stopPropagation();
     el.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
 }
 
-function onDropRow(event, el) {
-    event.preventDefault();
-    event.stopPropagation();
+function onDropRow(tournament, el) {
+    tournament.preventDefault();
+    tournament.stopPropagation();
     el.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
 
-    const playerId = event.dataTransfer.getData('text/plain');
+    const playerId = tournament.dataTransfer.getData('text/plain');
     if (!playerId) return;
 
     const tournamentId = el.dataset.tournamentId;
     const targetGroupId = el.dataset.groupId || '';
     const targetIndex   = parseInt(el.dataset.targetIndex ?? '-1', 10);
 
-    htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/move-player', {
+    htmx.ajax('POST', '/admin/events/' + tournamentId + '/move-player', {
         source: document.body,
         swap: 'none',
         values: { playerId, targetGroupId, targetIndex }
     });
 }
 
-function onDropKnockoutRow(event, el) {
-    event.preventDefault();
-    event.stopPropagation();
+function onDropKnockoutRow(tournament, el) {
+    tournament.preventDefault();
+    tournament.stopPropagation();
     el.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
 
-    const playerId = event.dataTransfer.getData('text/plain');
+    const playerId = tournament.dataTransfer.getData('text/plain');
     if (!playerId) return;
 
     const tournamentId = el.dataset.tournamentId;
@@ -460,7 +460,7 @@ function onDropKnockoutRow(event, el) {
         playerIds.splice(targetIndex, 0, playerId);
     }
 
-    htmx.ajax('POST', '/admin/tournaments/' + tournamentId + '/save-knockout-seeds', {
+    htmx.ajax('POST', '/admin/events/' + tournamentId + '/save-knockout-seeds', {
         source: document.body,
         swap: 'none',
         values: { divId: divId, playerIds: JSON.stringify(playerIds) }

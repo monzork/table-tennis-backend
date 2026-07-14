@@ -12,7 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	playerDomain "table-tennis-backend/internal/domain/player"
-	tournamentDomain "table-tennis-backend/internal/domain/tournament"
+	tournamentDomain "table-tennis-backend/internal/domain/event"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
@@ -33,7 +33,7 @@ func TestMatchHandler(t *testing.T) {
 		}
 	}
 
-	// Seed players & tournament for match
+	// Seed players & event for match
 	ctx := context.Background()
 	playerRepo := bunRepo.NewPlayerRepository(db)
 	tournamentRepo := bunRepo.NewTournamentRepository(db)

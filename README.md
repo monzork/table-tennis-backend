@@ -1,19 +1,19 @@
 # World Table Tennis (WTT) Management System
 
-A comprehensive backend and web application for managing table tennis tournaments, players, matches, and real-time Elo rating tracking.
+A comprehensive backend and web application for managing table tennis events, players, matches, and real-time Elo rating tracking.
 
 This project goes beyond a simple internal tool, offering an immersive, WTT-branded dark-mode UI for both admins and public viewers, along with a robust domain-driven Go backend.
 
 ## Features
 
-- **Multi-Format Tournaments**: Supports creating and managing `singles`, `doubles`, and `teams` events.
+- **Multi-Format Events**: Supports creating and managing `singles`, `doubles`, and `teams` tournaments.
 - **Dynamic Elo Rating System**: Players have independent and tracked `Singles` and `Doubles` Elo ratings. The system automatically calculates and records rating changes when matches are finished (using paired team averages for doubles).
-- **Internationalization (i18n)**: Fully translated interfaces to support international table tennis communities and events.
+- **Internationalization (i18n)**: Fully translated interfaces to support international table tennis communities and tournaments.
 - **Secure Score Verification**: Features a player-linked PIN system for verifying match score entries.
-- **Tournament Table Management**: Enforces strict exclusivity for "in_progress" matches on assigned tables with real-time UI status updates to prevent double-booking.
-- **Interactive UI**: Drag-and-drop UI for organizing players in tournament groups seamlessly.
+- **Event Table Management**: Enforces strict exclusivity for "in_progress" matches on assigned tables with real-time UI status updates to prevent double-booking.
+- **Interactive UI**: Drag-and-drop UI for organizing players in event groups seamlessly.
 - **Premium User Interface**: Built with Tailwind CSS, utilizing glassmorphism, WTT aesthetic (red, black, and gold theme), and seamless micro-interactions without page reloads using **HTMX**.
-- **Admin Dashboard**: A secure internal hub for managing the entire ecosystem (Players, Events, Scorekeeping).
+- **Admin Dashboard**: A secure internal hub for managing the entire ecosystem (Players, Tournaments, Scorekeeping).
 - **Public Rankings**: A stunning, auto-updating global leaderboard separating men's/women's singles and doubles players by their Elo points natively styled like official broadcast templates.
 
 ## Technologies Used
@@ -44,15 +44,15 @@ This project goes beyond a simple internal tool, offering an immersive, WTT-bran
 | `POST`| `/admin/logout` | Revokes the current session and redirects to login. |
 | `GET` | `/admin` | Root admin portal hub and navigation. |
 | `GET` | `/admin/players` | Table of all registered athletes, along with a form to add a new player. |
-| `GET` | `/admin/tournaments` | List of all system tournaments along with an event creation form. |
-| `GET` | `/admin/events` | List of system events. |
+| `GET` | `/admin/events` | List of all system events along with an tournament creation form. |
+| `GET` | `/admin/tournaments` | List of system tournaments. |
 | `GET` | `/admin/divisions` | List of system divisions. |
 
 ### API / form-action Endpoints (Used via HTMX)
 | Method | Route | Payload Type | Description |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/players` | Form/JSON | Registers a new athlete. Returns an HTML table row. |
-| `POST` | `/tournaments` | Form/JSON | Creates an event. Returns an HTML table row. |
+| `POST` | `/events` | Form/JSON | Creates an tournament. Returns an HTML table row. |
 | `POST` | `/matches/create` | Form/JSON | Drafts an active match assigning players to `Team A` & `Team B`. |
 | `POST` | `/matches/finish` | Form/JSON | Concludes a match via `winnerTeam` selection. Triggers automatic Elo calculations and persists. |
 

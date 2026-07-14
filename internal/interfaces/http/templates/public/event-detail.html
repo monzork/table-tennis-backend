@@ -1,122 +1,353 @@
-<div class="space-y-8 animate-fade-in text-white/90 max-w-5xl mx-auto px-4">
-    <header class="flex flex-col gap-3 py-4">
-        <div>
-            <a href="/tournaments" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-white transition-colors mb-4">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Back to Tournaments
-            </a>
-        </div>
-        <div class="flex justify-between items-start">
-            <div>
-                <h1 class="text-4xl font-extrabold tracking-tight uppercase">{{.Event.Name}} <span class="text-white">.</span></h1>
-                <p class="text-gray-400 mt-1">Multi-Category Division Event Details</p>
-            </div>
-        </div>
-    </header>
-
-    <!-- Meta Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
-            <div>
-                <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-1">Target Division</p>
-                {{if .Event.SkipElo}}
-                <h3 class="text-2xl font-extrabold uppercase text-gray-500">—</h3>
-                {{else}}
-                <h3 class="text-2xl font-extrabold uppercase text-white">{{len .Event.DivisionIDs}} Divisions</h3>
-                {{end}}
-            </div>
-            <p class="text-[10px] text-gray-500 mt-4 uppercase tracking-wider">
-                {{if .Event.SkipElo}}
-                This event is non-rated; any athlete in the system is qualified.
-                {{else}}
-                Only players in this division's rating band are qualified.
-                {{end}}
-            </p>
-        </div>
-        
-        <div class="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
-            <div>
-                <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-1">Elo Status</p>
-                {{if .Event.SkipElo}}
-                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 font-bold text-xs uppercase tracking-wide mt-2">
-                    Non-Rated (No Elo)
-                </div>
-                <p class="text-[10px] text-yellow-500/60 mt-3 font-semibold">Rankings will NOT change upon category completions.</p>
-                {{else}}
-                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-blue-500 font-bold text-xs uppercase tracking-wide mt-2">
-                    Rated (Elo Calculations Enabled)
-                </div>
-                <p class="text-[10px] text-blue-500/60 mt-3 font-semibold">Athlete Elo scores will be recalculated automatically.</p>
-                {{end}}
-            </div>
-        </div>
-
-        <div class="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
-            <div>
-                <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-1">Event Duration</p>
-                <p class="text-lg font-bold text-white mt-1">{{.Event.StartDate.Format "Jan 02, 2006"}} — {{.Event.EndDate.Format "Jan 02, 2006"}}</p>
-            </div>
-            <p class="text-[10px] text-gray-500 mt-4 uppercase tracking-wider">Sub-tournaments run simultaneously during this range.</p>
-        </div>
+<div class="space-y-10 text-white/90 animate-fade-in max-w-5xl mx-auto px-4"
+     hx-ext="ws" ws-connect="/ws/brackets/{{.Event.ID}}"
+     hx-on::ws-open="const el = document.getElementById('public-ws-status'); if(el) { el.textContent = '🟢 Live'; el.className = 'px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-[11px] uppercase tracking-widest text-green-400 font-bold'; }"
+     hx-on::ws-close="const el = document.getElementById('public-ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[11px] uppercase tracking-widest text-red-400 font-bold'; }"
+     hx-on::ws-error="const el = document.getElementById('public-ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[11px] uppercase tracking-widest text-red-400 font-bold'; }"
+     hx-on::ws-before-message="try { const data = JSON.parse(tournament.detail.message); if(data.tournament === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); htmx.trigger('#match-list-container', 'reload-matches'); } } catch(e) {}">
+  {{/* Header */}}
+  <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4">
+    <div>
+      <a href="/events" class="text-xs text-gray-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1 mb-2">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        {{t .T "pub_detail.all_events"}}
+      </a>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tighter uppercase">{{.Event.Name}}<span class="text-white">.</span></h1>
+      <div class="flex gap-3 mt-2 flex-wrap">
+        <span id="public-ws-status" class="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-[11px] uppercase tracking-widest text-yellow-400 font-bold">
+          ⏳ {{t .T "pub_detail.connecting"}}
+        </span>
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Event.Type}}</span>
+        <span class="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[11px] uppercase tracking-widest text-white">{{.Event.Format}}</span>
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
+          {{.Event.StartDate.Format "Jan 02"}} – {{.Event.EndDate.Format "Jan 02, 2006"}}
+        </span>
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
+          {{len .Event.Participants}} {{t .T "pub_detail.players_count"}}
+        </span>
+        {{if eq .Event.Status "finished"}}
+        <span class="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-[11px] uppercase tracking-widest text-green-400 font-bold">
+          {{t .T "status.finished"}}
+        </span>
+        {{end}}
+      </div>
     </div>
-
-    <!-- Generated Brackets -->
-    <div class="space-y-4">
-        <h2 class="text-2xl font-extrabold uppercase tracking-tight">Active Categories & Brackets <span class="text-gray-500">({{len .Event.Tournaments}})</span></h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {{range .Event.Tournaments}}
-            <div class="glass relative rounded-3xl border border-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col justify-between group overflow-hidden">
-                {{/* Decorative Top Edge */}}
-                <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-80 group-hover:opacity-100 transition-opacity"></div>
-                
-                <div class="p-6 sm:p-8 flex-grow flex flex-col">
-                    <div class="flex justify-between items-start gap-4 mb-4">
-                        <div class="flex-grow">
-                            {{if eq .Status "finished"}}
-                            <span class="inline-flex mb-2 text-[9px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">Finished</span>
-                            {{else if .RegistrationOpen}}
-                            <span class="inline-flex mb-2 text-[9px] font-black uppercase tracking-widest text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full animate-pulse">Live Registration</span>
-                            {{else}}
-                            <span class="inline-flex mb-2 text-[9px] font-black uppercase tracking-widest text-gray-300 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">In Progress</span>
-                            {{end}}
-                            <h3 class="font-extrabold uppercase text-xl sm:text-2xl text-white tracking-tight leading-tight mb-2">{{.Name}}</h3>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2 mb-6">
-                        <span class="px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-wider text-gray-300 flex items-center gap-1">{{.Type}}</span>
-                        <span class="px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-wider text-gray-300 flex items-center gap-1">{{.Format}}</span>
-                        <span class="px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-wider text-gray-300 flex items-center gap-1">{{.EventCategory}}</span>
-                    </div>
-
-                    <div class="mt-auto pt-4 border-t border-white/10 flex items-center gap-3 text-gray-400 mb-6">
-                        <div class="bg-white/5 p-2 rounded-xl border border-white/10">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        </div>
-                        <div class="flex flex-col">
-                            {{if or (eq .Type "teams") (eq .Type "doubles") (eq .Type "mixed_doubles")}}
-                            <span class="text-[9px] font-bold uppercase tracking-widest text-gray-500">Registered Teams</span>
-                            <span class="text-xs font-mono text-gray-300 font-bold tracking-tight">{{len .Teams}} Teams</span>
-                            {{else}}
-                            <span class="text-[9px] font-bold uppercase tracking-widest text-gray-500">Registered Athletes</span>
-                            <span class="text-xs font-mono text-gray-300 font-bold tracking-tight">{{len .Participants}} Athletes</span>
-                            {{end}}
-                        </div>
-                    </div>
-
-                    <a href="/tournaments/{{.ID}}" class="w-full group/btn relative inline-flex items-center justify-center gap-2 bg-white text-black font-extrabold py-3 px-6 rounded-xl transition-all uppercase tracking-widest text-xs hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black mt-2">
-                        View Bracket
-                        <svg class="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                    </a>
-                </div>
-            </div>
-            {{else}}
-            <div class="col-span-full glass max-w-2xl mx-auto rounded-3xl border border-white/10 p-12 text-center text-gray-400">
-                <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <p class="text-lg font-medium">No categories set up for this event.</p>
-            </div>
-            {{end}}
-        </div>
+    <div class="flex items-center gap-3 w-full sm:w-auto">
+      <a href="/events/{{.Event.ID}}/tv" target="_blank"
+        class="w-full sm:w-auto bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-xs font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        {{t .T "nav.projector"}}
+      </a>
     </div>
+  </header>
+
+  {{/* Participants */}}
+  <details class="space-y-3 group outline-none cursor-pointer">
+    <summary class="flex flex-wrap items-center gap-3 cursor-pointer list-none select-none outline-none">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest pl-1 flex items-center gap-2">
+        <svg class="w-4 h-4 transition-transform group-open:rotate-90 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        {{if or (eq .Event.Type "teams") (eq .Event.Type "doubles") (eq .Event.Type "mixed_doubles")}}{{t .T "pub_detail.player_pool"}}{{else}}{{t .T "pub_detail.participants"}}{{end}}
+      </h2>
+    </summary>
+    <div class="flex overflow-x-auto gap-2 pb-2 sm:flex-wrap sm:pb-0 snap-x snap-mandatory px-1 mt-3" style="scrollbar-width: none;">
+      {{range .Event.Participants}}
+      <div class="flex-shrink-0 snap-start flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 cursor-default">
+        <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
+          {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
+        </div>
+        <span class="text-sm sm:text-base font-semibold whitespace-nowrap">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+        <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
+      </div>
+      {{else}}
+      <p class="text-sm text-gray-600 pl-1 cursor-default">{{t .T "pub_detail.no_parts"}}</p>
+      {{end}}
+    </div>
+  </details>
+
+  {{/* Bracket/Groups Draw Area */}}
+  <section class="space-y-6 relative">
+    <div class="flex justify-between items-end">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "pub_detail.draw_title"}}</h2>
+      <div class="sm:hidden text-[9px] font-bold text-gray-400 bg-white/5 border border-white/10 px-2 py-1 rounded-full uppercase tracking-widest flex items-center gap-1 animate-pulse">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+        {{t .T "pub_detail.swipe_pan"}}
+      </div>
+    </div>
+    {{$count := len .Event.Participants}}
+    {{$teamCount := len .Event.Teams}}
+    {{if or (gt $count 1) (gt $teamCount 1)}}
+    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar"
+         hx-get="/events/{{.Event.ID}}"
+         hx-trigger="reload-bracket, reload-bracket from:body"
+         hx-select="#bracket-container > *"
+         hx-target="#bracket-container"
+         hx-swap="innerHTML">
+      {{template "admin/partials/event-bracket" .BracketViewModel}}
+    </div>
+    {{else}}
+    <div class="glass rounded-2xl border border-white/10 p-8 text-center text-gray-600">
+      <p class="text-sm">{{t .T "pub_detail.no_bracket"}}</p>
+    </div>
+    {{end}}
+  </section>
+
+  {{/* Encounter Match List */}}
+  <section class="space-y-4 pt-6 border-t border-white/10" id="match-list-container"
+           hx-get="/events/{{.Event.ID}}"
+           hx-trigger="reload-matches, reload-matches from:body"
+           hx-select="#match-list-container"
+           hx-target="this"
+           hx-swap="outerHTML focus-scroll:false scroll:none">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "pub_detail.match_title"}}</h2>
+      <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+        <div class="relative w-full sm:w-auto">
+          <input type="text" name="player_search" placeholder="{{t .T "pub_detail.search_player"}}" value="{{.PlayerSearch}}"
+                 hx-get="/events/{{.Event.ID}}"
+                 hx-target="#public-matches-tbody"
+                 hx-select="#public-matches-tbody"
+                 hx-trigger="keyup changed delay:500ms, search"
+                 hx-include="[name='status']"
+                 class="w-full sm:w-48 bg-white/5 border border-white/10 rounded-full pl-8 pr-4 py-2 sm:py-1.5 text-[10px] font-bold uppercase tracking-wider text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-white transition-all">
+          <svg class="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+        <select name="status"
+                hx-get="/events/{{.Event.ID}}"
+                hx-target="#public-matches-tbody"
+                hx-select="#public-matches-tbody"
+                hx-trigger="change"
+                hx-include="[name='player_search']"
+                class="w-full sm:w-auto bg-white/5 border border-white/10 rounded-full px-4 py-2 sm:py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-300 hover:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-white">
+          <option value="all" {{if eq .StatusFilter "all"}}selected{{end}}>{{t .T "status.all"}}</option>
+          <option value="scheduled" {{if eq .StatusFilter "scheduled"}}selected{{end}}>{{t .T "status.scheduled"}}</option>
+          <option value="in_progress" {{if eq .StatusFilter "in_progress"}}selected{{end}}>{{t .T "status.in_progress"}}</option>
+          <option value="finished" {{if eq .StatusFilter "finished"}}selected{{end}}>{{t .T "status.finished"}}</option>
+        </select>
+      </div>
+    </div>
+    <div class="glass rounded-2xl overflow-hidden border border-white/10">
+      <table class="w-full text-left border-collapse text-xs font-medium">
+        <thead class="hidden sm:table-header-group">
+          <tr class="bg-black/40 border-b border-white/10 text-gray-400 uppercase text-[9px] tracking-wider">
+            <th class="p-4 text-left">{{t .T "pub_detail.col_type"}}</th>
+            <th class="p-4 text-left">{{t .T "pub_detail.col_player_a"}}</th>
+            <th class="p-4 text-left">{{t .T "pub_detail.col_player_b"}}</th>
+            <th class="p-4 text-left">{{t .T "pub_detail.col_status"}}</th>
+            <th class="p-4 text-right">{{t .T "pub_detail.col_actions"}}</th>
+          </tr>
+        </thead>
+        <tbody id="public-matches-tbody" class="divide-y divide-white/10">
+          {{range .Event.Matches}}
+          <!-- Desktop Row -->
+          <tr class="hidden sm:table-row hover:bg-white/10 transition-colors border-b border-white/10">
+            <td class="p-4 text-gray-300 capitalize">
+              {{.MatchType}}
+              {{if gt .RoundNumber 0}}
+              <div class="text-[9px] text-gray-500 font-bold uppercase mt-1">{{t $.T "pub_detail.match_number"}}{{.RoundNumber}}</div>
+              {{end}}
+              {{if .TableNumber}}
+              <div class="text-[9px] text-yellow-400 font-bold font-mono mt-1">{{t $.T "pub_detail.table_caps"}} {{.TableNumber}}</div>
+              {{end}}
+            </td>
+            <td class="p-4 text-left">
+                {{range .TeamA}}
+                    <div class="text-xs {{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                        {{.FirstNameWithSecond}} <span class="uppercase font-bold">{{.LastNameWithSecond}}</span>
+                    </div>
+                {{end}}
+            </td>
+            <td class="p-4 text-left">
+                {{range .TeamB}}
+                    <div class="text-xs {{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                        {{.FirstNameWithSecond}} <span class="uppercase font-bold">{{.LastNameWithSecond}}</span>
+                    </div>
+                {{end}}
+            </td>
+            <td class="p-4">
+                <div class="flex flex-col items-start gap-1">
+                  {{if eq .Status "finished"}}
+                      <span class="px-2.5 py-1 rounded bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
+                      <span class="text-sm font-black text-white bg-white/5 px-2 py-0.5 rounded border border-white/10 mt-0.5">{{.ScoreA}} - {{.ScoreB}}</span>
+                      {{if .RefereeID}}
+                        {{$refName := index $.RefereeNames .RefereeID}}
+                        {{if $refName}}
+                          <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap mt-1">{{t $.T "pub_detail.updated_by"}} {{$refName}}</span>
+                        {{end}}
+                      {{end}}
+                  {{else if eq .Status "in_progress"}}
+                      <span class="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
+                      <span class="text-sm font-black text-white bg-white/5 px-2 py-0.5 rounded border border-white/10 mt-0.5">{{.ScoreA}} - {{.ScoreB}}</span>
+                  {{else}}
+                      <span class="px-2.5 py-1 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
+                      {{if gt .QueuePosition 0}}
+                         <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap mt-1">{{if eq .QueuePosition 1}}{{t $.T "pub_detail.next_match"}}{{else}}{{t $.T "pub_detail.queue_pos"}}{{.QueuePosition}}{{end}}</span>
+                      {{end}}
+                  {{end}}
+                </div>
+            </td>
+            <td class="p-4 text-right">
+              {{if eq .Status "in_progress"}}
+                <button hx-get="/public/matches/score/form?matchId={{.ID}}&tournamentId={{$.Event.ID}}&stage={{.Stage}}&bestOf=5"
+                        hx-target="#public-score-modal-content"
+                        hx-on:click="document.getElementById('public-score-modal').classList.remove('hidden')"
+                        class="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black text-[10px] font-bold py-1.5 px-4 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-yellow-500/20 active:scale-95">
+                  {{t $.T "pub_detail.score"}}
+                </button>
+              {{end}}
+            </td>
+          </tr>
+
+          <!-- Mobile Card -->
+          <tr class="sm:hidden block w-full mb-4 bg-white/5 rounded-2xl overflow-hidden border border-white/10 shadow-lg">
+            <td class="block p-4 w-full">
+              <!-- Top bar: Type, Table, Status -->
+              <div class="flex justify-between items-center border-b border-white/5 pb-3 mb-4">
+                  <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex flex-wrap items-center gap-2">
+                      {{.MatchType}}
+                      {{if gt .RoundNumber 0}}<span class="text-[9px] text-gray-500 uppercase">{{t $.T "pub_detail.match_number"}}{{.RoundNumber}}</span>{{end}}
+                      {{if .TableNumber}}
+                          <span class="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-mono">T-{{.TableNumber}}</span>
+                      {{end}}
+                  </div>
+                  <div>
+                      {{if eq .Status "finished"}}
+                          <span class="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[9px] font-bold uppercase tracking-wider border border-green-500/20">{{t $.T "status.finished"}}</span>
+                      {{else if eq .Status "in_progress"}}
+                          <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase tracking-wider border border-blue-500/20">{{t $.T "status.in_progress"}}</span>
+                      {{else}}
+                          {{if gt .QueuePosition 0}}
+                             <span class="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[9px] font-bold uppercase tracking-wider border border-indigo-500/20">{{if eq .QueuePosition 1}}{{t $.T "pub_detail.next_match"}}{{else}}{{t $.T "pub_detail.queue_pos"}}{{.QueuePosition}}{{end}}</span>
+                          {{end}}
+                          <span class="px-2 py-0.5 rounded-full bg-white/5 text-gray-400 text-[9px] font-bold uppercase tracking-wider border border-white/10">{{t $.T "status.scheduled"}}</span>
+                      {{end}}
+                  </div>
+              </div>
+              
+              <!-- Matchup (Player A vs Player B) side-by-side -->
+              <div class="flex justify-between items-center mb-5 gap-2">
+                  <div class="flex-1 flex flex-col items-center text-center">
+                    {{range .TeamA}}
+                      <div class="text-[13px] leading-tight {{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                          {{.FirstNameWithSecond}} <span class="uppercase font-bold block">{{.LastNameWithSecond}}</span>
+                      </div>
+                    {{end}}
+                  </div>
+                  
+                  <div class="shrink-0 flex items-center justify-center">
+                    {{if or (eq .Status "in_progress") (eq .Status "finished")}}
+                      <span class="text-sm font-black text-white bg-black/40 px-3 py-1 rounded-lg border border-white/10">{{.ScoreA}} - {{.ScoreB}}</span>
+                    {{else}}
+                      <span class="text-[9px] font-black italic text-gray-500 bg-black/40 px-2.5 py-1 rounded-full">VS</span>
+                    {{end}}
+                  </div>
+
+                  <div class="flex-1 flex flex-col items-center text-center">
+                    {{range .TeamB}}
+                      <div class="text-[13px] leading-tight {{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
+                          {{.FirstNameWithSecond}} <span class="uppercase font-bold block">{{.LastNameWithSecond}}</span>
+                      </div>
+                    {{end}}
+                  </div>
+              </div>
+
+              <!-- Action Button / Referee info -->
+              <div class="flex flex-col gap-2">
+                {{if eq .Status "in_progress"}}
+                  <button hx-get="/public/matches/score/form?matchId={{.ID}}&tournamentId={{$.Event.ID}}&stage={{.Stage}}&bestOf=5"
+                          hx-target="#public-score-modal-content"
+                          hx-on:click="document.getElementById('public-score-modal').classList.remove('hidden')"
+                          class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black text-[11px] font-bold py-3.5 rounded-xl transition-all uppercase tracking-wider shadow-lg shadow-yellow-500/20 active:scale-95 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    {{t $.T "pub_detail.score"}}
+                  </button>
+                {{else if eq .Status "finished"}}
+                    {{if .RefereeID}}
+                      {{$refName := index $.RefereeNames .RefereeID}}
+                      {{if $refName}}
+                        <div class="w-full text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest pt-3 border-t border-white/5">
+                          {{t $.T "pub_detail.updated_by"}} {{$refName}}
+                        </div>
+                      {{end}}
+                    {{end}}
+                {{end}}
+              </div>
+            </td>
+          </tr>
+          {{else}}
+          <tr>
+            <td colspan="5" class="p-8 text-center text-gray-500">{{t .T "pub_detail.no_matches"}}</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
+
+{{/* ── Public Score Entry Modal ── */}}
+<div id="public-score-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
+  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-md w-full relative shadow-2xl">
+    <button onclick="document.getElementById('public-score-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white z-10">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <div id="public-score-modal-content">
+      <div class="flex justify-center p-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const initDragToScroll = () => {
+    const containers = document.querySelectorAll('.overflow-x-auto');
+    containers.forEach(ele => {
+      // Prevent attaching multiple times
+      if (ele.dataset.dragInitialized) return;
+      ele.dataset.dragInitialized = 'true';
+      
+      ele.style.cursor = 'grab';
+      let pos = { top: 0, left: 0, x: 0, y: 0 };
+      
+      const mouseDownHandler = function(e) {
+        if (e.target.closest('[draggable="true"]') || e.target.closest('button') || e.target.closest('a')) {
+          return; // Allow native interactions
+        }
+        e.preventDefault(); // Prevent Firefox native drag
+        ele.style.cursor = 'grabbing';
+        ele.style.userSelect = 'none';
+        pos = {
+          left: ele.scrollLeft,
+          top: ele.scrollTop,
+          x: e.clientX,
+          y: e.clientY,
+        };
+
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
+      };
+
+      const mouseMoveHandler = function(e) {
+        const dx = e.clientX - pos.x;
+        const dy = e.clientY - pos.y;
+        ele.scrollTop = pos.top - dy;
+        ele.scrollLeft = pos.left - dx;
+      };
+
+      const mouseUpHandler = function() {
+        document.removeEventListener('mousemove', mouseMoveHandler);
+        document.removeEventListener('mouseup', mouseUpHandler);
+        ele.style.cursor = 'grab';
+        ele.style.removeProperty('user-select');
+      };
+
+      ele.addEventListener('mousedown', mouseDownHandler);
+    });
+  };
+  
+  initDragToScroll();
+  document.body.addEventListener('htmx:afterSwap', () => {
+      initDragToScroll();
+  });
+});
+</script>

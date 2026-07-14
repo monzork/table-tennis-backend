@@ -1,4 +1,4 @@
-// Package pin defines the domain interface for generating match/tournament PINs.
+// Package pin defines the domain interface for generating match/event PINs.
 package pin
 
 // Generator is the domain contract for producing unique numeric PINs.

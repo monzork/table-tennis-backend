@@ -17,7 +17,7 @@ func main() {
 	}
 	defer db.Close()
 
-	tables := []string{"tournaments", "tournament_participants", "matches", "players"}
+	tables := []string{"events", "event_participants", "matches", "players"}
 	for _, t := range tables {
 		rows, err := db.Query(fmt.Sprintf(`PRAGMA table_info(%s)`, t))
 		if err != nil {

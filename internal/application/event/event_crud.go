@@ -2,304 +2,334 @@ package event
 
 import (
 	"context"
-	"fmt"
 	divisionDomain "table-tennis-backend/internal/domain/division"
-	eventDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
-	tournamentDomain "table-tennis-backend/internal/domain/tournament"
+	tournamentDomain "table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/infrastructure/pin"
 	"time"
 )
 
-type CategoryConfig struct {
-	Auto           bool
-	Format         string
-	GroupPassCount int
-	PlayerIDs      []string
+// ─── Get By ID ───────────────────────────────────────────────────────────────
+
+type GetTournamentByIDUseCase struct {
+	repo         tournamentDomain.Repository
+	divisionRepo divisionDomain.Repository
 }
 
-type CreateEventUseCase struct {
-	eventRepo      eventDomain.Repository
-	tournamentRepo tournamentDomain.Repository
-	playerRepo     playerDomain.Repository
-	divisionRepo   divisionDomain.Repository
+func NewGetTournamentByIDUseCase(repo tournamentDomain.Repository, divisionRepo divisionDomain.Repository) *GetTournamentByIDUseCase {
+	return &GetTournamentByIDUseCase{repo: repo, divisionRepo: divisionRepo}
 }
 
-func NewCreateEventUseCase(
-	eventRepo eventDomain.Repository,
-	tournamentRepo tournamentDomain.Repository,
-	playerRepo playerDomain.Repository,
-	divisionRepo divisionDomain.Repository,
-) *CreateEventUseCase {
-	return &CreateEventUseCase{
-		eventRepo:      eventRepo,
-		tournamentRepo: tournamentRepo,
-		playerRepo:     playerRepo,
-		divisionRepo:   divisionRepo,
-	}
-}
-
-func (uc *CreateEventUseCase) Execute(
-	ctx context.Context,
-	name string,
-	divisionIDs []string,
-	skipElo bool,
-	startDateStr, endDateStr string,
-	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen CategoryConfig,
-	existingTournamentIDs []string,
-) (*eventDomain.Event, error) {
-	start, err := time.Parse("2006-01-02", startDateStr)
-	if err != nil {
-		return nil, err
-	}
-	end, err := time.Parse("2006-01-02", endDateStr)
+func (uc *GetTournamentByIDUseCase) Execute(ctx context.Context, idStr string) (*tournamentDomain.Event, error) {
+	t, err := uc.repo.GetByID(ctx, idStr)
 	if err != nil {
 		return nil, err
 	}
 
-	e, err := eventDomain.NewEvent(idgen.Generate(), name, divisionIDs, skipElo, start, end)
-	if err != nil {
-		return nil, err
+	// Self-healing: regenerate seeding groups when they are missing or stale.
+	needsGroupRegen := false
+	needsGroups := t.Format == "elimination" || t.Format == "groups_elimination" || t.Format == "round_robin"
+	if needsGroups && len(t.Groups) == 0 {
+		needsGroupRegen = true
 	}
-
-	var divs []*divisionDomain.Division
-	if !skipElo && len(divisionIDs) > 0 {
-		for _, did := range divisionIDs {
-			if did != "" && did != "none" {
-				div, err := uc.divisionRepo.GetById(ctx, did)
-				if err != nil {
-					return nil, fmt.Errorf("failed to fetch division: %w", err)
+	// For doubles/teams events, also regenerate if the group participant count
+	// doesn't match the number of teams (teams were added/removed after initial seeding).
+	if !needsGroupRegen && needsGroups && (t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams") && len(t.Teams) > 0 {
+		totalGroupParticipants := 0
+		for _, g := range t.Groups {
+			totalGroupParticipants += len(g.Players)
+		}
+		if totalGroupParticipants != len(t.Teams) {
+			needsGroupRegen = true
+		}
+	}
+	if needsGroupRegen {
+		var divsList []tournamentDomain.DivisionSeeding
+		if !t.SkipElo && uc.divisionRepo != nil {
+			divs, err := uc.divisionRepo.GetAll(ctx)
+			if err == nil {
+				for _, d := range divs {
+					if d.Category == "both" || d.Category == t.Type {
+						divsList = append(divsList, tournamentDomain.DivisionSeeding{
+							ID:     d.ID,
+							Name:   d.Name,
+							MinElo: d.MinElo,
+							MaxElo: d.MaxElo,
+						})
+					}
 				}
-				divs = append(divs, div)
 			}
+		}
+		if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err == nil {
+			_ = uc.repo.Update(ctx, t)
 		}
 	}
 
-	// Collect all unique player IDs across all categories and batch-load them
-	allIDSet := make(map[string]bool)
-	for _, cfg := range []CategoryConfig{singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen} {
-		if !cfg.Auto {
-			continue
-		}
-		for _, idStr := range cfg.PlayerIDs {
-			if idStr != "" {
-				allIDSet[idStr] = true
-			}
+	return t, nil
+}
+
+func (uc *GetTournamentByIDUseCase) GetSnapshots(ctx context.Context, idStr string) ([]tournamentDomain.ParticipantSnapshot, error) {
+	return uc.repo.GetParticipantSnapshots(ctx, idStr)
+}
+
+func (uc *GetTournamentByIDUseCase) GetOfficials(ctx context.Context, id string) ([]tournamentDomain.ParticipantSnapshot, error) {
+	return uc.repo.GetOfficials(ctx, id)
+}
+
+func (uc *GetTournamentByIDUseCase) AddOfficial(ctx context.Context, tournamentID string, playerID string) error {
+	officials, err := uc.repo.GetOfficials(ctx, tournamentID)
+	if err != nil {
+		return err
+	}
+
+	usedPINs := make(map[string]bool)
+	for _, o := range officials {
+		usedPINs[o.Pin] = true
+	}
+
+	pinStr := pin.GenerateUniqueInBatch(usedPINs)
+	return uc.repo.AddOfficial(ctx, tournamentID, playerID, pinStr)
+}
+
+func (uc *GetTournamentByIDUseCase) RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error {
+	return uc.repo.RemoveOfficial(ctx, tournamentID, playerID)
+}
+
+// ─── Update ──────────────────────────────────────────────────────────────────
+
+type UpdateTournamentUseCase struct {
+	repo         tournamentDomain.Repository
+	playerRepo   playerDomain.Repository
+	divisionRepo divisionDomain.Repository
+}
+
+func NewUpdateTournamentUseCase(repo tournamentDomain.Repository, playerRepo playerDomain.Repository, divisionRepo divisionDomain.Repository) *UpdateTournamentUseCase {
+	return &UpdateTournamentUseCase{repo: repo, playerRepo: playerRepo, divisionRepo: divisionRepo}
+}
+
+// StageRuleOverride carries user-submitted rule changes for a single stage.
+type StageRuleOverride struct {
+	Stage        string
+	BestOf       int
+	PointsToWin  int
+	PointsMargin int
+}
+
+func (uc *UpdateTournamentUseCase) Execute(
+	ctx context.Context, idStr, name, tournamentType, format, category, startStr, endStr string,
+	registrationOpen bool,
+	participantIDs []string, newPlayers []NewPlayerData,
+	stageRuleOverrides []StageRuleOverride, divisionRules []tournamentDomain.DivisionRule, groupPassCount int,
+	skipElo bool, eventID *string,
+	teamFormat string,
+	numTables int,
+	hasThirdPlaceMatch bool,
+	divisionFormats map[string]string, divisionGroupPassCounts map[string]int, divisionGroupCounts map[string]int,
+) (*tournamentDomain.Event, error) {
+	start, err := time.Parse("2006-01-02", startStr)
+	if err != nil {
+		return nil, err
+	}
+	end, err := time.Parse("2006-01-02", endStr)
+	if err != nil {
+		return nil, err
+	}
+
+	var participants []*playerDomain.Player
+
+	// Handle existing players
+	var validIDs []string
+	for _, pidStr := range participantIDs {
+		if pidStr != "" {
+			validIDs = append(validIDs, pidStr)
 		}
 	}
-	allIDs := make([]string, 0, len(allIDSet))
-	for id := range allIDSet {
-		allIDs = append(allIDs, id)
-	}
-	playerCache := make(map[string]*playerDomain.Player)
-	if len(allIDs) > 0 {
-		loaded, err := uc.playerRepo.GetByIDs(ctx, allIDs)
-		if err == nil {
-			for _, p := range loaded {
-				playerCache[p.ID] = p
-			}
+	if len(validIDs) > 0 {
+		if ps, err := uc.playerRepo.GetByIDs(ctx, validIDs); err == nil {
+			participants = append(participants, ps...)
 		}
 	}
 
-	// Helper to create a tournament under this event
-	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player) error {
-		t, err := tournamentDomain.NewTournament(idgen.Generate(), tName, tType, tFormat, category, start, end, []tournamentDomain.Rule{}, groupPassCount, players, false)
+	// Handle newly created players ad-hoc
+	for _, np := range newPlayers {
+		p, err := playerDomain.NewPlayer(idgen.Generate(), np.FirstName, np.LastName, time.Now(), np.Gender, "", "", "")
 		if err != nil {
-			return err
+			return nil, err
 		}
-		t.EventID = &e.ID
-		t.SkipElo = skipElo
-		t.NumTables = e.NumTables
-		e.Tournaments = append(e.Tournaments, t)
-		return nil
+		if err := uc.playerRepo.Save(ctx, p); err != nil {
+			return nil, err
+		}
+		participants = append(participants, p)
 	}
 
-	// Helper to get qualified players for a category (from cache)
-	getPlayers := func(ids []string, gender string, isDoubles bool) []*playerDomain.Player {
-		var players []*playerDomain.Player
-		for _, idStr := range ids {
-			p, ok := playerCache[idStr]
-			if !ok {
-				continue
-			}
-			if gender != "" && p.Gender != gender {
-				continue
-			}
-			if !skipElo && len(divs) > 0 {
-				eloVal := p.SinglesElo
-				if isDoubles {
-					eloVal = p.DoublesElo
-				}
-				matched := false
-				for _, div := range divs {
-					if div.ContainsElo(int16(eloVal)) {
-						matched = true
-						break
-					}
-				}
-				if !matched {
-					continue
-				}
-			}
-			players = append(players, p)
-		}
-		return players
-	}
-
-	processCategory := func(cfg CategoryConfig, suffix, tType, categoryGender string, isDoubles bool) {
-		if !cfg.Auto {
-			return
-		}
-
-		allCatPlayers := getPlayers(cfg.PlayerIDs, categoryGender, isDoubles)
-		if len(allCatPlayers) == 0 {
-			return
-		}
-
-		if skipElo || len(divs) == 0 {
-			tName := fmt.Sprintf("%s - %s", e.Name, suffix)
-			if categoryGender == "men" || categoryGender == "women" {
-				// fallback in case I used lowercase men/women instead of M/F, wait, categoryGender is M/F, but for category we pass men/women, wait!
-			}
-			catArg := categoryGender
-			if categoryGender == "M" {
-				catArg = "men"
-			} else if categoryGender == "F" {
-				catArg = "women"
-			} else {
-				catArg = "open"
-			}
-			_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, allCatPlayers)
-		} else {
-			// Group by division
-			for _, div := range divs {
-				var divPlayers []*playerDomain.Player
-				for _, p := range allCatPlayers {
-					eloVal := p.SinglesElo
-					if isDoubles {
-						eloVal = p.DoublesElo
-					}
-					if div.ContainsElo(int16(eloVal)) {
-						divPlayers = append(divPlayers, p)
-					}
-				}
-
-				if len(divPlayers) > 0 {
-					tName := fmt.Sprintf("%s - %s (%s)", e.Name, suffix, div.Name)
-					catArg := categoryGender
-					if categoryGender == "M" {
-						catArg = "men"
-					} else if categoryGender == "F" {
-						catArg = "women"
-					} else {
-						catArg = "open"
-					}
-					_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, divPlayers)
-				}
-			}
-		}
-	}
-
-	processCategory(singlesMen, "Men's Singles", "singles", "M", false)
-	processCategory(singlesWomen, "Women's Singles", "singles", "F", false)
-	processCategory(doublesMen, "Men's Doubles", "doubles", "M", true)
-	processCategory(doublesWomen, "Women's Doubles", "doubles", "F", true)
-	processCategory(doublesMixed, "Mixed Doubles", "doubles", "", true)
-	processCategory(teamsMen, "Men's Teams", "teams", "M", false)
-	processCategory(teamsWomen, "Women's Teams", "teams", "F", false)
-
-	if err := uc.eventRepo.Save(ctx, e); err != nil {
-		return nil, err
-	}
-
-	var validTournamentIDs []string
-	for _, tID := range existingTournamentIDs {
-		if tID != "" {
-			validTournamentIDs = append(validTournamentIDs, tID)
-		}
-	}
-	if len(validTournamentIDs) > 0 {
-		_ = uc.tournamentRepo.UpdateEventIDBulk(ctx, validTournamentIDs, e.ID)
-	}
-
-	// Reload the event with loaded tournaments
-	return uc.eventRepo.GetByID(ctx, e.ID)
-}
-
-type GetEventByIDUseCase struct {
-	eventRepo eventDomain.Repository
-}
-
-func NewGetEventByIDUseCase(eventRepo eventDomain.Repository) *GetEventByIDUseCase {
-	return &GetEventByIDUseCase{eventRepo: eventRepo}
-}
-
-func (uc *GetEventByIDUseCase) Execute(ctx context.Context, idStr string) (*eventDomain.Event, error) {
-	return uc.eventRepo.GetByIDDeep(ctx, idStr)
-}
-
-type GetAllEventsUseCase struct {
-	eventRepo eventDomain.Repository
-}
-
-func NewGetAllEventsUseCase(eventRepo eventDomain.Repository) *GetAllEventsUseCase {
-	return &GetAllEventsUseCase{eventRepo: eventRepo}
-}
-
-func (uc *GetAllEventsUseCase) Execute(ctx context.Context) ([]*eventDomain.Event, error) {
-	return uc.eventRepo.GetAll(ctx)
-}
-
-type DeleteEventUseCase struct {
-	eventRepo eventDomain.Repository
-}
-
-func NewDeleteEventUseCase(eventRepo eventDomain.Repository) *DeleteEventUseCase {
-	return &DeleteEventUseCase{eventRepo: eventRepo}
-}
-
-func (uc *DeleteEventUseCase) Execute(ctx context.Context, idStr string) error {
-	return uc.eventRepo.Delete(ctx, idStr)
-}
-
-func (uc *DeleteEventUseCase) ExecuteBulk(ctx context.Context, idStrs []string) error {
-	return uc.eventRepo.DeleteEvents(ctx, idStrs)
-}
-
-// ── Update ──────────────────────────────────────────────────────────────────
-
-type UpdateEventUseCase struct {
-	eventRepo eventDomain.Repository
-}
-
-func NewUpdateEventUseCase(eventRepo eventDomain.Repository) *UpdateEventUseCase {
-	return &UpdateEventUseCase{eventRepo: eventRepo}
-}
-
-func (uc *UpdateEventUseCase) Execute(ctx context.Context, idStr, name, startDateStr, endDateStr string, numTables int) (*eventDomain.Event, error) {
-	e, err := uc.eventRepo.GetByID(ctx, idStr)
+	t, err := tournamentDomain.NewTournament(idStr, name, tournamentType, format, category, start, end, []tournamentDomain.Rule{}, groupPassCount, participants, hasThirdPlaceMatch)
 	if err != nil {
 		return nil, err
 	}
-	if name != "" {
-		e.Name = name
-	}
-	if startDateStr != "" {
-		if t, err := time.Parse("2006-01-02", startDateStr); err == nil {
-			e.StartDate = t
+	t.RegistrationOpen = registrationOpen
+	t.SkipElo = skipElo
+	t.DivisionFormats = divisionFormats
+	t.DivisionGroupPassCounts = divisionGroupPassCounts
+	t.DivisionGroupCounts = divisionGroupCounts
+	t.EventID = eventID
+	t.TeamFormat = teamFormat
+	t.NumTables = numTables
+	t.HasThirdPlaceMatch = hasThirdPlaceMatch
+
+	// Preserve existing teams and conditionally preserve/regenerate groups
+	if existing, err := uc.repo.GetByID(ctx, idStr); err == nil {
+		t.Teams = existing.Teams
+
+		// Check if participants, format, type, or category changed
+		participantsChanged := false
+		if len(existing.Participants) != len(participants) {
+			participantsChanged = true
+		} else {
+			existingMap := make(map[string]bool)
+			for _, p := range existing.Participants {
+				existingMap[p.ID] = true
+			}
+			for _, p := range participants {
+				if !existingMap[p.ID] {
+					participantsChanged = true
+					break
+				}
+			}
+		}
+
+		formatChanged := existing.Format != format
+		typeChanged := existing.Type != tournamentType
+		categoryChanged := existing.EventCategory != category
+
+		// Check if division group counts or division formats changed
+		divGroupCountsChanged := false
+		if len(existing.DivisionGroupCounts) != len(divisionGroupCounts) {
+			divGroupCountsChanged = true
+		} else {
+			for k, v := range divisionGroupCounts {
+				if existing.DivisionGroupCounts[k] != v {
+					divGroupCountsChanged = true
+					break
+				}
+			}
+		}
+
+		divFormatsChanged := false
+		if len(existing.DivisionFormats) != len(divisionFormats) {
+			divFormatsChanged = true
+		} else {
+			for k, v := range divisionFormats {
+				if existing.DivisionFormats[k] != v {
+					divFormatsChanged = true
+					break
+				}
+			}
+		}
+
+		preserveGroups := !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && !divGroupCountsChanged && !divFormatsChanged && len(existing.Groups) > 0
+		if existing.ManualSeedingLocked {
+			preserveGroups = true
+		}
+
+		if preserveGroups {
+			t.Groups = existing.Groups
+		} else {
+			// Fetch divisions list to seed groups per-division
+			var divsList []tournamentDomain.DivisionSeeding
+			if !skipElo {
+				divs, err := uc.divisionRepo.GetAll(ctx)
+				if err == nil {
+					for _, d := range divs {
+						if d.Category == "both" || d.Category == tournamentType {
+							divsList = append(divsList, tournamentDomain.DivisionSeeding{
+								ID:     d.ID,
+								Name:   d.Name,
+								MinElo: d.MinElo,
+								MaxElo: d.MaxElo,
+							})
+						}
+					}
+				}
+			}
+
+			if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
+				if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err != nil {
+					return nil, err
+				}
+			}
+		}
+	} else {
+		// Fallback for new / not found
+		var divsList []tournamentDomain.DivisionSeeding
+		if !skipElo {
+			divs, err := uc.divisionRepo.GetAll(ctx)
+			if err == nil {
+				for _, d := range divs {
+					if d.Category == "both" || d.Category == tournamentType {
+						divsList = append(divsList, tournamentDomain.DivisionSeeding{
+							ID:     d.ID,
+							Name:   d.Name,
+							MinElo: d.MinElo,
+							MaxElo: d.MaxElo,
+						})
+					}
+				}
+			}
+		}
+
+		if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
+			if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err != nil {
+				return nil, err
+			}
 		}
 	}
-	if endDateStr != "" {
-		if t, err := time.Parse("2006-01-02", endDateStr); err == nil {
-			e.EndDate = t
+
+	// Apply any stage rule overrides submitted by the admin
+	for i := range t.StageRules {
+		for _, ov := range stageRuleOverrides {
+			if t.StageRules[i].Stage == ov.Stage {
+				t.StageRules[i].TournamentID = idStr
+				t.StageRules[i].BestOf = ov.BestOf
+				t.StageRules[i].PointsToWin = ov.PointsToWin
+				t.StageRules[i].PointsMargin = ov.PointsMargin
+			}
 		}
 	}
-	if numTables > 0 {
-		e.NumTables = numTables
+
+	// Apply division-specific rules
+	t.DivisionRules = divisionRules
+
+	if err := uc.repo.Update(ctx, t); err != nil {
+		return nil, err
 	}
-	if err := uc.eventRepo.Update(ctx, e); err != nil {
-		return nil, fmt.Errorf("failed to update event: %w", err)
-	}
-	return e, nil
+	return t, nil
 }
 
+// ─── Delete ──────────────────────────────────────────────────────────────────
+
+type DeleteTournamentUseCase struct {
+	repo tournamentDomain.Repository
+}
+
+func NewDeleteTournamentUseCase(repo tournamentDomain.Repository) *DeleteTournamentUseCase {
+	return &DeleteTournamentUseCase{repo: repo}
+}
+
+func (uc *DeleteTournamentUseCase) Execute(ctx context.Context, idStr string) error {
+	return uc.repo.Delete(ctx, idStr)
+}
+
+// ── Remove Participant ──────────────────────────────────────────────────────
+
+type RemoveParticipantUseCase struct {
+	repo tournamentDomain.Repository
+}
+
+func NewRemoveParticipantUseCase(repo tournamentDomain.Repository) *RemoveParticipantUseCase {
+	return &RemoveParticipantUseCase{repo: repo}
+}
+
+func (uc *RemoveParticipantUseCase) Execute(ctx context.Context, tournamentID, playerID string) error {
+	return uc.repo.RemoveParticipant(ctx, tournamentID, playerID)
+}

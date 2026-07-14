@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"strconv"
 	"table-tennis-backend/internal/application/player"
-	"table-tennis-backend/internal/application/tournament"
+	"table-tennis-backend/internal/application/event"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/xuri/excelize/v2"
@@ -20,8 +20,8 @@ type PlayerHandler struct {
 	searchPlayerUC          *player.SearchPlayersUseCase
 	searchPlayerSelectionUC *player.SearchPlayersForSelectionUseCase
 	importPlayersUC         *player.ImportPlayersUseCase
-	enrollPlayerUC          *tournament.EnrollPlayerUseCase
-	getTournamentsUC        *tournament.GetTournamentsUseCase
+	enrollPlayerUC          *event.EnrollPlayerUseCase
+	getTournamentsUC        *event.GetTournamentsUseCase
 }
 
 func NewPlayerHandler(
@@ -32,8 +32,8 @@ func NewPlayerHandler(
 	siuc *player.SearchPlayersUseCase,
 	ssuc *player.SearchPlayersForSelectionUseCase,
 	iuc *player.ImportPlayersUseCase,
-	enrollUC *tournament.EnrollPlayerUseCase,
-	gtuc *tournament.GetTournamentsUseCase,
+	enrollUC *event.EnrollPlayerUseCase,
+	gtuc *event.GetTournamentsUseCase,
 ) *PlayerHandler {
 	return &PlayerHandler{
 		registerPlayerUC:        uc,
@@ -77,7 +77,7 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 
 	if body.TournamentID != "" {
 		if err := h.enrollPlayerUC.Execute(c.Context(), body.TournamentID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
-			slog.Warn("failed to enroll newly created player into tournament", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
+			slog.Warn("failed to enroll newly created player into event", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
 		}
 	}
 
@@ -113,7 +113,7 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 
 	if body.TournamentID != "" {
 		if err := h.enrollPlayerUC.Execute(c.Context(), body.TournamentID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
-			slog.Warn("failed to enroll updated player into tournament", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
+			slog.Warn("failed to enroll updated player into event", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
 		}
 	}
 
@@ -136,9 +136,9 @@ func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
 	}
 	
 	var activeTournaments []any
-	tournaments, _ := h.getTournamentsUC.Execute(c.Context())
-	if tournaments != nil {
-		for _, t := range tournaments {
+	events, _ := h.getTournamentsUC.Execute(c.Context())
+	if events != nil {
+		for _, t := range events {
 			if t.Status != "finished" {
 				activeTournaments = append(activeTournaments, t)
 			}
@@ -147,7 +147,7 @@ func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
 
 	return c.Render("admin/partials/player-edit-form", fiber.Map{
 		"Player":      p,
-		"Tournaments": activeTournaments,
+		"Events": activeTournaments,
 	})
 }
 

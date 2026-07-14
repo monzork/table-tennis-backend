@@ -53,23 +53,23 @@ func main() {
 	}
 	defer sqldb.Close()
 
-	// Self-healing seed for No Division fallback to prevent FK violations on Skip-Elo Events
+	// Self-healing seed for No Division fallback to prevent FK violations on Skip-Elo Tournaments
 	_, _ = bunDB.NewRaw("INSERT INTO divisions (id, name, display_order, min_elo, max_elo, category, color) VALUES ('none', 'No Division', 99, 0, 9999, 'both', '#7B8794') ON CONFLICT (id) DO NOTHING").Exec(context.Background())
 
-	// Ensure tournaments table has winner_name column
-	_, _ = bunDB.NewRaw("ALTER TABLE tournaments ADD COLUMN winner_name TEXT DEFAULT ''").Exec(context.Background())
+	// Ensure events table has winner_name column
+	_, _ = bunDB.NewRaw("ALTER TABLE events ADD COLUMN winner_name TEXT DEFAULT ''").Exec(context.Background())
 	// Ensure players table has national_id column
 	_, _ = bunDB.NewRaw("ALTER TABLE players ADD COLUMN national_id TEXT DEFAULT ''").Exec(context.Background())
 	// Ensure players table has second_name column
 	_, _ = bunDB.NewRaw("ALTER TABLE players ADD COLUMN second_name TEXT").Exec(context.Background())
 	// Ensure players table has second_last_name column
 	_, _ = bunDB.NewRaw("ALTER TABLE players ADD COLUMN second_last_name TEXT").Exec(context.Background())
-	// Ensure tournament_participants has pin column (migration 024)
-	_, _ = bunDB.NewRaw("ALTER TABLE tournament_participants ADD COLUMN pin TEXT NOT NULL DEFAULT '0000'").Exec(context.Background())
-	// Ensure events has num_tables
-	_, _ = bunDB.NewRaw("ALTER TABLE events ADD COLUMN num_tables INT NOT NULL DEFAULT 4").Exec(context.Background())
+	// Ensure event_participants has pin column (migration 024)
+	_, _ = bunDB.NewRaw("ALTER TABLE event_participants ADD COLUMN pin TEXT NOT NULL DEFAULT '0000'").Exec(context.Background())
 	// Ensure tournaments has num_tables
-	_, _ = bunDB.NewRaw("ALTER TABLE tournaments ADD COLUMN num_tables INT NOT NULL DEFAULT 0").Exec(context.Background())
+	_, _ = bunDB.NewRaw("ALTER TABLE tournaments ADD COLUMN num_tables INT NOT NULL DEFAULT 4").Exec(context.Background())
+	// Ensure events has num_tables
+	_, _ = bunDB.NewRaw("ALTER TABLE events ADD COLUMN num_tables INT NOT NULL DEFAULT 0").Exec(context.Background())
 
 	// Migrate existing optional fields with empty strings to NULL
 	if !isPostgres {
@@ -143,7 +143,7 @@ func main() {
 	_, _ = bunDB.NewRaw("UPDATE players SET national_id = NULL WHERE national_id = ''").Exec(context.Background())
 
 	// Add has_third_place_match if missing
-	_, _ = bunDB.NewRaw("ALTER TABLE tournaments ADD COLUMN has_third_place_match BOOLEAN NOT NULL DEFAULT false").Exec(context.Background())
+	_, _ = bunDB.NewRaw("ALTER TABLE events ADD COLUMN has_third_place_match BOOLEAN NOT NULL DEFAULT false").Exec(context.Background())
 
 	log.Println("Migration 026 complete: ad-hoc alters applied.")
 }

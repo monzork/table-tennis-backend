@@ -53,20 +53,20 @@ func main() {
 		uuidType = "TEXT"
 	}
 
-	// 1. Add team_format to tournaments table
-	_, _ = sqldb.Exec(`ALTER TABLE tournaments ADD COLUMN team_format TEXT;`)
-	log.Println("Tried adding team_format to tournaments.")
+	// 1. Add team_format to events table
+	_, _ = sqldb.Exec(`ALTER TABLE events ADD COLUMN team_format TEXT;`)
+	log.Println("Tried adding team_format to events.")
 
 	// 2. Create team_matches table
 	_, err = sqldb.Exec(`
 		CREATE TABLE IF NOT EXISTS team_matches (
 			id ` + uuidType + ` PRIMARY KEY,
-			tournament_id ` + uuidType + ` NOT NULL,
+			event_id ` + uuidType + ` NOT NULL,
 			team_a_id ` + uuidType + ` NOT NULL,
 			team_b_id ` + uuidType + ` NOT NULL,
 			status TEXT NOT NULL DEFAULT 'scheduled',
 			winner_team TEXT,
-			FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+			FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
 			FOREIGN KEY (team_a_id) REFERENCES teams(id) ON DELETE CASCADE,
 			FOREIGN KEY (team_b_id) REFERENCES teams(id) ON DELETE CASCADE
 		);

@@ -1,1 +1,1 @@
-ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS division_formats JSON DEFAULT '{}';
+ALTER TABLE events ADD COLUMN IF NOT EXISTS division_formats JSON DEFAULT '{}';

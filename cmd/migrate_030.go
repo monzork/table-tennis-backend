@@ -57,7 +57,7 @@ func main() {
 
 	// Step 1: Add new array column for division_ids
 	if isPostgres {
-		_, err = bunDB.NewRaw(`ALTER TABLE events ADD COLUMN IF NOT EXISTS division_ids text[] DEFAULT '{}'`).Exec(ctx)
+		_, err = bunDB.NewRaw(`ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS division_ids text[] DEFAULT '{}'`).Exec(ctx)
 		if err != nil {
 			log.Fatal("Failed to add division_ids column:", err)
 		}
@@ -65,9 +65,9 @@ func main() {
 		// SQLite JSON support for array mapping in Bun
 		// First check if column exists
 		var hasCol int
-		_ = bunDB.NewRaw(`SELECT COUNT(*) FROM pragma_table_info('events') WHERE name = 'division_ids'`).Scan(ctx, &hasCol)
+		_ = bunDB.NewRaw(`SELECT COUNT(*) FROM pragma_table_info('tournaments') WHERE name = 'division_ids'`).Scan(ctx, &hasCol)
 		if hasCol == 0 {
-			_, err = bunDB.NewRaw(`ALTER TABLE events ADD COLUMN division_ids TEXT`).Exec(ctx)
+			_, err = bunDB.NewRaw(`ALTER TABLE tournaments ADD COLUMN division_ids TEXT`).Exec(ctx)
 			if err != nil {
 				log.Fatal("Failed to add division_ids column (sqlite):", err)
 			}
@@ -76,17 +76,17 @@ func main() {
 
 	// Step 2: Drop the old division_id column
 	if isPostgres {
-		_, err = bunDB.NewRaw(`ALTER TABLE events DROP COLUMN IF EXISTS division_id`).Exec(ctx)
+		_, err = bunDB.NewRaw(`ALTER TABLE tournaments DROP COLUMN IF EXISTS division_id`).Exec(ctx)
 		if err != nil {
 			log.Fatal("Failed to drop old division_id column:", err)
 		}
 	} else {
 		// SQLite DROP COLUMN requires newer versions, but it's supported in modernc
-		_, err = bunDB.NewRaw(`ALTER TABLE events DROP COLUMN division_id`).Exec(ctx)
+		_, err = bunDB.NewRaw(`ALTER TABLE tournaments DROP COLUMN division_id`).Exec(ctx)
 		if err != nil {
 			log.Println("Notice: Failed to drop old division_id column (sqlite), this is fine on older SQLite versions:", err)
 		}
 	}
 
-	log.Println("Migration 030 complete: event division_ids added and division_id dropped.")
+	log.Println("Migration 030 complete: tournament division_ids added and division_id dropped.")
 }

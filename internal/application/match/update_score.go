@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"table-tennis-backend/internal/domain/tournament"
+	"table-tennis-backend/internal/domain/event"
 )
 
 type UpdateMatchScoreUseCase struct {
-	matchRepo      tournament.MatchRepository
-	tournamentRepo tournament.Repository
+	matchRepo      event.MatchRepository
+	tournamentRepo event.Repository
 }
 
-func NewUpdateMatchScoreUseCase(matchRepo tournament.MatchRepository, tournamentRepo tournament.Repository) *UpdateMatchScoreUseCase {
+func NewUpdateMatchScoreUseCase(matchRepo event.MatchRepository, tournamentRepo event.Repository) *UpdateMatchScoreUseCase {
 	return &UpdateMatchScoreUseCase{
 		matchRepo:      matchRepo,
 		tournamentRepo: tournamentRepo,
@@ -28,8 +28,8 @@ type SetScoreInput struct {
 }
 
 // ParseSetScores parses form values like ["11-8", "11-5", "9-11"] into MatchSet slice.
-func ParseSetScores(raw []string) ([]tournament.MatchSet, error) {
-	var sets []tournament.MatchSet
+func ParseSetScores(raw []string) ([]event.MatchSet, error) {
+	var sets []event.MatchSet
 	for i, val := range raw {
 		val = strings.TrimSpace(val)
 		if val == "" {
@@ -47,7 +47,7 @@ func ParseSetScores(raw []string) ([]tournament.MatchSet, error) {
 		if err != nil {
 			return nil, err
 		}
-		sets = append(sets, tournament.MatchSet{Number: i + 1, ScoreA: a, ScoreB: b})
+		sets = append(sets, event.MatchSet{Number: i + 1, ScoreA: a, ScoreB: b})
 	}
 	return sets, nil
 }
@@ -66,11 +66,11 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 
 	t, err := uc.tournamentRepo.GetByID(ctx, tournamentIDStr)
 	if err != nil {
-		return fmt.Errorf("tournament not found: %w", err)
+		return fmt.Errorf("event not found: %w", err)
 	}
 
 	if t.Status == "finished" {
-		return fmt.Errorf("cannot update score of a finished tournament")
+		return fmt.Errorf("cannot update score of a finished event")
 	}
 
 	// Get effective stage rule (division rules will be applied if match has division info)

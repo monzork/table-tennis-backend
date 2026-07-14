@@ -2,24 +2,24 @@ package bun
 
 import (
 	"context"
-	"table-tennis-backend/internal/domain/tournament"
+	"table-tennis-backend/internal/domain/event"
 
 	"github.com/google/uuid"
 	bun "github.com/uptrace/bun"
 )
 
 type StageRuleModel struct {
-	bun.BaseModel `bun:"table:tournament_stage_rules,alias:sr"`
+	bun.BaseModel `bun:"table:event_stage_rules,alias:sr"`
 
 	ID           string `bun:"id,pk"`
-	TournamentID string `bun:"tournament_id,notnull"`
+	TournamentID string `bun:"event_id,notnull"`
 	Stage        string `bun:"stage,notnull"`
 	BestOf       int    `bun:"best_of,notnull"`
 	PointsToWin  int    `bun:"points_to_win,notnull"`
 	PointsMargin int    `bun:"points_margin,notnull"`
 }
 
-func stageRuleToModel(r tournament.StageRule) *StageRuleModel {
+func stageRuleToModel(r event.StageRule) *StageRuleModel {
 	id := r.ID
 	if id == "" {
 		id = uuid.NewString()
@@ -37,8 +37,8 @@ func stageRuleToModel(r tournament.StageRule) *StageRuleModel {
 	}
 }
 
-func stageRuleToDomain(m StageRuleModel) tournament.StageRule {
-	return tournament.StageRule{
+func stageRuleToDomain(m StageRuleModel) event.StageRule {
+	return event.StageRule{
 		ID:           m.ID,
 		TournamentID: m.TournamentID,
 		Stage:        m.Stage,
@@ -48,11 +48,11 @@ func stageRuleToDomain(m StageRuleModel) tournament.StageRule {
 	}
 }
 
-// loadStageRules fetches all stage rules for a tournament (shared helper).
-func loadStageRules(ctx context.Context, db *bun.DB, tournamentID uuid.UUID) []tournament.StageRule {
+// loadStageRules fetches all stage rules for a event (shared helper).
+func loadStageRules(ctx context.Context, db *bun.DB, tournamentID uuid.UUID) []event.StageRule {
 	var models []StageRuleModel
-	_ = db.NewSelect().Model(&models).Where("tournament_id = ?", tournamentID.String()).Scan(ctx)
-	rules := make([]tournament.StageRule, len(models))
+	_ = db.NewSelect().Model(&models).Where("event_id = ?", tournamentID.String()).Scan(ctx)
+	rules := make([]event.StageRule, len(models))
 	for i, m := range models {
 		rules[i] = stageRuleToDomain(m)
 	}
@@ -60,7 +60,7 @@ func loadStageRules(ctx context.Context, db *bun.DB, tournamentID uuid.UUID) []t
 }
 
 // saveStageRules inserts all stage rules inside a transaction.
-func saveStageRules(ctx context.Context, tx bun.IDB, rules []tournament.StageRule) error {
+func saveStageRules(ctx context.Context, tx bun.IDB, rules []event.StageRule) error {
 	if len(rules) == 0 {
 		return nil
 	}
@@ -73,19 +73,19 @@ func saveStageRules(ctx context.Context, tx bun.IDB, rules []tournament.StageRul
 }
 
 // replaceStageRules deletes old rules and re-inserts new ones inside a transaction.
-func replaceStageRules(ctx context.Context, tx bun.IDB, tournamentID string, rules []tournament.StageRule) error {
-	if _, err := tx.NewDelete().TableExpr("tournament_stage_rules").
-		Where("tournament_id = ?", tournamentID).Exec(ctx); err != nil {
+func replaceStageRules(ctx context.Context, tx bun.IDB, tournamentID string, rules []event.StageRule) error {
+	if _, err := tx.NewDelete().TableExpr("event_stage_rules").
+		Where("event_id = ?", tournamentID).Exec(ctx); err != nil {
 		return err
 	}
 	return saveStageRules(ctx, tx, rules)
 }
 
-// GetStageRule retrieves a specific stage rule for a tournament by stage name.
+// GetStageRule retrieves a specific stage rule for a event by stage name.
 func GetStageRule(ctx context.Context, db *bun.DB, tournamentID uuid.UUID, stage string) (*StageRuleModel, error) {
 	m := new(StageRuleModel)
 	err := db.NewSelect().Model(m).
-		Where("tournament_id = ?", tournamentID.String()).
+		Where("event_id = ?", tournamentID.String()).
 		Where("stage = ?", stage).
 		Scan(ctx)
 	if err != nil {

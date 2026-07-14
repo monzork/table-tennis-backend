@@ -1,5 +1,5 @@
 {{define "admin/partials/board-columns"}}
-{{$t := .Tournament}}
+{{$t := .Event}}
 
 {{/* ── Table Availability Panel ── */}}
 <div class="mb-6 glass rounded-3xl border border-white/10 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-club-panel/30 backdrop-blur-md">
@@ -19,7 +19,7 @@
       <button type="button" 
               onclick="showQRCodeModal('', 'Table {{.Number}}', '{{.Number}}', '{{$t.ID}}', '{{if $t.EventID}}{{$t.EventID}}{{end}}')"
               class="qr-table-btn ml-1 text-gray-400 hover:text-white transition-colors flex items-center justify-center"
-              data-table="{{.Number}}" data-tournament-id="{{$t.ID}}" data-event-id="{{if $t.EventID}}{{$t.EventID}}{{end}}"
+              data-table="{{.Number}}" data-event-id="{{$t.ID}}" data-tournament-id="{{if $t.EventID}}{{$t.EventID}}{{end}}"
               title="Show Table {{.Number}} QR Code">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>

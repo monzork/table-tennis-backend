@@ -3,7 +3,7 @@ package handler
 import (
 	"errors"
 	"strings"
-	"table-tennis-backend/internal/domain/tournament"
+	"table-tennis-backend/internal/domain/event"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,7 +20,7 @@ func ErrorHandler(err error) error {
 	}
 
 	// Handle specific domain errors
-	if errors.Is(err, tournament.ErrInvalidDates) {
+	if errors.Is(err, event.ErrInvalidDates) {
 		return ErrorHandler(err)
 	}
 

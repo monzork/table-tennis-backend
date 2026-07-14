@@ -18,7 +18,7 @@
             body: JSON.stringify({
                 title: "Test Alert",
                 body: "Push notifications are working perfectly!",
-                url: "/tournaments"
+                url: "/events"
             })
         }).then(res => {
             if (res.ok) alert("Test broadcast sent to all subscribed endpoints!");
@@ -40,20 +40,20 @@
             <div class="absolute -right-2 -bottom-2 opacity-5 text-8xl font-black uppercase tracking-tighter select-none">ATH</div>
         </div>
 
-        <!-- Tournaments Stat -->
+        <!-- Events Stat -->
         <div class="glass p-6 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col justify-between hover:border-white/10 transition-all duration-300">
             <div class="space-y-1">
-                <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Tournaments</span>
-                <h3 class="text-4xl font-black text-white tracking-tighter">{{len .Tournaments}}</h3>
+                <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Events</span>
+                <h3 class="text-4xl font-black text-white tracking-tighter">{{len .Events}}</h3>
             </div>
             <div class="absolute -right-2 -bottom-2 opacity-5 text-8xl font-black uppercase tracking-tighter select-none">TRN</div>
         </div>
 
-        <!-- Events Stat -->
+        <!-- Tournaments Stat -->
         <div class="glass p-6 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col justify-between hover:border-white/10 transition-all duration-300">
             <div class="space-y-1">
-                <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Grand Events</span>
-                <h3 class="text-4xl font-black text-white tracking-tighter">{{len .Events}}</h3>
+                <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Grand Tournaments</span>
+                <h3 class="text-4xl font-black text-white tracking-tighter">{{len .Tournaments}}</h3>
             </div>
             <div class="absolute -right-2 -bottom-2 opacity-5 text-8xl font-black uppercase tracking-tighter select-none">EVT</div>
         </div>
@@ -83,30 +83,30 @@
             <span class="text-[10px] uppercase tracking-widest text-red-500 font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Manage Players →</span>
         </a>
 
-        <!-- Tournaments Link -->
-        <a href="/admin/tournaments"
+        <!-- Events Link -->
+        <a href="/admin/events"
             class="glass p-6 rounded-2xl border border-white/5 hover:border-red-500/30 hover:-translate-y-1 transition-all group flex flex-col justify-between gap-4">
             <div class="space-y-1.5">
                 <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 group-hover:text-white transition-colors">
                     🏆
                 </div>
-                <h2 class="text-xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Tournaments</h2>
-                <p class="text-gray-400 text-xs">Configure tournament structures, round robins, and brackets.</p>
+                <h2 class="text-xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Events</h2>
+                <p class="text-gray-400 text-xs">Configure event structures, round robins, and brackets.</p>
             </div>
             <span class="text-[10px] uppercase tracking-widest text-red-500 font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Configure Tourneys →</span>
         </a>
 
-        <!-- Grand Events Link -->
-        <a href="/admin/events"
+        <!-- Grand Tournaments Link -->
+        <a href="/admin/tournaments"
             class="glass p-6 rounded-2xl border border-white/5 hover:border-red-500/30 hover:-translate-y-1 transition-all group flex flex-col justify-between gap-4">
             <div class="space-y-1.5">
                 <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 group-hover:text-white transition-colors">
                     ✨
                 </div>
-                <h2 class="text-xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Grand Events</h2>
-                <p class="text-gray-400 text-xs">Initialize multi-bracket league events and auto-provisions.</p>
+                <h2 class="text-xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Grand Tournaments</h2>
+                <p class="text-gray-400 text-xs">Initialize multi-bracket league tournaments and auto-provisions.</p>
             </div>
-            <span class="text-[10px] uppercase tracking-widest text-red-500 font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Manage Events →</span>
+            <span class="text-[10px] uppercase tracking-widest text-red-500 font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Manage Tournaments →</span>
         </a>
 
         <!-- Divisions Link -->
@@ -123,30 +123,30 @@
         </a>
     </div>
 
-    <!-- Active Grand Events Segment -->
+    <!-- Active Grand Tournaments Segment -->
     <div class="glass p-8 rounded-3xl border border-white/5 space-y-6">
         <div class="flex justify-between items-center border-b border-white/5 pb-4">
             <div>
-                <h2 class="text-2xl font-black uppercase tracking-tight text-white">Grand Events Overview</h2>
-                <p class="text-xs text-gray-500">Overview of recent and ongoing club grand events</p>
+                <h2 class="text-2xl font-black uppercase tracking-tight text-white">Grand Tournaments Overview</h2>
+                <p class="text-xs text-gray-500">Overview of recent and ongoing club grand tournaments</p>
             </div>
-            <a href="/admin/events" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-white font-extrabold text-[10px] uppercase tracking-widest transition-all">View All Events</a>
+            <a href="/admin/tournaments" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-white font-extrabold text-[10px] uppercase tracking-widest transition-all">View All Tournaments</a>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-[11px] font-bold tracking-tight block sm:table sm:whitespace-nowrap">
                 <thead class="hidden sm:table-header-group">
                     <tr class="bg-white/5 text-gray-500 uppercase tracking-[0.2em] text-[9px] border-b border-white/10">
-                        <th class="p-4">Event Name</th>
+                        <th class="p-4">Tournament Name</th>
                         <th class="p-4">Division Tier</th>
                         <th class="p-4 text-center">Auto-Elo</th>
-                        <th class="p-4 text-center">Active Tournaments</th>
+                        <th class="p-4 text-center">Active Events</th>
                         <th class="p-4">Duration</th>
                         <th class="p-4 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5 block sm:table-row-group">
-                    {{range .Events}}
+                    {{range .Tournaments}}
                     <tr class="hover:bg-white/[0.02] transition-colors flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-5 sm:p-0 relative gap-1.5 sm:gap-0">
                         <td class="block sm:table-cell p-0 sm:p-4 text-white uppercase text-xl sm:text-xs font-black mb-1 sm:mb-0">{{.Name}}</td>
                         <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
@@ -166,18 +166,18 @@
                             {{end}}</span>
                         </td>
                         <td class="block sm:table-cell p-0 sm:p-4 text-left sm:text-center text-white tabular-nums mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
-                            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Active Tournaments:</span><span>{{len .Tournaments}}</span>
+                            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Active Events:</span><span>{{len .Events}}</span>
                         </td>
                         <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-medium font-mono mb-3 sm:mb-0 flex justify-between items-center sm:table-cell">
                             <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Duration:</span><span>{{.StartDate.Format "Jan 02, 2006"}} - {{.EndDate.Format "Jan 02, 2006"}}</span>
                         </td>
                         <td class="block sm:table-cell p-0 sm:p-4 text-left sm:text-right mt-3 sm:mt-0 pt-4 sm:pt-0 border-t border-white/10 sm:border-t-0 w-full text-center sm:w-auto">
-                            <a href="/admin/events/{{.ID}}" class="inline-block text-red-500 hover:text-red-400 hover:bg-white/5 font-extrabold uppercase tracking-widest text-[10px] py-2 px-4 rounded w-full sm:w-auto sm:px-0 sm:py-0 border border-white/10 sm:border-0">Open Details →</a>
+                            <a href="/admin/tournaments/{{.ID}}" class="inline-block text-red-500 hover:text-red-400 hover:bg-white/5 font-extrabold uppercase tracking-widest text-[10px] py-2 px-4 rounded w-full sm:w-auto sm:px-0 sm:py-0 border border-white/10 sm:border-0">Open Details →</a>
                         </td>
                     </tr>
                     {{else}}
                     <tr>
-                        <td colspan="6" class="p-8 text-center text-gray-500 italic">No Grand Events scheduled. Initialize one under the Grand Events section!</td>
+                        <td colspan="6" class="p-8 text-center text-gray-500 italic">No Grand Tournaments scheduled. Initialize one under the Grand Tournaments section!</td>
                     </tr>
                     {{end}}
                 </tbody>

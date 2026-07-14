@@ -1,11 +1,11 @@
 -- Add performance indexes on foreign keys
-CREATE INDEX IF NOT EXISTS idx_tournaments_event_id ON tournaments(event_id);
-CREATE INDEX IF NOT EXISTS idx_tournament_participants_tourn_id ON tournament_participants(tournament_id);
-CREATE INDEX IF NOT EXISTS idx_tournament_participants_player_id ON tournament_participants(player_id);
-CREATE INDEX IF NOT EXISTS idx_groups_tourn_id ON groups(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_events_tournament_id ON events(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_event_participants_tourn_id ON event_participants(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_participants_player_id ON event_participants(player_id);
+CREATE INDEX IF NOT EXISTS idx_groups_tourn_id ON groups(event_id);
 CREATE INDEX IF NOT EXISTS idx_group_participants_group_id ON group_participants(group_id);
 CREATE INDEX IF NOT EXISTS idx_group_participants_player_id ON group_participants(player_id);
-CREATE INDEX IF NOT EXISTS idx_matches_tourn_id ON matches(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_matches_tourn_id ON matches(event_id);
 CREATE INDEX IF NOT EXISTS idx_matches_team_a_1 ON matches(team_a_player_1_id);
 CREATE INDEX IF NOT EXISTS idx_matches_team_b_1 ON matches(team_b_player_1_id);
 CREATE INDEX IF NOT EXISTS idx_matches_division_id ON matches(division_id);

@@ -163,7 +163,7 @@
         .toast-slide-in {
             animation: toast-lifecycle 4.5s forwards ease-in-out;
         }
-        body:has(.event-checkbox:checked) #bulk-delete-btn {
+        body:has(.tournament-checkbox:checked) #bulk-delete-btn {
             display: inline-flex !important;
         }
         body:has(#match-type-selector option[value="doubles"]:checked) #teamA-player2,
@@ -229,8 +229,8 @@
             <div class="flex gap-4 sm:gap-6 font-semibold text-xs sm:text-sm tracking-wider uppercase text-gray-400 items-center overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar justify-start sm:justify-end shrink-0">
                 <a href="/admin" class="hover:text-white transition-colors proj-hide">{{t .T "nav.dashboard"}}</a>
                 <a href="/admin/players" class="hover:text-white transition-colors proj-hide">{{t .T "nav.players"}}</a>
-                <a href="/admin/events" class="hover:text-white transition-colors proj-hide">{{t .T "nav.events"}}</a>
                 <a href="/admin/tournaments" class="hover:text-white transition-colors proj-hide">{{t .T "nav.tournaments"}}</a>
+                <a href="/admin/events" class="hover:text-white transition-colors proj-hide">{{t .T "nav.events"}}</a>
                 <a href="/admin/divisions" class="hover:text-white transition-colors proj-hide">{{t .T "nav.divisions"}}</a>
                 <span class="w-px h-6 bg-white/20 mx-2 proj-hide"></span>
                 <a href="/rankings/singles" class="hover:text-white transition-colors text-gray-300 proj-hide" target="_blank">{{t .T "nav.public_rankings"}}</a>
@@ -289,12 +289,12 @@
     </main>
 
     <!-- Global Toast Container -->
-    <div id="toast-container" class="fixed top-6 right-6 z-[250] space-y-3 pointer-events-none"></div>
+    <div id="toast-container" class="fixed top-6 right-6 z-[250] space-y-3 pointer-tournaments-none"></div>
 
     <!-- Global Styled Confirm Modal (replaces native browser confirm() for hx-confirm) -->
     <div id="global-confirm-modal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md">
         <div class="bg-club-panel p-8 rounded-3xl border border-white/10 shadow-2xl max-w-sm w-full mx-4 text-center relative overflow-hidden">
-            <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl pointer-tournaments-none"></div>
             <h3 class="text-xl font-black uppercase tracking-widest text-white mb-4">Please Confirm</h3>
             <p id="global-confirm-msg" class="text-sm text-gray-400 font-mono mb-8 whitespace-pre-wrap leading-relaxed"></p>
             <div class="flex gap-4 relative z-10">

@@ -1,158 +1,544 @@
-<div class="space-y-8 animate-fade-in text-white/90">
-    <header class="flex flex-col gap-3">
-        <div>
-            <a href="/admin/events" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-white transition-colors mb-4">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Back to Grand Events
-            </a>
-        </div>
-        <div class="flex justify-between items-start">
-            <div>
-                <h1 class="text-4xl font-extrabold tracking-tight uppercase">{{.Event.Name}} <span class="text-white">.</span></h1>
-                <p class="text-gray-400 mt-1">Multi-Category Division Event Details</p>
-            </div>
-            <!-- Action Buttons -->
-            <div class="flex flex-wrap gap-3 w-full sm:w-auto">
-                <button
-                   onclick="openEditEventModal('{{.Event.ID}}')"
-                   class="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all border border-white/20">
-                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                   Edit
+{{$participants := .Event.Participants}}
+
+<style>
+  .bracket-round:last-child .bracket-match::before { display: none; }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+  .fade-up { animation: fadeInUp 0.4s ease forwards; }
+</style>
+
+<div class="space-y-10 text-white/90 animate-fade-in" data-tournament-id="{{if .Event.EventID}}{{.Event.EventID}}{{end}}">
+
+  {{/* ── Referee Alerts Container ── */}}
+  <div id="referee-alerts-container" class="space-y-2"></div>
+
+  {{/* ── Header ──────────────────────────────────────────────── */}}
+  <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <a href="/admin/events" class="text-xs text-gray-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-1 mb-2">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        All Events
+      </a>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tighter uppercase">{{.Event.Name}}<span class="text-white">.</span></h1>
+      <div class="flex gap-3 mt-2 flex-wrap">
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">{{.Event.Type}}</span>
+        <span class="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[11px] uppercase tracking-widest text-white">{{.Event.Format}}</span>
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
+          {{.Event.StartDate.Format "Jan 02"}} – {{.Event.EndDate.Format "Jan 02, 2006"}}
+        </span>
+        <span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] uppercase tracking-widest text-gray-400">
+          {{len .Event.Participants}} players
+        </span>
+        {{if eq .Event.Status "finished"}}
+        <span class="px-3 py-1 bg-amber-500/20 border border-amber-500/30 rounded-full text-[11px] uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5 shadow-lg shadow-amber-500/5">
+          🏆 Champion: {{.Event.WinnerName}}
+        </span>
+        {{end}}
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-3 items-center w-full sm:w-auto">
+      {{if ne .Event.Status "finished"}}
+      <button hx-post="/admin/events/{{.Event.ID}}/finish"
+        hx-confirm="Finalize event and apply Elo points? This will calculate all match results."
+        class="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-green-500/20 text-center">
+        Finish Event
+      </button>
+      <button hx-post="/admin/events/{{.Event.ID}}/regenerate-seeds"
+        hx-swap="none"
+        hx-confirm="Regenerate group seeds from current player Elo? This re-groups players by division and deletes any matches created so far."
+        hx-on::response-error="showToast(tournament.detail.xhr.responseText, 'error')"
+        {{if .Event.ManualSeedingLocked}}disabled title="Seeding is locked"{{end}}
+        class="w-full sm:w-auto text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-center {{if .Event.ManualSeedingLocked}}bg-gray-800 text-gray-500 border border-gray-700 cursor-not-allowed opacity-50{{else}}bg-amber-500/20 hover:bg-amber-500/40 text-amber-400 border border-amber-500/30{{end}}">
+        Regenerate Seeds
+      </button>
+      {{else}}
+      {{if not .Event.SkipElo}}
+      <button hx-post="/admin/events/{{.Event.ID}}/recalculate-elo"
+        hx-confirm="Are you sure you want to recalculate ELO for all matches in this event?"
+        hx-on::response-error="showToast(tournament.detail.xhr.responseText, 'error')"
+        class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-amber-500/20 text-center font-bold">
+        Recalculate ELO
+      </button>
+      {{end}}
+      {{end}}
+      <a href="/admin/events/{{.Event.ID}}/board"
+        class="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/20 text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+        Board
+      </a>
+      <a href="/events/{{.Event.ID}}/tv" target="_blank"
+        class="flex-1 sm:flex-none bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-400 border border-indigo-500/30 text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        TV
+      </a>
+      <a href="/admin/events/{{.Event.ID}}/export/pdf" target="_blank"
+        class="flex-1 sm:flex-none bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        PDF
+      </a>
+      <button hx-get="/events/{{.Event.ID}}/edit" 
+        hx-target="#edit-modal-content"
+        hx-on:click="document.getElementById('edit-modal').classList.remove('hidden')"
+        class="flex-1 sm:flex-none bg-white hover:bg-gray-200 text-black text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider">
+        Edit
+      </button>
+      <button hx-delete="/events/{{.Event.ID}}"
+        hx-confirm="Are you sure you want to delete this event?"
+        class="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 border border-white/20 text-gray-400 hover:text-white text-sm font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider">
+        Delete
+      </button>
+    </div>
+  </header>
+
+  {{/* ── Participants ─────────────────────────────────────────── */}}
+  {{if not (or (eq .Event.Type "teams") (eq .Event.Type "doubles") (eq .Event.Type "mixed_doubles"))}}
+  <details class="space-y-3 group" id="participants-section">
+    <summary class="flex flex-wrap items-center justify-between gap-3 cursor-pointer list-none select-none outline-none">
+      <div class="flex items-center gap-2">
+        <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest flex items-center gap-2">
+          <svg class="w-4 h-4 transition-transform group-open:rotate-90 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          All Participants <span class="text-gray-700 ml-1">({{len .Event.Participants}})</span>
+        </h2>
+      </div>
+      <div class="flex items-center gap-2" onclick="tournament.preventDefault()">
+        <span class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Sort:</span>
+        <button onclick="sortParticipants('elo')" id="sort-elo-btn"
+          class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white text-black border-white">
+          Elo ↓
+        </button>
+        <button onclick="sortParticipants('name')" id="sort-name-btn"
+          class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white">
+          Name
+        </button>
+      </div>
+    </summary>
+
+    <div class="glass rounded-2xl border border-white/10 overflow-hidden mt-3" id="participants-table-wrap">
+      <table class="w-full text-sm" id="participants-table">
+        <thead>
+          <tr class="border-b border-white/10 bg-white/[0.03]">
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 w-10">#</th>
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">Player</th>
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hidden sm:table-cell">Division</th>
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hidden md:table-cell">Group</th>
+            <th class="text-right px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hidden sm:table-cell">Elo</th>
+            <th class="text-center px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">PIN</th>
+            <th class="text-right px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5" id="participants-tbody">
+          {{range .ParticipantRows}}
+          <tr class="hover:bg-white/[0.03] transition-colors group/row"
+              data-elo="{{.Elo}}"
+              data-name="{{.Player.LastName}} {{.Player.FirstName}}">
+            <td class="px-4 py-3">
+              <span class="text-[11px] font-black text-gray-600 tabular-nums">#{{.Seed}}</span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 shrink-0 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[10px] font-extrabold text-white">
+                  {{if gt (len .Player.FirstName) 0}}{{slice .Player.FirstName 0 1}}{{else}}?{{end}}
+                </div>
+                <span class="font-semibold text-white text-sm">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 hidden sm:table-cell">
+              {{if .DivName}}
+              <span class="text-[9px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded">{{.DivName}}</span>
+              {{else}}
+              <span class="text-gray-700 text-[10px]">—</span>
+              {{end}}
+            </td>
+            <td class="px-4 py-3 hidden md:table-cell">
+              {{if .GroupName}}
+              <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded">{{.GroupName}}</span>
+              {{else}}
+              <span class="text-gray-700 text-[10px]">—</span>
+              {{end}}
+            </td>
+            <td class="px-4 py-3 text-right hidden sm:table-cell">
+              <span class="text-[12px] font-bold text-gray-400 tabular-nums font-mono">{{.Elo}}</span>
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span class="text-[10px] font-black text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 rounded font-mono tracking-widest">{{.Pin}}</span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center justify-end gap-1">
+                {{if .Player.WhatsAppNumber}}
+                <a href="https://wa.me/{{cleanPhone .Player.WhatsAppNumber}}?text=Hola%20{{.Player.FirstName}},%20tu%20PIN%20de%20acceso%20para%20{{$.Event.Name}}%20es%20{{.Pin}}"
+                   target="_blank" title="Send PIN via WhatsApp"
+                   class="text-green-500 hover:text-green-400 transition-colors p-1">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 21.031c-1.558 0-3.078-.396-4.437-1.144l-.318-.178-3.3.864.881-3.218-.195-.311c-.819-1.309-1.252-2.825-1.252-4.402 0-4.631 3.774-8.406 8.411-8.406 2.25 0 4.364.877 5.955 2.47 1.591 1.593 2.467 3.708 2.467 5.959 0 4.631-3.774 8.366-8.212 8.366zM12.031 5.373c-3.993 0-7.248 3.253-7.248 7.246 0 1.277.332 2.525.962 3.626l1.378 2.404-1.253 4.58 4.693-1.231 2.378 1.348c1.08.612 2.302.936 3.551.936 3.993 0 7.248-3.254 7.248-7.247 0-1.938-.755-3.759-2.126-5.13-1.37-1.372-3.193-2.128-5.132-2.128h-.001m4.053 9.771c-.222-.111-1.314-.648-1.518-.722-.204-.074-.352-.111-.5.111-.148.222-.574.722-.704.87-.13.148-.26.167-.481.056-.222-.111-.938-.346-1.787-1.107-.66-.593-1.106-1.326-1.236-1.548-.13-.222-.014-.343.097-.453.1-.1.222-.259.333-.389.111-.13.148-.222.222-.37.074-.148.037-.278-.019-.389-.056-.111-.5-.1.204-1.204-.076-.481-.148-.962-.352-.102-.019-.204-.019h-.176c-.148 0-.389.056-.593.278-.204.222-.778.759-.778 1.852 0 1.093.796 2.148.907 2.296.111.148 1.556 2.37 3.759 3.333.519.222.926.352 1.241.463.519.167.981.148 1.352.093.414-.056 1.314-.537 1.5-1.056.185-.519.185-.963.13-1.056-.056-.093-.204-.148-.426-.259z"/></svg>
+                </a>
+                {{end}}
+                {{if not $.Event.ManualSeedingLocked}}
+                <button type="button"
+                  title="Edit seeded Elo"
+                  onclick="document.getElementById('elo-edit-player-id').value='{{.Player.ID}}';
+                           document.getElementById('elo-edit-name').textContent='{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}';
+                           document.getElementById('elo-edit-singles').value='{{.Player.SinglesElo}}';
+                           document.getElementById('elo-edit-doubles').value='{{.Player.DoublesElo}}';
+                           document.getElementById('edit-elo-modal').classList.remove('hidden');"
+                  class="text-gray-600 hover:text-white transition-colors p-1 text-[11px] font-extrabold">✎</button>
+                <button type="button"
+                  title="Unenroll player"
+                  hx-delete="/events/{{$.Event.ID}}/participants/{{.Player.ID}}"
+                  hx-confirm="Remove {{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}} from this event?"
+                  hx-swap="none"
+                  class="text-gray-700 hover:text-red-400 transition-colors p-1 opacity-0 group-hover/row:opacity-100">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
-                <a href="/admin/events/{{.Event.ID}}/board" 
-                   class="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)]">
-                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
-                   {{t .T "board.board"}}
-                </a>
-                <a href="/events/{{.Event.ID}}/tv" target="_blank"
-                   class="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-2.5 bg-white hover:bg-gray-200 text-black text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-xl">
-                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2-2v10a2 2 0 002 2z"/></svg>
-                   {{t .T "tv.dashboard_title"}}
-                </a>
-                <a href="/admin/events/{{.Event.ID}}/export/pdf" target="_blank" class="inline-flex items-center justify-center bg-white hover:bg-gray-200 text-black font-extrabold py-2 px-5 rounded-full transition-all uppercase tracking-wider text-sm whitespace-nowrap shadow-xl">
-                    <svg class="w-4 h-4 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    Export to PDF
-                </a>
-            </div>
-        </div>
-    </header>
+                {{end}}
+              </div>
+            </td>
+          </tr>
+          {{else}}
+          <tr><td colspan="7" class="text-center py-10 text-gray-600 italic text-sm">No participants registered.</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <script>
+  let _sortMode = 'elo';
+  function sortParticipants(mode) {
+    _sortMode = mode;
+    document.getElementById('sort-elo-btn').className = mode === 'elo'
+      ? 'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white text-black border-white'
+      : 'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white';
+    document.getElementById('sort-name-btn').className = mode === 'name'
+      ? 'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white text-black border-white'
+      : 'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white';
+    const tbody = document.getElementById('participants-tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr[data-elo]'));
+    rows.sort((a, b) => mode === 'elo'
+      ? parseInt(b.dataset.elo) - parseInt(a.dataset.elo)
+      : a.dataset.name.localeCompare(b.dataset.name));
+    rows.forEach(r => tbody.appendChild(r));
+  }
+  </script>
+  {{else}}
 
-    <!-- Meta Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
-            <div>
-                <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-1">Target Division</p>
-                {{if .Event.SkipElo}}
-                <h3 class="text-2xl font-extrabold uppercase text-gray-500">—</h3>
-                {{else}}
-                <h3 class="text-2xl font-extrabold uppercase text-white">{{len .Event.DivisionIDs}} Divisions</h3>
-                {{end}}
-            </div>
-            <p class="text-[10px] text-gray-500 mt-4 uppercase tracking-wider">
-                {{if .Event.SkipElo}}
-                This event is non-rated; any athlete in the system is qualified.
-                {{else}}
-                Only players in this division's rating band are qualified.
-                {{end}}
-            </p>
+        {{range .AvailableParticipants}}
+        <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+          <div class="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[9px] font-extrabold text-white">
+            {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
+          </div>
+          <span class="text-base font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+          <span class="text-[10px] text-gray-500 font-mono">{{.SinglesElo}}</span>
+          <span class="ml-2 text-[9px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 rounded font-mono" title="Player Match PIN">{{index $.PlayerPins .ID}}</span>
+          {{if .WhatsAppNumber}}
+          <a href="https://wa.me/{{cleanPhone .WhatsAppNumber}}?text=Hola%20{{.FirstName}},%20tu%20PIN%20de%20acceso%20para%20{{$.Event.Name}}%20es%20{{index $.PlayerPins .ID}}" target="_blank" title="Send PIN via WhatsApp" class="ml-1 text-green-500 hover:text-green-400 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 21.031c-1.558 0-3.078-.396-4.437-1.144l-.318-.178-3.3.864.881-3.218-.195-.311c-.819-1.309-1.252-2.825-1.252-4.402 0-4.631 3.774-8.406 8.411-8.406 2.25 0 4.364.877 5.955 2.47 1.591 1.593 2.467 3.708 2.467 5.959 0 4.631-3.774 8.366-8.212 8.366zM12.031 5.373c-3.993 0-7.248 3.253-7.248 7.246 0 1.277.332 2.525.962 3.626l1.378 2.404-1.253 4.58 4.693-1.231 2.378 1.348c1.08.612 2.302.936 3.551.936 3.993 0 7.248-3.254 7.248-7.247 0-1.938-.755-3.759-2.126-5.13-1.37-1.372-3.193-2.128-5.132-2.128h-.001m4.053 9.771c-.222-.111-1.314-.648-1.518-.722-.204-.074-.352-.111-.5.111-.148.222-.574.722-.704.87-.13.148-.26.167-.481.056-.222-.111-.938-.346-1.787-1.107-.66-.593-1.106-1.326-1.236-1.548-.13-.222-.014-.343.097-.453.1-.1.222-.259.333-.389.111-.13.148-.222.222-.37.074-.148.037-.278-.019-.389-.056-.111-.5-.1.204-1.204-.076-.481-.148-.962-.352-.102-.019-.204-.019h-.176c-.148 0-.389.056-.593.278-.204.222-.778.759-.778 1.852 0 1.093.796 2.148.907 2.296.111.148 1.556 2.37 3.759 3.333.519.222.926.352 1.241.463.519.167.981.148 1.352.093.414-.056 1.314-.537 1.5-1.056.185-.519.185-.963.13-1.056-.056-.093-.204-.148-.426-.259z"/></svg>
+          </a>
+          {{end}}
+          {{if not $.Event.ManualSeedingLocked}}
+          <button type="button"
+            onclick="document.getElementById('elo-edit-player-id').value='{{.ID}}';
+                     document.getElementById('elo-edit-name').textContent='{{.FirstNameWithSecond}} {{.LastNameWithSecond}}';
+                     document.getElementById('elo-edit-singles').value='{{.SinglesElo}}';
+                     document.getElementById('elo-edit-doubles').value='{{.DoublesElo}}';
+                     document.getElementById('edit-elo-modal').classList.remove('hidden');"
+            class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold ml-1" title="Correct this player's seeded Elo for this event">✎</button>
+          {{end}}
         </div>
-        
-        <div class="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
-            <div>
-                <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-1">Elo Status</p>
-                {{if .Event.SkipElo}}
-                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 font-bold text-xs uppercase tracking-wide mt-2">
-                    Non-Rated (No Elo)
-                </div>
-                <p class="text-[10px] text-yellow-500/60 mt-3 font-semibold">Rankings will NOT change upon category completions.</p>
-                {{else}}
-                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-blue-500 font-bold text-xs uppercase tracking-wide mt-2">
-                    Rated (Elo Calculations Enabled)
-                </div>
-                <p class="text-[10px] text-blue-500/60 mt-3 font-semibold">Athlete Elo scores will be recalculated automatically.</p>
-                {{end}}
-            </div>
-        </div>
+        {{else}}
+        <p class="text-sm text-gray-600">No participants available.</p>
+        {{end}}
+  </section>
+  {{end}}
 
-        <div class="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
-            <div>
-                <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-1">Event Duration</p>
-                <p class="text-lg font-bold text-white mt-1">{{.Event.StartDate.Format "Jan 02, 2006"}} — {{.Event.EndDate.Format "Jan 02, 2006"}}</p>
-            </div>
-            <p class="text-[10px] text-gray-500 mt-4 uppercase tracking-wider">Sub-tournaments run simultaneously during this range.</p>
-        </div>
+
+  {{/* ── Officials ─────────────────────────────────────────── */}}
+  <section class="space-y-3">
+    <div class="flex justify-between items-center">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Officials / Referees</h2>
+      <button hx-on:click="document.getElementById('add-official-modal').classList.remove('hidden')" class="text-xs font-bold uppercase tracking-wider text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-all">
+        + Add Official
+      </button>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {{range .Officials}}
+        {{$officialId := .PlayerID}}
+        {{$officialPin := .Pin}}
+        {{range $.Players}}
+          {{if eq .ID $officialId}}
+          <div class="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
+            <span class="text-base font-semibold text-yellow-400">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+            <span class="ml-2 text-[9px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 rounded font-mono" title="Official PIN">{{$officialPin}}</span>
+            {{if .WhatsAppNumber}}
+            <a href="https://wa.me/{{cleanPhone .WhatsAppNumber}}?text=Hola%20{{.FirstName}},%20tu%20PIN%20de%20%C3%A1rbitro%20oficial%20para%20{{$.Event.Name}}%20es%20{{$officialPin}}" target="_blank" title="Send PIN via WhatsApp" class="ml-1 text-green-500 hover:text-green-400 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 21.031c-1.558 0-3.078-.396-4.437-1.144l-.318-.178-3.3.864.881-3.218-.195-.311c-.819-1.309-1.252-2.825-1.252-4.402 0-4.631 3.774-8.406 8.411-8.406 2.25 0 4.364.877 5.955 2.47 1.591 1.593 2.467 3.708 2.467 5.959 0 4.631-3.774 8.366-8.212 8.366zM12.031 5.373c-3.993 0-7.248 3.253-7.248 7.246 0 1.277.332 2.525.962 3.626l1.378 2.404-1.253 4.58 4.693-1.231 2.378 1.348c1.08.612 2.302.936 3.551.936 3.993 0 7.248-3.254 7.248-7.247 0-1.938-.755-3.759-2.126-5.13-1.37-1.372-3.193-2.128-5.132-2.128h-.001m4.053 9.771c-.222-.111-1.314-.648-1.518-.722-.204-.074-.352-.111-.5.111-.148.222-.574.722-.704.87-.13.148-.26.167-.481.056-.222-.111-.938-.346-1.787-1.107-.66-.593-1.106-1.326-1.236-1.548-.13-.222-.014-.343.097-.453.1-.1.222-.259.333-.389.111-.13.148-.222.222-.37.074-.148.037-.278-.019-.389-.056-.111-.5-.1.204-1.204-.076-.481-.148-.962-.352-.102-.019-.204-.019h-.176c-.148 0-.389.056-.593.278-.204.222-.778.759-.778 1.852 0 1.093.796 2.148.907 2.296.111.148 1.556 2.37 3.759 3.333.519.222.926.352 1.241.463.519.167.981.148 1.352.093.414-.056 1.314-.537 1.5-1.056.185-.519.185-.963.13-1.056-.056-.093-.204-.148-.426-.259z"/></svg>
+            </a>
+            {{end}}
+            <button hx-delete="/admin/events/{{$.Event.ID}}/officials/{{.ID}}" hx-confirm="Remove this official?" class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold ml-2">✕</button>
+          </div>
+          {{end}}
+        {{end}}
+      {{else}}
+        <p class="text-sm text-gray-600">No officials assigned. Only participants can score matches.</p>
+      {{end}}
+    </div>
+  </section>
+
+  {{if or (eq .Event.Type "teams") (eq .Event.Type "doubles") (eq .Event.Type "mixed_doubles")}}
+  {{/* ── Team Management ────────────────────────────────────────── */}}
+  <section class="space-y-4">
+    <div class="flex justify-between items-center">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Team Rosters</h2>
+      <button hx-on:click="document.getElementById('add-team-modal').classList.remove('hidden')" class="text-xs font-bold uppercase tracking-wider text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-all">
+        + Create Team
+      </button>
     </div>
 
-    <!-- Generated Brackets -->
-    <div class="space-y-4">
-        <h2 class="text-2xl font-extrabold uppercase tracking-tight">Active Categories & Brackets <span class="text-gray-500">({{len .Event.Tournaments}})</span></h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {{range .Event.Tournaments}}
-            <div class="glass p-6 rounded-2xl border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between group">
-                <div>
-                    <div class="flex justify-between items-start">
-                        <h3 class="font-extrabold uppercase text-lg text-white tracking-wide group-hover:text-white transition-colors">{{.Name}}</h3>
-                        {{if eq .Status "finished"}}
-                        <span class="text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded">Finished</span>
-                        {{else if .RegistrationOpen}}
-                        <span class="text-[9px] font-black uppercase tracking-widest text-green-500 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded animate-pulse">Live Registration</span>
-                        {{else}}
-                        <span class="text-[9px] font-black uppercase tracking-widest text-gray-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded">In Progress</span>
-                        {{end}}
-                    </div>
-                    <div class="flex gap-2 mt-2">
-                        <span class="text-[10px] uppercase font-bold text-gray-400 bg-white/5 px-2 py-1 rounded">{{.Type}}</span>
-                        <span class="text-[10px] uppercase font-bold text-gray-400 bg-white/5 px-2 py-1 rounded">{{.Format}}</span>
-                        <span class="text-[10px] uppercase font-bold text-gray-400 bg-white/5 px-2 py-1 rounded">{{.EventCategory}}</span>
-                    </div>
+    <!-- Teams List Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {{range $team := .Event.Teams}}
+      <div class="glass p-5 rounded-2xl border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between space-y-4">
+        <div>
+          <div class="flex justify-between items-start">
+            <h3 class="font-extrabold uppercase text-lg text-white tracking-wide">{{.Name}}</h3>
+            <button hx-delete="/admin/events/{{$.Event.ID}}/teams/{{.ID}}" hx-confirm="Delete this team?" class="text-gray-500 hover:text-red-500 transition-colors text-xs font-bold uppercase tracking-widest">
+              Delete
+            </button>
+          </div>
+          <p class="text-[10px] text-gray-500 uppercase font-semibold mt-1">{{len .Players}} Members</p>
 
-                    {{if or (eq .Type "teams") (eq .Type "doubles") (eq .Type "mixed_doubles")}}
-                    <p class="text-xs text-gray-400 mt-4"><strong class="text-white">{{len .Teams}}</strong> Teams registered in this bracket.</p>
-                    {{else}}
-                    <p class="text-xs text-gray-400 mt-4"><strong class="text-white">{{len .Participants}}</strong> Athletes registered in this bracket.</p>
-                    {{end}}
+          <!-- Players List in Team -->
+          <div class="mt-3 space-y-2">
+            {{range .Players}}
+            <div class="flex items-center justify-between bg-black/20 border border-white/5 rounded-xl px-3 py-2">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[9px] font-extrabold text-white">
+                  {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
                 </div>
-
-                <div class="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
-
-                    <a href="/admin/tournaments/{{.ID}}" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/80 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl border border-white/10">
-                        Manage Bracket
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </a>
-                </div>
+                <span class="text-base font-bold text-white">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+                <span class="ml-1 text-[8px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1 rounded font-mono">{{index $.PlayerPins .ID}}</span>
+                {{if .WhatsAppNumber}}
+                <a href="https://wa.me/{{cleanPhone .WhatsAppNumber}}?text=Hola%20{{.FirstName}},%20tu%20PIN%20de%20acceso%20para%20{{$.Event.Name}}%20es%20{{index $.PlayerPins .ID}}" target="_blank" title="Send PIN via WhatsApp" class="ml-1 text-green-500 hover:text-green-400 transition-colors">
+                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 21.031c-1.558 0-3.078-.396-4.437-1.144l-.318-.178-3.3.864.881-3.218-.195-.311c-.819-1.309-1.252-2.825-1.252-4.402 0-4.631 3.774-8.406 8.411-8.406 2.25 0 4.364.877 5.955 2.47 1.591 1.593 2.467 3.708 2.467 5.959 0 4.631-3.774 8.366-8.212 8.366zM12.031 5.373c-3.993 0-7.248 3.253-7.248 7.246 0 1.277.332 2.525.962 3.626l1.378 2.404-1.253 4.58 4.693-1.231 2.378 1.348c1.08.612 2.302.936 3.551.936 3.993 0 7.248-3.254 7.248-7.247 0-1.938-.755-3.759-2.126-5.13-1.37-1.372-3.193-2.128-5.132-2.128h-.001m4.053 9.771c-.222-.111-1.314-.648-1.518-.722-.204-.074-.352-.111-.5.111-.148.222-.574.722-.704.87-.13.148-.26.167-.481.056-.222-.111-.938-.346-1.787-1.107-.66-.593-1.106-1.326-1.236-1.548-.13-.222-.014-.343.097-.453.1-.1.222-.259.333-.389.111-.13.148-.222.222-.37.074-.148.037-.278-.019-.389-.056-.111-.5-.1.204-1.204-.076-.481-.148-.962-.352-.102-.019-.204-.019h-.176c-.148 0-.389.056-.593.278-.204.222-.778.759-.778 1.852 0 1.093.796 2.148.907 2.296.111.148 1.556 2.37 3.759 3.333.519.222.926.352 1.241.463.519.167.981.148 1.352.093.414-.056 1.314-.537 1.5-1.056.185-.519.185-.963.13-1.056-.056-.093-.204-.148-.426-.259z"/></svg>
+                </a>
+                {{end}}
+              </div>
+              <button hx-delete="/admin/events/{{$.Event.ID}}/teams/{{$team.ID}}/players/{{.ID}}" hx-confirm="Remove this player from the team?" class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold">
+                ✕
+              </button>
             </div>
             {{else}}
-            <div class="col-span-2 glass p-12 rounded-2xl border border-white/10 text-center text-gray-500">
-                No active brackets are currently provisioned under this event.
-            </div>
+            <p class="text-[10px] text-gray-600 italic">No players assigned to this team yet.</p>
             {{end}}
+          </div>
         </div>
-    </div>
-</div>
 
-{{/* ── Edit Event Modal ── */}}
-<div id="edit-event-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
-  <div class="bg-[#111] border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl relative">
-    <button onclick="document.getElementById('edit-event-modal').classList.add('hidden')"
-            class="absolute top-5 right-5 text-gray-400 hover:text-white transition-colors">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-    </button>
-    <h3 class="text-sm font-black uppercase tracking-widest text-white mb-6">Edit Event</h3>
-    <div id="edit-event-modal-body"
-         hx-get="/admin/events/{{.Event.ID}}/edit"
-         hx-trigger="openEditModal once"
-         hx-swap="innerHTML">
+        <!-- Add Player to Team Form -->
+        {{$isDoubles := or (eq $.Event.Type "doubles") (eq $.Event.Type "mixed_doubles")}}
+        {{$teamFull := and $isDoubles (ge (len .Players) 2)}}
+        {{if not $teamFull}}
+        <form hx-post="/admin/events/{{$.Event.ID}}/teams/{{.ID}}/players" class="flex gap-2">
+          <select name="playerId" required class="flex-1 bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+            <option value="" disabled selected hidden>Assign Player...</option>
+            {{range $.AvailableParticipants}}
+            <option value="{{.ID}}">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
+            {{end}}
+          </select>
+          <button type="submit" class="bg-white hover:bg-gray-200 text-black font-extrabold text-[10px] uppercase tracking-widest px-3 rounded-xl transition-colors">
+            Add
+          </button>
+        </form>
+        {{end}}
+      </div>
+      {{else}}
+      <div class="col-span-full bg-black/20 border border-white/5 rounded-2xl p-8 text-center text-gray-500 italic text-sm">
+        No teams registered in this bracket yet. Create teams to organize the matchup.
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  <!-- Add Team Modal -->
+  <div id="add-team-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] transition-all">
+    <div class="bg-club-panel border border-white/10 p-6 rounded-2xl max-w-sm w-full relative shadow-2xl">
+      <button hx-on:click="document.getElementById('add-team-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+      <h3 class="text-xl font-extrabold uppercase mb-4 tracking-tighter">Create New Team</h3>
+      <form hx-post="/admin/events/{{.Event.ID}}/teams" class="space-y-4" hx-on:submit="document.getElementById('add-team-modal').classList.add('hidden')">
+        <div class="space-y-2">
+          <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Team Name</label>
+          <input type="text" name="name" placeholder="e.g. Phoenix Club" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-white text-xs focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+        <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+          Create Team
+        </button>
+      </form>
+    </div>
+  </div>
+  {{end}}
+
+  <!-- Add Official Modal -->
+  <div id="add-official-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] transition-all">
+    <div class="bg-club-panel border border-white/10 p-6 rounded-2xl max-w-sm w-full relative shadow-2xl">
+      <button hx-on:click="document.getElementById('add-official-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+      <h3 class="text-xl font-extrabold uppercase mb-4 tracking-tighter">Add Official</h3>
+      <form hx-post="/admin/events/{{.Event.ID}}/officials" class="space-y-4" hx-on:submit="document.getElementById('add-official-modal').classList.add('hidden')">
+        <div class="space-y-2">
+          <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Select Player</label>
+          <select name="playerId" required class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+            <option value="" disabled selected hidden>Choose an Official...</option>
+            {{range .Players}}
+            <option value="{{.ID}}">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
+            {{end}}
+          </select>
+        </div>
+        <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+          Assign Official
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Seeded Elo Modal -->
+  <div id="edit-elo-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] transition-all">
+    <div class="bg-club-panel border border-white/10 p-6 rounded-2xl max-w-sm w-full relative shadow-2xl">
+      <button hx-on:click="document.getElementById('edit-elo-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+      <h3 class="text-xl font-extrabold uppercase mb-1 tracking-tighter">Correct Seeded Elo</h3>
+      <p id="elo-edit-name" class="text-xs text-gray-500 mb-4"></p>
+      <form hx-post="/admin/events/{{.Event.ID}}/participants/elo-before"
+        hx-swap="none"
+        hx-on::before-request="document.getElementById('edit-elo-modal').classList.add('hidden')"
+        hx-on::response-error="showToast(tournament.detail.xhr.responseText, 'error')"
+        class="space-y-4">
+        <input type="hidden" id="elo-edit-player-id" name="playerId" value="">
+        <div class="space-y-2">
+          <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Singles Elo</label>
+          <input id="elo-edit-singles" name="singlesElo" type="number" required class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+        <div class="space-y-2">
+          <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Doubles Elo</label>
+          <input id="elo-edit-doubles" name="doublesElo" type="number" required class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+        <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+          Save &amp; Regenerate Seeds
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {{/* ── Match Rules ──────────────────────────────────────────── */}}
+  {{if .Event.StageRules}}
+  <section class="space-y-3">
+    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Match Rules</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {{range .Event.StageRules}}
+        <div class="glass rounded-xl border border-white/10 p-3 space-y-1 text-center" data-stage="{{.Stage}}" data-bestof="{{.BestOf}}">
+          <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold">{{.Stage}}</p>
+          <p class="text-lg font-extrabold text-white">Bo{{.BestOf}}</p>
+          <p class="text-[10px] text-gray-500">{{.PointsToWin}} pts · +{{.PointsMargin}}</p>
+        </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+  {{/* ── Bracket/Groups Area ───────────────────────────────────── */}}
+  <section class="space-y-6" hx-ext="ws" ws-connect="/ws/brackets/{{.Event.ID}}"
+           hx-on::ws-open="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🟢 Live'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-green-400'; }"
+           hx-on::ws-close="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-red-400'; }"
+           hx-on::ws-error="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-red-400'; }"
+           hx-on::ws-before-message="try { const data = JSON.parse(tournament.detail.message); if(data.tournament === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); htmx.trigger('#custom-matches-list', 'reload-matches'); if (typeof showToast === 'function') { if (data.matchStatus === 'finished' && data.message) { showToast(data.message, 'success'); } else { showToast('📡 Score updated in real-time', 'success'); } } } else if(data.tournament === 'referee_notification') { const container = document.getElementById('referee-alerts-container'); if (container) { const alertId = 'alert-' + Math.random().toString(36).substr(2, 9); const alertHtml = `<div id='${alertId}' onclick='this.remove()' class='cursor-pointer flex items-center justify-between p-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded-2xl shadow-xl backdrop-blur-md animate-fade-in hover:bg-yellow-500/20 transition-colors'><div class='flex items-center gap-3'><span class='text-xl'>🔔</span><div class='flex flex-col'><span class='text-xs font-bold uppercase tracking-widest text-yellow-500 font-mono'>Referee Alert</span><span class='text-sm font-semibold text-white/90'>${data.message}</span></div></div><button class='text-gray-400 hover:text-white transition-colors p-1'><svg class='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg></button></div>`; container.insertAdjacentHTML('beforeend', alertHtml); } } } catch(e) {}">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Event Draw</h2>
+      <span id="ws-status" class="text-[9px] font-bold uppercase tracking-widest text-yellow-400">⏳ Connecting…</span>
+    </div>
+
+    {{$count := len $participants}}
+    {{$teamCount := len .Event.Teams}}
+    {{if or (gt $count 1) (gt $teamCount 1)}}
+    <div id="bracket-container" class="overflow-x-auto pb-4 custom-scrollbar cursor-grab active:cursor-grabbing"
+         hx-get="/admin/events/{{.Event.ID}}"
+         hx-trigger="reload-bracket, reload-bracket from:body"
+         hx-select="#bracket-container > *"
+         hx-target="#bracket-container"
+         hx-swap="innerHTML focus-scroll:false scroll:none">
+      {{template "admin/partials/event-bracket" .BracketViewModel}}
+    </div>
+    {{else}}
+    <div class="glass rounded-2xl border border-white/10 p-8 text-center text-gray-600">
+      <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+      <p class="text-sm">At least 2 participants or teams needed to generate brackets.</p>
+    </div>
+    {{end}}
+  </section>
+
+
+
+{{/* ── Score Entry Modal ── */}}
+<div id="score-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
+  <div class="bg-club-panel border border-white/10 rounded-3xl max-w-md w-full relative shadow-2xl" id="score-modal-content">
+    <div class="flex items-center justify-between px-8 pt-7 pb-0">
+      <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Score Entry</span>
+      <button onclick="document.getElementById('score-modal').classList.add('hidden')" class="text-gray-400 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="score-modal-body" class="text-white px-8 pb-8 pt-4 overflow-y-auto max-h-[80vh]">
       <div class="flex justify-center py-8">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
       </div>
     </div>
   </div>
 </div>
-<script>
-function openEditEventModal(eventId) {
-  const modal = document.getElementById('edit-event-modal');
-  modal.classList.remove('hidden');
-  htmx.trigger('#edit-event-modal-body', 'openEditModal');
-}
-</script>
+
+{{/* ── Edit Modal ── */}}
+<div id="edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100]">
+  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-2xl w-full relative shadow-2xl overflow-y-auto max-h-[90vh]" id="edit-modal-content">
+    <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <div class="flex justify-center p-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+    </div>
+  </div>
+</div>
+
+{{/* ── QR Code Modal ── */}}
+<div id="qr-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
+  <div class="bg-club-panel border border-white/10 p-8 rounded-3xl max-w-sm w-full relative shadow-2xl text-center">
+    <button onclick="document.getElementById('qr-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    
+    <h3 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-2">Scan to Score Match</h3>
+    <p id="qr-matchup" class="text-sm font-semibold text-white/90 mb-6 truncate"></p>
+    
+    <div class="bg-white p-4 rounded-2xl inline-block mb-6 shadow-xl">
+      <img id="qr-image" src="" alt="QR Code" class="w-48 h-48 mx-auto">
+    </div>
+    
+    <div class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
+      <span class="text-[10px] font-bold uppercase text-gray-500 tracking-wider block mb-1">Verification</span>
+      <span class="text-xs font-semibold text-gray-400">Players use their personal PIN</span>
+    </div>
+    
+    <div class="flex gap-2">
+      <button id="qr-copy-btn" class="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+        Copy Link
+      </button>
+      <a id="qr-open-btn" href="" target="_blank" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-extrabold py-3 rounded-xl transition-all uppercase tracking-widest text-[10px] flex items-center justify-center">
+        Open Link
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+.custom-scrollbar::-webkit-scrollbar { height: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,51,51,0.5); }
+</style>
+
+

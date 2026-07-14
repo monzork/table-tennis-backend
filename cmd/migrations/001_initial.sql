@@ -16,9 +16,9 @@ CREATE TABLE IF NOT EXISTS players (
 );
 
 -- =====================================
--- Table: tournaments
+-- Table: events
 -- =====================================
-CREATE TABLE IF NOT EXISTS tournaments (
+CREATE TABLE IF NOT EXISTS events (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     start_date TEXT NOT NULL,
@@ -43,14 +43,14 @@ CREATE TABLE IF NOT EXISTS rules (
 -- =====================================
 CREATE TABLE IF NOT EXISTS matches (
     id TEXT PRIMARY KEY,
-    tournament_id TEXT NOT NULL,
+    event_id TEXT NOT NULL,
     player_a_id TEXT NOT NULL,
     player_b_id TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'scheduled',
     winner_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT,
-    FOREIGN KEY (tournament_id) REFERENCES tournaments(id),
+    FOREIGN KEY (event_id) REFERENCES events(id),
     FOREIGN KEY (player_a_id) REFERENCES players(id),
     FOREIGN KEY (player_b_id) REFERENCES players(id),
     FOREIGN KEY (winner_id) REFERENCES players(id)

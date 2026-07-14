@@ -16,10 +16,10 @@ func main() {
 	}
 	defer db.Close()
 
-	_, err = db.Exec(`ALTER TABLE tournaments ADD COLUMN status TEXT NOT NULL DEFAULT 'in_progress';`)
+	_, err = db.Exec(`ALTER TABLE events ADD COLUMN status TEXT NOT NULL DEFAULT 'in_progress';`)
 	if err != nil {
 		log.Printf("Query error: %v", err)
 	} else {
-		log.Printf("Successfully added status to tournaments.")
+		log.Printf("Successfully added status to events.")
 	}
 }

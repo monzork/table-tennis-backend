@@ -25,7 +25,7 @@ type CryptoGenerator struct {
 
 // NewCryptoGenerator creates a CryptoGenerator that uses the provided checker
 // to verify PIN uniqueness against the database.
-// Pass nil if you only need in-memory deduplication (e.g. tournament batch).
+// Pass nil if you only need in-memory deduplication (e.g. event batch).
 func NewCryptoGenerator(checker DBChecker) *CryptoGenerator {
 	return &CryptoGenerator{checker: checker}
 }

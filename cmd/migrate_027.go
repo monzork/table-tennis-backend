@@ -53,31 +53,31 @@ func main() {
 
 	ctx := context.Background()
 
-	// ── Index: tournament_participants.player_id ────────────────────────────
-	// Used when computing per-player tournament history and participation counts.
+	// ── Index: event_participants.player_id ────────────────────────────
+	// Used when computing per-player event history and participation counts.
 	_, _ = bunDB.NewRaw(`
-		CREATE INDEX IF NOT EXISTS idx_tournament_participants_player_id
-		ON tournament_participants(player_id)
+		CREATE INDEX IF NOT EXISTS idx_event_participants_player_id
+		ON event_participants(player_id)
 	`).Exec(ctx)
 
-	// ── Index: tournament_participants.tournament_id ────────────────────────
-	// All participant lookups are filtered by tournament_id.
+	// ── Index: event_participants.event_id ────────────────────────
+	// All participant lookups are filtered by event_id.
 	_, _ = bunDB.NewRaw(`
-		CREATE INDEX IF NOT EXISTS idx_tournament_participants_tournament_id
-		ON tournament_participants(tournament_id)
+		CREATE INDEX IF NOT EXISTS idx_event_participants_event_id
+		ON event_participants(event_id)
 	`).Exec(ctx)
 
 	// ── Index: group_participants.group_id ─────────────────────────────────
-	// Batch-loaded for every tournament fetch that has groups.
+	// Batch-loaded for every event fetch that has groups.
 	_, _ = bunDB.NewRaw(`
 		CREATE INDEX IF NOT EXISTS idx_group_participants_group_id
 		ON group_participants(group_id)
 	`).Exec(ctx)
 
-	// ── Index: groups.tournament_id ────────────────────────────────────────
+	// ── Index: groups.event_id ────────────────────────────────────────
 	_, _ = bunDB.NewRaw(`
-		CREATE INDEX IF NOT EXISTS idx_groups_tournament_id
-		ON groups(tournament_id)
+		CREATE INDEX IF NOT EXISTS idx_groups_event_id
+		ON groups(event_id)
 	`).Exec(ctx)
 
 	// ── Index: team_players.team_id ────────────────────────────────────────
@@ -87,17 +87,17 @@ func main() {
 		ON team_players(team_id)
 	`).Exec(ctx)
 
-	// ── Index: teams.tournament_id ─────────────────────────────────────────
+	// ── Index: teams.event_id ─────────────────────────────────────────
 	_, _ = bunDB.NewRaw(`
-		CREATE INDEX IF NOT EXISTS idx_teams_tournament_id
-		ON teams(tournament_id)
+		CREATE INDEX IF NOT EXISTS idx_teams_event_id
+		ON teams(event_id)
 	`).Exec(ctx)
 
-	// ── Index: matches.tournament_id ───────────────────────────────────────
-	// Almost every match query filters by tournament_id.
+	// ── Index: matches.event_id ───────────────────────────────────────
+	// Almost every match query filters by event_id.
 	_, _ = bunDB.NewRaw(`
-		CREATE INDEX IF NOT EXISTS idx_matches_tournament_id
-		ON matches(tournament_id)
+		CREATE INDEX IF NOT EXISTS idx_matches_event_id
+		ON matches(event_id)
 	`).Exec(ctx)
 
 	// ── Index: matches.team_match_id ───────────────────────────────────────

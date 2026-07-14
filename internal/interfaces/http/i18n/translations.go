@@ -6,11 +6,11 @@ var Translations = map[string]map[string]string{
 		// Nav
 		"nav.singles":         "Singles",
 		"nav.doubles":         "Doubles",
-		"nav.tournaments":     "Tournaments",
+		"nav.events":     "Events",
 		"nav.register":        "Register",
 		"nav.dashboard":       "Dashboard",
 		"nav.players":         "Players",
-		"nav.events":          "Events",
+		"nav.tournaments":          "Tournaments",
 		"nav.divisions":       "Divisions",
 		"nav.public_rankings": "Public Rankings",
 		"nav.logout":          "Logout",
@@ -54,29 +54,29 @@ var Translations = map[string]map[string]string{
 		"register.whatsapp_ph":      "+52 1 123 456 7890",
 		"register.national_id":      "National ID / Passport",
 		"register.national_id_ph":   "000-000000-0000A",
-		"register.whatsapp_hint":    "Used for tournament notifications and registration.",
+		"register.whatsapp_hint":    "Used for event notifications and registration.",
 		"register.btn":              "Verify & Register",
 		"register.back_rankings":    "← Back to Rankings",
 
 		// Register success
 		"register_success.view_rankings": "View Rankings",
 
-		// Tournament registration page
-		"tourney_reg.title":            "Tournament Registration",
-		"tourney_reg.subtitle":         "Register for an Open Tournament",
+		// Event registration page
+		"tourney_reg.title":            "Event Registration",
+		"tourney_reg.subtitle":         "Register for an Open Event",
 		"tourney_reg.open_label":       "Open for Registration",
 		"tourney_reg.starts":           "Starts",
 		"tourney_reg.ends":             "Ends",
 		"tourney_reg.type":             "Type",
 		"tourney_reg.category":         "Category",
 		"tourney_reg.participants":     "Participants",
-		"tourney_reg.register_btn":     "Register for this Tournament",
-		"tourney_reg.no_open":          "There are currently no tournaments open for registration.",
+		"tourney_reg.register_btn":     "Register for this Event",
+		"tourney_reg.no_open":          "There are currently no events open for registration.",
 		"tourney_reg.back":             "← Back to Rankings",
-		"tourney_reg.view_tournaments": "View Tournaments List & Brackets",
-		"tourney_reg.already_in":       "You are already registered in this tournament.",
-		"tourney_reg.closed":           "This tournament is not open for registration.",
-		"tourney_reg.not_found":        "Tournament not found.",
+		"tourney_reg.view_events": "View Events List & Brackets",
+		"tourney_reg.already_in":       "You are already registered in this event.",
+		"tourney_reg.closed":           "This event is not open for registration.",
+		"tourney_reg.not_found":        "Event not found.",
 		"tourney_reg.form_title":       "Your Details",
 		"tourney_reg.form_subtitle":    "We'll use your name to find your player profile.",
 		"tourney_reg.name_label":       "Full Name",
@@ -108,20 +108,20 @@ var Translations = map[string]map[string]string{
 		"status.in_progress": "In Progress",
 		"status.finished":    "Finished",
 
-		// Tournaments List
-		"tourneys.title":        "Tournaments",
+		// Events List
+		"tourneys.title":        "Events",
 		"tourneys.subtitle":     "Official Series & Leagues",
 		"tourneys.col_name":     "Name",
 		"tourneys.col_type":     "Type",
 		"tourneys.col_category": "Category",
 		"tourneys.col_dates":    "Dates",
 		"tourneys.col_bracket":  "Bracket",
-		"tourneys.part_of":      "← Part of Grand Event",
+		"tourneys.part_of":      "← Part of Grand Tournament",
 		"tourneys.view_bracket": "View Bracket",
-		"tourneys.no_avail":     "No tournaments available at the moment.",
+		"tourneys.no_avail":     "No events available at the moment.",
 
-		// Tournament Board
-		"board.back":           "Back to Tournament",
+		// Event Board
+		"board.back":           "Back to Event",
 		"board.board":          "/ Board",
 		"board.tables":         "tables",
 		"board.connecting":     "⏳ Connecting…",
@@ -187,7 +187,7 @@ var Translations = map[string]map[string]string{
 		"table.title":                "Table",
 		"table.no_active_match":      "No Active Match",
 		"table.no_active_match_desc": "There is currently no match in progress on this table.",
-		"table.waiting_desc":         "Please wait for the tournament organizer to assign and start a match here.",
+		"table.waiting_desc":         "Please wait for the event organizer to assign and start a match here.",
 		"table.refresh_btn":          "Check Again",
 
 		// Score form (public)
@@ -198,8 +198,8 @@ var Translations = map[string]map[string]string{
 		"score_pub.cancel":  "Cancel",
 		"score_pub.submit":  "Submit Scores",
 
-		// Public tournament detail
-		"pub_detail.draw_title":   "Tournament Draw",
+		// Public event detail
+		"pub_detail.draw_title":   "Event Draw",
 		"pub_detail.no_bracket":   "Bracket will generate after participants are added.",
 		"pub_detail.match_title":  "Encounter Match List",
 		"pub_detail.no_matches":   "No matches scheduled yet.",
@@ -243,7 +243,7 @@ var Translations = map[string]map[string]string{
 		"bracket.division":         "Division",
 
 		// TV Dashboard
-		"tv.dashboard_title": "Live Tournament Dashboard",
+		"tv.dashboard_title": "Live Event Dashboard",
 		"tv.players":         "Players",
 		"tv.now_playing":     "Now Playing",
 		"tv.table":           "Table",
@@ -259,7 +259,7 @@ var Translations = map[string]map[string]string{
 		// Footer
 
 		// Dynamic keys
-		"pub_detail.all_tournaments": "All Tournaments",
+		"pub_detail.all_events": "All Events",
 		"pub_detail.connecting":      "Connecting…",
 		"pub_detail.players_count":   "players",
 		"pub_detail.player_pool":     "Player Pool",
@@ -278,7 +278,7 @@ var Translations = map[string]map[string]string{
 		"nav.alerts_not_now":         "Not Now",
 		"nav.alerts_enable":          "Enable",
 		"nav.mob_rankings":           "Rankings",
-		"nav.mob_events":             "Events",
+		"nav.mob_tournaments":             "Tournaments",
 		"nav.mob_alerts":             "Alerts",
 		"nav.alerts_iphone_title":    "Get Live Alerts on iPhone",
 		"nav.alerts_iphone_desc":     "Tap the <b>Share icon</b> (square with an up arrow) at the bottom of your screen and select <b>'Add to Home Screen'</b> to enable push notifications.",
@@ -289,11 +289,11 @@ var Translations = map[string]map[string]string{
 		// Nav
 		"nav.singles":         "Individuales",
 		"nav.doubles":         "Dobles",
-		"nav.tournaments":     "Torneos",
+		"nav.events":     "Torneos",
 		"nav.register":        "Registro",
 		"nav.dashboard":       "Inicio",
 		"nav.players":         "Jugadores",
-		"nav.events":          "Eventos",
+		"nav.tournaments":          "Eventos",
 		"nav.divisions":       "Divisiones",
 		"nav.public_rankings": "Rankings",
 		"nav.logout":          "Salir",
@@ -344,7 +344,7 @@ var Translations = map[string]map[string]string{
 		// Register success
 		"register_success.view_rankings": "Ver Ranking",
 
-		// Tournament registration page
+		// Event registration page
 		"tourney_reg.title":            "Registro de Torneo",
 		"tourney_reg.subtitle":         "Regístrate en un Torneo Abierto",
 		"tourney_reg.open_label":       "Abierto para Registro",
@@ -356,7 +356,7 @@ var Translations = map[string]map[string]string{
 		"tourney_reg.register_btn":     "Registrarme en este Torneo",
 		"tourney_reg.no_open":          "Actualmente no hay torneos abiertos para registro.",
 		"tourney_reg.back":             "← Volver al Ranking",
-		"tourney_reg.view_tournaments": "Ver Lista de Torneos y Brackets",
+		"tourney_reg.view_events": "Ver Lista de Torneos y Brackets",
 		"tourney_reg.already_in":       "Ya estás registrado en este torneo.",
 		"tourney_reg.closed":           "Este torneo no está abierto para registro.",
 		"tourney_reg.not_found":        "Torneo no encontrado.",
@@ -391,7 +391,7 @@ var Translations = map[string]map[string]string{
 		"status.in_progress": "En Progreso",
 		"status.finished":    "Finalizado",
 
-		// Tournaments List
+		// Events List
 		"tourneys.title":        "Torneos",
 		"tourneys.subtitle":     "Series y Ligas Oficiales",
 		"tourneys.col_name":     "Nombre",
@@ -403,7 +403,7 @@ var Translations = map[string]map[string]string{
 		"tourneys.view_bracket": "Ver Bracket",
 		"tourneys.no_avail":     "No hay torneos disponibles en este momento.",
 
-		// Tournament Board
+		// Event Board
 		"board.back":           "Volver al Torneo",
 		"board.board":          "/ Tablero",
 		"board.tables":         "mesas",
@@ -481,7 +481,7 @@ var Translations = map[string]map[string]string{
 		"score_pub.cancel":  "Cancelar",
 		"score_pub.submit":  "Enviar Resultado",
 
-		// Public tournament detail
+		// Public event detail
 		"pub_detail.draw_title":   "Sorteo del Torneo",
 		"pub_detail.no_bracket":   "El bracket se generará cuando se agreguen participantes.",
 		"pub_detail.match_title":  "Lista de Partidos",
@@ -542,7 +542,7 @@ var Translations = map[string]map[string]string{
 		// Footer
 
 		// Dynamic keys
-		"pub_detail.all_tournaments": "Todos los Torneos",
+		"pub_detail.all_events": "Todos los Torneos",
 		"pub_detail.connecting":      "Conectando…",
 		"pub_detail.players_count":   "jugadores",
 		"pub_detail.player_pool":     "Jugadores Disponibles",
@@ -561,7 +561,7 @@ var Translations = map[string]map[string]string{
 		"nav.alerts_not_now":         "Ahora No",
 		"nav.alerts_enable":          "Activar",
 		"nav.mob_rankings":           "Ranking",
-		"nav.mob_events":             "Eventos",
+		"nav.mob_tournaments":             "Eventos",
 		"nav.mob_alerts":             "Alertas",
 		"nav.alerts_iphone_title":    "Recibir Alertas en iPhone",
 		"nav.alerts_iphone_desc":     "Toca el <b>icono de Compartir</b> (cuadrado con una flecha hacia arriba) en la parte inferior y selecciona <b>'Añadir a inicio'</b> para activar las notificaciones push.",

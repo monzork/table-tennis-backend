@@ -3,7 +3,7 @@ package match
 import (
 	"context"
 	player "table-tennis-backend/internal/domain/player"
-	tournament "table-tennis-backend/internal/domain/tournament"
+	event "table-tennis-backend/internal/domain/event"
 )
 
 type MatchView struct {
@@ -17,10 +17,10 @@ type MatchView struct {
 }
 
 type GetMatchesUseCase struct {
-	matchRepo tournament.MatchRepository
+	matchRepo event.MatchRepository
 }
 
-func NewGetMatchesUseCase(matchRepo tournament.MatchRepository) *GetMatchesUseCase {
+func NewGetMatchesUseCase(matchRepo event.MatchRepository) *GetMatchesUseCase {
 	return &GetMatchesUseCase{
 		matchRepo: matchRepo,
 	}

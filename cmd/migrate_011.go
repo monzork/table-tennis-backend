@@ -17,8 +17,8 @@ func main() {
 	defer db.Close()
 
 	queries := []string{
-		`ALTER TABLE tournaments ADD COLUMN group_pass_count INTEGER NOT NULL DEFAULT 2;`,
-		`ALTER TABLE tournaments ADD COLUMN registration_open BOOLEAN NOT NULL DEFAULT 0;`,
+		`ALTER TABLE events ADD COLUMN group_pass_count INTEGER NOT NULL DEFAULT 2;`,
+		`ALTER TABLE events ADD COLUMN registration_open BOOLEAN NOT NULL DEFAULT 0;`,
 	}
 	for _, q := range queries {
 		_, err = db.Exec(q)

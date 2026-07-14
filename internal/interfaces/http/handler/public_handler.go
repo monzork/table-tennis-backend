@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"table-tennis-backend/internal/application/player"
-	appTournament "table-tennis-backend/internal/application/tournament"
+	appTournament "table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/interfaces/http/i18n"
 
 	"github.com/gofiber/fiber/v2"
@@ -169,53 +169,53 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 	}), "layouts/public")
 }
 
-// ── Tournament self-registration ──────────────────────────────────────────────
+// ── Event self-registration ──────────────────────────────────────────────
 
-// ShowTournamentRegistration lists all open tournaments.
+// ShowTournamentRegistration lists all open events.
 func (h *PublicHandler) ShowTournamentRegistration(c *fiber.Ctx) error {
 	lang := getLang(c)
-	tournaments, err := h.selfRegisterUC.GetOpenTournaments(c.Context())
+	events, err := h.selfRegisterUC.GetOpenTournaments(c.Context())
 	if err != nil {
 		return ErrorHandler(err)
 	}
-	return c.Render("tournament-register", merge(tMap(lang), fiber.Map{
+	return c.Render("event-register", merge(tMap(lang), fiber.Map{
 		"Title":       i18n.T(lang, "tourney_reg.title"),
-		"Tournaments": tournaments,
+		"Events": events,
 	}), "layouts/public")
 }
 
-// ShowTournamentRegisterForm renders the form for a specific tournament.
+// ShowTournamentRegisterForm renders the form for a specific event.
 func (h *PublicHandler) ShowTournamentRegisterForm(c *fiber.Ctx) error {
 	lang := getLang(c)
 	tid := c.Params("id")
-	tournaments, err := h.selfRegisterUC.GetOpenTournaments(c.Context())
+	events, err := h.selfRegisterUC.GetOpenTournaments(c.Context())
 	if err != nil {
 		return ErrorHandler(err)
 	}
-	// Find the specific tournament
+	// Find the specific event
 	var target interface{}
-	for _, t := range tournaments {
+	for _, t := range events {
 		if t.ID == tid {
 			target = t
 			break
 		}
 	}
 	if target == nil {
-		return c.Render("tournament-register", merge(tMap(lang), fiber.Map{
+		return c.Render("event-register", merge(tMap(lang), fiber.Map{
 			"Title":       i18n.T(lang, "tourney_reg.title"),
-			"Tournaments": tournaments,
+			"Events": events,
 			"Error":       i18n.T(lang, "tourney_reg.not_found"),
 		}), "layouts/public")
 	}
-	return c.Render("tournament-register", merge(tMap(lang), fiber.Map{
+	return c.Render("event-register", merge(tMap(lang), fiber.Map{
 		"Title":              i18n.T(lang, "tourney_reg.title"),
-		"Tournaments":        tournaments,
+		"Events":        events,
 		"SelectedTournament": target,
 		"TournamentID":       tid,
 	}), "layouts/public")
 }
 
-// RegisterToTournament handles the form submission for tournament self-registration.
+// RegisterToTournament handles the form submission for event self-registration.
 func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 	lang := getLang(c)
 	var body struct {
@@ -238,7 +238,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 
 	// Bot protection
 	if body.Honeypot != "" {
-		return c.Render("tournament-register-success", merge(tMap(lang), fiber.Map{
+		return c.Render("event-register-success", merge(tMap(lang), fiber.Map{
 			"Title":   i18n.T(lang, "tourney_reg.success_title"),
 			"Message": "Thank you!",
 		}), "layouts/public")
@@ -261,16 +261,16 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 
 	if err != nil {
 		// Re-render with error
-		tournaments, _ := h.selfRegisterUC.GetOpenTournaments(c.Context())
-		return c.Render("tournament-register", merge(tMap(lang), fiber.Map{
+		events, _ := h.selfRegisterUC.GetOpenTournaments(c.Context())
+		return c.Render("event-register", merge(tMap(lang), fiber.Map{
 			"Title":        i18n.T(lang, "tourney_reg.title"),
-			"Tournaments":  tournaments,
+			"Events":  events,
 			"TournamentID": body.TournamentID,
 			"Error":        err.Error(),
 		}), "layouts/public")
 	}
 
-	return c.Render("tournament-register-success", merge(tMap(lang), fiber.Map{
+	return c.Render("event-register-success", merge(tMap(lang), fiber.Map{
 		"Title":          i18n.T(lang, "tourney_reg.success_title"),
 		"Message":        i18n.T(lang, "tourney_reg.success_msg"),
 		"TournamentName": t.Name,
@@ -281,7 +281,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 // Sitemap generates a dynamic XML sitemap.
 func (h *PublicHandler) Sitemap(c *fiber.Ctx) error {
 	baseURL := c.BaseURL()
-	tournaments, _ := h.selfRegisterUC.GetOpenTournaments(c.Context()) // we can use GetOpenTournaments or ideally all tournaments if available. Actually, just public ones.
+	events, _ := h.selfRegisterUC.GetOpenTournaments(c.Context()) // we can use GetOpenTournaments or ideally all events if available. Actually, just public ones.
 
 	var sb strings.Builder
 	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
@@ -292,7 +292,7 @@ func (h *PublicHandler) Sitemap(c *fiber.Ctx) error {
 	// Static routes
 	staticRoutes := []string{
 		"/rankings/singles",
-		"/tournaments",
+		"/events",
 		"/register",
 	}
 	for _, route := range staticRoutes {
@@ -303,10 +303,10 @@ func (h *PublicHandler) Sitemap(c *fiber.Ctx) error {
 		sb.WriteString("  </url>\n")
 	}
 
-	// Dynamic routes (Tournaments)
-	for _, t := range tournaments {
+	// Dynamic routes (Events)
+	for _, t := range events {
 		sb.WriteString("  <url>\n")
-		sb.WriteString(fmt.Sprintf("    <loc>%s/tournaments/%s</loc>\n", baseURL, t.ID))
+		sb.WriteString(fmt.Sprintf("    <loc>%s/events/%s</loc>\n", baseURL, t.ID))
 		sb.WriteString("    <changefreq>hourly</changefreq>\n")
 		sb.WriteString("    <priority>1.0</priority>\n")
 		sb.WriteString("  </url>\n")

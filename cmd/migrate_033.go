@@ -57,7 +57,7 @@ func main() {
 
 	if isPostgres {
 		_, err = bunDB.NewRaw(`
-			ALTER TABLE tournaments 
+			ALTER TABLE events 
 			ADD COLUMN IF NOT EXISTS division_formats JSON DEFAULT '{}'
 		`).Exec(ctx)
 		if err != nil {
@@ -66,15 +66,15 @@ func main() {
 	} else {
 		// SQLite doesn't support ADD COLUMN IF NOT EXISTS in older versions
 		var hasCol int
-		_ = bunDB.NewRaw(`SELECT COUNT(*) FROM pragma_table_info('tournaments') WHERE name = 'division_formats'`).Scan(ctx, &hasCol)
+		_ = bunDB.NewRaw(`SELECT COUNT(*) FROM pragma_table_info('events') WHERE name = 'division_formats'`).Scan(ctx, &hasCol)
 
 		if hasCol == 0 {
-			_, err = bunDB.NewRaw(`ALTER TABLE tournaments ADD COLUMN division_formats JSON DEFAULT '{}'`).Exec(ctx)
+			_, err = bunDB.NewRaw(`ALTER TABLE events ADD COLUMN division_formats JSON DEFAULT '{}'`).Exec(ctx)
 			if err != nil {
 				log.Fatal("Failed to add division_formats column (SQLite):", err)
 			}
 		}
 	}
 
-	log.Println("Migration 033 complete: Added division_formats column to tournaments")
+	log.Println("Migration 033 complete: Added division_formats column to events")
 }

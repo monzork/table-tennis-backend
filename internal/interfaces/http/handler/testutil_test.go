@@ -16,13 +16,13 @@ import (
 	_ "modernc.org/sqlite"
 
 	"table-tennis-backend/internal/application/division"
-	"table-tennis-backend/internal/application/event"
+	"table-tennis-backend/internal/application/tournament"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/application/player"
-	"table-tennis-backend/internal/application/tournament"
+	"table-tennis-backend/internal/application/event"
 	adminDomain "table-tennis-backend/internal/domain/admin"
-	"table-tennis-backend/internal/domain/events"
+	"table-tennis-backend/internal/domain/tournaments"
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/infrastructure/identity"
 	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
@@ -108,9 +108,9 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	searchPlayerSelectionUC := player.NewSearchPlayersForSelectionUseCase(playerRepo)
 	importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
 	tournamentRepoForEnroll := bunRepo.NewTournamentRepository(db)
-	dispatcher := events.NewInMemoryDispatcher()
-	enrollPlayerUC := tournament.NewEnrollPlayerUseCase(tournamentRepoForEnroll, dispatcher)
-	getTournamentsUC := tournament.NewGetTournamentsUseCase(tournamentRepoForEnroll)
+	dispatcher := tournaments.NewInMemoryDispatcher()
+	enrollPlayerUC := event.NewEnrollPlayerUseCase(tournamentRepoForEnroll, dispatcher)
+	getTournamentsUC := event.NewGetTournamentsUseCase(tournamentRepoForEnroll)
 	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
@@ -119,29 +119,29 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 
 	tournamentRepo := bunRepo.NewTournamentRepository(db)
-	createTournamentUC := tournament.NewCreateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
-	getTournamentByIDUC := tournament.NewGetTournamentByIDUseCase(tournamentRepo, divisionRepo)
-	updateTournamentUC := tournament.NewUpdateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
-	deleteTournamentUC := tournament.NewDeleteTournamentUseCase(tournamentRepo)
+	createTournamentUC := event.NewCreateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
+	getTournamentByIDUC := event.NewGetTournamentByIDUseCase(tournamentRepo, divisionRepo)
+	updateTournamentUC := event.NewUpdateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
+	deleteTournamentUC := event.NewDeleteTournamentUseCase(tournamentRepo)
 	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
-	finishTournamentUC := tournament.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
-	exportTournamentUC := tournament.NewExportTournamentReportUseCase(tournamentRepo)
+	finishTournamentUC := event.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
+	exportTournamentUC := event.NewExportTournamentReportUseCase(tournamentRepo)
 	pdfGen := pdfinfra.NewGoFpdfGenerator()
-	exportTournamentPdfUC := tournament.NewExportTournamentPdfUseCase(tournamentRepo, divisionRepo, pdfGen)
-	movePlayerUC := tournament.NewMovePlayerUseCase(tournamentRepo)
-	createTeamUC := tournament.NewCreateTeamUseCase(tournamentRepo)
-	deleteTeamUC := tournament.NewDeleteTeamUseCase(tournamentRepo)
-	assignPlayerToTeamUC := tournament.NewAssignPlayerToTeamUseCase(tournamentRepo)
-	removePlayerFromTeamUC := tournament.NewRemovePlayerFromTeamUseCase(tournamentRepo)
-	getTournamentsUC = tournament.NewGetTournamentsUseCase(tournamentRepo)
-	regenerateSeedsUC := tournament.NewRegenerateGroupSeedsUseCase(tournamentRepo, matchRepo, divisionRepo)
-	updateParticipantEloUC := tournament.NewUpdateParticipantEloBeforeUseCase(tournamentRepo, regenerateSeedsUC)
-	getOccupiedTablesUC := tournament.NewGetOccupiedTablesUseCase(matchRepo)
-	removeParticipantUC := tournament.NewRemoveParticipantUseCase(tournamentRepo)
-	saveKnockoutSeedsUC := tournament.NewSaveKnockoutSeedsUseCase(tournamentRepo, divisionRepo)
-	toggleSeedingLockUC := tournament.NewToggleSeedingLockUseCase(tournamentRepo)
-	addGroupUC := tournament.NewAddGroupUseCase(tournamentRepo)
-	recalculateEloUC := tournament.NewRecalculateTournamentEloUseCase(tournamentRepo, playerRepo)
+	exportTournamentPdfUC := event.NewExportTournamentPdfUseCase(tournamentRepo, divisionRepo, pdfGen)
+	movePlayerUC := event.NewMovePlayerUseCase(tournamentRepo)
+	createTeamUC := event.NewCreateTeamUseCase(tournamentRepo)
+	deleteTeamUC := event.NewDeleteTeamUseCase(tournamentRepo)
+	assignPlayerToTeamUC := event.NewAssignPlayerToTeamUseCase(tournamentRepo)
+	removePlayerFromTeamUC := event.NewRemovePlayerFromTeamUseCase(tournamentRepo)
+	getTournamentsUC = event.NewGetTournamentsUseCase(tournamentRepo)
+	regenerateSeedsUC := event.NewRegenerateGroupSeedsUseCase(tournamentRepo, matchRepo, divisionRepo)
+	updateParticipantEloUC := event.NewUpdateParticipantEloBeforeUseCase(tournamentRepo, regenerateSeedsUC)
+	getOccupiedTablesUC := event.NewGetOccupiedTablesUseCase(matchRepo)
+	removeParticipantUC := event.NewRemoveParticipantUseCase(tournamentRepo)
+	saveKnockoutSeedsUC := event.NewSaveKnockoutSeedsUseCase(tournamentRepo, divisionRepo)
+	toggleSeedingLockUC := event.NewToggleSeedingLockUseCase(tournamentRepo)
+	addGroupUC := event.NewAddGroupUseCase(tournamentRepo)
+	recalculateEloUC := event.NewRecalculateTournamentEloUseCase(tournamentRepo, playerRepo)
 
 	tournamentHandler := handler.NewTournamentHandler(
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,
@@ -152,11 +152,11 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	)
 
 	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)
-	exportEventPdfUC := tournament.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGen)
-	createEventUC := event.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
-	getEventByIDUC := event.NewGetEventByIDUseCase(eventRepo)
-	getAllEventsUC := event.NewGetAllEventsUseCase(eventRepo)
-	deleteEventUC := event.NewDeleteEventUseCase(eventRepo)
+	exportEventPdfUC := event.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGen)
+	createEventUC := tournament.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
+	getEventByIDUC := tournament.NewGetEventByIDUseCase(eventRepo)
+	getAllEventsUC := tournament.NewGetAllEventsUseCase(eventRepo)
+	deleteEventUC := tournament.NewDeleteEventUseCase(eventRepo)
 	eventHandler := handler.NewEventHandler(createEventUC, nil, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
@@ -167,7 +167,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
-	selfRegisterUC := tournament.NewSelfRegisterUseCase(tournamentRepo, playerRepo)
+	selfRegisterUC := event.NewSelfRegisterUseCase(tournamentRepo, playerRepo)
 	publicHandler := handler.NewPublicHandler(playerUC, selfRegisterUC)
 
 	adminRepo := bunRepo.NewAdminRepository(db)
@@ -295,8 +295,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	app.Get("/players/department-input", publicHandler.DepartmentInput)
 	app.Get("/register", publicHandler.ShowSignup)
 	app.Post("/register", publicHandler.Register)
-	app.Get("/tournaments/register", publicHandler.ShowTournamentRegistration)
-	app.Post("/tournaments/register", publicHandler.RegisterToTournament)
+	app.Get("/events/register", publicHandler.ShowTournamentRegistration)
+	app.Post("/events/register", publicHandler.RegisterToTournament)
 
 	// Public Score Entry & Match Starting Endpoints
 	app.Get("/public/matches/score/form", matchHandler.ShowPublicScoreForm)
@@ -314,10 +314,10 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Use(authMiddleware)
 	admin.Get("/", adminHandler.Dashboard)
 	admin.Get("/players", adminHandler.Players)
-	admin.Get("/tournaments", adminHandler.Tournaments)
 	admin.Get("/events", adminHandler.Events)
-	admin.Get("/events/division-select", adminHandler.DivisionSelect)
-	admin.Get("/events/:id", eventHandler.Detail)
+	admin.Get("/tournaments", adminHandler.Tournaments)
+	admin.Get("/tournaments/division-select", adminHandler.DivisionSelect)
+	admin.Get("/tournaments/:id", eventHandler.Detail)
 	admin.Get("/divisions", adminHandler.Divisions)
 
 	api := app.Group("/")
@@ -328,10 +328,10 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	api.Put("/players/:id", playerHandler.Update)
 	api.Delete("/players/:id", playerHandler.Delete)
 	api.Post("/players/import", playerHandler.Import)
-	api.Post("/tournaments", tournamentHandler.Create)
-	api.Post("/events", eventHandler.Create)
-	api.Delete("/events/:id", eventHandler.Delete)
-	api.Post("/events/bulk-delete", eventHandler.DeleteBulk)
+	api.Post("/events", tournamentHandler.Create)
+	api.Post("/tournaments", eventHandler.Create)
+	api.Delete("/tournaments/:id", eventHandler.Delete)
+	api.Post("/tournaments/bulk-delete", eventHandler.DeleteBulk)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)
 	api.Post("/matches/:id/start", matchHandler.Start)
@@ -339,15 +339,15 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	api.Post("/divisions", divisionHandler.CreateOrUpdate)
 	api.Delete("/divisions/:id", divisionHandler.Delete)
 
-	admin.Get("/tournaments/:id", tournamentHandler.Detail)
-	api.Put("/tournaments/:id", tournamentHandler.Update)
-	api.Delete("/tournaments/:id", tournamentHandler.Delete)
-	admin.Post("/tournaments/:id/finish", tournamentHandler.Finish)
-	admin.Get("/tournaments/:id/export", tournamentHandler.Export)
-	admin.Get("/tournaments/:id/export/pdf", tournamentHandler.ExportPDF)
-	admin.Post("/tournaments/:id/move-player", tournamentHandler.MovePlayer)
-	admin.Post("/tournaments/:id/regenerate-seeds", tournamentHandler.RegenerateGroupSeeds)
-	admin.Post("/tournaments/:id/groups", tournamentHandler.AddGroup)
+	admin.Get("/events/:id", tournamentHandler.Detail)
+	api.Put("/events/:id", tournamentHandler.Update)
+	api.Delete("/events/:id", tournamentHandler.Delete)
+	admin.Post("/events/:id/finish", tournamentHandler.Finish)
+	admin.Get("/events/:id/export", tournamentHandler.Export)
+	admin.Get("/events/:id/export/pdf", tournamentHandler.ExportPDF)
+	admin.Post("/events/:id/move-player", tournamentHandler.MovePlayer)
+	admin.Post("/events/:id/regenerate-seeds", tournamentHandler.RegenerateGroupSeeds)
+	admin.Post("/events/:id/groups", tournamentHandler.AddGroup)
 
 	return app, db, store, nil
 }

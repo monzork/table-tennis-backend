@@ -59,7 +59,7 @@ func main() {
 	}
 
 	queries := []string{
-		`ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS division_group_pass_counts ` + metricsType + ` NOT NULL DEFAULT '{}';`,
+		`ALTER TABLE events ADD COLUMN IF NOT EXISTS division_group_pass_counts ` + metricsType + ` NOT NULL DEFAULT '{}';`,
 	}
 
 	for _, q := range queries {
@@ -68,5 +68,5 @@ func main() {
 		}
 	}
 
-	log.Println("Migration 038 complete: Added division_group_pass_counts column to tournaments table")
+	log.Println("Migration 038 complete: Added division_group_pass_counts column to events table")
 }

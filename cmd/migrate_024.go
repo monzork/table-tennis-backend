@@ -68,29 +68,29 @@ func main() {
 		log.Println("Handled pin column removal from players.")
 	}
 
-	// 2. Add pin column to tournament_participants
-	_, err = sqldb.Exec(`ALTER TABLE tournament_participants ADD COLUMN pin TEXT NOT NULL DEFAULT '0000';`)
+	// 2. Add pin column to event_participants
+	_, err = sqldb.Exec(`ALTER TABLE event_participants ADD COLUMN pin TEXT NOT NULL DEFAULT '0000';`)
 	if err != nil {
-		log.Printf("Warning adding pin to tournament_participants: %v (might already exist)", err)
+		log.Printf("Warning adding pin to event_participants: %v (might already exist)", err)
 	} else {
-		log.Println("Added pin column to tournament_participants.")
+		log.Println("Added pin column to event_participants.")
 	}
 
-	// 3. Generate random 4-digit PINs for existing tournament_participants rows
+	// 3. Generate random 4-digit PINs for existing event_participants rows
 	if isPostgres {
 		_, err = sqldb.Exec(`
-			UPDATE tournament_participants
+			UPDATE event_participants
 			SET pin = LPAD(FLOOR(RANDOM() * 10000)::TEXT, 4, '0')
 			WHERE pin = '0000';
 		`)
 		if err != nil {
 			log.Printf("Warning generating PINs for existing participants (postgres): %v", err)
 		} else {
-			log.Println("Generated random PINs for existing tournament participants.")
+			log.Println("Generated random PINs for existing event participants.")
 		}
 	} else {
 		// SQLite: fetch all rows and update individually
-		rows, err := sqldb.Query(`SELECT tournament_id, player_id FROM tournament_participants WHERE pin = '0000'`)
+		rows, err := sqldb.Query(`SELECT event_id, player_id FROM event_participants WHERE pin = '0000'`)
 		if err != nil {
 			log.Printf("Warning fetching participants for PIN generation: %v", err)
 		} else {
@@ -102,10 +102,10 @@ func main() {
 					continue
 				}
 				pin := fmt.Sprintf("%04d", rand.Intn(10000))
-				sqldb.Exec(`UPDATE tournament_participants SET pin = ? WHERE tournament_id = ? AND player_id = ?`, pin, tournamentID, playerID)
+				sqldb.Exec(`UPDATE event_participants SET pin = ? WHERE event_id = ? AND player_id = ?`, pin, tournamentID, playerID)
 				count++
 			}
-			log.Printf("Generated random PINs for %d existing tournament participants (SQLite).", count)
+			log.Printf("Generated random PINs for %d existing event participants (SQLite).", count)
 		}
 	}
 

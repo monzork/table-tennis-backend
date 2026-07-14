@@ -1,0 +1,959 @@
+{{$t := .Event}}
+{{$vm := .}}
+
+
+<div class="flex flex-col gap-10">
+  {{if not .IsPublic}}
+  <div class="flex justify-end">
+    <button hx-post="/admin/events/{{$t.ID}}/toggle-seeding-lock" 
+            hx-swap="none" 
+            hx-confirm="Are you sure you want to {{if $t.ManualSeedingLocked}}unlock{{else}}lock{{end}} seeding? {{if not $t.ManualSeedingLocked}}Locking will block seed regeneration, editing seeded Elo, and manual player reordering.{{else}}Unlocking will allow you to regenerate seeds, edit seeded Elo, and drag-and-drop players. Use with caution!{{end}}" 
+            class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border transition-all shadow-lg flex items-center gap-2 {{if $t.ManualSeedingLocked}}bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20{{else}}bg-green-500/10 text-green-400 border-green-500/30 hover:bg-green-500/20{{end}}">
+      {{if $t.ManualSeedingLocked}}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        Seeding Locked
+      {{else}}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+        Seeding Unlocked
+      {{end}}
+    </button>
+  </div>
+  {{end}}
+
+  {{range .Divisions}}
+  <div class="glass rounded-2xl border border-white/10 p-4 sm:p-6 overscroll-x-auto">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 mb-8 border-b border-white/10 pb-6 sm:pb-8">
+      {{if not .IsUnclassified}}
+      <div class="flex justify-between items-center w-full sm:w-auto">
+        <div class="shrink-0 w-14 h-14 rounded-2xl border flex items-center justify-center font-black text-xl relative" 
+             style="box-shadow: 0 8px 20px {{.Color}}20; background: linear-gradient(135deg, {{.Color}}20, {{.Color}}05); border-color:{{.Color}}30; color: {{.Color}};">
+          {{if gt (len .Name) 0}}{{slice .Name 0 1}}{{else}}?{{end}}
+          <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white flex items-center justify-center border-2 border-black">
+             <div class="w-1.5 h-1.5 rounded-full" style="background-color: {{.Color}}"></div>
+          </div>
+        </div>
+        <!-- Mobile participants count -->
+        <div class="sm:hidden text-right">
+          <div class="text-3xl font-black text-white/90 tabular-nums line-height-1 leading-none">{{len .Players}}</div>
+          <div class="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mt-1">{{t $.T "bracket.participants"}}</div>
+        </div>
+      </div>
+      <div class="flex-1 w-full">
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+           <h3 class="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-white">{{.Name}} {{t $.T "bracket.division"}}</h3>
+           <span class="whitespace-nowrap text-[10px] font-black bg-white/10 text-gray-400 px-3 py-1 rounded-full border border-white/10 tracking-widest uppercase opacity-70">{{t $.T "bracket.ranking_area"}}</span>
+        </div>
+        <div class="flex items-center gap-4 mt-2 sm:mt-3">
+           <div class="flex items-center gap-1.5 grayscale opacity-50">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+              <span class="text-[10px] font-bold text-white uppercase tracking-widest">{{.MinElo}}</span>
+           </div>
+           <div class="w-8 h-px bg-white/10"></div>
+           <div class="flex items-center gap-1.5 grayscale opacity-50">
+              <span class="text-[10px] font-bold text-white uppercase tracking-widest">{{if .MaxElo}}{{.MaxElo}}{{else}}∞{{end}}</span>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>
+           </div>
+        </div>
+      </div>
+      {{else}}
+      <div class="flex-1 w-full flex justify-between items-center sm:block">
+        <h3 class="text-lg font-extrabold uppercase tracking-widest text-gray-400">{{t $.T "bracket.unclassified_div"}}</h3>
+        <span class="sm:hidden text-xs text-gray-500 uppercase">{{len .Players}} {{t $.T "bracket.players"}}</span>
+      </div>
+      <span class="hidden sm:inline-block ml-auto text-xs text-gray-500 uppercase">{{len .Players}} {{t $.T "bracket.players"}}</span>
+      {{end}}
+      {{if not .IsUnclassified}}
+      <!-- Desktop participants count -->
+      <div class="hidden sm:block text-right">
+        <div class="text-3xl font-black text-white/90 tabular-nums line-height-1 leading-none">{{len .Players}}</div>
+        <div class="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mt-1">{{t $.T "bracket.participants"}}</div>
+      </div>
+      {{end}}
+    </div>
+    
+    {{if eq .Format "round_robin"}}
+      <!-- Round Robin -->
+      <div class="flex flex-col gap-6">
+        <h4 class="proj-section-title text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] mb-2 text-center border-b border-white/5 pb-2">{{.Name}} {{t $.T "bracket.standings"}}{{if .RoundRobinFinished}} <span class="text-green-400 ml-2" title="All matches finished">✅</span>{{end}}</h4>
+        
+        <!-- Standings Table -->
+        <div class="w-full glass rounded-3xl overflow-hidden border border-white/5 mb-8 border-white/10 shadow-2xl">
+          <div class="overflow-x-auto custom-scrollbar">
+          <table class="proj-table w-full text-left text-sm font-bold tracking-tight min-w-[600px]">
+            <thead>
+              <tr class="bg-white/5 text-gray-500 uppercase tracking-[0.2em] text-[11px] border-b border-white/10">
+                <th class="px-2 py-3 sm:p-4 w-16 text-center">{{t $.T "bracket.rank"}}</th>
+                <th class="px-2 py-3 sm:p-4">{{t $.T "bracket.player"}}</th>
+                <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.played"}}</th>
+                <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.wins"}}</th>
+                <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.losses"}}</th>
+                <th class="px-2 py-3 sm:p-4 text-center">Sets (W/L)</th>
+                <th class="px-2 py-3 sm:p-4 text-center">Points (W/L)</th>
+                <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.win_pct"}}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              {{range $idx, $s := .Standings}}
+              <tr class="{{if lt $idx 2}}bg-white/[0.03]{{end}} hover:bg-white/[0.05] transition-colors group">
+                <td class="px-2 py-3 sm:p-4 text-center font-black {{if eq $idx 0}}text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]{{else if eq $idx 1}}text-gray-300{{else if eq $idx 2}}text-amber-600{{else}}opacity-40{{end}}">
+                   {{if eq $idx 0}}🏆{{else}}#{{$s.Rank}}{{end}}
+                </td>
+                <td class="px-2 py-3 sm:p-4">
+                   <div class="flex flex-col">
+                      <span class="proj-player-name text-white uppercase group-hover:translate-x-1 transition-transform inline-block whitespace-nowrap">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</span>
+                      <span class="proj-elo text-[8px] text-gray-500 uppercase tracking-widest font-black mt-0.5 whitespace-nowrap">{{t $.T "bracket.elo"}}: {{if or (eq $vm.Type "doubles") (eq $vm.Type "mixed_doubles")}}{{.Player.DoublesElo}}{{else}}{{.Player.SinglesElo}}{{end}}</span>
+                   </div>
+                </td>
+                <td class="px-2 py-3 sm:p-4 text-center opacity-60 tabular-nums">{{.Played}}</td>
+                <td class="px-2 py-3 sm:p-4 text-center font-black text-white tabular-nums">{{.Wins}}</td>
+                <td class="px-2 py-3 sm:p-4 text-center opacity-40 tabular-nums">{{.Losses}}</td>
+                <td class="px-2 py-3 sm:p-4 text-center opacity-80 tabular-nums text-xs whitespace-nowrap">{{.SetsWon}} / {{.SetsLost}}</td>
+                <td class="px-2 py-3 sm:p-4 text-center opacity-80 tabular-nums text-xs whitespace-nowrap">{{.PointsWon}} / {{.PointsLost}}</td>
+                <td class="px-2 py-3 sm:p-4 text-center">
+                   <div class="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] text-gray-400">
+                      {{.WinPercentage}}%
+                   </div>
+                </td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+          </div>
+        </div>
+
+      </div>
+      
+    {{else if eq .Format "groups_elimination"}}
+      <div class="flex flex-col gap-12 mt-4">
+        <h3 class="text-sm font-black uppercase text-gray-400 tracking-[0.2em] text-center border-b border-white/5 pb-4 mb-4 flex justify-between items-center px-4">
+          <span>{{if .Name}}{{.Name}} - Group Phase{{else}}Group Phase{{end}}</span>
+          {{if and (not $.IsPublic) (not $.Event.ManualSeedingLocked)}}
+          <button hx-post="/admin/events/{{$.Event.ID}}/groups"
+                  hx-vals='{"divisionName": "{{.Name}}"}'
+                  hx-swap="none"
+                  class="text-[10px] font-bold uppercase tracking-widest text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/10 transition-colors">
+            + Add Group
+          </button>
+          {{end}}
+        </h3>
+        
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {{$divisionGroups := .Groups}}
+          {{range .Groups}}
+            {{$currentGroupName := .Name}}
+            {{$currentGroupID := .ID}}
+            {{$canMove := true}}
+            {{if or (eq $t.Status "finished") $vm.IsPublic $t.ManualSeedingLocked}}{{$canMove = false}}{{end}}
+            <div 
+              data-group-id="{{$currentGroupID}}"
+              class="group-card bg-black/20 rounded-3xl p-4 sm:p-6 border border-white/5 shadow-lg relative transition-all duration-300"
+              {{if $canMove}}
+                data-event-id="{{$t.ID}}"
+                ondragover="onDragOver(tournament)"
+                ondragenter="onDragEnter(tournament, this)"
+                ondragleave="onDragLeave(tournament, this)"
+                ondrop="onDrop(tournament, this)"
+              {{end}}>
+              <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                <div class="flex flex-col">
+                  <h4 class="text-xs font-black uppercase text-white tracking-widest">{{.Name}} {{if .Finished}}<span class="text-green-400 ml-1" title="All matches finished">✅</span>{{end}}</h4>
+                </div>
+                <span class="text-[10px] text-gray-500 uppercase tracking-widest">{{len .Players}} {{t $.T "bracket.players"}}</span>
+              </div>
+              
+              {{if .Finished}}
+              <div class="absolute top-6 right-6 flex items-center gap-1 text-[10px] font-bold uppercase text-green-400">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg> FINISHED
+              </div>
+              {{end}}
+
+              {{/* Standings mini */}}
+              <div class="w-full glass rounded-3xl overflow-hidden border border-white/5 my-6 border-white/10 glass-dark scale-95 origin-top">
+                <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left text-sm font-bold tracking-tight min-w-[500px]">
+                  <thead>
+                    <tr class="bg-white/5 text-gray-500 uppercase tracking-[0.2em] text-[11px] border-b border-white/10">
+                      <th class="px-2 py-3 sm:p-4 w-16 text-center">{{t $.T "bracket.rank"}}</th>
+                      <th class="px-2 py-3 sm:p-4">{{t $.T "bracket.player"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.played"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.wins"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.losses"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">Sets (W/L)</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">Points (W/L)</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5">
+                    {{range $idx, $s := .Standings}}
+                    <tr 
+                      {{if $canMove}}
+                        draggable="true"
+                        ondragstart="onDragStart(tournament, '{{.Player.ID}}')"
+                        ondragend="onDragEnd(tournament)"
+                        data-event-id="{{$t.ID}}"
+                        data-group-id="{{$currentGroupID}}"
+                        data-target-index="{{$idx}}"
+                        ondragover="onDragOverRow(tournament)"
+                        ondragenter="onDragEnterRow(tournament, this)"
+                        ondragleave="onDragLeaveRow(tournament, this)"
+                        ondrop="onDropRow(tournament, this)"
+                        class="cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all duration-200"
+                      {{else}}
+                        class="hover:bg-white/5 transition-all duration-200"
+                      {{end}}>
+                      <td class="px-2 py-3 sm:p-4 text-center font-black {{if eq $idx 0}}text-yellow-400{{else if eq $idx 1}}text-gray-300{{else}}opacity-40{{end}}">
+                         #{{$s.Rank}}
+                      </td>
+                      <td class="px-2 py-3 sm:p-4 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                          {{if $canMove}}
+                            <svg class="proj-hide w-4 h-4 text-gray-500 hover:text-white cursor-grab active:cursor-grabbing mr-1 select-none shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 8h16M4 16h16" />
+                            </svg>
+                          {{end}}
+                          <span class="text-white whitespace-nowrap">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</span>
+                        </div>
+                      </td>
+                      <td class="px-2 py-3 sm:p-4 text-center opacity-60 tabular-nums">{{.Played}}</td>
+                      <td class="px-2 py-3 sm:p-4 text-center font-black text-white tabular-nums">{{.Wins}}</td>
+                      <td class="px-2 py-3 sm:p-4 text-center opacity-40 tabular-nums">{{.Losses}}</td>
+                      <td class="px-2 py-3 sm:p-4 text-center opacity-80 tabular-nums text-xs whitespace-nowrap">{{.SetsWon}} / {{.SetsLost}}</td>
+                      <td class="px-2 py-3 sm:p-4 text-center opacity-80 tabular-nums text-xs whitespace-nowrap">{{.PointsWon}} / {{.PointsLost}}</td>
+                    </tr>
+                    {{end}}
+                  </tbody>
+                </table>
+                </div>
+              </div>
+
+            </div>
+          {{end}}
+        </div>
+
+        <div class="w-full mt-8 border-t border-white/10 pt-10">
+          <h3 class="proj-section-title text-lg font-black uppercase text-white tracking-widest mb-8 text-center">{{t $.T "bracket.knockout_phase"}}</h3>
+          {{if and .AllGroupsFinished (gt (len .Groups) 0)}}
+            <!-- KNOCKOUT SEEDS TABLE FOR DRAG AND DROP -->
+            <div class="mb-12 max-w-2xl mx-auto">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="text-sm font-bold uppercase tracking-widest text-white/80">Knockout Seeds</h4>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest">{{len .KnockoutAdvancing}} Players Advancing</p>
+              </div>
+              <div class="glass border border-white/5 rounded-2xl overflow-hidden shadow-2xl relative">
+                <div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-tournaments-none"></div>
+                <div class="overflow-x-auto relative">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="bg-white/5 text-gray-500 uppercase tracking-[0.2em] text-[11px] border-b border-white/10">
+                      <th class="px-2 py-3 sm:p-4 w-16 text-center">{{t $.T "bracket.seed"}}</th>
+                      <th class="px-2 py-3 sm:p-4">{{t $.T "bracket.player"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">Elo</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5">
+                    {{$divID := .ID}}
+                    {{$knockoutGroupID := .KnockoutGroupID}}
+                    {{$canMoveKnockout := and (not $.IsPublic) (not $.Event.ManualSeedingLocked)}}
+                    {{range $idx, $p := .KnockoutAdvancing}}
+                    <tr 
+                      data-player-id="{{$p.ID}}"
+                      {{if $canMoveKnockout}}
+                        draggable="true"
+                        ondragstart="onDragStart(tournament, '{{$p.ID}}')"
+                        ondragend="onDragEnd(tournament)"
+                        data-event-id="{{$.Event.ID}}"
+                        data-div-id="{{$divID}}"
+                        data-target-index="{{$idx}}"
+                        ondragover="onDragOverRow(tournament)"
+                        ondragenter="onDragEnterRow(tournament, this)"
+                        ondragleave="onDragLeaveRow(tournament, this)"
+                        ondrop="onDropKnockoutRow(tournament, this)"
+                        class="cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all duration-200"
+                      {{else}}
+                        class="hover:bg-white/5 transition-all duration-200"
+                      {{end}}>
+                      <td class="px-2 py-3 sm:p-4 text-center font-black {{if eq $idx 0}}text-yellow-400{{else if eq $idx 1}}text-gray-300{{else}}opacity-40{{end}}">
+                         #{{add $idx 1}}
+                      </td>
+                      <td class="px-2 py-3 sm:p-4 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                          {{if $canMoveKnockout}}
+                            <svg class="proj-hide w-4 h-4 text-gray-500 hover:text-white cursor-grab active:cursor-grabbing mr-1 select-none shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 8h16M4 16h16" />
+                            </svg>
+                          {{end}}
+                          <span class="text-white whitespace-nowrap">{{$p.FirstNameWithSecond}} {{$p.LastNameWithSecond}}</span>
+                        </div>
+                      </td>
+                      <td class="px-2 py-3 sm:p-4 text-center font-mono text-gray-400 tabular-nums">
+                        {{if eq $.Event.Type "doubles"}}
+                          {{$p.DoublesElo}}
+                        {{else}}
+                          {{$p.SinglesElo}}
+                        {{end}}
+                      </td>
+                    </tr>
+                    {{end}}
+                  </tbody>
+                </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="block sm:hidden mb-8 text-center glass rounded-2xl p-6 border border-white/5">
+               <div class="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2">📱 Mobile Optimized View</div>
+               <p class="text-xs text-gray-400">The visual bracket tree is best viewed on larger screens. Please scroll down to the <strong class="text-white">Match List</strong> to see your upcoming games.</p>
+            </div>
+            <div class="hidden sm:flex gap-8 min-w-max px-2 py-4 overflow-x-auto justify-center items-center">
+              {{range $ri, $round := .KnockoutRoundsLeft}}
+              <div class="flex flex-col gap-0 bracket-round">
+                 <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
+                 <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
+                   {{range $mi, $matchView := .Matches}}
+                   <div class="bracket-match flex flex-col w-52 mr-8" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
+                      {{/* Player 1 */}}
+                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        {{if .Player1}}
+                          <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          {{if .Match}}
+                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          {{end}}
+                        {{else}}
+                          <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                        {{end}}
+                      </div>
+                      {{if not (eq $round.Name "Champion")}}
+                        <div class="h-px bg-white/5 mx-2 my-0.5"></div>
+                        {{/* Player 2 */}}
+                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                          {{if .Player2}}
+                            <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            {{if .Match}}
+                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            {{end}}
+                          {{else}}
+                            <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                          {{end}}
+                        </div>
+
+                        {{/* Buttons */}}
+                        {{if and .Player1 .Player2 .Player1.Player .Player2.Player}}
+                          {{if and .Match (eq .Match.Status "finished")}}
+                            {{$winnerName := "N/A"}}
+                            {{if eq .Match.WinnerTeam "A"}}{{$winnerName = printf "%s %s" (index .Match.TeamA 0).FirstNameWithSecond (index .Match.TeamA 0).LastNameWithSecond}}{{else}}{{if .Match.TeamB}}{{$winnerName = printf "%s %s" (index .Match.TeamB 0).FirstNameWithSecond (index .Match.TeamB 0).LastNameWithSecond}}{{end}}{{end}}
+                            {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                            <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-green-400 bg-green-400/10 border border-green-400/20 rounded-lg py-1 px-2 text-center">
+                              ✓ {{$winnerName}}
+                            </div>
+                            <button
+                              class="proj-hide mt-1 w-full text-[9px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-400 border border-white/5 hover:border-white/10 rounded-lg py-0.5 px-2 transition-all"
+                              onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                              ✏️ Edit Score
+                            </button>
+                          {{else}}
+                            {{if not $vm.IsPublic}}
+                              {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                              {{if and .Match (eq .Match.Status "in_progress")}}
+                                <button
+                                  class="proj-hide mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-1 px-2 transition-all"
+                                  onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                  ✏️ Edit Score
+                                </button>
+                              {{else}}
+                                <div class="proj-hide flex gap-1.5 mt-1">
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-1 px-1 transition-all"
+                                    onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                    ⚡ Score
+                                  </button>
+                                  {{if not .Match}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}&stage={{.Stage}}"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{else if eq .Match.Status "scheduled"}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/{{.Match.ID}}/start"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{end}}
+                                </div>
+                              {{end}}
+                            {{else}}
+                              <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 border border-white/5 rounded-lg py-1 px-2 text-center">
+                                Scheduled
+                              </div>
+                            {{end}}
+                          {{end}}
+                        {{end}}
+                      {{end}}
+                   </div>
+                   {{end}}
+                 </div>
+              </div>
+              {{end}}
+                            {{range $ri, $round := .KnockoutRoundsCenter}}
+              <div class="flex flex-col gap-0 bracket-round">
+                 <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
+                 <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
+                   {{range $mi, $matchView := .Matches}}
+                   <div class="bracket-match flex flex-col w-52 mx-4" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
+                      {{/* Player 1 */}}
+                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        {{if .Player1}}
+                          <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          {{if .Match}}
+                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          {{end}}
+                        {{else}}
+                          <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                        {{end}}
+                      </div>
+                      {{if not (eq $round.Name "Champion")}}
+                        <div class="h-px bg-white/5 mx-2 my-0.5"></div>
+                        {{/* Player 2 */}}
+                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                          {{if .Player2}}
+                            <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            {{if .Match}}
+                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            {{end}}
+                          {{else}}
+                            <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                          {{end}}
+                        </div>
+
+                        {{/* Buttons */}}
+                        {{if and .Player1 .Player2 .Player1.Player .Player2.Player}}
+                          {{if and .Match (eq .Match.Status "finished")}}
+                            {{$winnerName := "N/A"}}
+                            {{if eq .Match.WinnerTeam "A"}}{{$winnerName = printf "%s %s" (index .Match.TeamA 0).FirstNameWithSecond (index .Match.TeamA 0).LastNameWithSecond}}{{else}}{{if .Match.TeamB}}{{$winnerName = printf "%s %s" (index .Match.TeamB 0).FirstNameWithSecond (index .Match.TeamB 0).LastNameWithSecond}}{{end}}{{end}}
+                            {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                            <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-green-400 bg-green-400/10 border border-green-400/20 rounded-lg py-1 px-2 text-center">
+                              ✓ {{$winnerName}}
+                            </div>
+                            <button
+                              class="proj-hide mt-1 w-full text-[9px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-400 border border-white/5 hover:border-white/10 rounded-lg py-0.5 px-2 transition-all"
+                              onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                              ✏️ Edit Score
+                            </button>
+                          {{else}}
+                            {{if not $vm.IsPublic}}
+                              {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                              {{if and .Match (eq .Match.Status "in_progress")}}
+                                <button
+                                  class="proj-hide mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-1 px-2 transition-all"
+                                  onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                  ✏️ Edit Score
+                                </button>
+                              {{else}}
+                                <div class="proj-hide flex gap-1.5 mt-1">
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-1 px-1 transition-all"
+                                    onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                    ⚡ Score
+                                  </button>
+                                  {{if not .Match}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}&stage={{.Stage}}"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{else if eq .Match.Status "scheduled"}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/{{.Match.ID}}/start"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{end}}
+                                </div>
+                              {{end}}
+                            {{else}}
+                              <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 border border-white/5 rounded-lg py-1 px-2 text-center">
+                                Scheduled
+                              </div>
+                            {{end}}
+                          {{end}}
+                        {{end}}
+                      {{end}}
+                   </div>
+                   {{end}}
+                 </div>
+              </div>
+              {{end}}
+                            {{range $ri, $round := .KnockoutRoundsRight}}
+              <div class="flex flex-col gap-0 bracket-round">
+                 <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
+                 <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
+                   {{range $mi, $matchView := .Matches}}
+                   <div class="bracket-match flex flex-col w-52 ml-8" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
+                      {{/* Player 1 */}}
+                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        {{if .Player1}}
+                          <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          {{if .Match}}
+                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          {{end}}
+                        {{else}}
+                          <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                        {{end}}
+                      </div>
+                      {{if not (eq $round.Name "Champion")}}
+                        <div class="h-px bg-white/5 mx-2 my-0.5"></div>
+                        {{/* Player 2 */}}
+                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                          {{if .Player2}}
+                            <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            {{if .Match}}
+                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            {{end}}
+                          {{else}}
+                            <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                          {{end}}
+                        </div>
+
+                        {{/* Buttons */}}
+                        {{if and .Player1 .Player2 .Player1.Player .Player2.Player}}
+                          {{if and .Match (eq .Match.Status "finished")}}
+                            {{$winnerName := "N/A"}}
+                            {{if eq .Match.WinnerTeam "A"}}{{$winnerName = printf "%s %s" (index .Match.TeamA 0).FirstNameWithSecond (index .Match.TeamA 0).LastNameWithSecond}}{{else}}{{if .Match.TeamB}}{{$winnerName = printf "%s %s" (index .Match.TeamB 0).FirstNameWithSecond (index .Match.TeamB 0).LastNameWithSecond}}{{end}}{{end}}
+                            {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                            <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-green-400 bg-green-400/10 border border-green-400/20 rounded-lg py-1 px-2 text-center">
+                              ✓ {{$winnerName}}
+                            </div>
+                            <button
+                              class="proj-hide mt-1 w-full text-[9px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-400 border border-white/5 hover:border-white/10 rounded-lg py-0.5 px-2 transition-all"
+                              onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                              ✏️ Edit Score
+                            </button>
+                          {{else}}
+                            {{if not $vm.IsPublic}}
+                              {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                              {{if and .Match (eq .Match.Status "in_progress")}}
+                                <button
+                                  class="proj-hide mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-1 px-2 transition-all"
+                                  onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                  ✏️ Edit Score
+                                </button>
+                              {{else}}
+                                <div class="proj-hide flex gap-1.5 mt-1">
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-1 px-1 transition-all"
+                                    onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                    ⚡ Score
+                                  </button>
+                                  {{if not .Match}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}&stage={{.Stage}}"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{else if eq .Match.Status "scheduled"}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/{{.Match.ID}}/start"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{end}}
+                                </div>
+                              {{end}}
+                            {{else}}
+                              <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 border border-white/5 rounded-lg py-1 px-2 text-center">
+                                Scheduled
+                              </div>
+                            {{end}}
+                          {{end}}
+                        {{end}}
+                      {{end}}
+                   </div>
+                   {{end}}
+                 </div>
+              </div>
+              {{end}}
+            </div>
+          {{else}}
+            <div class="glass rounded-3xl border border-white/10 border-dashed p-12 text-center text-gray-500">
+               <svg class="w-12 h-12 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+               <p class="text-xs font-bold uppercase tracking-widest">{{t $.T "bracket.knockout_desc"}}</p>
+               <p class="text-[10px] mt-1">{{t $.T "bracket.knockout_desc_2"}}</p>
+            </div>
+          {{end}}
+        </div>
+      </div>
+      
+    {{else}}
+      <!-- Direct Elimination -->
+      {{if eq .Format "elimination"}}
+        <!-- Bracket Seeding Draw List -->
+        {{/* GroupID is resolved in Go (bracket_view.go) — no fragile name-matching needed here */}}
+        {{$currentGroupID := .GroupID}}
+
+        {{$canMove := true}}
+        {{if or (eq $t.Status "finished") $vm.IsPublic $t.ManualSeedingLocked}}{{$canMove = false}}{{end}}
+
+        <div 
+          class="mb-10 max-w-2xl glass rounded-3xl border border-white/10 overflow-hidden shadow-2xl transition-all duration-300"
+          {{if $canMove}}
+            data-event-id="{{$t.ID}}"
+            data-group-id="{{$currentGroupID}}"
+            ondragover="onDragOver(tournament)"
+            ondragenter="onDragEnter(tournament, this)"
+            ondragleave="onDragLeave(tournament, this)"
+            ondrop="onDrop(tournament, this)"
+          {{end}}>
+          <div class="bg-white/5 px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <h4 class="text-xs font-black uppercase text-gray-400 tracking-widest">Bracket Seeding Draw</h4>
+              <span class="text-[9px] font-black bg-white/10 text-gray-400 px-2 py-0.5 rounded-full border border-white/10 uppercase tracking-widest opacity-60">{{t $.T "bracket.drag_seed"}}</span>
+            </div>
+            <span class="text-xs font-bold text-gray-500 uppercase">{{len .Players}} {{t $.T "bracket.participants"}}</span>
+          </div>
+          
+          <table class="w-full text-left text-sm font-bold tracking-tight">
+            <thead>
+              <tr class="bg-white/[0.02] text-gray-500 uppercase tracking-[0.2em] text-[11px] border-b border-white/5">
+                <th class="px-2 py-3 sm:p-4 w-12 text-center">{{t $.T "bracket.seed"}}</th>
+                <th class="px-2 py-3 sm:p-4">Participant</th>
+                <th class="px-2 py-3 sm:p-4 text-right">{{t $.T "bracket.rating"}}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              
+              {{range $idx, $p := .Players}}
+              <tr 
+                {{if $canMove}}
+                  draggable="true"
+                  ondragstart="onDragStart(tournament, '{{$p.ID}}')"
+                  ondragend="onDragEnd(tournament)"
+                  data-event-id="{{$t.ID}}"
+                  data-group-id="{{$currentGroupID}}"
+                  data-target-index="{{$idx}}"
+                  ondragover="onDragOverRow(tournament)"
+                  ondragenter="onDragEnterRow(tournament, this)"
+                  ondragleave="onDragLeaveRow(tournament, this)"
+                  ondrop="onDropRow(tournament, this)"
+                  class="cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all duration-200"
+                {{else}}
+                  class="opacity-75"
+                {{end}}>
+                <td class="px-2 py-3 sm:p-4 text-center font-black opacity-50 tabular-nums">#{{add $idx 1}}</td>
+                <td class="px-2 py-3 sm:p-4">
+                  <div class="flex items-center gap-2">
+                    {{if $canMove}}
+                    <span class="proj-hide text-gray-600 font-normal cursor-grab active:cursor-grabbing text-xs select-none mr-1">⠿</span>
+                    {{end}}
+                    <span class="proj-player-name text-white uppercase">{{$p.FirstNameWithSecond}} {{$p.LastNameWithSecond}}</span>
+                  </div>
+                </td>
+                <td class="px-2 py-3 sm:p-4 text-right opacity-60 tabular-nums">
+                  {{if or (eq $t.Type "doubles") (eq $t.Type "mixed_doubles")}}{{$p.DoublesElo}}{{else}}{{$p.SinglesElo}}{{end}}
+                </td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+      {{end}}
+
+      <div class="block sm:hidden mb-8 text-center glass rounded-2xl p-6 border border-white/5">
+         <div class="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2">📱 Mobile Optimized View</div>
+         <p class="text-xs text-gray-400">The visual bracket tree is best viewed on larger screens. Please scroll down to the <strong class="text-white">Match List</strong> to see your upcoming games.</p>
+      </div>
+      <div class="hidden sm:flex gap-8 min-w-max px-2 py-4 overflow-x-auto justify-center items-center">
+        {{range $ri, $round := .KnockoutRoundsLeft}}
+              <div class="flex flex-col gap-0 bracket-round">
+                 <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
+                 <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
+                   {{range $mi, $matchView := .Matches}}
+                   <div class="bracket-match flex flex-col w-52 mr-8" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
+                      {{/* Player 1 */}}
+                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        {{if .Player1}}
+                          <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          {{if .Match}}
+                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          {{end}}
+                        {{else}}
+                          <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                        {{end}}
+                      </div>
+                      {{if not (eq $round.Name "Champion")}}
+                        <div class="h-px bg-white/5 mx-2 my-0.5"></div>
+                        {{/* Player 2 */}}
+                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                          {{if .Player2}}
+                            <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            {{if .Match}}
+                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            {{end}}
+                          {{else}}
+                            <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                          {{end}}
+                        </div>
+
+                        {{/* Buttons */}}
+                        {{if and .Player1 .Player2 .Player1.Player .Player2.Player}}
+                          {{if and .Match (eq .Match.Status "finished")}}
+                            {{$winnerName := "N/A"}}
+                            {{if eq .Match.WinnerTeam "A"}}{{$winnerName = printf "%s %s" (index .Match.TeamA 0).FirstNameWithSecond (index .Match.TeamA 0).LastNameWithSecond}}{{else}}{{if .Match.TeamB}}{{$winnerName = printf "%s %s" (index .Match.TeamB 0).FirstNameWithSecond (index .Match.TeamB 0).LastNameWithSecond}}{{end}}{{end}}
+                            {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                            <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-green-400 bg-green-400/10 border border-green-400/20 rounded-lg py-1 px-2 text-center">
+                              ✓ {{$winnerName}}
+                            </div>
+                            <button
+                              class="proj-hide mt-1 w-full text-[9px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-400 border border-white/5 hover:border-white/10 rounded-lg py-0.5 px-2 transition-all"
+                              onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                              ✏️ Edit Score
+                            </button>
+                          {{else}}
+                            {{if not $vm.IsPublic}}
+                              {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                              {{if and .Match (eq .Match.Status "in_progress")}}
+                                <button
+                                  class="proj-hide mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-1 px-2 transition-all"
+                                  onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                  ✏️ Edit Score
+                                </button>
+                              {{else}}
+                                <div class="proj-hide flex gap-1.5 mt-1">
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-1 px-1 transition-all"
+                                    onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                    ⚡ Score
+                                  </button>
+                                  {{if not .Match}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}&stage={{.Stage}}"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{else if eq .Match.Status "scheduled"}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/{{.Match.ID}}/start"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{end}}
+                                </div>
+                              {{end}}
+                            {{else}}
+                              <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 border border-white/5 rounded-lg py-1 px-2 text-center">
+                                Scheduled
+                              </div>
+                            {{end}}
+                          {{end}}
+                        {{end}}
+                      {{end}}
+                   </div>
+                   {{end}}
+                 </div>
+              </div>
+              {{end}}
+                            {{range $ri, $round := .KnockoutRoundsCenter}}
+              <div class="flex flex-col gap-0 bracket-round">
+                 <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
+                 <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
+                   {{range $mi, $matchView := .Matches}}
+                   <div class="bracket-match flex flex-col w-52 mx-4" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
+                      {{/* Player 1 */}}
+                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        {{if .Player1}}
+                          <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          {{if .Match}}
+                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          {{end}}
+                        {{else}}
+                          <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                        {{end}}
+                      </div>
+                      {{if not (eq $round.Name "Champion")}}
+                        <div class="h-px bg-white/5 mx-2 my-0.5"></div>
+                        {{/* Player 2 */}}
+                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                          {{if .Player2}}
+                            <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            {{if .Match}}
+                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            {{end}}
+                          {{else}}
+                            <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                          {{end}}
+                        </div>
+
+                        {{/* Buttons */}}
+                        {{if and .Player1 .Player2 .Player1.Player .Player2.Player}}
+                          {{if and .Match (eq .Match.Status "finished")}}
+                            {{$winnerName := "N/A"}}
+                            {{if eq .Match.WinnerTeam "A"}}{{$winnerName = printf "%s %s" (index .Match.TeamA 0).FirstNameWithSecond (index .Match.TeamA 0).LastNameWithSecond}}{{else}}{{if .Match.TeamB}}{{$winnerName = printf "%s %s" (index .Match.TeamB 0).FirstNameWithSecond (index .Match.TeamB 0).LastNameWithSecond}}{{end}}{{end}}
+                            {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                            <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-green-400 bg-green-400/10 border border-green-400/20 rounded-lg py-1 px-2 text-center">
+                              ✓ {{$winnerName}}
+                            </div>
+                            <button
+                              class="proj-hide mt-1 w-full text-[9px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-400 border border-white/5 hover:border-white/10 rounded-lg py-0.5 px-2 transition-all"
+                              onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                              ✏️ Edit Score
+                            </button>
+                          {{else}}
+                            {{if not $vm.IsPublic}}
+                              {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                              {{if and .Match (eq .Match.Status "in_progress")}}
+                                <button
+                                  class="proj-hide mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-1 px-2 transition-all"
+                                  onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                  ✏️ Edit Score
+                                </button>
+                              {{else}}
+                                <div class="proj-hide flex gap-1.5 mt-1">
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-1 px-1 transition-all"
+                                    onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                    ⚡ Score
+                                  </button>
+                                  {{if not .Match}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}&stage={{.Stage}}"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{else if eq .Match.Status "scheduled"}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/{{.Match.ID}}/start"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{end}}
+                                </div>
+                              {{end}}
+                            {{else}}
+                              <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 border border-white/5 rounded-lg py-1 px-2 text-center">
+                                Scheduled
+                              </div>
+                            {{end}}
+                          {{end}}
+                        {{end}}
+                      {{end}}
+                   </div>
+                   {{end}}
+                 </div>
+              </div>
+              {{end}}
+                            {{range $ri, $round := .KnockoutRoundsRight}}
+              <div class="flex flex-col gap-0 bracket-round">
+                 <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
+                 <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
+                   {{range $mi, $matchView := .Matches}}
+                   <div class="bracket-match flex flex-col w-52 ml-8" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
+                      {{/* Player 1 */}}
+                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        {{if .Player1}}
+                          <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          {{if .Match}}
+                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          {{end}}
+                        {{else}}
+                          <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                        {{end}}
+                      </div>
+                      {{if not (eq $round.Name "Champion")}}
+                        <div class="h-px bg-white/5 mx-2 my-0.5"></div>
+                        {{/* Player 2 */}}
+                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                          {{if .Player2}}
+                            <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            {{if .Match}}
+                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            {{end}}
+                          {{else}}
+                            <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
+                          {{end}}
+                        </div>
+
+                        {{/* Buttons */}}
+                        {{if and .Player1 .Player2 .Player1.Player .Player2.Player}}
+                          {{if and .Match (eq .Match.Status "finished")}}
+                            {{$winnerName := "N/A"}}
+                            {{if eq .Match.WinnerTeam "A"}}{{$winnerName = printf "%s %s" (index .Match.TeamA 0).FirstNameWithSecond (index .Match.TeamA 0).LastNameWithSecond}}{{else}}{{if .Match.TeamB}}{{$winnerName = printf "%s %s" (index .Match.TeamB 0).FirstNameWithSecond (index .Match.TeamB 0).LastNameWithSecond}}{{end}}{{end}}
+                            {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                            <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-green-400 bg-green-400/10 border border-green-400/20 rounded-lg py-1 px-2 text-center">
+                              ✓ {{$winnerName}}
+                            </div>
+                            <button
+                              class="proj-hide mt-1 w-full text-[9px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-400 border border-white/5 hover:border-white/10 rounded-lg py-0.5 px-2 transition-all"
+                              onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                              ✏️ Edit Score
+                            </button>
+                          {{else}}
+                            {{if not $vm.IsPublic}}
+                              {{$mId := ""}}{{if .Match}}{{$mId = .Match.ID}}{{end}}
+                              {{if and .Match (eq .Match.Status "in_progress")}}
+                                <button
+                                  class="proj-hide mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-1 px-2 transition-all"
+                                  onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                  ✏️ Edit Score
+                                </button>
+                              {{else}}
+                                <div class="proj-hide flex gap-1.5 mt-1">
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-1 px-1 transition-all"
+                                    onclick="openScoreModal('/admin/matches/score/form?tournamentId={{$t.ID}}&matchId={{$mId}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}')">
+                                    ⚡ Score
+                                  </button>
+                                  {{if not .Match}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/nil/start?tournamentId={{$t.ID}}&p1Id={{.Player1.Player.ID}}&p2Id={{.Player2.Player.ID}}&stage={{.Stage}}"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{else if eq .Match.Status "scheduled"}}
+                                  <button
+                                    class="flex-1 text-[10px] font-bold uppercase tracking-widest text-blue-400 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg py-1 px-1 transition-all"
+                                    hx-post="/matches/{{.Match.ID}}/start"
+                                    hx-swap="none">
+                                    ▶ Start
+                                  </button>
+                                  {{end}}
+                                </div>
+                              {{end}}
+                            {{else}}
+                              <div class="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 border border-white/5 rounded-lg py-1 px-2 text-center">
+                                Scheduled
+                              </div>
+                            {{end}}
+                          {{end}}
+                        {{end}}
+                      {{end}}
+                   </div>
+                   {{end}}
+                 </div>
+              </div>
+              {{end}}
+      </div>
+    {{end}}
+  </div>
+  {{end}}
+</div>

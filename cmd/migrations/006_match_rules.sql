@@ -1,15 +1,15 @@
 -- 006_match_rules.sql
 
--- 1. Per-stage match rules per tournament
-CREATE TABLE tournament_stage_rules (
+-- 1. Per-stage match rules per event
+CREATE TABLE event_stage_rules (
     id                TEXT PRIMARY KEY,
-    tournament_id     TEXT NOT NULL,
+    event_id     TEXT NOT NULL,
     stage             TEXT NOT NULL,   -- 'group','r32','r16','quarterfinal','semifinal','final'
     best_of           INTEGER NOT NULL DEFAULT 5,
     points_to_win     INTEGER NOT NULL DEFAULT 11,
     points_margin     INTEGER NOT NULL DEFAULT 2,
-    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
-    UNIQUE(tournament_id, stage)
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    UNIQUE(event_id, stage)
 );
 
 -- 2. Extend matches table with bracket context

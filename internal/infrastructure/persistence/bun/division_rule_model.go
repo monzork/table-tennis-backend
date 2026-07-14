@@ -2,18 +2,18 @@ package bun
 
 import (
 	"context"
-	"table-tennis-backend/internal/domain/tournament"
+	"table-tennis-backend/internal/domain/event"
 
 	"github.com/google/uuid"
 	bun "github.com/uptrace/bun"
 )
 
-// DivisionRuleModel represents the tournament_division_rules table.
+// DivisionRuleModel represents the event_division_rules table.
 type DivisionRuleModel struct {
-	bun.BaseModel `bun:"table:tournament_division_rules,alias:dr"`
+	bun.BaseModel `bun:"table:event_division_rules,alias:dr"`
 
 	ID           string `bun:"id,pk"`
-	TournamentID string `bun:"tournament_id,notnull"`
+	TournamentID string `bun:"event_id,notnull"`
 	DivisionID   string `bun:"division_id,notnull"`
 	Stage        string `bun:"stage,notnull"`
 	BestOf       int    `bun:"best_of,notnull"`
@@ -24,8 +24,8 @@ type DivisionRuleModel struct {
 }
 
 // ToDomain converts a DivisionRuleModel to a domain DivisionRule.
-func (m *DivisionRuleModel) ToDomain() tournament.DivisionRule {
-	return tournament.DivisionRule{
+func (m *DivisionRuleModel) ToDomain() event.DivisionRule {
+	return event.DivisionRule{
 		ID:           m.ID,
 		TournamentID: m.TournamentID,
 		DivisionID:   m.DivisionID,
@@ -37,7 +37,7 @@ func (m *DivisionRuleModel) ToDomain() tournament.DivisionRule {
 }
 
 // FromDomain converts a domain DivisionRule to a DivisionRuleModel.
-func FromDomainDivisionRule(dr tournament.DivisionRule) *DivisionRuleModel {
+func FromDomainDivisionRule(dr event.DivisionRule) *DivisionRuleModel {
 	id := dr.ID
 	if id == "" {
 		id = uuid.NewString()
@@ -57,12 +57,12 @@ func FromDomainDivisionRule(dr tournament.DivisionRule) *DivisionRuleModel {
 	}
 }
 
-// LoadDivisionRules fetches all division rules for a tournament.
-func LoadDivisionRules(ctx context.Context, db *bun.DB, tournamentID string) []tournament.DivisionRule {
+// LoadDivisionRules fetches all division rules for a event.
+func LoadDivisionRules(ctx context.Context, db *bun.DB, tournamentID string) []event.DivisionRule {
 	var models []DivisionRuleModel
-	_ = db.NewSelect().Model(&models).Where("tournament_id = ?", tournamentID).Scan(ctx)
+	_ = db.NewSelect().Model(&models).Where("event_id = ?", tournamentID).Scan(ctx)
 
-	rules := make([]tournament.DivisionRule, len(models))
+	rules := make([]event.DivisionRule, len(models))
 	for i, m := range models {
 		rules[i] = m.ToDomain()
 	}
@@ -71,7 +71,7 @@ func LoadDivisionRules(ctx context.Context, db *bun.DB, tournamentID string) []t
 
 // SaveDivisionRules inserts all division rules inside a transaction, stamping
 // tournamentID onto each rule so callers don't need to set it themselves.
-func SaveDivisionRules(ctx context.Context, tx bun.IDB, tournamentID string, rules []tournament.DivisionRule) error {
+func SaveDivisionRules(ctx context.Context, tx bun.IDB, tournamentID string, rules []event.DivisionRule) error {
 	if len(rules) == 0 {
 		return nil
 	}
@@ -85,19 +85,19 @@ func SaveDivisionRules(ctx context.Context, tx bun.IDB, tournamentID string, rul
 }
 
 // ReplaceDivisionRules deletes old rules and re-inserts new ones inside a transaction.
-func ReplaceDivisionRules(ctx context.Context, tx bun.IDB, tournamentID string, rules []tournament.DivisionRule) error {
-	if _, err := tx.NewDelete().TableExpr("tournament_division_rules").
-		Where("tournament_id = ?", tournamentID).Exec(ctx); err != nil {
+func ReplaceDivisionRules(ctx context.Context, tx bun.IDB, tournamentID string, rules []event.DivisionRule) error {
+	if _, err := tx.NewDelete().TableExpr("event_division_rules").
+		Where("event_id = ?", tournamentID).Exec(ctx); err != nil {
 		return err
 	}
 	return SaveDivisionRules(ctx, tx, tournamentID, rules)
 }
 
-// GetDivisionRule retrieves a specific division rule for a tournament.
+// GetDivisionRule retrieves a specific division rule for a event.
 func GetDivisionRule(ctx context.Context, db *bun.DB, tournamentID, divisionID string) (*DivisionRuleModel, error) {
 	m := new(DivisionRuleModel)
 	err := db.NewSelect().Model(m).
-		Where("tournament_id = ?", tournamentID).
+		Where("event_id = ?", tournamentID).
 		Where("division_id = ?", divisionID).
 		Scan(ctx)
 	if err != nil {
@@ -108,8 +108,8 @@ func GetDivisionRule(ctx context.Context, db *bun.DB, tournamentID, divisionID s
 
 // DeleteDivisionRule deletes a specific division rule.
 func DeleteDivisionRule(ctx context.Context, db *bun.DB, tournamentID, divisionID string) error {
-	_, err := db.NewDelete().TableExpr("tournament_division_rules").
-		Where("tournament_id = ?", tournamentID).
+	_, err := db.NewDelete().TableExpr("event_division_rules").
+		Where("event_id = ?", tournamentID).
 		Where("division_id = ?", divisionID).
 		Exec(ctx)
 	return err

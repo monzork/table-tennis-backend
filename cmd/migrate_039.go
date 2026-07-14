@@ -13,9 +13,9 @@ func main() {
 	bun.Connect()
 	ctx := context.Background()
 
-	// Add manual_seeding_locked column to tournaments table
+	// Add manual_seeding_locked column to events table
 	_, err := bun.DB.ExecContext(ctx, `
-		ALTER TABLE tournaments 
+		ALTER TABLE events 
 		ADD COLUMN manual_seeding_locked BOOLEAN NOT NULL DEFAULT false;
 	`)
 	if err != nil {

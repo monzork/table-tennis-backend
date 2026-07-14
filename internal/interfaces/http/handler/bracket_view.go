@@ -6,7 +6,7 @@ import (
 	"sort"
 	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/domain/tournament"
+	"table-tennis-backend/internal/domain/event"
 
 	"strings"
 
@@ -14,7 +14,7 @@ import (
 )
 
 type TournamentViewModel struct {
-	Tournament *tournament.Tournament
+	Event *event.Event
 	Type       string
 	Format     string
 	Divisions  []DivisionView
@@ -52,7 +52,7 @@ type DivisionView struct {
 	KnockoutAdvancing []*player.Player
 }
 
-type PlayerStanding = tournament.PlayerStanding
+type PlayerStanding = event.PlayerStanding
 
 type GroupView struct {
 	ID        string
@@ -66,7 +66,7 @@ type GroupView struct {
 type MatchView struct {
 	Player1 *player.Player
 	Player2 *player.Player
-	Match   *tournament.Match
+	Match   *event.Match
 	Stage   string
 	BestOf  int
 }
@@ -79,7 +79,7 @@ type RoundView struct {
 type BracketMatchView struct {
 	Player1 *MatchSlot
 	Player2 *MatchSlot
-	Match   *tournament.Match
+	Match   *event.Match
 	Stage   string
 	BestOf  int
 }
@@ -89,9 +89,9 @@ type MatchSlot struct {
 	Player *player.Player
 }
 
-func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Division, tmap map[string]string) *TournamentViewModel {
+func BuildTournamentViewModel(t *event.Event, divs []*division.Division, tmap map[string]string) *TournamentViewModel {
 	vm := &TournamentViewModel{
-		Tournament: t,
+		Event: t,
 		Type:       t.Type,
 		Format:     t.Format,
 		Divisions:  []DivisionView{},
@@ -157,11 +157,11 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 
 	assignedMap := make(map[string]bool)
 
-	// Valid divisions for tournament type
+	// Valid divisions for event type
 	var validDivs []*division.Division
 	for _, d := range divs {
 		if !t.SkipElo && d.MinElo == 0 && d.MaxElo == nil {
-			// Skip "0-infinite" divisions (like 'No Division') for Elo tournaments
+			// Skip "0-infinite" divisions (like 'No Division') for Elo events
 			continue
 		}
 		if d.Category == "both" || d.Category == t.Type {
@@ -243,9 +243,9 @@ func BuildTournamentViewModel(t *tournament.Tournament, divs []*division.Divisio
 	return vm
 }
 
-// findGroupByPlayers returns the first tournament group that contains any of the given players.
+// findGroupByPlayers returns the first event group that contains any of the given players.
 // Returns nil if no match is found.
-func findGroupByPlayers(t *tournament.Tournament, players []*player.Player) *tournament.Group {
+func findGroupByPlayers(t *event.Event, players []*player.Player) *event.Group {
 	if len(players) == 0 {
 		return nil
 	}
@@ -263,11 +263,11 @@ func findGroupByPlayers(t *tournament.Tournament, players []*player.Player) *tou
 	return nil
 }
 
-func getBestOfForStage(t *tournament.Tournament, stage string, divID string) int {
+func getBestOfForStage(t *event.Event, stage string, divID string) int {
 	return t.GetEffectiveStageRule(stage, divID).BestOf
 }
 
-func buildDivisionView(t *tournament.Tournament, divID, name, color string, minElo int16, maxElo *int16, unclassified bool, players []*player.Player) DivisionView {
+func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, maxElo *int16, unclassified bool, players []*player.Player) DivisionView {
 	divFormat := t.GetDivisionFormat(divID)
 	dv := DivisionView{
 		ID:             divID,
@@ -296,7 +296,7 @@ func buildDivisionView(t *tournament.Tournament, divID, name, color string, minE
 
 		if dv.AllGroupsFinished {
 			var advancing []*player.Player
-			var knockoutGroup *tournament.Group
+			var knockoutGroup *event.Group
 			for i := range t.Groups {
 				if t.Groups[i].Name == name+" - Knockout Seeds" {
 					knockoutGroup = &t.Groups[i]
@@ -349,17 +349,17 @@ func splitKnockoutRounds(rounds []RoundView) (left, right, center []RoundView) {
 	return left, right, center
 }
 
-func buildStandings(players []*player.Player, matches []tournament.Match) []PlayerStanding {
-	return tournament.BuildStandings(players, matches)
+func buildStandings(players []*player.Player, matches []event.Match) []PlayerStanding {
+	return event.BuildStandings(players, matches)
 }
-func buildRRMatches(t *tournament.Tournament, divID string, players []*player.Player, stage string) []MatchView {
+func buildRRMatches(t *event.Event, divID string, players []*player.Player, stage string) []MatchView {
 	var results []MatchView
 	bestOf := getBestOfForStage(t, stage, divID)
 	for i := 0; i < len(players); i++ {
 		for j := i + 1; j < len(players); j++ {
 			p1 := players[i]
 			p2 := players[j]
-			var found *tournament.Match
+			var found *event.Match
 			for k := range t.Matches {
 				m := t.Matches[k]
 				if m.TeamMatchID != nil {
@@ -387,9 +387,9 @@ func buildRRMatches(t *tournament.Tournament, divID string, players []*player.Pl
 	return results
 }
 
-func buildGroupEliminationGroups(t *tournament.Tournament, divID string, divisionName string, players []*player.Player) ([]GroupView, bool) {
+func buildGroupEliminationGroups(t *event.Event, divID string, divisionName string, players []*player.Player) ([]GroupView, bool) {
 	// Try to load saved groups containing any players in this division first
-	var divisionGroups []tournament.Group
+	var divisionGroups []event.Group
 	for _, g := range t.Groups {
 		if strings.Contains(g.Name, "- Knockout Seeds") {
 			continue
@@ -664,7 +664,7 @@ func getSeedingArrangement(size int) []int {
 	return bracket
 }
 
-func buildBracketRounds(t *tournament.Tournament, divID string, players []*player.Player) []RoundView {
+func buildBracketRounds(t *event.Event, divID string, players []*player.Player) []RoundView {
 	if len(players) == 0 {
 		return nil
 	}
@@ -826,7 +826,7 @@ func buildBracketRounds(t *tournament.Tournament, divID string, players []*playe
 		for i := 0; i < len(current); i++ {
 			p1 := current[i].P1
 			p2 := current[i].P2
-			var foundMatch *tournament.Match
+			var foundMatch *event.Match
 			if p1 != nil && p2 != nil && p1.Player != nil && p2.Player != nil {
 				for k := range t.Matches {
 					tm := t.Matches[k]
@@ -870,7 +870,7 @@ func buildBracketRounds(t *tournament.Tournament, divID string, players []*playe
 
 	// Final match block
 	if len(current) > 0 {
-		var finalMatch *tournament.Match
+		var finalMatch *event.Match
 		p1 := current[0].P1
 		p2 := current[0].P2
 		var champion *MatchSlot
@@ -941,7 +941,7 @@ func buildBracketRounds(t *tournament.Tournament, divID string, players []*playe
 	}
 
 	if t.HasThirdPlaceMatch && (thirdPlaceP1 != nil || thirdPlaceP2 != nil) {
-		var thirdPlaceMatch *tournament.Match
+		var thirdPlaceMatch *event.Match
 		if thirdPlaceP1 != unresolvedSlot && thirdPlaceP2 != unresolvedSlot && thirdPlaceP1 != nil && thirdPlaceP2 != nil && thirdPlaceP1.Player != nil && thirdPlaceP2.Player != nil {
 			for k := range t.Matches {
 				tm := t.Matches[k]

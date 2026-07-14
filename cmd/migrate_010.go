@@ -16,11 +16,11 @@ func main() {
 	}
 	defer db.Close()
 
-	_, err = db.Exec(`ALTER TABLE tournaments ADD COLUMN event_category TEXT NOT NULL DEFAULT 'open';`)
+	_, err = db.Exec(`ALTER TABLE events ADD COLUMN tournament_category TEXT NOT NULL DEFAULT 'open';`)
 	if err != nil {
 		// Tolerate duplicate column if it already ran
 		log.Printf("Alter table exec result: %v", err)
 	} else {
-		log.Println("Successfully added event_category to tournaments table.")
+		log.Println("Successfully added tournament_category to events table.")
 	}
 }

@@ -13,9 +13,9 @@ func main() {
 	bun.Connect()
 	ctx := context.Background()
 
-	// Add division_group_counts column to tournaments table
+	// Add division_group_counts column to events table
 	_, err := bun.DB.ExecContext(ctx, `
-		ALTER TABLE tournaments 
+		ALTER TABLE events 
 		ADD COLUMN division_group_counts JSONB NOT NULL DEFAULT '{}'::jsonb;
 	`)
 	if err != nil {

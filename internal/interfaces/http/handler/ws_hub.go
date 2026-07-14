@@ -7,8 +7,8 @@ import (
 	fiberws "github.com/gofiber/websocket/v2"
 )
 
-// BracketHub manages WebSocket connections per tournament ID.
-// Clients subscribe to a tournament and receive "reload" events when scores change.
+// BracketHub manages WebSocket connections per event ID.
+// Clients subscribe to a event and receive "reload" tournaments when scores change.
 type BracketHub struct {
 	mu      sync.RWMutex
 	clients map[string]map[*fiberws.Conn]bool // tournamentID → set of connections
@@ -38,9 +38,9 @@ func (h *BracketHub) Unregister(tournamentID string, conn *fiberws.Conn) {
 	}
 }
 
-// Broadcast sends a JSON message to all clients watching a specific tournament.
-func (h *BracketHub) Broadcast(tournamentID string, event map[string]string) {
-	payload, err := json.Marshal(event)
+// Broadcast sends a JSON message to all clients watching a specific event.
+func (h *BracketHub) Broadcast(tournamentID string, tournament map[string]string) {
+	payload, err := json.Marshal(tournament)
 	if err != nil {
 		return
 	}
