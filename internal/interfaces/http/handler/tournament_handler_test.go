@@ -92,34 +92,34 @@ func TestEventHandler(t *testing.T) {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
 
-		// Verify tournament was saved and events were generated in DB
-		var eventModels []bunRepo.EventModel
-		_ = db.NewSelect().Model(&eventModels).Scan(ctx)
-		if len(eventModels) != 1 {
-			t.Fatalf("expected 1 tournament in db, got %d", len(eventModels))
+		// Verify the parent tournament was saved to the 'tournaments' table (EventModel)
+		var parentModels []bunRepo.EventModel
+		_ = db.NewSelect().Model(&parentModels).Scan(ctx)
+		if len(parentModels) != 1 {
+			t.Fatalf("expected 1 parent tournament in 'tournaments' table, got %d", len(parentModels))
 		}
-		if eventModels[0].Name != "Spring Cup 2026" {
-			t.Errorf("expected tournament name Spring Cup 2026, got %s", eventModels[0].Name)
+		if parentModels[0].Name != "Spring Cup 2026" {
+			t.Errorf("expected tournament name Spring Cup 2026, got %s", parentModels[0].Name)
 		}
-		if !eventModels[0].SkipElo {
+		if !parentModels[0].SkipElo {
 			t.Errorf("expected tournament skip_elo to be true")
 		}
 
-		eventID = eventModels[0].ID.String()
+		eventID = parentModels[0].ID.String()
 
-		// Verify events generated
-		var tourneyModels []bunRepo.TournamentModel
-		_ = db.NewSelect().Model(&tourneyModels).Scan(ctx)
-		if len(tourneyModels) < 2 {
-			t.Errorf("expected at least 2 categories auto-provisioned, got %d", len(tourneyModels))
+		// Verify child events were generated in the 'events' table (TournamentModel)
+		var childModels []bunRepo.TournamentModel
+		_ = db.NewSelect().Model(&childModels).Where("tournament_id = ?", eventID).Scan(ctx)
+		if len(childModels) < 2 {
+			t.Errorf("expected at least 2 child events in 'events' table, got %d", len(childModels))
 		}
 
-		for _, tm := range tourneyModels {
-			if !tm.SkipElo {
-				t.Errorf("expected child event %s skip_elo to be true", tm.Name)
+		for _, cm := range childModels {
+			if !cm.SkipElo {
+				t.Errorf("expected child event %s skip_elo to be true", cm.Name)
 			}
-			if tm.EventID == nil || tm.EventID.String() != eventID {
-				t.Errorf("expected child event %s to reference tournament %s", tm.Name, eventID)
+			if cm.EventID == nil || cm.EventID.String() != eventID {
+				t.Errorf("expected child event %s to reference parent tournament %s", cm.Name, eventID)
 			}
 		}
 	})
@@ -165,18 +165,18 @@ func TestEventHandler(t *testing.T) {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
 
-		// Verify tournament is deleted in DB
-		var eventModels []bunRepo.EventModel
-		_ = db.NewSelect().Model(&eventModels).Scan(ctx)
-		if len(eventModels) != 0 {
-			t.Errorf("expected 0 tournaments in db, got %d", len(eventModels))
+		// Verify parent tournament deleted from 'tournaments' table (EventModel)
+		var parentModels []bunRepo.EventModel
+		_ = db.NewSelect().Model(&parentModels).Scan(ctx)
+		if len(parentModels) != 0 {
+			t.Errorf("expected 0 parent tournaments, got %d", len(parentModels))
 		}
 
-		// Verify child events are also cascade-deleted
-		var tourneyModels []bunRepo.TournamentModel
-		_ = db.NewSelect().Model(&tourneyModels).Scan(ctx)
-		if len(tourneyModels) != 0 {
-			t.Errorf("expected child events to be cascade-deleted, got %d remaining", len(tourneyModels))
+		// Verify child events cascade-deleted from 'events' table (TournamentModel)
+		var childModels []bunRepo.TournamentModel
+		_ = db.NewSelect().Model(&childModels).Where("tournament_id = ?", eventID).Scan(ctx)
+		if len(childModels) != 0 {
+			t.Errorf("expected child events to be cascade-deleted, got %d remaining", len(childModels))
 		}
 	})
 }

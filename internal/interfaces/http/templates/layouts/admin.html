@@ -306,31 +306,65 @@
 
     <!-- Speech Synthesis logic -->
     <script>
+    function playDing() {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.5);
+    }
+
     function announceMatch(playerA, playerB, table) {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
+        
+        playDing();
         
         let text = `Partido de ${playerA} contra ${playerB}.`;
         if (table && table.trim() !== '') {
             text += ` Mesa ${table}.`;
         }
         
-        const msg = new SpeechSynthesisUtterance(text);
-        msg.lang = 'es-LA'; // Spanish Latin America
-        msg.rate = 0.9;
-        
-        const voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) {
-            const esVoice = voices.find(v => v.lang.startsWith('es-') && (v.lang.includes('LA') || v.lang.includes('MX') || v.lang.includes('US')));
-            if (esVoice) {
-                msg.voice = esVoice;
-            } else {
-                const anyEs = voices.find(v => v.lang.startsWith('es'));
-                if (anyEs) msg.voice = anyEs;
+        // Repeat 3 times
+        for (let i = 0; i < 3; i++) {
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'es-LA'; // Spanish Latin America
+            msg.rate = 0.9;
+            
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                const esVoice = voices.find(v => v.lang.startsWith('es-') && (v.lang.includes('LA') || v.lang.includes('MX') || v.lang.includes('US')));
+                if (esVoice) {
+                    msg.voice = esVoice;
+                } else {
+                    const anyEs = voices.find(v => v.lang.startsWith('es'));
+                    if (anyEs) msg.voice = anyEs;
+                }
             }
+            
+            window.speechSynthesis.speak(msg);
         }
+    }
+    
+    function announceGroupFinished() {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
         
-        window.speechSynthesis.speak(msg);
+        playDing();
+        
+        for (let i = 0; i < 3; i++) {
+            const msg = new SpeechSynthesisUtterance("Atención, la fase de grupos ha finalizado. Por favor, prepárense para la fase eliminatoria.");
+            msg.lang = 'es-LA';
+            msg.rate = 0.9;
+            window.speechSynthesis.speak(msg);
+        }
     }
     
     if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) {
@@ -340,6 +374,12 @@
     document.body.addEventListener('match-started', function(evt) {
         if (typeof announceMatch === 'function' && evt.detail) {
             announceMatch(evt.detail.p1, evt.detail.p2, evt.detail.table);
+        }
+    });
+
+    document.body.addEventListener('group-stage-finished', function(evt) {
+        if (typeof announceGroupFinished === 'function') {
+            announceGroupFinished();
         }
     });
     </script>

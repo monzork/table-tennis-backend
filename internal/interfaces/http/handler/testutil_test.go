@@ -163,7 +163,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC, nil)
+	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, nil)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)

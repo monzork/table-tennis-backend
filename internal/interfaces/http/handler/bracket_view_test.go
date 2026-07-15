@@ -62,11 +62,13 @@ func TestBuildTournamentViewModel_GroupPassCount(t *testing.T) {
 
 	// We need matches to make the groups "finished"
 	// Match p1 vs p2, p2 vs p3, p1 vs p3
-	addMatch := func(a, b *player.Player, scoreA, scoreB int) {
+	addMatch := func(a, b *player.Player, scoreA, scoreB int, divID string) {
 		m := event.Match{
 			TeamA: []*player.Player{a},
 			TeamB: []*player.Player{b},
 			Status: "finished",
+			Stage: "group",
+			DivisionID: divID,
 			Sets: []event.MatchSet{
 				{ScoreA: scoreA, ScoreB: scoreB},
 			},
@@ -79,13 +81,13 @@ func TestBuildTournamentViewModel_GroupPassCount(t *testing.T) {
 		trn.Matches = append(trn.Matches, m)
 	}
 
-	addMatch(p1, p2, 11, 0)
-	addMatch(p2, p3, 11, 0)
-	addMatch(p1, p3, 11, 0)
+	addMatch(p1, p2, 11, 0, "div1")
+	addMatch(p2, p3, 11, 0, "div1")
+	addMatch(p1, p3, 11, 0, "div1")
 
-	addMatch(p4, p5, 11, 0)
-	addMatch(p5, p6, 11, 0)
-	addMatch(p4, p6, 11, 0)
+	addMatch(p4, p5, 11, 0, "div2")
+	addMatch(p5, p6, 11, 0, "div2")
+	addMatch(p4, p6, 11, 0, "div2")
 
 	vm := BuildTournamentViewModel(trn, []*division.Division{div1, div2}, tmap)
 

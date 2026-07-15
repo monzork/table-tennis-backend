@@ -1,10 +1,10 @@
 <h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter text-white">{{t .T "score_form.title"}} <span class="text-white">{{t .T "score_form.scores"}}</span></h2>
 <p class="text-xs text-gray-500 mb-6 font-mono">
-    {{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}
+    {{.PlayerA}} (A) vs {{.PlayerB}} (B) · Bo{{.BestOf}}
     {{if .IsDoubles}}
     <br/>
     <span class="text-gray-400 font-sans mt-1.5 block leading-relaxed">
-        <span class="text-white/60">{{t .T "score_form.players"}}</span> {{.PlayerANames}} <span class="text-white/30">{{t .T "score_form.vs"}}</span> {{.PlayerBNames}}
+        <span class="text-white/60">{{t .T "score_form.players"}}</span> {{.PlayerANames}} (A) <span class="text-white/30">{{t .T "score_form.vs"}}</span> {{.PlayerBNames}} (B)
     </span>
     {{end}}
 </p>
@@ -74,6 +74,19 @@
 
     <div id="score-error" class="hidden text-sm text-red-400 mb-4 font-mono"></div>
 
+    <div class="flex gap-2 mb-4">
+        <button type="button"
+            onclick="applyForfeit('A')"
+            class="flex-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 font-bold py-2 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+            {{t .T "score_form.forfeit"}} A
+        </button>
+        <button type="button"
+            onclick="applyForfeit('B')"
+            class="flex-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 font-bold py-2 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+            {{t .T "score_form.forfeit"}} B
+        </button>
+    </div>
+
     <div class="flex gap-3">
         <button type="button"
             onclick="document.getElementById('score-modal').classList.add('hidden')"
@@ -96,3 +109,22 @@
     {{t .T "score_form.reset"}}
 </button>
 {{end}}
+
+<script>
+function applyForfeit(forfeitingTeam) {
+    const form = document.querySelector('form[hx-put], form[hx-post]');
+    const inputsA = form.querySelectorAll('input[name="scores[]_a"]');
+    const inputsB = form.querySelectorAll('input[name="scores[]_b"]');
+    
+    // ITTF Walkover/Forfeit rule: 11-0 for every set awarded to the non-defaulting side
+    for (let i = 0; i < inputsA.length; i++) {
+        if (forfeitingTeam === 'A') {
+            inputsA[i].value = '0';
+            inputsB[i].value = '11';
+        } else {
+            inputsA[i].value = '11';
+            inputsB[i].value = '0';
+        }
+    }
+}
+</script>

@@ -25,6 +25,7 @@ type MatchHandler struct {
 	playerRepo         *bun.PlayerRepository
 	matchRepo          *bun.MatchRepository
 	tournamentRepo     *bun.TournamentRepository
+	containerRepo      *bun.EventRepository
 	autoAssignTablesUC *match.AutoAssignTablesUseCase
 	createUC           *match.CreateMatchUseCase
 	finishUC           *match.FinishMatchUseCase
@@ -40,6 +41,7 @@ func NewMatchHandler(
 	playerRepo *bun.PlayerRepository,
 	matchRepo *bun.MatchRepository,
 	tournamentRepo *bun.TournamentRepository,
+	containerRepo *bun.EventRepository,
 	finishTournamentUC *appTournament.FinishTournamentUseCase,
 	broadcastPushUC *notification.BroadcastPushNotificationUseCase,
 ) *MatchHandler {
@@ -50,7 +52,8 @@ func NewMatchHandler(
 		playerRepo:         playerRepo,
 		matchRepo:          matchRepo,
 		tournamentRepo:     tournamentRepo,
-		autoAssignTablesUC: match.NewAutoAssignTablesUseCase(matchRepo),
+		containerRepo:      containerRepo,
+		autoAssignTablesUC: match.NewAutoAssignTablesUseCase(matchRepo, containerRepo),
 		finishTournamentUC: finishTournamentUC,
 		broadcastPushUC:    broadcastPushUC,
 	}
@@ -1248,11 +1251,17 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 				assigned, err := h.autoAssignTablesUC.Execute(c.Context(), *t.EventID)
 				if err == nil && len(assigned) > 0 {
 					for _, m := range assigned {
+						p1 := "TBD"
+						p2 := "TBD"
+						if len(m.TeamA) > 0 { p1 = m.TeamA[0].FirstName + " " + m.TeamA[0].LastName }
+						if len(m.TeamB) > 0 { p2 = m.TeamB[0].FirstName + " " + m.TeamB[0].LastName }
 						h.broadcastToTournamentOrEvent(c, body.TournamentID, map[string]string{
 							"event":        "start_match",
 							"tournamentId": m.TournamentID,
 							"matchId":      m.ID,
 							"tableNumber":  strconv.Itoa(*m.TableNumber),
+							"p1":           p1,
+							"p2":           p2,
 						})
 					}
 				}
@@ -1687,11 +1696,17 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 				assigned, err := h.autoAssignTablesUC.Execute(c.Context(), *t.EventID)
 				if err == nil && len(assigned) > 0 {
 					for _, am := range assigned {
+						p1 := "TBD"
+						p2 := "TBD"
+						if len(am.TeamA) > 0 { p1 = am.TeamA[0].FirstName + " " + am.TeamA[0].LastName }
+						if len(am.TeamB) > 0 { p2 = am.TeamB[0].FirstName + " " + am.TeamB[0].LastName }
 						h.broadcastToTournamentOrEvent(c, body.TournamentID, map[string]string{
 							"event":        "start_match",
 							"tournamentId": am.TournamentID,
 							"matchId":      am.ID,
 							"tableNumber":  strconv.Itoa(*am.TableNumber),
+							"p1":           p1,
+							"p2":           p2,
 						})
 					}
 				}

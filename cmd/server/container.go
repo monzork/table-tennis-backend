@@ -126,7 +126,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	notificationRepo := bun.NewPushSubscriptionRepository(bun.DB)
 	broadcastNotificationUC := notification.NewBroadcastPushNotificationUseCase(notificationRepo, cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey)
 
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, finishTournamentUC, broadcastNotificationUC)
+	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, broadcastNotificationUC)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
