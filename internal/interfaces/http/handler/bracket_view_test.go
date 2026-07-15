@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/bracket"
+	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
 	"testing"

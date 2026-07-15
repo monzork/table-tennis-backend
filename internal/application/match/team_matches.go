@@ -21,7 +21,7 @@ func NewTeamMatchOrchestratorUseCase(matchRepo event.MatchRepository) *TeamMatch
 
 // EnsureTeamSubMatches checks if a team match has its sub-matches created.
 // If they do not exist, it generates them according to the teamFormat.
-// Note: This still relies heavily on bun internally since the save mechanism 
+// Note: This still relies heavily on bun internally since the save mechanism
 // for batches isn't on the domain repo yet, but this extracts the logic.
 func (uc *TeamMatchOrchestratorUseCase) EnsureTeamSubMatches(ctx context.Context, matchID string, teamA, teamB *event.Team, teamFormat string, stage string, db *bun.DB) error {
 	parentUUID, err := uuid.Parse(matchID)
@@ -80,7 +80,6 @@ func (uc *TeamMatchOrchestratorUseCase) EnsureTeamSubMatches(ctx context.Context
 
 	return nil
 }
-
 
 // UpdateTeamSquads assigns specific players to the sub-matches of a team match.
 func (uc *TeamMatchOrchestratorUseCase) UpdateTeamSquads(ctx context.Context, parentMatchID string, squadA, squadB []string, teamFormat string, stage string, db *bun.DB) error {
@@ -153,7 +152,7 @@ func (uc *TeamMatchOrchestratorUseCase) UpdateTeamSquads(ctx context.Context, pa
 			Set("team_b_player_2_id = ?", teamBP2Ptr).
 			Where("id = ?", subUUID).
 			Exec(ctx)
-		
+
 		if err != nil {
 			return err
 		}

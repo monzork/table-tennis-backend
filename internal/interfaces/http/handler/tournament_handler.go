@@ -103,56 +103,16 @@ func (h *EventHandler) StartKnockout(c *fiber.Ctx) error {
 	tournamentID := c.Params("id")
 	divID := c.Params("divId")
 
-	t, err := h.getByID.Execute(c.Context(), tournamentID)
+	err := h.startKnockoutUC.Execute(c.Context(), tournamentID, divID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).SendString("event not found")
-	}
-
-	var divisions []*divisionDomain.Division
-	if divs, err := h.divisionUC.GetAll(c.Context()); err == nil {
-		divisions = divs
-	}
-
-	vm := bracket.BuildBracket(t, divisions, nil)
-
-	var firstRoundMatches []tournamentDomain.Match
-	for _, div := range vm.Divisions {
-		if div.ID == divID && div.AllGroupsFinished && len(div.KnockoutRounds) > 0 {
-			for _, r := range div.KnockoutRounds {
-				// Only schedule matches from the very first round that have valid players
-				for _, mv := range r.Matches {
-					if mv.Player1 != nil && mv.Player2 != nil && mv.Player1.Player != nil && mv.Player2.Player != nil {
-						if mv.Match == nil {
-							firstRoundMatches = append(firstRoundMatches, tournamentDomain.Match{
-								TournamentID: tournamentID,
-								DivisionID:   divID,
-								Stage:        mv.Stage,
-								RoundNumber:  1,
-								MatchType:    t.Type,
-								TeamA:        []*player.Player{mv.Player1.Player},
-								TeamB:        []*player.Player{mv.Player2.Player},
-							})
-						}
-					}
-				}
-				break // Only first round of knockout (since it's a tree, the rounds array usually has the first round first)
-			}
-			break
-		}
-	}
-
-	if len(firstRoundMatches) > 0 {
-		err = h.startKnockoutUC.Execute(c.Context(), tournamentID, divID, firstRoundMatches)
-		if err != nil {
-			return ErrorHandler(err)
-		}
+		return ErrorHandler(err)
 	}
 
 	c.Set("HX-Trigger", `{"show-toast": {"message": "Knockout matches created and scheduled!", "type": "success"}}`)
-	return c.SendString("") // We will just send success toast, and let a reload happen or button hide
+	return c.SendString("")
 }
 
-func (h *EventHandler) Create(c *fiber.Ctx) error {
+func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 	var body struct {
 		Name           string `json:"name" form:"name"`
 		Type           string `json:"type" form:"type"`
@@ -165,10 +125,9 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 		NumTables      int    `form:"numTables" json:"numTables"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return ErrorHandler(err)
+		return event.CreateEventCommand{}, err
 	}
 
-	// Parse arrays directly from PostArgs since the form is application/x-www-form-urlencoded
 	var participantIDs []string
 	for _, id := range c.Request().PostArgs().PeekMulti("participant_ids[]") {
 		participantIDs = append(participantIDs, string(id))
@@ -192,7 +151,6 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 		}
 	}
 
-	// Parse per-stage rule overrides
 	createStages := []string{"group", "r32", "r16", "quarterfinal", "semifinal", "final"}
 	var stageRules []event.StageRuleOverride
 	for _, stage := range createStages {
@@ -215,7 +173,6 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 		}
 	}
 
-	// Parse division-specific rules (stage-based)
 	var divisionRules []tournamentDomain.DivisionRule
 	divisionStages := []string{"group", "r32", "r16", "quarterfinal", "semifinal", "final"}
 	divisionIDs := c.Request().PostArgs().PeekMulti("division_rule[division_id][]")
@@ -283,11 +240,36 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 		}
 	}
 
-	t, err := h.createUC.Execute(
-		c.Context(), body.Name, body.Type, body.Format, body.EventCategory, body.StartDate, body.EndDate,
-		participantIDs, newPlayers, body.GroupPassCount, stageRules, divisionRules, skipElo, eventID,
-		body.TeamFormat, body.NumTables, hasThirdPlaceMatch, divisionFormats, divisionGroupPassCounts, divisionGroupCounts,
-	)
+	return event.CreateEventCommand{
+		Name:                    body.Name,
+		Type:                    body.Type,
+		Format:                  body.Format,
+		Category:                body.EventCategory,
+		StartDate:               body.StartDate,
+		EndDate:                 body.EndDate,
+		ParticipantIDs:          participantIDs,
+		NewPlayers:              newPlayers,
+		GroupPassCount:          body.GroupPassCount,
+		StageRuleOverrides:      stageRules,
+		DivisionRules:           divisionRules,
+		SkipElo:                 skipElo,
+		EventID:                 eventID,
+		TeamFormat:              body.TeamFormat,
+		NumTables:               body.NumTables,
+		HasThirdPlaceMatch:      hasThirdPlaceMatch,
+		DivisionFormats:         divisionFormats,
+		DivisionGroupPassCounts: divisionGroupPassCounts,
+		DivisionGroupCounts:     divisionGroupCounts,
+	}, nil
+}
+
+func (h *EventHandler) Create(c *fiber.Ctx) error {
+	cmd, err := parseCreateEventCommand(c)
+	if err != nil {
+		return ErrorHandler(err)
+	}
+
+	t, err := h.createUC.Execute(c.Context(), cmd)
 	if err != nil {
 		return ErrorHandler(err)
 	}

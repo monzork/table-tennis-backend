@@ -143,7 +143,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	addGroupUC := event.NewAddGroupUseCase(tournamentRepo)
 	recalculateEloUC := event.NewRecalculateTournamentEloUseCase(tournamentRepo, playerRepo)
 
-	startKnockoutUC := event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo)
+	startKnockoutUC := event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo, divisionRepo)
 
 	tournamentHandler := handler.NewEventHandler(
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,

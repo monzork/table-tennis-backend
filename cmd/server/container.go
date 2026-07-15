@@ -24,8 +24,8 @@ import (
 
 type Container struct {
 	PlayerHandler       *handler.PlayerHandler
-	EventHandler   *handler.EventHandler
-	TournamentHandler        *handler.TournamentHandler
+	EventHandler        *handler.EventHandler
+	TournamentHandler   *handler.TournamentHandler
 	MatchHandler        *handler.MatchHandler
 	LeaderboardHandler  *handler.LeaderboardHandler
 	DivisionHandler     *handler.DivisionHandler
@@ -106,7 +106,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		event.NewToggleSeedingLockUseCase(tournamentRepo),
 		addGroupUC,
 		recalculateTournamentEloUC,
-		event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo),
+		event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo, divisionRepo),
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
 	exportEventPdfUC := event.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGenerator)
@@ -161,8 +161,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	notificationHandler := handler.NewNotificationHandler(notificationRepo, cfg.VAPIDPublicKey, broadcastNotificationUC)
 	return &Container{
 		PlayerHandler:       playerHandler,
-		EventHandler:   tournamentHandler,
-		TournamentHandler:        eventHandler,
+		EventHandler:        tournamentHandler,
+		TournamentHandler:   eventHandler,
 		MatchHandler:        matchHandler,
 		LeaderboardHandler:  leaderboardHandler,
 		DivisionHandler:     divisionHandler,

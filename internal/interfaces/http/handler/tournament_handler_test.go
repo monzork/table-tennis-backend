@@ -14,7 +14,6 @@ import (
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
-
 )
 
 func TestTournamentHandler(t *testing.T) {

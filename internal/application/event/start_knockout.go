@@ -4,23 +4,28 @@ import (
 	"context"
 	"fmt"
 
+	"table-tennis-backend/internal/domain/bracket"
+	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
+	"table-tennis-backend/internal/domain/player"
 )
 
 type StartKnockoutStageUseCase struct {
-	repo      event.Repository
-	matchRepo event.MatchRepository
+	repo         event.Repository
+	matchRepo    event.MatchRepository
+	divisionRepo division.Repository
 }
 
-func NewStartKnockoutStageUseCase(repo event.Repository, matchRepo event.MatchRepository) *StartKnockoutStageUseCase {
+func NewStartKnockoutStageUseCase(repo event.Repository, matchRepo event.MatchRepository, divisionRepo division.Repository) *StartKnockoutStageUseCase {
 	return &StartKnockoutStageUseCase{
-		repo:      repo,
-		matchRepo: matchRepo,
+		repo:         repo,
+		matchRepo:    matchRepo,
+		divisionRepo: divisionRepo,
 	}
 }
 
-func (uc *StartKnockoutStageUseCase) Execute(ctx context.Context, tournamentID, divID string, firstRoundMatches []event.Match) error {
+func (uc *StartKnockoutStageUseCase) Execute(ctx context.Context, tournamentID, divID string) error {
 	t, err := uc.repo.GetByID(ctx, tournamentID)
 	if err != nil {
 		return err
@@ -28,6 +33,43 @@ func (uc *StartKnockoutStageUseCase) Execute(ctx context.Context, tournamentID, 
 
 	if t.Status == "finished" {
 		return fmt.Errorf("cannot start knockout stage for a finished event")
+	}
+
+	divisions, err := uc.divisionRepo.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+
+	vm := bracket.BuildBracket(t, divisions, nil)
+
+	var firstRoundMatches []event.Match
+	for _, div := range vm.Divisions {
+		if div.ID == divID && div.AllGroupsFinished && len(div.KnockoutRounds) > 0 {
+			for _, r := range div.KnockoutRounds {
+				// Only schedule matches from the very first round that have valid players
+				for _, mv := range r.Matches {
+					if mv.Player1 != nil && mv.Player2 != nil && mv.Player1.Player != nil && mv.Player2.Player != nil {
+						if mv.Match == nil {
+							firstRoundMatches = append(firstRoundMatches, event.Match{
+								TournamentID: tournamentID,
+								DivisionID:   divID,
+								Stage:        mv.Stage,
+								RoundNumber:  1,
+								MatchType:    t.Type,
+								TeamA:        []*player.Player{mv.Player1.Player},
+								TeamB:        []*player.Player{mv.Player2.Player},
+							})
+						}
+					}
+				}
+				break // Only first round of knockout (since it's a tree, the rounds array usually has the first round first)
+			}
+			break
+		}
+	}
+
+	if len(firstRoundMatches) == 0 {
+		return fmt.Errorf("no matches to start or group stage not fully finished")
 	}
 
 	// Insert all the first round matches that don't already exist

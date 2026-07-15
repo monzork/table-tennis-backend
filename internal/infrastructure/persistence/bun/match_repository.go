@@ -612,7 +612,6 @@ func (r *MatchRepository) GetOccupiedTablesByTournament(ctx context.Context, tou
 	return occupied, nil
 }
 
-
 func (r *MatchRepository) mapModelsToEntities(ctx context.Context, models []MatchModel) ([]*event.Match, error) {
 	if len(models) == 0 {
 		return nil, nil
@@ -712,7 +711,7 @@ func (r *MatchRepository) mapModelsToEntities(ctx context.Context, models []Matc
 		if m.NextMatchID != nil {
 			nextMatchID = *m.NextMatchID
 		}
-		
+
 		upd := m.UpdatedAt
 
 		results = append(results, &event.Match{
@@ -777,7 +776,6 @@ func (r *MatchRepository) GetByID(ctx context.Context, matchID string) (*event.M
 	return res[0], nil
 }
 
-
 func (r *MatchRepository) GetMatchByParticipants(ctx context.Context, tournamentID, p1ID, p2ID, stage string) (*event.Match, error) {
 	tUUID, err := uuid.Parse(tournamentID)
 	if err != nil {
@@ -821,11 +819,11 @@ func (r *MatchRepository) IsTableOccupiedByOtherMatch(ctx context.Context, match
 	count, err := ExtractDB(ctx, r.db).NewSelect().Model((*MatchModel)(nil)).
 		Where("status = 'in_progress' AND table_number = ? AND id != ?", tableNumber, mUUID).
 		Count(ctx)
-		
+
 	if err != nil {
 		return false, err
 	}
-	
+
 	return count > 0, nil
 }
 
@@ -834,7 +832,7 @@ func (r *MatchRepository) UpdateMetadata(ctx context.Context, matchID string, re
 	if err != nil {
 		return err
 	}
-	
+
 	var refUUID *uuid.UUID
 	if refereeID != nil {
 		u, err := uuid.Parse(*refereeID)
@@ -848,6 +846,6 @@ func (r *MatchRepository) UpdateMetadata(ctx context.Context, matchID string, re
 		Set("table_number = ?", tableNumber).
 		Where("id = ?", mUUID).
 		Exec(ctx)
-		
+
 	return err
 }

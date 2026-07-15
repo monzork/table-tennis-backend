@@ -500,7 +500,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 	var matchesVM []map[string]interface{}
 	if isTeams {
 		subs, _ := h.matchRepo.GetSubMatches(c.Context(), matchID)
-		
+
 		for _, sm := range subs {
 			var pAName, pBName string
 			teamAP2 := ""
@@ -520,7 +520,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 				} else if len(sm.TeamA) > 0 {
 					pAName = sm.TeamA[0].FirstName
 				}
-				
+
 				if len(sm.TeamB) > 1 {
 					pBName = sm.TeamB[0].FirstName + " & " + sm.TeamB[1].FirstName
 					teamBP2 = sm.TeamB[1].ID
@@ -857,7 +857,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		if matchID == "" {
 			matchID = c.FormValue("matchId")
 		}
-		
+
 		squadA := []string{c.FormValue("squad_a_p1"), c.FormValue("squad_a_p2"), c.FormValue("squad_a_p3")}
 		squadB := []string{c.FormValue("squad_b_p1"), c.FormValue("squad_b_p2"), c.FormValue("squad_b_p3")}
 
@@ -972,7 +972,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		if refereeIDStr != "" {
 			refereePtr = &refereeIDStr
 		}
-		
+
 		var tableNumPtr *int
 		if tableNumberStr != "" {
 			if tNum, err := strconv.Atoi(tableNumberStr); err == nil {
@@ -1069,8 +1069,6 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	}
 
 	h.broadcastToTournamentOrEvent(c, body.TournamentID, broadcastData)
-
-
 
 	if scored != nil && scored.Status == "finished" && prevStatus != "finished" {
 		if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
