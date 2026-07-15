@@ -827,6 +827,119 @@ func (r *MatchRepository) IsTableOccupiedByOtherMatch(ctx context.Context, match
 	return count > 0, nil
 }
 
+// FinishMatch atomically marks a match finished, advances the winner in the bracket,
+// and aggregates team-match sub-win counts — all within a single DB transaction.
+func (r *MatchRepository) FinishMatch(ctx context.Context, cmd event.FinishMatchCommand) error {
+	mUUID, err := uuid.Parse(cmd.MatchID)
+	if err != nil {
+		return err
+	}
+
+	mModel, err := r.GetModelByID(ctx, mUUID)
+	if err != nil {
+		return err
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	now := time.Now()
+	mModel.Status = "finished"
+	mModel.WinnerTeam = &cmd.WinnerTeam
+	mModel.UpdatedAt = &now
+
+	if _, err = tx.NewUpdate().Model(mModel).WherePK().Column("status", "winner_team", "updated_at").Exec(ctx); err != nil {
+		return err
+	}
+
+	// Advance winner to next bracket slot
+	if mModel.NextMatchID != nil {
+		nextID, _ := uuid.Parse(*mModel.NextMatchID)
+		winnerPlayerID := mModel.TeamAPlayer1ID
+		if cmd.WinnerTeam == "B" {
+			winnerPlayerID = mModel.TeamBPlayer1ID
+		}
+		if mModel.NextMatchSlot == "A" {
+			_, _ = tx.NewUpdate().TableExpr("matches").
+				Set("team_a_player_1_id = ?, status = 'scheduled'", winnerPlayerID).
+				Where("id = ? AND status = 'scheduled'", nextID).Exec(ctx)
+		} else {
+			_, _ = tx.NewUpdate().TableExpr("matches").
+				Set("team_b_player_1_id = ?, status = 'scheduled'", winnerPlayerID).
+				Where("id = ? AND status = 'scheduled'", nextID).Exec(ctx)
+		}
+	}
+
+	// Aggregate team-match sub-wins
+	if mModel.TeamMatchID != nil {
+		var siblingMatches []MatchModel
+		_ = tx.NewSelect().Model(&siblingMatches).Where("team_match_id = ?", mModel.TeamMatchID).Scan(ctx)
+
+		subWinsA, subWinsB := 0, 0
+		for _, sm := range siblingMatches {
+			winner := cmd.WinnerTeam
+			if sm.ID != mModel.ID {
+				if sm.Status != "finished" || sm.WinnerTeam == nil {
+					continue
+				}
+				winner = *sm.WinnerTeam
+			}
+			if winner == "A" {
+				subWinsA++
+			} else {
+				subWinsB++
+			}
+		}
+
+		parentMatch := new(MatchModel)
+		if err := tx.NewSelect().Model(parentMatch).Where("id = ?", mModel.TeamMatchID).Scan(ctx); err == nil {
+			pNow := time.Now()
+			if subWinsA >= 3 {
+				w := "A"
+				parentMatch.WinnerTeam = &w
+				parentMatch.Status = "finished"
+			} else if subWinsB >= 3 {
+				w := "B"
+				parentMatch.WinnerTeam = &w
+				parentMatch.Status = "finished"
+			} else {
+				parentMatch.Status = "in_progress"
+			}
+			parentMatch.UpdatedAt = &pNow
+			_, _ = tx.NewUpdate().Model(parentMatch).WherePK().Column("status", "winner_team", "updated_at").Exec(ctx)
+
+			if parentMatch.Status == "finished" {
+				_, _ = tx.NewUpdate().TableExpr("matches").
+					Set("status = 'scheduled'").
+					Where("team_match_id = ? AND status = 'in_progress' AND id != ?", mModel.TeamMatchID, mModel.ID).
+					Exec(ctx)
+
+				if parentMatch.NextMatchID != nil {
+					nextID, _ := uuid.Parse(*parentMatch.NextMatchID)
+					winnerTeamID := parentMatch.TeamAPlayer1ID
+					if *parentMatch.WinnerTeam == "B" {
+						winnerTeamID = parentMatch.TeamBPlayer1ID
+					}
+					if parentMatch.NextMatchSlot == "A" {
+						_, _ = tx.NewUpdate().TableExpr("matches").
+							Set("team_a_player_1_id = ?, status = 'scheduled'", winnerTeamID).
+							Where("id = ? AND status = 'scheduled'", nextID).Exec(ctx)
+					} else {
+						_, _ = tx.NewUpdate().TableExpr("matches").
+							Set("team_b_player_1_id = ?, status = 'scheduled'", winnerTeamID).
+							Where("id = ? AND status = 'scheduled'", nextID).Exec(ctx)
+					}
+				}
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (r *MatchRepository) UpdateMetadata(ctx context.Context, matchID string, refereeID *string, tableNumber *int) error {
 	mUUID, err := uuid.Parse(matchID)
 	if err != nil {

@@ -111,6 +111,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		event.NewGetPublicEventDetailViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
 		event.NewGetPublicTVDashboardViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
 		event.NewGetBoardViewUseCase(getTournamentByIDUC, divisionUC),
+		event.NewGetEditFormViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
 	exportEventPdfUC := event.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGenerator)

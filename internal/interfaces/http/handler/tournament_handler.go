@@ -47,6 +47,7 @@ type EventHandler struct {
 	getPublicDetailViewUC  *event.GetPublicEventDetailViewUseCase
 	tvDashboardUC          *event.GetPublicTVDashboardViewUseCase
 	boardViewUC            *event.GetBoardViewUseCase
+	editFormViewUC         *event.GetEditFormViewUseCase
 }
 
 func NewEventHandler(
@@ -78,6 +79,7 @@ func NewEventHandler(
 	getPublicDetailViewUC *event.GetPublicEventDetailViewUseCase,
 	tvDashboardUC *event.GetPublicTVDashboardViewUseCase,
 	boardViewUC *event.GetBoardViewUseCase,
+	editFormViewUC *event.GetEditFormViewUseCase,
 ) *EventHandler {
 	return &EventHandler{
 		createUC:               createUC,
@@ -108,6 +110,7 @@ func NewEventHandler(
 		getPublicDetailViewUC:  getPublicDetailViewUC,
 		tvDashboardUC:          tvDashboardUC,
 		boardViewUC:            boardViewUC,
+		editFormViewUC:         editFormViewUC,
 	}
 }
 
@@ -359,38 +362,14 @@ func (h *EventHandler) RemoveParticipant(c *fiber.Ctx) error {
 
 func (h *EventHandler) ShowEditForm(c *fiber.Ctx) error {
 	id := c.Params("id")
-
-	type result struct {
-		event     *tournamentDomain.Event
-		err       error
-		players   any
-		divisions []*divisionDomain.Division
-	}
-	var res result
-	var wg sync.WaitGroup
-	wg.Add(3)
-
-	go func() {
-		defer wg.Done()
-		res.event, res.err = h.getByID.Execute(c.Context(), id)
-	}()
-	go func() {
-		defer wg.Done()
-		res.players, _ = h.leaderboardUC.ExecuteSingles(c.Context())
-	}()
-	go func() {
-		defer wg.Done()
-		res.divisions, _ = h.divisionUC.GetAll(c.Context())
-	}()
-	wg.Wait()
-
-	if res.err != nil {
-		return ErrorHandler(res.err)
+	view, err := h.editFormViewUC.Execute(c.Context(), id)
+	if err != nil {
+		return ErrorHandler(err)
 	}
 	return c.Render("admin/partials/event-edit-form", fiber.Map{
-		"Event":     res.event,
-		"Players":   res.players,
-		"Divisions": res.divisions,
+		"Event":     view.Event,
+		"Players":   view.Players,
+		"Divisions": view.Divisions,
 	})
 }
 

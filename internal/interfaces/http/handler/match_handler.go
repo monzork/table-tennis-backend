@@ -197,110 +197,19 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 			break
 		}
 	}
-
 	if matched == nil {
 		return fiber.NewError(fiber.StatusNotFound, "match not found in event list")
 	}
 
-	tx, err := h.matchRepo.DB().BeginTx(c.Context(), nil)
-	if err != nil {
-		return ErrorHandler(err)
-	}
-	defer tx.Rollback()
-
-	// Update match to finished
-	mModel.Status = "finished"
-	mModel.WinnerTeam = &body.WinnerTeam
-	now := time.Now()
-	mModel.UpdatedAt = &now
-
-	_, err = tx.NewUpdate().Model(mModel).WherePK().Column("status", "winner_team", "updated_at").Exec(c.Context())
-	if err != nil {
+	// Delegate bracket advancement + team-match aggregation to the repository transaction
+	if err := h.matchRepo.FinishMatch(c.Context(), event.FinishMatchCommand{
+		MatchID:    body.MatchID,
+		WinnerTeam: body.WinnerTeam,
+	}); err != nil {
 		return ErrorHandler(err)
 	}
 
-	// Advance winner to next match slot if configured
-	if mModel.NextMatchID != nil {
-		nextID, _ := uuid.Parse(*mModel.NextMatchID)
-		winnedPlayerID := mModel.TeamAPlayer1ID
-		if body.WinnerTeam == "B" {
-			winnedPlayerID = mModel.TeamBPlayer1ID
-		}
-		if mModel.NextMatchSlot == "A" {
-			_, _ = tx.NewUpdate().TableExpr("matches").Set("team_a_player_1_id = ?, status = 'scheduled'", winnedPlayerID).Where("id = ? AND status = 'scheduled'", nextID).Exec(c.Context())
-		} else {
-			_, _ = tx.NewUpdate().TableExpr("matches").Set("team_b_player_1_id = ?, status = 'scheduled'", winnedPlayerID).Where("id = ? AND status = 'scheduled'", nextID).Exec(c.Context())
-		}
-	}
-
-	// If this was a sub-match of a team match, update parent team match status
-	if mModel.TeamMatchID != nil {
-		var siblingMatches []bun.MatchModel
-		_ = tx.NewSelect().Model(&siblingMatches).Where("team_match_id = ?", mModel.TeamMatchID).Scan(c.Context())
-
-		subWinsA, subWinsB := 0, 0
-		for _, sm := range siblingMatches {
-			if sm.ID == mModel.ID {
-				if body.WinnerTeam == "A" {
-					subWinsA++
-				} else {
-					subWinsB++
-				}
-				continue
-			}
-			if sm.Status == "finished" && sm.WinnerTeam != nil {
-				if *sm.WinnerTeam == "A" {
-					subWinsA++
-				} else if *sm.WinnerTeam == "B" {
-					subWinsB++
-				}
-			}
-		}
-
-		parentMatch := new(bun.MatchModel)
-		if err := tx.NewSelect().Model(parentMatch).Where("id = ?", mModel.TeamMatchID).Scan(c.Context()); err == nil {
-			if subWinsA >= 3 {
-				w := "A"
-				parentMatch.WinnerTeam = &w
-				parentMatch.Status = "finished"
-			} else if subWinsB >= 3 {
-				w := "B"
-				parentMatch.WinnerTeam = &w
-				parentMatch.Status = "finished"
-			} else {
-				parentMatch.Status = "in_progress"
-			}
-			pNow := time.Now()
-			parentMatch.UpdatedAt = &pNow
-			_, _ = tx.NewUpdate().Model(parentMatch).WherePK().Column("status", "winner_team", "updated_at").Exec(c.Context())
-
-			if parentMatch.Status == "finished" {
-				_, _ = tx.NewUpdate().TableExpr("matches").
-					Set("status = 'scheduled'").
-					Where("team_match_id = ? AND status = 'in_progress' AND id != ?", mModel.TeamMatchID, mModel.ID).
-					Exec(c.Context())
-			}
-
-			if parentMatch.Status == "finished" && parentMatch.NextMatchID != nil {
-				nextID, _ := uuid.Parse(*parentMatch.NextMatchID)
-				winnedTeamID := parentMatch.TeamAPlayer1ID
-				if *parentMatch.WinnerTeam == "B" {
-					winnedTeamID = parentMatch.TeamBPlayer1ID
-				}
-				if parentMatch.NextMatchSlot == "A" {
-					_, _ = tx.NewUpdate().TableExpr("matches").Set("team_a_player_1_id = ?, status = 'scheduled'", winnedTeamID).Where("id = ? AND status = 'scheduled'", nextID).Exec(c.Context())
-				} else {
-					_, _ = tx.NewUpdate().TableExpr("matches").Set("team_b_player_1_id = ?, status = 'scheduled'", winnedTeamID).Where("id = ? AND status = 'scheduled'", nextID).Exec(c.Context())
-				}
-			}
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return ErrorHandler(err)
-	}
-
-	// Apply Elo
+	// Apply Elo via domain service
 	_ = h.finishUC.Execute(matched, body.WinnerTeam)
 
 	var nameA, nameB string
@@ -314,7 +223,6 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 	} else {
 		nameA = "TBD"
 	}
-
 	if len(matched.TeamB) > 0 {
 		p := matched.TeamB[0]
 		if len(matched.TeamB) > 1 {
@@ -325,14 +233,11 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 	} else {
 		nameB = "TBD"
 	}
-	matchName := nameA + " vs " + nameB
-	winStr := matchName
-	if mModel.WinnerTeam != nil {
-		if *mModel.WinnerTeam == "A" {
-			winStr = nameA + " defeated " + nameB
-		} else if *mModel.WinnerTeam == "B" {
-			winStr = nameB + " defeated " + nameA
-		}
+	winStr := nameA + " vs " + nameB
+	if body.WinnerTeam == "A" {
+		winStr = nameA + " defeated " + nameB
+	} else if body.WinnerTeam == "B" {
+		winStr = nameB + " defeated " + nameA
 	}
 
 	h.broadcastToTournamentOrEvent(c, mModel.TournamentID.String(), map[string]string{

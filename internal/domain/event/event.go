@@ -465,6 +465,13 @@ type MatchRepository interface {
 	UpdateMetadata(ctx context.Context, matchID string, refereeID *string, tableNumber *int) error
 	HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error)
 	DeleteByTournament(ctx context.Context, tournamentID string) error
+	FinishMatch(ctx context.Context, cmd FinishMatchCommand) error
+}
+
+// FinishMatchCommand carries all data needed to finish a match including bracket advancement.
+type FinishMatchCommand struct {
+	MatchID    string
+	WinnerTeam string
 }
 
 func (t *Event) HasMatchesStarted() bool {
