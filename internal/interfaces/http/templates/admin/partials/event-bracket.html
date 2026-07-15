@@ -230,7 +230,17 @@
         </div>
 
         <div class="w-full mt-8 border-t border-white/10 pt-10">
-          <h3 class="proj-section-title text-lg font-black uppercase text-white tracking-widest mb-8 text-center">{{t $.T "bracket.knockout_phase"}}</h3>
+          <h3 class="proj-section-title text-lg font-black uppercase text-white tracking-widest mb-8 text-center flex justify-center items-center gap-4">
+            {{t $.T "bracket.knockout_phase"}}
+            {{if and .AllGroupsFinished (gt (len .Groups) 0) (not $.IsPublic)}}
+              <button hx-post="/admin/events/{{$t.ID}}/divisions/{{.ID}}/start-knockout"
+                      hx-swap="none"
+                      hx-confirm="Are you sure you want to start the knockout stage? This will schedule all first-round matches and automatically assign tables if available."
+                      class="px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">
+                ▶ Start Knockout Stage
+              </button>
+            {{end}}
+          </h3>
           {{if and .AllGroupsFinished (gt (len .Groups) 0)}}
             <!-- KNOCKOUT SEEDS TABLE FOR DRAG AND DROP -->
             <div class="mb-12 max-w-2xl mx-auto">

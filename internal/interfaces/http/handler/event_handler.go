@@ -41,6 +41,7 @@ type TournamentHandler struct {
 	toggleSeedingLockUC    *event.ToggleSeedingLockUseCase
 	addGroupUC             *event.AddGroupUseCase
 	recalculateEloUC       *event.RecalculateTournamentEloUseCase
+	startKnockoutUC        *event.StartKnockoutStageUseCase
 }
 
 func NewTournamentHandler(
@@ -64,9 +65,10 @@ func NewTournamentHandler(
 	updateParticipantEloUC *event.UpdateParticipantEloBeforeUseCase,
 	removeParticipantUC *event.RemoveParticipantUseCase,
 	saveKnockoutSeedsUC *event.SaveKnockoutSeedsUseCase,
-	toggleSeedingLockUC    *event.ToggleSeedingLockUseCase,
-	addGroupUC             *event.AddGroupUseCase,
-	recalculateEloUC       *event.RecalculateTournamentEloUseCase,
+	toggleSeedingLockUC *event.ToggleSeedingLockUseCase,
+	addGroupUC *event.AddGroupUseCase,
+	recalculateEloUC *event.RecalculateTournamentEloUseCase,
+	startKnockoutUC *event.StartKnockoutStageUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:               createUC,
@@ -92,7 +94,61 @@ func NewTournamentHandler(
 		toggleSeedingLockUC:    toggleSeedingLockUC,
 		addGroupUC:             addGroupUC,
 		recalculateEloUC:       recalculateEloUC,
+		startKnockoutUC:        startKnockoutUC,
 	}
+}
+
+func (h *TournamentHandler) StartKnockout(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	divID := c.Params("divId")
+
+	t, err := h.getByID.Execute(c.Context(), tournamentID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).SendString("event not found")
+	}
+	
+	var divisions []*divisionDomain.Division
+	if divs, err := h.divisionUC.GetAll(c.Context()); err == nil {
+		divisions = divs
+	}
+
+	vm := BuildTournamentViewModel(t, divisions, nil)
+	
+	var firstRoundMatches []tournamentDomain.Match
+	for _, div := range vm.Divisions {
+		if div.ID == divID && div.AllGroupsFinished && len(div.KnockoutRounds) > 0 {
+			for _, r := range div.KnockoutRounds {
+				// Only schedule matches from the very first round that have valid players
+				for _, mv := range r.Matches {
+					if mv.Player1 != nil && mv.Player2 != nil && mv.Player1.Player != nil && mv.Player2.Player != nil {
+						if mv.Match == nil {
+							firstRoundMatches = append(firstRoundMatches, tournamentDomain.Match{
+								TournamentID: tournamentID,
+								DivisionID: divID,
+								Stage: mv.Stage,
+								RoundNumber: 1,
+								MatchType: t.Type,
+								TeamA: []*player.Player{mv.Player1.Player},
+								TeamB: []*player.Player{mv.Player2.Player},
+							})
+						}
+					}
+				}
+				break // Only first round of knockout (since it's a tree, the rounds array usually has the first round first)
+			}
+			break
+		}
+	}
+	
+	if len(firstRoundMatches) > 0 {
+		err = h.startKnockoutUC.Execute(c.Context(), tournamentID, divID, firstRoundMatches)
+		if err != nil {
+			return ErrorHandler(err)
+		}
+	}
+	
+	c.Set("HX-Trigger", `{"show-toast": {"message": "Knockout matches created and scheduled!", "type": "success"}}`)
+	return c.SendString("") // We will just send success toast, and let a reload happen or button hide
 }
 
 func (h *TournamentHandler) Create(c *fiber.Ctx) error {
