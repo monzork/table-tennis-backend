@@ -80,7 +80,7 @@ func main() {
 			if needsRecreation {
 				log.Println("Migrating SQLite players table to drop NOT NULL constraints for optional fields...")
 				_, _ = sqldb.Exec("PRAGMA foreign_keys=OFF;")
-				
+
 				// Create new table
 				_, _ = sqldb.Exec(`
 					CREATE TABLE players_new (
@@ -102,13 +102,13 @@ func main() {
 						updated_at TEXT
 					);
 				`)
-				
+
 				// Copy data
 				_, _ = sqldb.Exec(`
 					INSERT INTO players_new (id, first_name, second_name, last_name, second_last_name, birthdate, gender, singles_elo, doubles_elo, country, department, whatsapp_number, pin, national_id, created_at, updated_at)
 					SELECT id, first_name, NULLIF(second_name, ''), last_name, NULLIF(second_last_name, ''), birthdate, gender, singles_elo, doubles_elo, country, NULLIF(department, ''), whatsapp_number, pin, national_id, created_at, updated_at FROM players;
 				`)
-				
+
 				// Drop and rename
 				_, _ = sqldb.Exec("DROP TABLE players;")
 				_, _ = sqldb.Exec("ALTER TABLE players_new RENAME TO players;")

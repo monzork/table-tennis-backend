@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
 )
 
 func TestNewTournament_Valid(t *testing.T) {

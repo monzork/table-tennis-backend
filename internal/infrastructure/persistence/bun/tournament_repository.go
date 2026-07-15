@@ -2,9 +2,9 @@ package bun
 
 import (
 	"context"
-	"table-tennis-backend/internal/domain/tournament"
-	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
+	"table-tennis-backend/internal/domain/tournament"
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
@@ -32,28 +32,28 @@ func (r *EventRepository) Save(ctx context.Context, e *tournament.Tournament) er
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
-	model := &EventModel{
-		ID:          id,
-		Name:        e.Name,
-		DivisionIDs: e.DivisionIDs,
-		SkipElo:     e.SkipElo,
-		StartDate:   e.StartDate,
-		EndDate:     e.EndDate,
-		NumTables:   e.NumTables,
-	}
+		model := &EventModel{
+			ID:          id,
+			Name:        e.Name,
+			DivisionIDs: e.DivisionIDs,
+			SkipElo:     e.SkipElo,
+			StartDate:   e.StartDate,
+			EndDate:     e.EndDate,
+			NumTables:   e.NumTables,
+		}
 
-	_, err := tx.NewInsert().Model(model).Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, t := range e.Events {
-		if err := r.tournamentRepo.SaveTx(ctx, tx, t); err != nil {
+		_, err := tx.NewInsert().Model(model).Exec(ctx)
+		if err != nil {
 			return err
 		}
-	}
 
-	return nil
+		for _, t := range e.Events {
+			if err := r.tournamentRepo.SaveTx(ctx, tx, t); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 }
 
@@ -79,7 +79,7 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*tournamen
 		StartDate:   model.StartDate,
 		EndDate:     model.EndDate,
 		NumTables:   model.NumTables,
-		Events: tourneys,
+		Events:      tourneys,
 	}, nil
 }
 
@@ -105,7 +105,7 @@ func (r *EventRepository) GetByIDDeep(ctx context.Context, idStr string) (*tourn
 		StartDate:   model.StartDate,
 		EndDate:     model.EndDate,
 		NumTables:   model.NumTables,
-		Events: tourneys,
+		Events:      tourneys,
 	}, nil
 }
 
@@ -276,7 +276,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*tournament.Tournament,
 			StartDate:   m.StartDate,
 			EndDate:     m.EndDate,
 			NumTables:   m.NumTables,
-			Events: tournamentsByEvent[m.ID.String()],
+			Events:      tournamentsByEvent[m.ID.String()],
 		}
 	}
 	return tournaments, nil
@@ -308,44 +308,44 @@ func (r *EventRepository) Delete(ctx context.Context, idStr string) error {
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
-	// Find all events belonging to this tournament
-	var tournamentIDs []uuid.UUID
-	err := tx.NewSelect().
-		Model((*TournamentModel)(nil)).
-		Column("id").
-		Where("tournament_id = ?", id).
-		Scan(ctx, &tournamentIDs)
-	if err != nil {
-		return err
-	}
-
-	// Cascade-delete all event dependents in batch
-	if len(tournamentIDs) > 0 {
-		tx.NewDelete().TableExpr("match_sets").Where("match_id IN (SELECT id FROM matches WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
-		// Clear self-referencing FKs before deleting matches
-		tx.NewUpdate().TableExpr("matches").Set("next_match_id = NULL, team_match_id = NULL").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("matches").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("event_stage_rules").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("groups").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("event_participants").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("team_players").Where("team_id IN (SELECT id FROM teams WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("teams").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-	}
-
-	// Delete the events themselves
-	if len(tournamentIDs) > 0 {
-		if _, err := tx.NewDelete().Model((*TournamentModel)(nil)).Where("tournament_id = ?", id).Exec(ctx); err != nil {
+		// Find all events belonging to this tournament
+		var tournamentIDs []uuid.UUID
+		err := tx.NewSelect().
+			Model((*TournamentModel)(nil)).
+			Column("id").
+			Where("tournament_id = ?", id).
+			Scan(ctx, &tournamentIDs)
+		if err != nil {
 			return err
 		}
-	}
 
-	// Delete the tournament
-	if _, err := tx.NewDelete().Model(&EventModel{}).Where("id = ?", id).Exec(ctx); err != nil {
-		return err
-	}
+		// Cascade-delete all event dependents in batch
+		if len(tournamentIDs) > 0 {
+			tx.NewDelete().TableExpr("match_sets").Where("match_id IN (SELECT id FROM matches WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
+			// Clear self-referencing FKs before deleting matches
+			tx.NewUpdate().TableExpr("matches").Set("next_match_id = NULL, team_match_id = NULL").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("matches").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("event_stage_rules").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("groups").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("event_participants").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("team_players").Where("team_id IN (SELECT id FROM teams WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("teams").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+		}
 
-	return nil
+		// Delete the events themselves
+		if len(tournamentIDs) > 0 {
+			if _, err := tx.NewDelete().Model((*TournamentModel)(nil)).Where("tournament_id = ?", id).Exec(ctx); err != nil {
+				return err
+			}
+		}
+
+		// Delete the tournament
+		if _, err := tx.NewDelete().Model(&EventModel{}).Where("id = ?", id).Exec(ctx); err != nil {
+			return err
+		}
+
+		return nil
 	})
 }
 
@@ -365,38 +365,38 @@ func (r *EventRepository) DeleteEvents(ctx context.Context, idStrs []string) err
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
-	var tournamentIDs []uuid.UUID
-	err := tx.NewSelect().
-		Model((*TournamentModel)(nil)).
-		Column("id").
-		Where("tournament_id IN (?)", bun.List(ids)).
-		Scan(ctx, &tournamentIDs)
-	if err != nil {
-		return err
-	}
-
-	if len(tournamentIDs) > 0 {
-		tx.NewDelete().TableExpr("match_sets").Where("match_id IN (SELECT id FROM matches WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewUpdate().TableExpr("matches").Set("next_match_id = NULL, team_match_id = NULL").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("matches").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("event_stage_rules").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("groups").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("event_participants").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("team_players").Where("team_id IN (SELECT id FROM teams WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
-		tx.NewDelete().TableExpr("teams").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
-	}
-
-	if len(tournamentIDs) > 0 {
-		if _, err := tx.NewDelete().Model((*TournamentModel)(nil)).Where("tournament_id IN (?)", bun.List(ids)).Exec(ctx); err != nil {
+		var tournamentIDs []uuid.UUID
+		err := tx.NewSelect().
+			Model((*TournamentModel)(nil)).
+			Column("id").
+			Where("tournament_id IN (?)", bun.List(ids)).
+			Scan(ctx, &tournamentIDs)
+		if err != nil {
 			return err
 		}
-	}
 
-	if _, err := tx.NewDelete().Model(&EventModel{}).Where("id IN (?)", bun.List(ids)).Exec(ctx); err != nil {
-		return err
-	}
+		if len(tournamentIDs) > 0 {
+			tx.NewDelete().TableExpr("match_sets").Where("match_id IN (SELECT id FROM matches WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewUpdate().TableExpr("matches").Set("next_match_id = NULL, team_match_id = NULL").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("matches").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("event_stage_rules").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("groups").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("event_participants").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("team_players").Where("team_id IN (SELECT id FROM teams WHERE event_id IN (?))", bun.List(tournamentIDs)).Exec(ctx)
+			tx.NewDelete().TableExpr("teams").Where("event_id IN (?)", bun.List(tournamentIDs)).Exec(ctx)
+		}
 
-	return nil
+		if len(tournamentIDs) > 0 {
+			if _, err := tx.NewDelete().Model((*TournamentModel)(nil)).Where("tournament_id IN (?)", bun.List(ids)).Exec(ctx); err != nil {
+				return err
+			}
+		}
+
+		if _, err := tx.NewDelete().Model(&EventModel{}).Where("id IN (?)", bun.List(ids)).Exec(ctx); err != nil {
+			return err
+		}
+
+		return nil
 	})
 }

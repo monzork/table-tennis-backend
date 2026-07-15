@@ -3,9 +3,9 @@ package event
 import (
 	"context"
 	divisionDomain "table-tennis-backend/internal/domain/division"
+	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
-	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/infrastructure/pin"
 	"time"
 )

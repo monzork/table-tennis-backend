@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
 )
 
 type mockMovePlayerRepository struct {

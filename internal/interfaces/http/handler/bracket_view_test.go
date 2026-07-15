@@ -2,8 +2,8 @@ package handler
 
 import (
 	"table-tennis-backend/internal/domain/division"
-	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
 	"testing"
 )
 
@@ -47,13 +47,13 @@ func TestBuildTournamentViewModel_GroupPassCount(t *testing.T) {
 		},
 		Groups: []event.Group{
 			{
-				ID:   "g1",
-				Name: "Division 1 - Group A",
+				ID:      "g1",
+				Name:    "Division 1 - Group A",
 				Players: []*player.Player{p1, p2, p3},
 			},
 			{
-				ID:   "g2",
-				Name: "Division 2 - Group A",
+				ID:      "g2",
+				Name:    "Division 2 - Group A",
 				Players: []*player.Player{p4, p5, p6},
 			},
 		},
@@ -64,10 +64,10 @@ func TestBuildTournamentViewModel_GroupPassCount(t *testing.T) {
 	// Match p1 vs p2, p2 vs p3, p1 vs p3
 	addMatch := func(a, b *player.Player, scoreA, scoreB int, divID string) {
 		m := event.Match{
-			TeamA: []*player.Player{a},
-			TeamB: []*player.Player{b},
-			Status: "finished",
-			Stage: "group",
+			TeamA:      []*player.Player{a},
+			TeamB:      []*player.Player{b},
+			Status:     "finished",
+			Stage:      "group",
 			DivisionID: divID,
 			Sets: []event.MatchSet{
 				{ScoreA: scoreA, ScoreB: scoreB},

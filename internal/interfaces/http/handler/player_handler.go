@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
-	"table-tennis-backend/internal/application/player"
 	"table-tennis-backend/internal/application/event"
+	"table-tennis-backend/internal/application/player"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/xuri/excelize/v2"
@@ -134,7 +134,7 @@ func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, "Player not found")
 	}
-	
+
 	var activeTournaments []any
 	events, _ := h.getTournamentsUC.Execute(c.Context())
 	if events != nil {
@@ -146,7 +146,7 @@ func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
 	}
 
 	return c.Render("admin/partials/player-edit-form", fiber.Map{
-		"Player":      p,
+		"Player": p,
 		"Events": activeTournaments,
 	})
 }

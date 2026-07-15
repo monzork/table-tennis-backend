@@ -3,8 +3,8 @@ package handler
 import (
 	"fmt"
 	"strings"
-	"table-tennis-backend/internal/application/player"
 	appTournament "table-tennis-backend/internal/application/event"
+	"table-tennis-backend/internal/application/player"
 	"table-tennis-backend/internal/interfaces/http/i18n"
 
 	"github.com/gofiber/fiber/v2"
@@ -62,7 +62,7 @@ func (h *PublicHandler) SetLang(c *fiber.Ctx) error {
 	if referer == "" {
 		referer = "/"
 	}
-	
+
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Redirect", referer)
 		return c.SendStatus(fiber.StatusOK)
@@ -179,7 +179,7 @@ func (h *PublicHandler) ShowTournamentRegistration(c *fiber.Ctx) error {
 		return ErrorHandler(err)
 	}
 	return c.Render("event-register", merge(tMap(lang), fiber.Map{
-		"Title":       i18n.T(lang, "tourney_reg.title"),
+		"Title":  i18n.T(lang, "tourney_reg.title"),
 		"Events": events,
 	}), "layouts/public")
 }
@@ -202,14 +202,14 @@ func (h *PublicHandler) ShowTournamentRegisterForm(c *fiber.Ctx) error {
 	}
 	if target == nil {
 		return c.Render("event-register", merge(tMap(lang), fiber.Map{
-			"Title":       i18n.T(lang, "tourney_reg.title"),
+			"Title":  i18n.T(lang, "tourney_reg.title"),
 			"Events": events,
-			"Error":       i18n.T(lang, "tourney_reg.not_found"),
+			"Error":  i18n.T(lang, "tourney_reg.not_found"),
 		}), "layouts/public")
 	}
 	return c.Render("event-register", merge(tMap(lang), fiber.Map{
 		"Title":              i18n.T(lang, "tourney_reg.title"),
-		"Events":        events,
+		"Events":             events,
 		"SelectedTournament": target,
 		"TournamentID":       tid,
 	}), "layouts/public")
@@ -264,7 +264,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 		events, _ := h.selfRegisterUC.GetOpenTournaments(c.Context())
 		return c.Render("event-register", merge(tMap(lang), fiber.Map{
 			"Title":        i18n.T(lang, "tourney_reg.title"),
-			"Events":  events,
+			"Events":       events,
 			"TournamentID": body.TournamentID,
 			"Error":        err.Error(),
 		}), "layouts/public")

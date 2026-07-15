@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"table-tennis-backend/internal/domain/division"
-	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
 
 	"github.com/jung-kurt/gofpdf"
 )
@@ -972,8 +972,6 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *event.Event, divs []*divisio
 		}
 		var brackets []divisionBracket
 
-
-
 		for _, dt := range divsToCheck {
 			// 1. Look for saved group
 			var savedGroup *event.Group
@@ -1526,4 +1524,3 @@ func GetDivisionPlaces(t *event.Event, divisionID string, divisionPlayers []*pla
 
 	return first, second, third
 }
-

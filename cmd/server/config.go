@@ -29,12 +29,12 @@ type Config struct {
 // LoadConfig reads configuration from environment variables and applies defaults.
 func LoadConfig() Config {
 	cfg := Config{
-		DatabaseURL:   os.Getenv("DATABASE_URL"),
-		DBPath:        getEnvOrDefault("DB_PATH", "table_tennis.db"),
-		Port:          getEnvOrDefault("PORT", "8080"),
-		SessionSecret: os.Getenv("SESSION_SECRET"),
-		AdminUsername: getEnvOrDefault("ADMIN_USERNAME", "admin"),
-		AdminPassword: getEnvOrDefault("ADMIN_PASSWORD", "password"),
+		DatabaseURL:     os.Getenv("DATABASE_URL"),
+		DBPath:          getEnvOrDefault("DB_PATH", "table_tennis.db"),
+		Port:            getEnvOrDefault("PORT", "8080"),
+		SessionSecret:   os.Getenv("SESSION_SECRET"),
+		AdminUsername:   getEnvOrDefault("ADMIN_USERNAME", "admin"),
+		AdminPassword:   getEnvOrDefault("ADMIN_PASSWORD", "password"),
 		VAPIDPublicKey:  os.Getenv("VAPID_PUBLIC_KEY"),
 		VAPIDPrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
 	}

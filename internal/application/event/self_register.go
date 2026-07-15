@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
-	tournamentDomain "table-tennis-backend/internal/domain/event"
 )
 
 // SelfRegisterUseCase allows an existing player (identified by name + country)

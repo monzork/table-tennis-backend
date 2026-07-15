@@ -8,9 +8,9 @@ import (
 	"sort"
 	"time"
 
+	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/match"
 	"table-tennis-backend/internal/domain/player"
-	tournamentDomain "table-tennis-backend/internal/domain/event"
 )
 
 type RecalculateTournamentEloUseCase struct {

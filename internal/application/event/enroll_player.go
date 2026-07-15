@@ -3,8 +3,8 @@ package event
 import (
 	"context"
 
-	"table-tennis-backend/internal/domain/tournaments"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/tournaments"
 )
 
 // EnrollPlayerUseCase adds an existing player as a participant of a event,
@@ -22,13 +22,13 @@ func (uc *EnrollPlayerUseCase) Execute(ctx context.Context, tournamentID, player
 	if err := uc.repo.AddParticipant(ctx, tournamentID, playerID, singlesElo, doublesElo); err != nil {
 		return err
 	}
-	
+
 	if uc.dispatcher != nil {
 		uc.dispatcher.DispatchAsync(ctx, tournaments.PlayerEnrolledEvent{
 			TournamentID: tournamentID,
 			PlayerID:     playerID,
 		})
 	}
-	
+
 	return nil
 }

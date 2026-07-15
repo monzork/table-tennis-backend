@@ -71,7 +71,6 @@ func (h *BracketHub) broadcastRaw(tournamentID string, payload []byte) {
 	}
 }
 
-
 // WsBracketHandler is the Fiber handler for /ws/brackets/:tournamentId
 func WsBracketHandler(c *fiberws.Conn) {
 	tournamentID := c.Params("tournamentId")

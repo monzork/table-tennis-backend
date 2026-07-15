@@ -75,7 +75,7 @@ func (uc *AutoAssignTablesUseCase) Execute(ctx context.Context, tournamentID str
 
 		// Fallback to any available table
 		if assignedTable == 0 {
-			// Optional: We might only want to assign if they are not exclusively reserved, 
+			// Optional: We might only want to assign if they are not exclusively reserved,
 			// but for now, any division can use any empty table if their priorities aren't met
 			for tNum := range availableTables {
 				assignedTable = tNum

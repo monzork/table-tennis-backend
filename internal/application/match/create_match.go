@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	divisionDomain "table-tennis-backend/internal/domain/division"
+	event "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/player"
-	event "table-tennis-backend/internal/domain/event"
 )
 
 type CreateMatchUseCase struct {

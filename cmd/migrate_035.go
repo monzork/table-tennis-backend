@@ -52,7 +52,7 @@ func main() {
 	defer sqldb.Close()
 
 	ctx := context.Background()
-	
+
 	queries := []string{
 		`CREATE INDEX IF NOT EXISTS idx_events_tournament_id ON events(tournament_id);`,
 		`CREATE INDEX IF NOT EXISTS idx_event_participants_tourn_id ON event_participants(event_id);`,

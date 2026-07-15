@@ -94,7 +94,7 @@ func main() {
 			if needsRecreation {
 				log.Println("Migrating SQLite players table to drop NOT NULL constraints for optional fields...")
 				_, _ = bunDB.NewRaw("PRAGMA foreign_keys=OFF").Exec(context.Background())
-				
+
 				// Create new table (without pin column)
 				_, _ = bunDB.NewRaw(`
 					CREATE TABLE players_new (
@@ -115,13 +115,13 @@ func main() {
 						updated_at TEXT
 					)
 				`).Exec(context.Background())
-				
+
 				// Copy data
 				_, _ = bunDB.NewRaw(`
 					INSERT INTO players_new (id, first_name, second_name, last_name, second_last_name, birthdate, gender, singles_elo, doubles_elo, country, department, whatsapp_number, national_id, created_at, updated_at)
 					SELECT id, first_name, NULLIF(second_name, ''), last_name, NULLIF(second_last_name, ''), birthdate, gender, singles_elo, doubles_elo, country, NULLIF(department, ''), whatsapp_number, national_id, created_at, updated_at FROM players
 				`).Exec(context.Background())
-				
+
 				// Drop and rename
 				_, _ = bunDB.NewRaw("DROP TABLE players").Exec(context.Background())
 				_, _ = bunDB.NewRaw("ALTER TABLE players_new RENAME TO players").Exec(context.Background())

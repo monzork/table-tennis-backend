@@ -2,8 +2,8 @@ package event
 
 import (
 	"context"
-	"table-tennis-backend/internal/domain/idgen"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/idgen"
 )
 
 type CreateTeamUseCase struct {

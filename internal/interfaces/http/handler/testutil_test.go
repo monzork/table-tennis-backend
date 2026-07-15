@@ -16,14 +16,14 @@ import (
 	_ "modernc.org/sqlite"
 
 	"table-tennis-backend/internal/application/division"
-	"table-tennis-backend/internal/application/tournament"
+	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/application/player"
-	"table-tennis-backend/internal/application/event"
+	"table-tennis-backend/internal/application/tournament"
 	adminDomain "table-tennis-backend/internal/domain/admin"
-	"table-tennis-backend/internal/domain/tournaments"
 	"table-tennis-backend/internal/domain/idgen"
+	"table-tennis-backend/internal/domain/tournaments"
 	"table-tennis-backend/internal/infrastructure/identity"
 	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
@@ -143,12 +143,15 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	addGroupUC := event.NewAddGroupUseCase(tournamentRepo)
 	recalculateEloUC := event.NewRecalculateTournamentEloUseCase(tournamentRepo, playerRepo)
 
+	startKnockoutUC := event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo)
+
 	tournamentHandler := handler.NewTournamentHandler(
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,
 		leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC,
 		movePlayerUC, createTeamUC, deleteTeamUC, assignPlayerToTeamUC, removePlayerFromTeamUC,
 		getTournamentsUC, getOccupiedTablesUC, regenerateSeedsUC, updateParticipantEloUC,
 		removeParticipantUC, saveKnockoutSeedsUC, toggleSeedingLockUC, addGroupUC, recalculateEloUC,
+		startKnockoutUC,
 	)
 
 	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"table-tennis-backend/internal/application/division"
-	"table-tennis-backend/internal/application/tournament"
-	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/event"
+	"table-tennis-backend/internal/application/leaderboard"
+	"table-tennis-backend/internal/application/tournament"
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	eventDomain "table-tennis-backend/internal/domain/tournament"
 
@@ -153,9 +153,9 @@ func (h *EventHandler) Detail(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	type result struct {
-		tournament     any
-		err       error
-		divisions any
+		tournament any
+		err        error
+		divisions  any
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -176,8 +176,8 @@ func (h *EventHandler) Detail(c *fiber.Ctx) error {
 	}
 
 	return c.Render("admin/tournament-detail", fiber.Map{
-		"Tournament":     res.tournament,
-		"Divisions": res.divisions,
+		"Tournament": res.tournament,
+		"Divisions":  res.divisions,
 	}, "layouts/admin")
 }
 
@@ -222,9 +222,9 @@ func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	type result struct {
-		tournament     any
-		err       error
-		divisions any
+		tournament any
+		err        error
+		divisions  any
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -245,7 +245,7 @@ func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 	}
 
 	return c.Render("public/tournament-detail", merge(tMap(lang), fiber.Map{
-		"Tournament":        res.tournament,
+		"Tournament":   res.tournament,
 		"Divisions":    res.divisions,
 		"Type":         "Events", // highlight events tab in layout
 		"OGImage":      c.BaseURL() + "/open_tdm.jpeg",
@@ -267,16 +267,16 @@ func (h *EventHandler) ExportEventPDF(c *fiber.Ctx) error {
 
 func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.Tournament, []*divisionDomain.Division, []BoardCard, []BoardCard, []BoardCard, error) {
 	ctx := c.Context()
-	
+
 	// Ensure deep fetch of the tournament so all events and matches are loaded.
 	// Actually, getByID uses GetByIDDeep behind the scenes which includes events and matches.
 	e, err := h.getByID.Execute(ctx, eventID)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-	
+
 	divs, _ := h.divisionUC.GetAll(ctx)
-	
+
 	var inProgress []BoardCard
 	var finished []BoardCard
 
@@ -296,7 +296,7 @@ func (h *EventHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.
 
 	for _, t := range e.Events {
 		s, i, f := BuildBoardCards(t, divs)
-		
+
 		// Build the view model to get player counts per division
 		vm := BuildTournamentViewModel(t, divs, nil)
 		for _, dv := range vm.Divisions {
@@ -741,7 +741,7 @@ func (h *EventHandler) AdminBoard(c *fiber.Ctx) error {
 	tables := buildEventTables(e, inProgress)
 
 	return c.Render("admin/tournament-board", merge(tMap(lang), fiber.Map{
-		"Tournament":         e,
+		"Tournament":    e,
 		"Scheduled":     scheduled,
 		"InProgress":    inProgress,
 		"Finished":      finished,
@@ -764,7 +764,7 @@ func (h *EventHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	tables := buildEventTables(e, inProgress)
 
 	return c.Render("public/tournament-board", merge(tMap(lang), fiber.Map{
-		"Tournament":      e,
+		"Tournament": e,
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
@@ -799,7 +799,7 @@ func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
 	tables := buildEventTables(e, inProgress)
 
 	return c.Render("admin/partials/tournament-board-columns", fiber.Map{
-		"Tournament":      e,
+		"Tournament": e,
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
@@ -825,14 +825,14 @@ func buildEventTables(e *eventDomain.Tournament, inProgress []BoardCard) []Table
 	if numTables <= 0 {
 		return tables
 	}
-	
+
 	usedTables := make(map[int]bool)
 	for _, match := range inProgress {
 		if match.TableNumber != nil {
 			usedTables[*match.TableNumber] = true
 		}
 	}
-	
+
 	for i := 1; i <= numTables; i++ {
 		tables = append(tables, TableVM{
 			Number: i,
@@ -849,7 +849,7 @@ func (h *EventHandler) ShowEditForm(c *fiber.Ctx) error {
 		return ErrorHandler(err)
 	}
 	divs, _ := h.divisionUC.GetAll(c.Context())
-	
+
 	type DivPriority struct {
 		ID         string
 		Name       string
@@ -873,9 +873,9 @@ func (h *EventHandler) ShowEditForm(c *fiber.Ctx) error {
 			Priorities: pStr,
 		})
 	}
-	
+
 	return c.Render("admin/partials/tournament-edit-form", fiber.Map{
-		"Tournament":     e,
+		"Tournament":    e,
 		"DivPriorities": divPriorities,
 	})
 }
@@ -918,7 +918,7 @@ func (h *EventHandler) Update(c *fiber.Ctx) error {
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Trigger", "tournament-updated")
 		divs, _ := h.divisionUC.GetAll(c.Context())
-		
+
 		type DivPriority struct {
 			ID         string
 			Name       string
@@ -942,7 +942,7 @@ func (h *EventHandler) Update(c *fiber.Ctx) error {
 				Priorities: pStr,
 			})
 		}
-		
+
 		return c.Render("admin/partials/tournament-edit-form", fiber.Map{
 			"Tournament":    e,
 			"DivPriorities": divPriorities,

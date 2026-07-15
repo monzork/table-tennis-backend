@@ -24,12 +24,12 @@ type Repository interface {
 }
 
 type Tournament struct {
-	ID          string
-	Name        string
-	DivisionIDs []string
-	SkipElo     bool
-	StartDate   time.Time
-	EndDate     time.Time
+	ID              string
+	Name            string
+	DivisionIDs     []string
+	SkipElo         bool
+	StartDate       time.Time
+	EndDate         time.Time
 	NumTables       int
 	TablePriorities map[string][]int
 	Events          []*event.Event
@@ -54,6 +54,6 @@ func NewEvent(id string, name string, divisionIDs []string, skipElo bool, start,
 		StartDate:   start,
 		EndDate:     end,
 		NumTables:   4,
-		Events: []*event.Event{},
+		Events:      []*event.Event{},
 	}, nil
 }

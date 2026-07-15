@@ -4,8 +4,8 @@ import (
 	"context"
 
 	divisionDomain "table-tennis-backend/internal/domain/division"
-	eventDomain "table-tennis-backend/internal/domain/tournament"
 	"table-tennis-backend/internal/domain/pdf"
+	eventDomain "table-tennis-backend/internal/domain/tournament"
 )
 
 type ExportEventPdfUseCase struct {

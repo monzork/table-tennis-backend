@@ -57,7 +57,7 @@ func (c *MetricsCalculator) Calculate(t *Event, snapshots []ParticipantSnapshot)
 	for _, m := range t.Matches {
 		if m.Status == "finished" {
 			metrics.TotalMatchesPlayed++
-			
+
 			divID := m.DivisionID
 			if divID == "" {
 				divID = "default"
@@ -106,8 +106,8 @@ func (c *MetricsCalculator) Calculate(t *Event, snapshots []ParticipantSnapshot)
 		metrics.DivisionMetrics[divID] = dm
 	}
 
-	// Wait, to calculate BiggestEloUpset we would need the player's Elo before the match. 
-	// Since we only have the start/end event snapshots here and not per-match snapshots, 
+	// Wait, to calculate BiggestEloUpset we would need the player's Elo before the match.
+	// Since we only have the start/end event snapshots here and not per-match snapshots,
 	// we will leave BiggestEloUpset empty for now unless we do a complex calculation.
 	// For now, it will remain empty.
 

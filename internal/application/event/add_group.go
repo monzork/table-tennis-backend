@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/domain/event"
 )
 
 type AddGroupUseCase struct {

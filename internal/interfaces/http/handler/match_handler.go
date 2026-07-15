@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
+	appTournament "table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/application/notification"
-	appTournament "table-tennis-backend/internal/application/event"
-	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
 
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	"table-tennis-backend/internal/interfaces/http/i18n"
@@ -74,7 +74,7 @@ func (h *MatchHandler) getOccupiedTables(ctx context.Context, t *event.Event) []
 func (h *MatchHandler) broadcastToTournamentOrEvent(c *fiber.Ctx, tournamentID string, eventData map[string]string) {
 	ctx := c.Context()
 	t, err := h.tournamentRepo.GetByID(ctx, tournamentID)
-	
+
 	var htmlStr string
 	if err == nil {
 		if matchID, ok := eventData["matchId"]; ok {
@@ -330,7 +330,7 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 	}
 
 	h.broadcastToTournamentOrEvent(c, mModel.TournamentID.String(), map[string]string{
-		"tournament":        "score_updated",
+		"tournament":   "score_updated",
 		"tournamentId": mModel.TournamentID.String(),
 		"matchId":      body.MatchID,
 		"matchStatus":  "finished",
@@ -1196,7 +1196,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	matchName := nameA + " vs " + nameB
 
 	broadcastData := map[string]string{
-		"tournament":        "score_updated",
+		"tournament":   "score_updated",
 		"tournamentId": body.TournamentID,
 		"matchId":      matchID,
 	}
@@ -1208,7 +1208,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	}
 
 	h.broadcastToTournamentOrEvent(c, body.TournamentID, broadcastData)
-	
+
 	if scored != nil && scored.Status == "finished" && prevStatus != "finished" {
 		if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
 			if t.EventID != nil {
@@ -1244,7 +1244,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 			}
 		}
 	}
-	
+
 	if scored != nil && scored.Status == "finished" && prevStatus != "finished" {
 		if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
 			if t.EventID != nil {
@@ -1253,8 +1253,12 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 					for _, m := range assigned {
 						p1 := "TBD"
 						p2 := "TBD"
-						if len(m.TeamA) > 0 { p1 = m.TeamA[0].FirstName + " " + m.TeamA[0].LastName }
-						if len(m.TeamB) > 0 { p2 = m.TeamB[0].FirstName + " " + m.TeamB[0].LastName }
+						if len(m.TeamA) > 0 {
+							p1 = m.TeamA[0].FirstName + " " + m.TeamA[0].LastName
+						}
+						if len(m.TeamB) > 0 {
+							p2 = m.TeamB[0].FirstName + " " + m.TeamB[0].LastName
+						}
 						h.broadcastToTournamentOrEvent(c, body.TournamentID, map[string]string{
 							"event":        "start_match",
 							"tournamentId": m.TournamentID,
@@ -1630,8 +1634,8 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 			}
 
 			h.broadcastToTournamentOrEvent(c, body.TournamentID, map[string]string{
-				"tournament":   "referee_notification",
-				"message": fmt.Sprintf("%s marked match finished%s: %s", refName, tableInfo, winStr),
+				"tournament": "referee_notification",
+				"message":    fmt.Sprintf("%s marked match finished%s: %s", refName, tableInfo, winStr),
 			})
 		}
 	}
@@ -1669,7 +1673,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 	matchName := nameA + " vs " + nameB
 
 	broadcastData := map[string]string{
-		"tournament":        "score_updated",
+		"tournament":   "score_updated",
 		"tournamentId": body.TournamentID,
 		"matchId":      matchID,
 	}
@@ -1689,7 +1693,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 	}
 
 	h.broadcastToTournamentOrEvent(c, body.TournamentID, broadcastData)
-	
+
 	if m.Status != "finished" && updatedMatch != nil && updatedMatch.Status == "finished" {
 		if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
 			if t.EventID != nil {
@@ -1698,8 +1702,12 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 					for _, am := range assigned {
 						p1 := "TBD"
 						p2 := "TBD"
-						if len(am.TeamA) > 0 { p1 = am.TeamA[0].FirstName + " " + am.TeamA[0].LastName }
-						if len(am.TeamB) > 0 { p2 = am.TeamB[0].FirstName + " " + am.TeamB[0].LastName }
+						if len(am.TeamA) > 0 {
+							p1 = am.TeamA[0].FirstName + " " + am.TeamA[0].LastName
+						}
+						if len(am.TeamB) > 0 {
+							p2 = am.TeamB[0].FirstName + " " + am.TeamB[0].LastName
+						}
 						h.broadcastToTournamentOrEvent(c, body.TournamentID, map[string]string{
 							"event":        "start_match",
 							"tournamentId": am.TournamentID,
@@ -2271,7 +2279,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 
 	// Broadcast real-time update to all bracket viewers for this event
 	h.broadcastToTournamentOrEvent(c, m.TournamentID.String(), map[string]string{
-		"tournament":        "score_updated",
+		"tournament":   "score_updated",
 		"tournamentId": m.TournamentID.String(),
 		"matchId":      m.ID.String(),
 	})
@@ -2281,7 +2289,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 		if m.TableNumber != nil {
 			tblStr = fmt.Sprintf("Table %d: ", *m.TableNumber)
 		}
-		
+
 		var pA, pB bun.PlayerModel
 		pAName, pBName := "TBD", "TBD"
 		if err := h.matchRepo.DB().NewSelect().Model(&pA).Where("id = ?", m.TeamAPlayer1ID).Scan(c.Context()); err == nil {
@@ -2290,7 +2298,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 		if err := h.matchRepo.DB().NewSelect().Model(&pB).Where("id = ?", m.TeamBPlayer1ID).Scan(c.Context()); err == nil {
 			pBName = pB.FullName()
 		}
-		
+
 		go func() {
 			_ = h.broadcastPushUC.Execute(notification.PushMessage{
 				Title: "Match Called to Table!",
@@ -2304,7 +2312,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 		if m.TableNumber != nil {
 			tblNum = fmt.Sprintf("%d", *m.TableNumber)
 		}
-		
+
 		// Encode to avoid JSON injection
 		c.Append("HX-Trigger", fmt.Sprintf(`{"match-started": {"p1": %q, "p2": %q, "table": %q}}`, pAName, pBName, tblNum))
 	}
@@ -2360,7 +2368,7 @@ func (h *MatchHandler) Reset(c *fiber.Ctx) error {
 	}
 
 	h.broadcastToTournamentOrEvent(c, m.TournamentID.String(), map[string]string{
-		"tournament":        "score_updated",
+		"tournament":   "score_updated",
 		"tournamentId": m.TournamentID.String(),
 		"matchId":      m.ID.String(),
 	})

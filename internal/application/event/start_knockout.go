@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	
+
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
 )
@@ -39,7 +39,7 @@ func (uc *StartKnockoutStageUseCase) Execute(ctx context.Context, tournamentID, 
 				break
 			}
 		}
-		
+
 		if !exists {
 			if m.ID == "" {
 				m.ID = idgen.Generate()
@@ -59,7 +59,11 @@ func sameTeams(m1, m2 event.Match) bool {
 		return false
 	}
 	// Just check the first player for simplicity
-	if len(m1.TeamA) > 0 && m1.TeamA[0].ID != m2.TeamA[0].ID { return false }
-	if len(m1.TeamB) > 0 && m1.TeamB[0].ID != m2.TeamB[0].ID { return false }
+	if len(m1.TeamA) > 0 && m1.TeamA[0].ID != m2.TeamA[0].ID {
+		return false
+	}
+	if len(m1.TeamB) > 0 && m1.TeamB[0].ID != m2.TeamB[0].ID {
+		return false
+	}
 	return true
 }

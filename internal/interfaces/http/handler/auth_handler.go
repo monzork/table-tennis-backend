@@ -30,7 +30,7 @@ func (h *AuthHandler) ShowLogin(c *fiber.Ctx) error {
 	// Note: We use the public layout because we don't want the admin nav menu on login
 	lang := getLang(c)
 	return c.Render("admin/login", merge(tMap(lang), fiber.Map{
-		"Title": i18n.T(lang, "nav.singles"),
+		"Title":     i18n.T(lang, "nav.singles"),
 		"CSRFToken": c.Locals("CSRFToken"),
 	}), "layouts/public")
 }

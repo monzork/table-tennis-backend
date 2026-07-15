@@ -41,22 +41,22 @@ func DefaultStageRules(tournamentID string) []StageRule {
 }
 
 type Match struct {
-	ID           string
-	TournamentID string
-	MatchType    string // 'singles' or 'doubles'
-	TeamA        []*player.Player
-	TeamB        []*player.Player
-	Status       string // scheduled, in_progress, finished
-	WinnerTeam   string // 'A', 'B'
-	Sets         []MatchSet
-	TeamMatchID  *string
-	Stage        string
-	DivisionID   string // Division this match belongs to (for division-specific rules)
-	UpdatedAt    *time.Time
-	RefereeID    *string
-	TableNumber  *int
-	Pin          string
-	RoundNumber  int
+	ID            string
+	TournamentID  string
+	MatchType     string // 'singles' or 'doubles'
+	TeamA         []*player.Player
+	TeamB         []*player.Player
+	Status        string // scheduled, in_progress, finished
+	WinnerTeam    string // 'A', 'B'
+	Sets          []MatchSet
+	TeamMatchID   *string
+	Stage         string
+	DivisionID    string // Division this match belongs to (for division-specific rules)
+	UpdatedAt     *time.Time
+	RefereeID     *string
+	TableNumber   *int
+	Pin           string
+	RoundNumber   int
 	QueuePosition int
 }
 
@@ -151,34 +151,34 @@ type TournamentMetrics struct {
 }
 
 type Event struct {
-	ID                 string
-	Name               string
-	Type               string // "singles", "doubles", "teams"
-	EventCategory      string // "men", "women", "mixed", "open"
-	Format             string // "elimination", "groups_elimination", "round_robin"
-	DivisionFormats    map[string]string // overrides Format per division
-	DivisionGroupPassCounts map[string]int // overrides GroupPassCount per division
-	DivisionGroupCounts     map[string]int // overrides number of groups per division
-	Status             string // "in_progress", "finished"
-	WinnerName         string // Name of the winner (player or team)
-	Participants       []*player.Player
-	StartDate          time.Time
-	EndDate            time.Time
-	Rules              []Rule
-	StageRules         []StageRule
-	DivisionRules      []DivisionRule // Division-specific rules override stage rules
-	Matches            []Match
-	Groups             []Group
-	GroupPassCount     int
-	RegistrationOpen   bool
-	EventID            *string
-	SkipElo            bool
-	Teams              []*Team
-	TeamFormat         string // "olympic", "swaythling", or ""
-	NumTables          int
-	HasThirdPlaceMatch bool
-	Metrics            *TournamentMetrics
-	ManualSeedingLocked bool
+	ID                      string
+	Name                    string
+	Type                    string            // "singles", "doubles", "teams"
+	EventCategory           string            // "men", "women", "mixed", "open"
+	Format                  string            // "elimination", "groups_elimination", "round_robin"
+	DivisionFormats         map[string]string // overrides Format per division
+	DivisionGroupPassCounts map[string]int    // overrides GroupPassCount per division
+	DivisionGroupCounts     map[string]int    // overrides number of groups per division
+	Status                  string            // "in_progress", "finished"
+	WinnerName              string            // Name of the winner (player or team)
+	Participants            []*player.Player
+	StartDate               time.Time
+	EndDate                 time.Time
+	Rules                   []Rule
+	StageRules              []StageRule
+	DivisionRules           []DivisionRule // Division-specific rules override stage rules
+	Matches                 []Match
+	Groups                  []Group
+	GroupPassCount          int
+	RegistrationOpen        bool
+	EventID                 *string
+	SkipElo                 bool
+	Teams                   []*Team
+	TeamFormat              string // "olympic", "swaythling", or ""
+	NumTables               int
+	HasThirdPlaceMatch      bool
+	Metrics                 *TournamentMetrics
+	ManualSeedingLocked     bool
 }
 
 func NewTournament(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Event, error) {
@@ -354,7 +354,6 @@ func (t *Event) MovePlayer(playerID string, targetGroupID string, targetIndex in
 	if movingPlayer == nil {
 		return errors.New("player is not registered in this event")
 	}
-
 
 	foundSource := false
 	var sourceGroupID string

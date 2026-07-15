@@ -3,12 +3,12 @@ package event
 import (
 	"context"
 	"encoding/json"
-	
+
+	"strings"
+	divisionDomain "table-tennis-backend/internal/domain/division"
+	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/player"
-	tournamentDomain "table-tennis-backend/internal/domain/event"
-	divisionDomain "table-tennis-backend/internal/domain/division"
-	"strings"
 )
 
 type SaveKnockoutSeedsUseCase struct {

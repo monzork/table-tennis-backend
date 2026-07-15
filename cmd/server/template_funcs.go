@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
+	"html/template"
 	"table-tennis-backend/internal/interfaces/http/handler"
 	"table-tennis-backend/internal/interfaces/http/i18n"
-	"html/template"
 
 	"github.com/gofiber/template/html/v2"
 )

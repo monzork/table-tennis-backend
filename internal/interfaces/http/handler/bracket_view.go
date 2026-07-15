@@ -5,8 +5,8 @@ import (
 	"math"
 	"sort"
 	"table-tennis-backend/internal/domain/division"
-	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
 
 	"strings"
 
@@ -14,12 +14,12 @@ import (
 )
 
 type TournamentViewModel struct {
-	Event *event.Event
-	Type       string
-	Format     string
-	Divisions  []DivisionView
-	IsPublic   bool
-	T          map[string]string
+	Event     *event.Event
+	Type      string
+	Format    string
+	Divisions []DivisionView
+	IsPublic  bool
+	T         map[string]string
 }
 
 type DivisionView struct {
@@ -47,7 +47,7 @@ type DivisionView struct {
 	KnockoutRoundsLeft   []RoundView
 	KnockoutRoundsRight  []RoundView
 	KnockoutRoundsCenter []RoundView
-	
+
 	KnockoutGroupID   string
 	KnockoutAdvancing []*player.Player
 }
@@ -91,11 +91,11 @@ type MatchSlot struct {
 
 func BuildTournamentViewModel(t *event.Event, divs []*division.Division, tmap map[string]string) *TournamentViewModel {
 	vm := &TournamentViewModel{
-		Event: t,
-		Type:       t.Type,
-		Format:     t.Format,
-		Divisions:  []DivisionView{},
-		T:          tmap,
+		Event:     t,
+		Type:      t.Type,
+		Format:    t.Format,
+		Divisions: []DivisionView{},
+		T:         tmap,
 	}
 
 	var participants []*player.Player
@@ -394,7 +394,7 @@ func buildGroupEliminationGroups(t *event.Event, divID string, divisionName stri
 		if strings.Contains(g.Name, "- Knockout Seeds") {
 			continue
 		}
-		
+
 		belongsToDiv := false
 		prefix := divisionName + " - "
 		if strings.HasPrefix(g.Name, prefix) {
@@ -641,7 +641,6 @@ func buildITTFKnockoutSeeds(groups []GroupView, passCount int) []*player.Player 
 	}
 	return out
 }
-
 
 func getSeedingArrangement(size int) []int {
 	rounds := int(math.Log2(float64(size)))

@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"table-tennis-backend/internal/application/division"
-	"table-tennis-backend/internal/application/tournament"
+	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/match"
-	"table-tennis-backend/internal/application/player"
-	"table-tennis-backend/internal/application/event"
-	adminDomain "table-tennis-backend/internal/domain/admin"
-	"table-tennis-backend/internal/domain/tournaments"
-	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/application/notification"
+	"table-tennis-backend/internal/application/player"
+	"table-tennis-backend/internal/application/tournament"
+	adminDomain "table-tennis-backend/internal/domain/admin"
+	"table-tennis-backend/internal/domain/idgen"
+	"table-tennis-backend/internal/domain/tournaments"
 	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	qrinfra "table-tennis-backend/internal/infrastructure/qrcode"
@@ -23,16 +23,16 @@ import (
 )
 
 type Container struct {
-	PlayerHandler      *handler.PlayerHandler
-	TournamentHandler  *handler.TournamentHandler
-	EventHandler       *handler.EventHandler
-	MatchHandler       *handler.MatchHandler
-	LeaderboardHandler *handler.LeaderboardHandler
-	DivisionHandler    *handler.DivisionHandler
-	PublicHandler      *handler.PublicHandler
-	QRHandler          *handler.QRHandler
-	AuthHandler        *handler.AuthHandler
-	AdminHandler       *handler.AdminHandler
+	PlayerHandler       *handler.PlayerHandler
+	TournamentHandler   *handler.TournamentHandler
+	EventHandler        *handler.EventHandler
+	MatchHandler        *handler.MatchHandler
+	LeaderboardHandler  *handler.LeaderboardHandler
+	DivisionHandler     *handler.DivisionHandler
+	PublicHandler       *handler.PublicHandler
+	QRHandler           *handler.QRHandler
+	AuthHandler         *handler.AuthHandler
+	AdminHandler        *handler.AdminHandler
 	NotificationHandler *handler.NotificationHandler
 }
 
@@ -50,7 +50,6 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	dispatcher := tournaments.NewInMemoryDispatcher()
 	enrollPlayerUC := event.NewEnrollPlayerUseCase(tournamentRepo, dispatcher)
 	getTournamentsUC := event.NewGetTournamentsUseCase(tournamentRepo)
-
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 
@@ -159,16 +158,16 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 
 	notificationHandler := handler.NewNotificationHandler(notificationRepo, cfg.VAPIDPublicKey, broadcastNotificationUC)
 	return &Container{
-		PlayerHandler:      playerHandler,
-		TournamentHandler:  tournamentHandler,
-		EventHandler:       eventHandler,
-		MatchHandler:       matchHandler,
-		LeaderboardHandler: leaderboardHandler,
-		DivisionHandler:    divisionHandler,
-		PublicHandler:      publicHandler,
-		QRHandler:          qrHandler,
-		AuthHandler:        authHandler,
-		AdminHandler:       adminHandler,
+		PlayerHandler:       playerHandler,
+		TournamentHandler:   tournamentHandler,
+		EventHandler:        eventHandler,
+		MatchHandler:        matchHandler,
+		LeaderboardHandler:  leaderboardHandler,
+		DivisionHandler:     divisionHandler,
+		PublicHandler:       publicHandler,
+		QRHandler:           qrHandler,
+		AuthHandler:         authHandler,
+		AdminHandler:        adminHandler,
 		NotificationHandler: notificationHandler,
 	}
 }

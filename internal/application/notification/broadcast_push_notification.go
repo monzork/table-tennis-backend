@@ -9,9 +9,9 @@ import (
 )
 
 type BroadcastPushNotificationUseCase struct {
-	repo       domain.PushSubscriptionRepository
-	vapidPub   string
-	vapidPriv  string
+	repo      domain.PushSubscriptionRepository
+	vapidPub  string
+	vapidPriv string
 }
 
 func NewBroadcastPushNotificationUseCase(repo domain.PushSubscriptionRepository, pub, priv string) *BroadcastPushNotificationUseCase {

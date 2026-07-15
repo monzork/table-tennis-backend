@@ -3,10 +3,10 @@ package handler
 import (
 	"sync"
 	"table-tennis-backend/internal/application/division"
+	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/application/player"
-	"table-tennis-backend/internal/application/event"
 
 	"github.com/gofiber/fiber/v2"
 	eventUC "table-tennis-backend/internal/application/tournament"
@@ -47,8 +47,8 @@ func NewAdminHandler(
 
 func (h *AdminHandler) Dashboard(c *fiber.Ctx) error {
 	type result struct {
-		tournaments      any
-		events any
+		tournaments any
+		events      any
 		players     any
 		divisions   any
 	}
@@ -79,8 +79,8 @@ func (h *AdminHandler) Dashboard(c *fiber.Ctx) error {
 	wg.Wait()
 
 	return c.Render("admin/dashboard", fiber.Map{
-		"Tournaments":      res.tournaments,
-		"Events": res.events,
+		"Tournaments": res.tournaments,
+		"Events":      res.events,
 		"Players":     res.players,
 		"Divisions":   res.divisions,
 	}, "layouts/admin")
@@ -102,16 +102,16 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 		}
 	}
 	return c.Render("admin/players", fiber.Map{
-		"Players":     board,
-		"Events": activeTournaments,
+		"Players": board,
+		"Events":  activeTournaments,
 	}, "layouts/admin")
 }
 
 func (h *AdminHandler) Events(c *fiber.Ctx) error {
 	type result struct {
-		players     any
-		events any
-		divisions   any
+		players   any
+		events    any
+		divisions any
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -135,18 +135,18 @@ func (h *AdminHandler) Events(c *fiber.Ctx) error {
 	wg.Wait()
 
 	return c.Render("admin/events", fiber.Map{
-		"Players":     res.players,
-		"Events": res.events,
-		"Divisions":   res.divisions,
+		"Players":   res.players,
+		"Events":    res.events,
+		"Divisions": res.divisions,
 	}, "layouts/admin")
 }
 
 func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 	type result struct {
-		tournaments     any
-		divisions  any
-		players    any
-		standalone any
+		tournaments any
+		divisions   any
+		players     any
+		standalone  any
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -182,10 +182,10 @@ func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 	wg.Wait()
 
 	return c.Render("admin/tournaments", fiber.Map{
-		"Tournaments":     res.tournaments,
-		"Divisions":  res.divisions,
-		"Players":    res.players,
-		"Standalone": res.standalone,
+		"Tournaments": res.tournaments,
+		"Divisions":   res.divisions,
+		"Players":     res.players,
+		"Standalone":  res.standalone,
 	}, "layouts/admin")
 }
 func (h *AdminHandler) Divisions(c *fiber.Ctx) error {

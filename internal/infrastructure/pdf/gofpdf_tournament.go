@@ -26,18 +26,18 @@ func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*
 		pdf.Image(imagePath, 15, 10, 25, 0, false, "", 0, "")
 		pdf.SetY(17)
 		pdf.SetX(48)
-		
+
 		text := tr("EVENTO TENIS DE MESA - " + strings.ToUpper(e.Name))
 		w, _ := pdf.GetPageSize()
 		maxWidth := w - 48 - 15
-		
+
 		fontSize := 14.0
 		pdf.SetFont("Arial", "B", fontSize)
 		for pdf.GetStringWidth(text) > maxWidth && fontSize > 8.0 {
 			fontSize -= 0.5
 			pdf.SetFont("Arial", "B", fontSize)
 		}
-		
+
 		pdf.CellFormat(0, 10, text, "", 1, "L", false, 0, "")
 		pdf.SetDrawColor(200, 200, 200)
 		w, _ = pdf.GetPageSize()

@@ -6,8 +6,8 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
 	"time"
 
 	"github.com/google/uuid"

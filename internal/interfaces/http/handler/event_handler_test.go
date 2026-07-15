@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	playerDomain "table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
+	playerDomain "table-tennis-backend/internal/domain/player"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
 	"table-tennis-backend/internal/interfaces/http/handler"
 )

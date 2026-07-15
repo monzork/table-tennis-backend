@@ -6,8 +6,8 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
-	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
@@ -42,10 +42,10 @@ func generateUniqueTournamentPIN(usedPINs map[string]bool) string {
 func (r *TournamentRepository) Save(ctx context.Context, t *event.Event) error {
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
-	if err := r.saveTx(ctx, tx, t); err != nil {
-		return err
-	}
-	return nil
+		if err := r.saveTx(ctx, tx, t); err != nil {
+			return err
+		}
+		return nil
 	})
 }
 
@@ -69,27 +69,27 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.
 	}
 
 	model := &TournamentModel{
-		ID:                 tID,
-		Name:               t.Name,
-		Type:               t.Type,
-		Format:             t.Format,
-		DivisionFormats:    t.DivisionFormats,
+		ID:                      tID,
+		Name:                    t.Name,
+		Type:                    t.Type,
+		Format:                  t.Format,
+		DivisionFormats:         t.DivisionFormats,
 		DivisionGroupPassCounts: t.DivisionGroupPassCounts,
-		DivisionGroupCounts: t.DivisionGroupCounts,
-		Status:             t.Status,
-		EventCategory:      t.EventCategory,
-		StartDate:          t.StartDate,
-		EndDate:            t.EndDate,
-		GroupPassCount:     t.GroupPassCount,
-		RegistrationOpen:   t.RegistrationOpen,
-		EventID:            eventIDPtr,
-		SkipElo:            t.SkipElo,
-		TeamFormat:         t.TeamFormat,
-		WinnerName:         t.WinnerName,
-		NumTables:          t.NumTables,
-		HasThirdPlaceMatch: t.HasThirdPlaceMatch,
-		Metrics:            t.Metrics,
-		ManualSeedingLocked: t.ManualSeedingLocked,
+		DivisionGroupCounts:     t.DivisionGroupCounts,
+		Status:                  t.Status,
+		EventCategory:           t.EventCategory,
+		StartDate:               t.StartDate,
+		EndDate:                 t.EndDate,
+		GroupPassCount:          t.GroupPassCount,
+		RegistrationOpen:        t.RegistrationOpen,
+		EventID:                 eventIDPtr,
+		SkipElo:                 t.SkipElo,
+		TeamFormat:              t.TeamFormat,
+		WinnerName:              t.WinnerName,
+		NumTables:               t.NumTables,
+		HasThirdPlaceMatch:      t.HasThirdPlaceMatch,
+		Metrics:                 t.Metrics,
+		ManualSeedingLocked:     t.ManualSeedingLocked,
 	}
 	if _, err := tx.NewInsert().Model(model).Exec(ctx); err != nil {
 		return err
@@ -239,27 +239,27 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*event.Event, erro
 		}
 
 		events[i] = &event.Event{
-			ID:                 m.ID.String(),
-			Name:               m.Name,
-			Type:               m.Type,
-			Format:             m.Format,
-			DivisionFormats:    m.DivisionFormats,
+			ID:                      m.ID.String(),
+			Name:                    m.Name,
+			Type:                    m.Type,
+			Format:                  m.Format,
+			DivisionFormats:         m.DivisionFormats,
 			DivisionGroupPassCounts: m.DivisionGroupPassCounts,
-			DivisionGroupCounts: m.DivisionGroupCounts,
-			Status:             m.Status,
-			EventCategory:      m.EventCategory,
-			StartDate:          m.StartDate,
-			EndDate:            m.EndDate,
-			GroupPassCount:     m.GroupPassCount,
-			RegistrationOpen:   m.RegistrationOpen,
-			EventID:            eventIDPtr,
-			SkipElo:            m.SkipElo,
-			WinnerName:         m.WinnerName,
-			NumTables:          m.NumTables,
-			HasThirdPlaceMatch: m.HasThirdPlaceMatch,
-			Metrics:            m.Metrics,
-			ManualSeedingLocked: m.ManualSeedingLocked,
-			Participants:       participants,
+			DivisionGroupCounts:     m.DivisionGroupCounts,
+			Status:                  m.Status,
+			EventCategory:           m.EventCategory,
+			StartDate:               m.StartDate,
+			EndDate:                 m.EndDate,
+			GroupPassCount:          m.GroupPassCount,
+			RegistrationOpen:        m.RegistrationOpen,
+			EventID:                 eventIDPtr,
+			SkipElo:                 m.SkipElo,
+			WinnerName:              m.WinnerName,
+			NumTables:               m.NumTables,
+			HasThirdPlaceMatch:      m.HasThirdPlaceMatch,
+			Metrics:                 m.Metrics,
+			ManualSeedingLocked:     m.ManualSeedingLocked,
+			Participants:            participants,
 		}
 	}
 	return events, nil
@@ -387,7 +387,7 @@ func (r *TournamentRepository) GetByIDLite(ctx context.Context, idStr string) (*
 		EventCategory:           model.EventCategory,
 		StartDate:               model.StartDate,
 		EndDate:                 model.EndDate,
-		GroupPassCount:           model.GroupPassCount,
+		GroupPassCount:          model.GroupPassCount,
 		RegistrationOpen:        model.RegistrationOpen,
 		EventID:                 eventIDPtr,
 		SkipElo:                 model.SkipElo,
@@ -427,9 +427,9 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*even
 		}).
 		Relation("Matches", func(q *bun.SelectQuery) *bun.SelectQuery {
 			return q.Relation("TeamAPlayer1").
-			Relation("TeamAPlayer2").
-			Relation("TeamBPlayer1").
-			Relation("TeamBPlayer2")
+				Relation("TeamAPlayer2").
+				Relation("TeamBPlayer1").
+				Relation("TeamBPlayer2")
 		}).
 		Relation("StageRules").
 		Relation("DivisionRules").
@@ -753,34 +753,34 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*even
 	}
 
 	return &event.Event{
-		ID:                 model.ID.String(),
-		Name:               model.Name,
-		Status:             model.Status,
-		Type:               model.Type,
-		Format:             model.Format,
-		DivisionFormats:    model.DivisionFormats,
+		ID:                      model.ID.String(),
+		Name:                    model.Name,
+		Status:                  model.Status,
+		Type:                    model.Type,
+		Format:                  model.Format,
+		DivisionFormats:         model.DivisionFormats,
 		DivisionGroupPassCounts: model.DivisionGroupPassCounts,
-		DivisionGroupCounts: model.DivisionGroupCounts,
-		EventCategory:      model.EventCategory,
-		StartDate:          model.StartDate,
-		EndDate:            model.EndDate,
-		GroupPassCount:     model.GroupPassCount,
-		RegistrationOpen:   model.RegistrationOpen,
-		EventID:            eventIDPtr,
-		SkipElo:            model.SkipElo,
-		WinnerName:         model.WinnerName,
-		Participants:       participantPlayers,
-		Groups:             groups,
-		Rules:              []event.Rule{},
-		StageRules:         sRules,
-		DivisionRules:      dRules,
-		Matches:            matches,
-		Teams:              teams,
-		TeamFormat:         model.TeamFormat,
-		NumTables:          model.NumTables,
-		HasThirdPlaceMatch: model.HasThirdPlaceMatch,
-		Metrics:            model.Metrics,
-		ManualSeedingLocked: model.ManualSeedingLocked,
+		DivisionGroupCounts:     model.DivisionGroupCounts,
+		EventCategory:           model.EventCategory,
+		StartDate:               model.StartDate,
+		EndDate:                 model.EndDate,
+		GroupPassCount:          model.GroupPassCount,
+		RegistrationOpen:        model.RegistrationOpen,
+		EventID:                 eventIDPtr,
+		SkipElo:                 model.SkipElo,
+		WinnerName:              model.WinnerName,
+		Participants:            participantPlayers,
+		Groups:                  groups,
+		Rules:                   []event.Rule{},
+		StageRules:              sRules,
+		DivisionRules:           dRules,
+		Matches:                 matches,
+		Teams:                   teams,
+		TeamFormat:              model.TeamFormat,
+		NumTables:               model.NumTables,
+		HasThirdPlaceMatch:      model.HasThirdPlaceMatch,
+		Metrics:                 model.Metrics,
+		ManualSeedingLocked:     model.ManualSeedingLocked,
 	}, nil
 }
 
@@ -801,193 +801,193 @@ func (r *TournamentRepository) Update(ctx context.Context, t *event.Event) error
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
-	model := &TournamentModel{
-		ID:                 tID,
-		Name:               t.Name,
-		Type:               t.Type,
-		Format:             t.Format,
-		DivisionFormats:    t.DivisionFormats,
-		DivisionGroupPassCounts: t.DivisionGroupPassCounts,
-		DivisionGroupCounts: t.DivisionGroupCounts,
-		Status:             t.Status,
-		EventCategory:      t.EventCategory,
-		StartDate:          t.StartDate,
-		EndDate:            t.EndDate,
-		GroupPassCount:     t.GroupPassCount,
-		RegistrationOpen:   t.RegistrationOpen,
-		EventID:            eventIDPtr,
-		SkipElo:            t.SkipElo,
-		TeamFormat:         t.TeamFormat,
-		WinnerName:         t.WinnerName,
-		NumTables:          t.NumTables,
-		HasThirdPlaceMatch: t.HasThirdPlaceMatch,
-		Metrics:            t.Metrics,
-		ManualSeedingLocked: t.ManualSeedingLocked,
-	}
-
-	_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "tournament_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "metrics", "manual_seeding_locked", "division_formats", "division_group_pass_counts", "division_group_counts").Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Load existing participant PINs and Elo snapshots BEFORE scrubbing, so we can re-assign them after re-insert
-	existingPINs := make(map[string]string)
-	existingEloBeforeSingles := make(map[string]*int16)
-	existingEloBeforeDoubles := make(map[string]*int16)
-	existingEloAfterSingles := make(map[string]*int16)
-	existingEloAfterDoubles := make(map[string]*int16)
-	{
-		var existingParts []TournamentParticipantModel
-		_ = tx.NewSelect().Model(&existingParts).Column("player_id", "pin", "elo_before_singles", "elo_before_doubles", "elo_after_singles", "elo_after_doubles").Where("event_id = ?", tID).Scan(ctx)
-		for _, ep := range existingParts {
-			pIDStr := ep.PlayerID.String()
-			existingPINs[pIDStr] = ep.Pin
-			existingEloBeforeSingles[pIDStr] = ep.EloBeforeSingles
-			existingEloBeforeDoubles[pIDStr] = ep.EloBeforeDoubles
-			existingEloAfterSingles[pIDStr] = ep.EloAfterSingles
-			existingEloAfterDoubles[pIDStr] = ep.EloAfterDoubles
-		}
-	}
-
-	// Scrub existing groups, participants, and teams
-	tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id = ?)", tID).Exec(ctx)
-	tx.NewDelete().TableExpr("groups").Where("event_id = ?", tID).Exec(ctx)
-	tx.NewDelete().TableExpr("event_participants").Where("event_id = ?", tID).Exec(ctx)
-	tx.NewDelete().TableExpr("team_players").Where("team_id IN (SELECT id FROM teams WHERE event_id = ?)", tID).Exec(ctx)
-	tx.NewDelete().TableExpr("teams").Where("event_id = ?", tID).Exec(ctx)
-
-	// Refresh participants in bulk, preserving existing PINs and generating unique new ones
-	if len(t.Participants) > 0 {
-		// Seed the used-PIN set with all preserved existing PINs
-		usedPINs := make(map[string]bool)
-		for _, pin := range existingPINs {
-			if pin != "" && pin != "0000" {
-				usedPINs[pin] = true
-			}
+		model := &TournamentModel{
+			ID:                      tID,
+			Name:                    t.Name,
+			Type:                    t.Type,
+			Format:                  t.Format,
+			DivisionFormats:         t.DivisionFormats,
+			DivisionGroupPassCounts: t.DivisionGroupPassCounts,
+			DivisionGroupCounts:     t.DivisionGroupCounts,
+			Status:                  t.Status,
+			EventCategory:           t.EventCategory,
+			StartDate:               t.StartDate,
+			EndDate:                 t.EndDate,
+			GroupPassCount:          t.GroupPassCount,
+			RegistrationOpen:        t.RegistrationOpen,
+			EventID:                 eventIDPtr,
+			SkipElo:                 t.SkipElo,
+			TeamFormat:              t.TeamFormat,
+			WinnerName:              t.WinnerName,
+			NumTables:               t.NumTables,
+			HasThirdPlaceMatch:      t.HasThirdPlaceMatch,
+			Metrics:                 t.Metrics,
+			ManualSeedingLocked:     t.ManualSeedingLocked,
 		}
 
-		partModels := make([]TournamentParticipantModel, len(t.Participants))
-		for i, p := range t.Participants {
-			pID, err := uuid.Parse(p.ID)
-			if err != nil {
-				return err
-			}
-			pin := existingPINs[p.ID]
-			if pin == "" || pin == "0000" {
-				pin = generateUniqueTournamentPIN(usedPINs)
-			}
-
-			// Preserve existing Elo Before/After if present in DB; fallback to player current Elo
-			eloBeforeS := &p.SinglesElo
-			if existingS, ok := existingEloBeforeSingles[p.ID]; ok && existingS != nil {
-				eloBeforeS = existingS
-			}
-			eloBeforeD := &p.DoublesElo
-			if existingD, ok := existingEloBeforeDoubles[p.ID]; ok && existingD != nil {
-				eloBeforeD = existingD
-			}
-
-			partModels[i] = TournamentParticipantModel{
-				TournamentID:     tID,
-				PlayerID:         pID,
-				Pin:              pin,
-				EloBeforeSingles: eloBeforeS,
-				EloBeforeDoubles: eloBeforeD,
-				EloAfterSingles:  existingEloAfterSingles[p.ID],
-				EloAfterDoubles:  existingEloAfterDoubles[p.ID],
-			}
-		}
-		if _, err = tx.NewInsert().Model(&partModels).Exec(ctx); err != nil {
+		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "tournament_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "metrics", "manual_seeding_locked", "division_formats", "division_group_pass_counts", "division_group_counts").Exec(ctx)
+		if err != nil {
 			return err
 		}
-	}
 
-	// Refresh teams and team players in bulk
-	if len(t.Teams) > 0 {
-		teamModels := make([]TeamModel, len(t.Teams))
-		var tpModels []TeamPlayerModel
-		for i, team := range t.Teams {
-			teamID, err := uuid.Parse(team.ID)
-			if err != nil {
-				return err
+		// Load existing participant PINs and Elo snapshots BEFORE scrubbing, so we can re-assign them after re-insert
+		existingPINs := make(map[string]string)
+		existingEloBeforeSingles := make(map[string]*int16)
+		existingEloBeforeDoubles := make(map[string]*int16)
+		existingEloAfterSingles := make(map[string]*int16)
+		existingEloAfterDoubles := make(map[string]*int16)
+		{
+			var existingParts []TournamentParticipantModel
+			_ = tx.NewSelect().Model(&existingParts).Column("player_id", "pin", "elo_before_singles", "elo_before_doubles", "elo_after_singles", "elo_after_doubles").Where("event_id = ?", tID).Scan(ctx)
+			for _, ep := range existingParts {
+				pIDStr := ep.PlayerID.String()
+				existingPINs[pIDStr] = ep.Pin
+				existingEloBeforeSingles[pIDStr] = ep.EloBeforeSingles
+				existingEloBeforeDoubles[pIDStr] = ep.EloBeforeDoubles
+				existingEloAfterSingles[pIDStr] = ep.EloAfterSingles
+				existingEloAfterDoubles[pIDStr] = ep.EloAfterDoubles
 			}
-			teamModels[i] = TeamModel{
-				ID:           teamID,
-				TournamentID: tID,
-				Name:         team.Name,
+		}
+
+		// Scrub existing groups, participants, and teams
+		tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id = ?)", tID).Exec(ctx)
+		tx.NewDelete().TableExpr("groups").Where("event_id = ?", tID).Exec(ctx)
+		tx.NewDelete().TableExpr("event_participants").Where("event_id = ?", tID).Exec(ctx)
+		tx.NewDelete().TableExpr("team_players").Where("team_id IN (SELECT id FROM teams WHERE event_id = ?)", tID).Exec(ctx)
+		tx.NewDelete().TableExpr("teams").Where("event_id = ?", tID).Exec(ctx)
+
+		// Refresh participants in bulk, preserving existing PINs and generating unique new ones
+		if len(t.Participants) > 0 {
+			// Seed the used-PIN set with all preserved existing PINs
+			usedPINs := make(map[string]bool)
+			for _, pin := range existingPINs {
+				if pin != "" && pin != "0000" {
+					usedPINs[pin] = true
+				}
 			}
-			for _, p := range team.Players {
+
+			partModels := make([]TournamentParticipantModel, len(t.Participants))
+			for i, p := range t.Participants {
 				pID, err := uuid.Parse(p.ID)
 				if err != nil {
 					return err
 				}
-				tpModels = append(tpModels, TeamPlayerModel{
-					TeamID:   teamID,
-					PlayerID: pID,
-				})
-			}
-		}
-		if _, err = tx.NewInsert().Model(&teamModels).Exec(ctx); err != nil {
-			return err
-		}
-		if len(tpModels) > 0 {
-			if _, err = tx.NewInsert().Model(&tpModels).Exec(ctx); err != nil {
-				return err
-			}
-		}
-	}
+				pin := existingPINs[p.ID]
+				if pin == "" || pin == "0000" {
+					pin = generateUniqueTournamentPIN(usedPINs)
+				}
 
-	// Refresh groups and group participants in bulk
-	if len(t.Groups) > 0 {
-		groupModels := make([]GroupModel, len(t.Groups))
-		var gpModels []GroupParticipantModel
-		for i, g := range t.Groups {
-			gID, err := uuid.Parse(g.ID)
-			if err != nil {
+				// Preserve existing Elo Before/After if present in DB; fallback to player current Elo
+				eloBeforeS := &p.SinglesElo
+				if existingS, ok := existingEloBeforeSingles[p.ID]; ok && existingS != nil {
+					eloBeforeS = existingS
+				}
+				eloBeforeD := &p.DoublesElo
+				if existingD, ok := existingEloBeforeDoubles[p.ID]; ok && existingD != nil {
+					eloBeforeD = existingD
+				}
+
+				partModels[i] = TournamentParticipantModel{
+					TournamentID:     tID,
+					PlayerID:         pID,
+					Pin:              pin,
+					EloBeforeSingles: eloBeforeS,
+					EloBeforeDoubles: eloBeforeD,
+					EloAfterSingles:  existingEloAfterSingles[p.ID],
+					EloAfterDoubles:  existingEloAfterDoubles[p.ID],
+				}
+			}
+			if _, err = tx.NewInsert().Model(&partModels).Exec(ctx); err != nil {
 				return err
 			}
-			groupModels[i] = GroupModel{
-				ID:           gID,
-				TournamentID: tID,
-				Name:         g.Name,
-			}
-			for idx, p := range g.Players {
-				pID, err := uuid.Parse(p.ID)
+		}
+
+		// Refresh teams and team players in bulk
+		if len(t.Teams) > 0 {
+			teamModels := make([]TeamModel, len(t.Teams))
+			var tpModels []TeamPlayerModel
+			for i, team := range t.Teams {
+				teamID, err := uuid.Parse(team.ID)
 				if err != nil {
 					return err
 				}
-				gpModels = append(gpModels, GroupParticipantModel{
-					GroupID:  gID,
-					PlayerID: pID,
-					Position: idx,
-				})
+				teamModels[i] = TeamModel{
+					ID:           teamID,
+					TournamentID: tID,
+					Name:         team.Name,
+				}
+				for _, p := range team.Players {
+					pID, err := uuid.Parse(p.ID)
+					if err != nil {
+						return err
+					}
+					tpModels = append(tpModels, TeamPlayerModel{
+						TeamID:   teamID,
+						PlayerID: pID,
+					})
+				}
+			}
+			if _, err = tx.NewInsert().Model(&teamModels).Exec(ctx); err != nil {
+				return err
+			}
+			if len(tpModels) > 0 {
+				if _, err = tx.NewInsert().Model(&tpModels).Exec(ctx); err != nil {
+					return err
+				}
 			}
 		}
-		if _, err = tx.NewInsert().Model(&groupModels).Exec(ctx); err != nil {
-			return err
+
+		// Refresh groups and group participants in bulk
+		if len(t.Groups) > 0 {
+			groupModels := make([]GroupModel, len(t.Groups))
+			var gpModels []GroupParticipantModel
+			for i, g := range t.Groups {
+				gID, err := uuid.Parse(g.ID)
+				if err != nil {
+					return err
+				}
+				groupModels[i] = GroupModel{
+					ID:           gID,
+					TournamentID: tID,
+					Name:         g.Name,
+				}
+				for idx, p := range g.Players {
+					pID, err := uuid.Parse(p.ID)
+					if err != nil {
+						return err
+					}
+					gpModels = append(gpModels, GroupParticipantModel{
+						GroupID:  gID,
+						PlayerID: pID,
+						Position: idx,
+					})
+				}
+			}
+			if _, err = tx.NewInsert().Model(&groupModels).Exec(ctx); err != nil {
+				return err
+			}
+			if len(gpModels) > 0 {
+				if _, err = tx.NewInsert().Model(&gpModels).Exec(ctx); err != nil {
+					return err
+				}
+			}
 		}
-		if len(gpModels) > 0 {
-			if _, err = tx.NewInsert().Model(&gpModels).Exec(ctx); err != nil {
+
+		// Replace stage rules if changed
+		if len(t.StageRules) > 0 {
+			if err := replaceStageRules(ctx, tx, t.ID, t.StageRules); err != nil {
 				return err
 			}
 		}
-	}
 
-	// Replace stage rules if changed
-	if len(t.StageRules) > 0 {
-		if err := replaceStageRules(ctx, tx, t.ID, t.StageRules); err != nil {
-			return err
+		// Replace division rules if changed
+		if len(t.DivisionRules) > 0 {
+			if err := ReplaceDivisionRules(ctx, tx, t.ID, t.DivisionRules); err != nil {
+				return err
+			}
 		}
-	}
 
-	// Replace division rules if changed
-	if len(t.DivisionRules) > 0 {
-		if err := ReplaceDivisionRules(ctx, tx, t.ID, t.DivisionRules); err != nil {
-			return err
-		}
-	}
-
-	return nil
+		return nil
 	})
 }
 
@@ -999,47 +999,47 @@ func (r *TournamentRepository) UpdateGroups(ctx context.Context, t *event.Event)
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
-	// Scrub existing groups and group participants
-	tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id = ?)", tID).Exec(ctx)
-	tx.NewDelete().TableExpr("groups").Where("event_id = ?", tID).Exec(ctx)
+		// Scrub existing groups and group participants
+		tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id = ?)", tID).Exec(ctx)
+		tx.NewDelete().TableExpr("groups").Where("event_id = ?", tID).Exec(ctx)
 
-	// Refresh groups and group participants in bulk
-	if len(t.Groups) > 0 {
-		groupModels := make([]GroupModel, len(t.Groups))
-		var gpModels []GroupParticipantModel
-		for i, g := range t.Groups {
-			gID, err := uuid.Parse(g.ID)
-			if err != nil {
-				return err
-			}
-			groupModels[i] = GroupModel{
-				ID:           gID,
-				TournamentID: tID,
-				Name:         g.Name,
-			}
-			for idx, p := range g.Players {
-				pID, err := uuid.Parse(p.ID)
+		// Refresh groups and group participants in bulk
+		if len(t.Groups) > 0 {
+			groupModels := make([]GroupModel, len(t.Groups))
+			var gpModels []GroupParticipantModel
+			for i, g := range t.Groups {
+				gID, err := uuid.Parse(g.ID)
 				if err != nil {
 					return err
 				}
-				gpModels = append(gpModels, GroupParticipantModel{
-					GroupID:  gID,
-					PlayerID: pID,
-					Position: idx,
-				})
+				groupModels[i] = GroupModel{
+					ID:           gID,
+					TournamentID: tID,
+					Name:         g.Name,
+				}
+				for idx, p := range g.Players {
+					pID, err := uuid.Parse(p.ID)
+					if err != nil {
+						return err
+					}
+					gpModels = append(gpModels, GroupParticipantModel{
+						GroupID:  gID,
+						PlayerID: pID,
+						Position: idx,
+					})
+				}
 			}
-		}
-		if _, err = tx.NewInsert().Model(&groupModels).Exec(ctx); err != nil {
-			return err
-		}
-		if len(gpModels) > 0 {
-			if _, err = tx.NewInsert().Model(&gpModels).Exec(ctx); err != nil {
+			if _, err = tx.NewInsert().Model(&groupModels).Exec(ctx); err != nil {
 				return err
 			}
+			if len(gpModels) > 0 {
+				if _, err = tx.NewInsert().Model(&gpModels).Exec(ctx); err != nil {
+					return err
+				}
+			}
 		}
-	}
 
-	return nil
+		return nil
 	})
 }
 
@@ -1050,15 +1050,15 @@ func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
 	}
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
-	// Manual cascade since SQLite FK cascade may not be enabled
-	tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id = ?)", id).Exec(ctx)
-	tx.NewDelete().TableExpr("groups").Where("event_id = ?", id).Exec(ctx)
-	tx.NewDelete().TableExpr("event_participants").Where("event_id = ?", id).Exec(ctx)
-	_, err = tx.NewDelete().Model(&TournamentModel{}).Where("id = ?", id).Exec(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
+		// Manual cascade since SQLite FK cascade may not be enabled
+		tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id = ?)", id).Exec(ctx)
+		tx.NewDelete().TableExpr("groups").Where("event_id = ?", id).Exec(ctx)
+		tx.NewDelete().TableExpr("event_participants").Where("event_id = ?", id).Exec(ctx)
+		_, err = tx.NewDelete().Model(&TournamentModel{}).Where("id = ?", id).Exec(ctx)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 }
 
@@ -1511,32 +1511,32 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 		}
 
 		events[i] = &event.Event{
-			ID:                 m.ID.String(),
-			Name:               m.Name,
-			Type:               m.Type,
-			Format:             m.Format,
-			DivisionFormats:    m.DivisionFormats,
+			ID:                      m.ID.String(),
+			Name:                    m.Name,
+			Type:                    m.Type,
+			Format:                  m.Format,
+			DivisionFormats:         m.DivisionFormats,
 			DivisionGroupPassCounts: m.DivisionGroupPassCounts,
-			DivisionGroupCounts: m.DivisionGroupCounts,
-			Status:             m.Status,
-			EventCategory:      m.EventCategory,
-			StartDate:          m.StartDate,
-			EndDate:            m.EndDate,
-			GroupPassCount:     m.GroupPassCount,
-			RegistrationOpen:   m.RegistrationOpen,
-			EventID:            eventIDPtr,
-			SkipElo:            m.SkipElo,
-			WinnerName:         m.WinnerName,
-			Participants:       participantPlayers,
-			Groups:             groups,
-			Rules:              []event.Rule{},
-			StageRules:         sRules,
-			DivisionRules:      dRules,
-			Matches:            matches,
-			Teams:              teams,
-			TeamFormat:         m.TeamFormat,
-			NumTables:          m.NumTables,
-			HasThirdPlaceMatch: m.HasThirdPlaceMatch,
+			DivisionGroupCounts:     m.DivisionGroupCounts,
+			Status:                  m.Status,
+			EventCategory:           m.EventCategory,
+			StartDate:               m.StartDate,
+			EndDate:                 m.EndDate,
+			GroupPassCount:          m.GroupPassCount,
+			RegistrationOpen:        m.RegistrationOpen,
+			EventID:                 eventIDPtr,
+			SkipElo:                 m.SkipElo,
+			WinnerName:              m.WinnerName,
+			Participants:            participantPlayers,
+			Groups:                  groups,
+			Rules:                   []event.Rule{},
+			StageRules:              sRules,
+			DivisionRules:           dRules,
+			Matches:                 matches,
+			Teams:                   teams,
+			TeamFormat:              m.TeamFormat,
+			NumTables:               m.NumTables,
+			HasThirdPlaceMatch:      m.HasThirdPlaceMatch,
 		}
 	}
 	return events, nil
@@ -1698,22 +1698,22 @@ func (r *TournamentRepository) UpdateParticipantsElo(ctx context.Context, tourna
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
-	for _, p := range players {
-		pID, err := uuid.Parse(p.ID)
-		if err != nil {
-			return err
+		for _, p := range players {
+			pID, err := uuid.Parse(p.ID)
+			if err != nil {
+				return err
+			}
+			_, err = tx.NewUpdate().
+				TableExpr("event_participants").
+				Set("elo_after_singles = ?, elo_after_doubles = ?", p.SinglesElo, p.DoublesElo).
+				Where("event_id = ? AND player_id = ?", tID, pID).
+				Exec(ctx)
+			if err != nil {
+				return err
+			}
 		}
-		_, err = tx.NewUpdate().
-			TableExpr("event_participants").
-			Set("elo_after_singles = ?, elo_after_doubles = ?", p.SinglesElo, p.DoublesElo).
-			Where("event_id = ? AND player_id = ?", tID, pID).
-			Exec(ctx)
-		if err != nil {
-			return err
-		}
-	}
 
-	return nil
+		return nil
 	})
 }
 
@@ -1750,21 +1750,20 @@ func (r *TournamentRepository) RemoveParticipant(ctx context.Context, tournament
 		return err
 	}
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
-	// Remove from group participants
-	tx.NewDelete().TableExpr("group_participants").
-		Where("player_id = ? AND group_id IN (SELECT id FROM groups WHERE event_id = ?)", pID, tID).
-		Exec(ctx)
-	// Remove from event participants
-	_, err = tx.NewDelete().TableExpr("event_participants").
-		Where("event_id = ? AND player_id = ?", tID, pID).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
+		// Remove from group participants
+		tx.NewDelete().TableExpr("group_participants").
+			Where("player_id = ? AND group_id IN (SELECT id FROM groups WHERE event_id = ?)", pID, tID).
+			Exec(ctx)
+		// Remove from event participants
+		_, err = tx.NewDelete().TableExpr("event_participants").
+			Where("event_id = ? AND player_id = ?", tID, pID).
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 }
-
 
 func (r *TournamentRepository) generateUniqueParticipantPIN(ctx context.Context, tournamentID uuid.UUID) string {
 	for {

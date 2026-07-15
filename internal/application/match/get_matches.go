@@ -2,8 +2,8 @@ package match
 
 import (
 	"context"
-	player "table-tennis-backend/internal/domain/player"
 	event "table-tennis-backend/internal/domain/event"
+	player "table-tennis-backend/internal/domain/player"
 )
 
 type MatchView struct {

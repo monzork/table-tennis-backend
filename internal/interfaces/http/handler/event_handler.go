@@ -7,11 +7,11 @@ import (
 	"strings"
 	"sync"
 	"table-tennis-backend/internal/application/division"
-	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/event"
+	"table-tennis-backend/internal/application/leaderboard"
 	divisionDomain "table-tennis-backend/internal/domain/division"
-	"table-tennis-backend/internal/domain/player"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -106,14 +106,14 @@ func (h *TournamentHandler) StartKnockout(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).SendString("event not found")
 	}
-	
+
 	var divisions []*divisionDomain.Division
 	if divs, err := h.divisionUC.GetAll(c.Context()); err == nil {
 		divisions = divs
 	}
 
 	vm := BuildTournamentViewModel(t, divisions, nil)
-	
+
 	var firstRoundMatches []tournamentDomain.Match
 	for _, div := range vm.Divisions {
 		if div.ID == divID && div.AllGroupsFinished && len(div.KnockoutRounds) > 0 {
@@ -124,12 +124,12 @@ func (h *TournamentHandler) StartKnockout(c *fiber.Ctx) error {
 						if mv.Match == nil {
 							firstRoundMatches = append(firstRoundMatches, tournamentDomain.Match{
 								TournamentID: tournamentID,
-								DivisionID: divID,
-								Stage: mv.Stage,
-								RoundNumber: 1,
-								MatchType: t.Type,
-								TeamA: []*player.Player{mv.Player1.Player},
-								TeamB: []*player.Player{mv.Player2.Player},
+								DivisionID:   divID,
+								Stage:        mv.Stage,
+								RoundNumber:  1,
+								MatchType:    t.Type,
+								TeamA:        []*player.Player{mv.Player1.Player},
+								TeamB:        []*player.Player{mv.Player2.Player},
 							})
 						}
 					}
@@ -139,14 +139,14 @@ func (h *TournamentHandler) StartKnockout(c *fiber.Ctx) error {
 			break
 		}
 	}
-	
+
 	if len(firstRoundMatches) > 0 {
 		err = h.startKnockoutUC.Execute(c.Context(), tournamentID, divID, firstRoundMatches)
 		if err != nil {
 			return ErrorHandler(err)
 		}
 	}
-	
+
 	c.Set("HX-Trigger", `{"show-toast": {"message": "Knockout matches created and scheduled!", "type": "success"}}`)
 	return c.SendString("") // We will just send success toast, and let a reload happen or button hide
 }
@@ -298,12 +298,12 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	type result struct {
-		event *tournamentDomain.Event
-		err        error
-		players    any
-		divisions  []*divisionDomain.Division
-		snapshots  []tournamentDomain.ParticipantSnapshot
-		officials  []tournamentDomain.ParticipantSnapshot
+		event     *tournamentDomain.Event
+		err       error
+		players   any
+		divisions []*divisionDomain.Division
+		snapshots []tournamentDomain.ParticipantSnapshot
+		officials []tournamentDomain.ParticipantSnapshot
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -350,7 +350,7 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		for _, m := range t.Matches {
 			matchStatus := statusFilter == "all" || m.Status == statusFilter
 			matchPlayer := true
-			
+
 			if playerSearch != "" {
 				matchPlayer = false
 				for _, p := range m.TeamA {
@@ -368,7 +368,7 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 					}
 				}
 			}
-			
+
 			if matchStatus && matchPlayer {
 				filtered = append(filtered, m)
 			}
@@ -477,7 +477,7 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	}
 
 	return c.Render("admin/event-detail", fiber.Map{
-		"Event":            t,
+		"Event":                 t,
 		"Players":               players,
 		"Divisions":             divisions,
 		"BracketViewModel":      vm,
@@ -538,10 +538,10 @@ func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	type result struct {
-		event *tournamentDomain.Event
-		err        error
-		players    any
-		divisions  []*divisionDomain.Division
+		event     *tournamentDomain.Event
+		err       error
+		players   any
+		divisions []*divisionDomain.Division
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -565,9 +565,9 @@ func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
 		return ErrorHandler(res.err)
 	}
 	return c.Render("admin/partials/event-edit-form", fiber.Map{
-		"Event": res.event,
-		"Players":    res.players,
-		"Divisions":  res.divisions,
+		"Event":     res.event,
+		"Players":   res.players,
+		"Divisions": res.divisions,
 	})
 }
 
@@ -943,7 +943,7 @@ func (h *TournamentHandler) PublicList(c *fiber.Ctx) error {
 		return ErrorHandler(err)
 	}
 	return c.Render("public/events", merge(tMap(lang), fiber.Map{
-		"Events":  events,
+		"Events":       events,
 		"Type":         "Events",
 		"OGImage":      c.BaseURL() + "/open_tdm.jpeg",
 		"Title":        "Events",
@@ -956,10 +956,10 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	type result struct {
-		event *tournamentDomain.Event
-		err        error
-		divisions  []*divisionDomain.Division
-		players    any
+		event     *tournamentDomain.Event
+		err       error
+		divisions []*divisionDomain.Division
+		players   any
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -991,7 +991,7 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	// 1. Generate virtual scheduled matches and append to allMatches
 	allMatches := t.Matches
 	scheduledCards, _, _ := BuildBoardCards(t, divisions)
-	
+
 	queuePosMap := make(map[string]int)
 	for i, sc := range scheduledCards {
 		key := sc.MatchID
@@ -1012,7 +1012,7 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	for _, sc := range scheduledCards {
 		if sc.MatchID == "" {
 			var teamA, teamB []*player.Player
-			
+
 			if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
 				for _, tm := range t.Teams {
 					if tm.ID == sc.P1Id {
@@ -1041,13 +1041,13 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 
 			if len(teamA) > 0 && len(teamB) > 0 {
 				allMatches = append(allMatches, tournamentDomain.Match{
-					ID:           "",
-					TournamentID: t.ID,
-					MatchType:    t.Type,
-					TeamA:        teamA,
-					TeamB:        teamB,
-					Status:       "scheduled",
-					Stage:        sc.Stage,
+					ID:            "",
+					TournamentID:  t.ID,
+					MatchType:     t.Type,
+					TeamA:         teamA,
+					TeamB:         teamB,
+					Status:        "scheduled",
+					Stage:         sc.Stage,
 					QueuePosition: queuePosMap[fmt.Sprintf("virtual_%s_%s", sc.P1Id, sc.P2Id)],
 				})
 			}
@@ -1066,7 +1066,7 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	for _, m := range allMatches {
 		matchStatus := statusFilter == "all" || m.Status == statusFilter
 		matchPlayer := true
-		
+
 		if playerSearch != "" {
 			searchTerms := strings.Fields(playerSearch)
 			var names []string
@@ -1077,7 +1077,7 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 				names = append(names, strings.ToLower(fmt.Sprintf("%s %s %s %s", p.FirstName, p.SecondName, p.LastName, p.SecondLastName)))
 			}
 			fullMatchString := strings.Join(names, " ")
-			
+
 			matchPlayer = true
 			for _, term := range searchTerms {
 				if !strings.Contains(fullMatchString, term) {
@@ -1086,7 +1086,7 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 				}
 			}
 		}
-		
+
 		if matchStatus && matchPlayer {
 			displayMatches = append(displayMatches, m)
 		}
@@ -1127,7 +1127,7 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 }`, safeName, t.StartDate.Format(time.RFC3339), t.EndDate.Format(time.RFC3339), canonicalURL)
 
 	return c.Render("public/event-detail", merge(tMap(lang), fiber.Map{
-		"Event":       t,
+		"Event":            t,
 		"Divisions":        divisions,
 		"BracketViewModel": vm,
 		"Type":             "Events",
@@ -1147,10 +1147,10 @@ func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	type result struct {
-		event *tournamentDomain.Event
-		err        error
-		divisions  []*divisionDomain.Division
-		players    any
+		event     *tournamentDomain.Event
+		err       error
+		divisions []*divisionDomain.Division
+		players   any
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -1208,7 +1208,7 @@ func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	tables := buildTables(res.event, "", h.getOccupiedTables(c.Context(), res.event))
 
 	return c.Render("public/tv-dashboard", merge(tMap(lang), fiber.Map{
-		"Event":       res.event,
+		"Event":            res.event,
 		"Divisions":        res.divisions,
 		"BracketViewModel": vm,
 		"Scheduled":        scheduled,
@@ -1555,7 +1555,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 	}
 
 	simClock := time.Now().Add(24 * time.Hour) // start in future to override past matches
-	
+
 	scheduleMatchGreedy := func(pool *[]BoardCard) {
 		for len(*pool) > 0 {
 			bestIdx := -1
@@ -1594,7 +1594,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 
 			picked := (*pool)[bestIdx]
 			reordered = append(reordered, picked)
-			
+
 			simClock = simClock.Add(time.Second) // advance simulated time
 			if picked.P1Id != "" {
 				lastActivity[picked.P1Id] = simClock
@@ -1658,9 +1658,9 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	type result struct {
-		event *tournamentDomain.Event
-		err        error
-		divisions  []*divisionDomain.Division
+		event     *tournamentDomain.Event
+		err       error
+		divisions []*divisionDomain.Division
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -1723,7 +1723,7 @@ func (h *TournamentHandler) Board(c *fiber.Ctx) error {
 	}
 
 	return c.Render("admin/event-board", fiber.Map{
-		"Event":   t,
+		"Event":        t,
 		"Scheduled":    scheduled,
 		"InProgress":   inProgress,
 		"Finished":     finished,
@@ -1738,9 +1738,9 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	type result struct {
-		event *tournamentDomain.Event
-		err        error
-		divisions  []*divisionDomain.Division
+		event     *tournamentDomain.Event
+		err       error
+		divisions []*divisionDomain.Division
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -1777,7 +1777,7 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	}
 
 	return c.Render("admin/partials/board-columns", fiber.Map{
-		"Event": t,
+		"Event":      t,
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
@@ -1787,11 +1787,9 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	})
 }
 
-
-
 func (h *TournamentHandler) ToggleSeedingLock(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	if err := h.toggleSeedingLockUC.Execute(c.Context(), id); err != nil {
 		return c.Status(500).SendString("Failed to toggle seeding lock")
 	}

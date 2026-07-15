@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	divisionDomain "table-tennis-backend/internal/domain/division"
-	eventDomain "table-tennis-backend/internal/domain/tournament"
+	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
-	tournamentDomain "table-tennis-backend/internal/domain/event"
+	eventDomain "table-tennis-backend/internal/domain/tournament"
 	"time"
 )
 
@@ -305,4 +305,3 @@ func (uc *UpdateEventUseCase) Execute(ctx context.Context, idStr, name, startDat
 	}
 	return e, nil
 }
-

@@ -3,8 +3,8 @@ package match
 import (
 	"context"
 	"math"
-	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
 )
 
 // Repository defines the data access methods for the Match domain.
@@ -16,7 +16,6 @@ type Repository interface {
 	DeleteMatchSets(ctx context.Context, matchID string) error
 	GetSubMatches(ctx context.Context, parentID string) ([]*event.Match, error)
 }
-
 
 // Standard Elo calculation constants.
 const (

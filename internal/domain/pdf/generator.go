@@ -2,8 +2,8 @@ package pdf
 
 import (
 	"table-tennis-backend/internal/domain/division"
-	"table-tennis-backend/internal/domain/tournament"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/tournament"
 )
 
 type Generator interface {
