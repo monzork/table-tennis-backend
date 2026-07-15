@@ -149,7 +149,7 @@ func TestMatchHandler(t *testing.T) {
 
 		// Verify table 1 is occupied
 		mUUID1, _ := uuid.Parse(m1.ID)
-		mModel1, _ := matchRepo.GetByID(ctx, mUUID1)
+		mModel1, _ := matchRepo.GetModelByID(ctx, mUUID1)
 		if mModel1.TableNumber == nil || *mModel1.TableNumber != 1 {
 			t.Errorf("expected table 1, got %v", mModel1.TableNumber)
 		}
@@ -170,7 +170,7 @@ func TestMatchHandler(t *testing.T) {
 		}
 
 		mUUID2, _ := uuid.Parse(m2.ID)
-		mModel2, _ := matchRepo.GetByID(ctx, mUUID2)
+		mModel2, _ := matchRepo.GetModelByID(ctx, mUUID2)
 		if mModel2.Status != "scheduled" {
 			t.Errorf("expected match 2 to remain scheduled, got status: %s", mModel2.Status)
 		}

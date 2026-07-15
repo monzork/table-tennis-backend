@@ -172,7 +172,7 @@ func (r *MatchRepository) Save(ctx context.Context, m *event.Match) error {
 }
 
 // GetByID fetches a match model (without player resolution) for score updates.
-func (r *MatchRepository) GetByID(ctx context.Context, id uuid.UUID) (*MatchModel, error) {
+func (r *MatchRepository) GetModelByID(ctx context.Context, id uuid.UUID) (*MatchModel, error) {
 	m := new(MatchModel)
 	if err := ExtractDB(ctx, r.db).NewSelect().Model(m).Where("id = ?", id).Scan(ctx); err != nil {
 		return nil, err
@@ -196,7 +196,7 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []
 		return err
 	}
 
-	m, err := r.GetByID(ctx, id)
+	m, err := r.GetModelByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -610,4 +610,244 @@ func (r *MatchRepository) GetOccupiedTablesByTournament(ctx context.Context, tou
 		}
 	}
 	return occupied, nil
+}
+
+
+func (r *MatchRepository) mapModelsToEntities(ctx context.Context, models []MatchModel) ([]*event.Match, error) {
+	if len(models) == 0 {
+		return nil, nil
+	}
+
+	playerIDSet := make(map[uuid.UUID]bool)
+	matchIDs := make([]uuid.UUID, len(models))
+	for i, m := range models {
+		matchIDs[i] = m.ID
+		playerIDSet[m.TeamAPlayer1ID] = true
+		playerIDSet[m.TeamBPlayer1ID] = true
+		if m.TeamAPlayer2ID != nil {
+			playerIDSet[*m.TeamAPlayer2ID] = true
+		}
+		if m.TeamBPlayer2ID != nil {
+			playerIDSet[*m.TeamBPlayer2ID] = true
+		}
+	}
+
+	playerIDs := make([]uuid.UUID, 0, len(playerIDSet))
+	for pid := range playerIDSet {
+		playerIDs = append(playerIDs, pid)
+	}
+
+	playerCache := make(map[uuid.UUID]*player.Player)
+	if len(playerIDs) > 0 {
+		var playerModels []PlayerModel
+		if err := ExtractDB(ctx, r.db).NewSelect().Model(&playerModels).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx); err == nil {
+			for _, pm := range playerModels {
+				playerCache[pm.ID] = &player.Player{
+					ID:             pm.ID.String(),
+					FirstName:      pm.FirstName,
+					SecondName:     pm.SecondName,
+					LastName:       pm.LastName,
+					SecondLastName: pm.SecondLastName,
+					Birthdate:      pm.Birthdate,
+					Gender:         pm.Gender,
+					SinglesElo:     pm.SinglesElo,
+					DoublesElo:     pm.DoublesElo,
+					Department:     pm.Department,
+				}
+			}
+		}
+	}
+
+	var allSets []MatchSetModel
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&allSets).Where("match_id IN (?)", bun.List(matchIDs)).Order("set_number ASC").Scan(ctx); err != nil {
+		// Ignore error, just means no sets
+	}
+
+	setsByMatch := make(map[string][]event.MatchSet)
+	for _, s := range allSets {
+		setsByMatch[s.MatchID] = append(setsByMatch[s.MatchID], event.MatchSet{
+			Number: s.SetNumber,
+			ScoreA: s.ScoreA,
+			ScoreB: s.ScoreB,
+		})
+	}
+
+	var results []*event.Match
+	for _, m := range models {
+		var teamA, teamB []*player.Player
+		if p, ok := playerCache[m.TeamAPlayer1ID]; ok {
+			teamA = append(teamA, p)
+		}
+		if m.TeamAPlayer2ID != nil {
+			if p, ok := playerCache[*m.TeamAPlayer2ID]; ok {
+				teamA = append(teamA, p)
+			}
+		}
+		if p, ok := playerCache[m.TeamBPlayer1ID]; ok {
+			teamB = append(teamB, p)
+		}
+		if m.TeamBPlayer2ID != nil {
+			if p, ok := playerCache[*m.TeamBPlayer2ID]; ok {
+				teamB = append(teamB, p)
+			}
+		}
+
+		var teamMatchID *string
+		if m.TeamMatchID != nil {
+			idStr := m.TeamMatchID.String()
+			teamMatchID = &idStr
+		}
+
+		var refereeID *string
+		if m.RefereeID != nil {
+			idStr := m.RefereeID.String()
+			refereeID = &idStr
+		}
+
+		groupID := ""
+		if m.GroupID != nil {
+			groupID = *m.GroupID
+		}
+		nextMatchID := ""
+		if m.NextMatchID != nil {
+			nextMatchID = *m.NextMatchID
+		}
+		
+		upd := m.UpdatedAt
+
+		results = append(results, &event.Match{
+			ID:            m.ID.String(),
+			TournamentID:  m.TournamentID.String(),
+			MatchType:     m.MatchType,
+			TeamA:         teamA,
+			TeamB:         teamB,
+			Status:        m.Status,
+			WinnerTeam:    getString(m.WinnerTeam),
+			Stage:         m.Stage,
+			DivisionID:    m.DivisionID,
+			RoundNumber:   m.RoundNumber,
+			GroupID:       groupID,
+			NextMatchID:   nextMatchID,
+			NextMatchSlot: m.NextMatchSlot,
+			TeamMatchID:   teamMatchID,
+			RefereeID:     refereeID,
+			TableNumber:   m.TableNumber,
+			Pin:           m.Pin,
+			Sets:          setsByMatch[m.ID.String()],
+			UpdatedAt:     upd,
+		})
+	}
+	return results, nil
+}
+
+func getString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func (r *MatchRepository) GetSubMatches(ctx context.Context, parentMatchID string) ([]*event.Match, error) {
+	parentUUID, err := uuid.Parse(parentMatchID)
+	if err != nil {
+		return nil, err
+	}
+
+	var models []MatchModel
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&models).Where("team_match_id = ?", parentUUID).Order("round_number ASC").Scan(ctx); err != nil {
+		return nil, err
+	}
+
+	return r.mapModelsToEntities(ctx, models)
+}
+
+func (r *MatchRepository) GetByID(ctx context.Context, matchID string) (*event.Match, error) {
+	mUUID, err := uuid.Parse(matchID)
+	if err != nil {
+		return nil, err
+	}
+	var model MatchModel
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&model).Where("id = ?", mUUID).Scan(ctx); err != nil {
+		return nil, err
+	}
+	res, err := r.mapModelsToEntities(ctx, []MatchModel{model})
+	if err != nil || len(res) == 0 {
+		return nil, err
+	}
+	return res[0], nil
+}
+
+
+func (r *MatchRepository) GetMatchByParticipants(ctx context.Context, tournamentID, p1ID, p2ID, stage string) (*event.Match, error) {
+	tUUID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return nil, err
+	}
+	p1UUID, err := uuid.Parse(p1ID)
+	if err != nil {
+		return nil, err
+	}
+	p2UUID, err := uuid.Parse(p2ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var model MatchModel
+	err = ExtractDB(ctx, r.db).NewSelect().Model(&model).
+		Where("event_id = ?", tUUID).
+		Where("team_match_id IS NULL").
+		Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
+			p1UUID, p2UUID, p2UUID, p1UUID).
+		Where("stage = ?", stage).
+		Scan(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := r.mapModelsToEntities(ctx, []MatchModel{model})
+	if err != nil || len(res) == 0 {
+		return nil, err
+	}
+	return res[0], nil
+}
+
+func (r *MatchRepository) IsTableOccupiedByOtherMatch(ctx context.Context, matchID string, tableNumber int) (bool, error) {
+	mUUID, err := uuid.Parse(matchID)
+	if err != nil {
+		return false, err
+	}
+
+	count, err := ExtractDB(ctx, r.db).NewSelect().Model((*MatchModel)(nil)).
+		Where("status = 'in_progress' AND table_number = ? AND id != ?", tableNumber, mUUID).
+		Count(ctx)
+		
+	if err != nil {
+		return false, err
+	}
+	
+	return count > 0, nil
+}
+
+func (r *MatchRepository) UpdateMetadata(ctx context.Context, matchID string, refereeID *string, tableNumber *int) error {
+	mUUID, err := uuid.Parse(matchID)
+	if err != nil {
+		return err
+	}
+	
+	var refUUID *uuid.UUID
+	if refereeID != nil {
+		u, err := uuid.Parse(*refereeID)
+		if err == nil {
+			refUUID = &u
+		}
+	}
+
+	_, err = ExtractDB(ctx, r.db).NewUpdate().Model((*MatchModel)(nil)).
+		Set("referee_id = ?", refUUID).
+		Set("table_number = ?", tableNumber).
+		Where("id = ?", mUUID).
+		Exec(ctx)
+		
+	return err
 }

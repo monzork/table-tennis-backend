@@ -101,6 +101,10 @@ func (m *mockMovePlayerRepository) GetOfficials(ctx context.Context, tournamentI
 	return nil, nil
 }
 
+func (m *mockMovePlayerRepository) GetEventNumTables(ctx context.Context, eventID string) (int, error) {
+	return 0, nil
+}
+
 func (m *mockMovePlayerRepository) RemoveParticipant(ctx context.Context, tournamentID string, playerID string) error {
 	return nil
 }

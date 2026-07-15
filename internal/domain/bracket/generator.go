@@ -1,4 +1,4 @@
-package handler
+package bracket
 
 import (
 	"fmt"
@@ -13,16 +13,16 @@ import (
 	"github.com/google/uuid"
 )
 
-type TournamentViewModel struct {
+type Bracket struct {
 	Event     *event.Event
 	Type      string
 	Format    string
-	Divisions []DivisionView
+	Divisions []Division
 	IsPublic  bool
 	T         map[string]string
 }
 
-type DivisionView struct {
+type Division struct {
 	ID             string
 	Name           string
 	Color          string
@@ -37,16 +37,16 @@ type DivisionView struct {
 
 	Format             string
 	Standings          []PlayerStanding
-	RoundRobinMatches  []MatchView
+	RoundRobinMatches  []Match
 	RoundRobinFinished bool
 
-	Groups            []GroupView
+	Groups            []Group
 	AllGroupsFinished bool
 
-	KnockoutRounds       []RoundView
-	KnockoutRoundsLeft   []RoundView
-	KnockoutRoundsRight  []RoundView
-	KnockoutRoundsCenter []RoundView
+	KnockoutRounds       []Round
+	KnockoutRoundsLeft   []Round
+	KnockoutRoundsRight  []Round
+	KnockoutRoundsCenter []Round
 
 	KnockoutGroupID   string
 	KnockoutAdvancing []*player.Player
@@ -54,16 +54,16 @@ type DivisionView struct {
 
 type PlayerStanding = event.PlayerStanding
 
-type GroupView struct {
+type Group struct {
 	ID        string
 	Name      string
 	Players   []*player.Player
 	Standings []PlayerStanding
-	Matches   []MatchView
+	Matches   []Match
 	Finished  bool
 }
 
-type MatchView struct {
+type Match struct {
 	Player1 *player.Player
 	Player2 *player.Player
 	Match   *event.Match
@@ -71,12 +71,12 @@ type MatchView struct {
 	BestOf  int
 }
 
-type RoundView struct {
+type Round struct {
 	Name    string
-	Matches []BracketMatchView
+	Matches []BracketMatch
 }
 
-type BracketMatchView struct {
+type BracketMatch struct {
 	Player1 *MatchSlot
 	Player2 *MatchSlot
 	Match   *event.Match
@@ -89,12 +89,12 @@ type MatchSlot struct {
 	Player *player.Player
 }
 
-func BuildTournamentViewModel(t *event.Event, divs []*division.Division, tmap map[string]string) *TournamentViewModel {
-	vm := &TournamentViewModel{
+func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]string) *Bracket {
+	vm := &Bracket{
 		Event:     t,
 		Type:      t.Type,
 		Format:    t.Format,
-		Divisions: []DivisionView{},
+		Divisions: []Division{},
 		T:         tmap,
 	}
 
@@ -267,9 +267,9 @@ func getBestOfForStage(t *event.Event, stage string, divID string) int {
 	return t.GetEffectiveStageRule(stage, divID).BestOf
 }
 
-func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, maxElo *int16, unclassified bool, players []*player.Player) DivisionView {
+func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, maxElo *int16, unclassified bool, players []*player.Player) Division {
 	divFormat := t.GetDivisionFormat(divID)
-	dv := DivisionView{
+	dv := Division{
 		ID:             divID,
 		Name:           name,
 		Color:          color,
@@ -327,15 +327,15 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 	return dv
 }
 
-func splitKnockoutRounds(rounds []RoundView) (left, right, center []RoundView) {
+func splitKnockoutRounds(rounds []Round) (left, right, center []Round) {
 	for _, r := range rounds {
 		if r.Name == "🏆 Final" || r.Name == "Champion" || r.Name == "🥉 3rd Place" {
 			center = append(center, r)
 		} else {
 			half := len(r.Matches) / 2
 
-			leftRound := RoundView{Name: r.Name, Matches: r.Matches[:half]}
-			rightRound := RoundView{Name: r.Name, Matches: r.Matches[half:]}
+			leftRound := Round{Name: r.Name, Matches: r.Matches[:half]}
+			rightRound := Round{Name: r.Name, Matches: r.Matches[half:]}
 
 			left = append(left, leftRound)
 			right = append(right, rightRound)
@@ -352,8 +352,8 @@ func splitKnockoutRounds(rounds []RoundView) (left, right, center []RoundView) {
 func buildStandings(players []*player.Player, matches []event.Match) []PlayerStanding {
 	return event.BuildStandings(players, matches)
 }
-func buildRRMatches(t *event.Event, divID string, players []*player.Player, stage string) []MatchView {
-	var results []MatchView
+func buildRRMatches(t *event.Event, divID string, players []*player.Player, stage string) []Match {
+	var results []Match
 	bestOf := getBestOfForStage(t, stage, divID)
 	for i := 0; i < len(players); i++ {
 		for j := i + 1; j < len(players); j++ {
@@ -375,7 +375,7 @@ func buildRRMatches(t *event.Event, divID string, players []*player.Player, stag
 					}
 				}
 			}
-			results = append(results, MatchView{
+			results = append(results, Match{
 				Player1: p1,
 				Player2: p2,
 				Match:   found,
@@ -387,7 +387,7 @@ func buildRRMatches(t *event.Event, divID string, players []*player.Player, stag
 	return results
 }
 
-func buildGroupEliminationGroups(t *event.Event, divID string, divisionName string, players []*player.Player) ([]GroupView, bool) {
+func buildGroupEliminationGroups(t *event.Event, divID string, divisionName string, players []*player.Player) ([]Group, bool) {
 	// Try to load saved groups containing any players in this division first
 	var divisionGroups []event.Group
 	for _, g := range t.Groups {
@@ -421,7 +421,7 @@ func buildGroupEliminationGroups(t *event.Event, divID string, divisionName stri
 
 	if len(divisionGroups) > 0 {
 		allFinished := true
-		var views []GroupView
+		var views []Group
 		for _, g := range divisionGroups {
 			expectedMatches := len(g.Players) * (len(g.Players) - 1) / 2
 			finished := 0
@@ -458,7 +458,7 @@ func buildGroupEliminationGroups(t *event.Event, divID string, divisionName stri
 				displayName = g.Name[idx+3:]
 			}
 
-			views = append(views, GroupView{
+			views = append(views, Group{
 				ID:        g.ID,
 				Name:      displayName,
 				Players:   g.Players,
@@ -474,7 +474,7 @@ func buildGroupEliminationGroups(t *event.Event, divID string, divisionName stri
 	groupSize := 4
 	numGroups := int(math.Ceil(float64(len(players)) / float64(groupSize)))
 	if numGroups == 0 {
-		return []GroupView{}, true
+		return []Group{}, true
 	}
 
 	groups := make([][]*player.Player, numGroups)
@@ -489,7 +489,7 @@ func buildGroupEliminationGroups(t *event.Event, divID string, divisionName stri
 	}
 
 	allFinished := true
-	var views []GroupView
+	var views []Group
 	for i, gp := range groups {
 		expectedMatches := len(gp) * (len(gp) - 1) / 2
 		finished := 0
@@ -516,7 +516,7 @@ func buildGroupEliminationGroups(t *event.Event, divID string, divisionName stri
 			allFinished = false
 		}
 
-		gv := GroupView{
+		gv := Group{
 			ID:        uuid.New().String(),
 			Name:      fmt.Sprintf("Group %c", 'A'+i),
 			Players:   gp,
@@ -543,7 +543,7 @@ func nextPow2(n int) int {
 //   - Each subsequent layer (runners-up, etc.) is placed into the OPPOSITE
 //     bracket half from that group's winner, ensuring same-group players
 //     cannot meet before the final/semi-final.
-func buildITTFKnockoutSeeds(groups []GroupView, passCount int) []*player.Player {
+func buildITTFKnockoutSeeds(groups []Group, passCount int) []*player.Player {
 	numGroups := len(groups)
 	if numGroups == 0 || passCount == 0 {
 		return nil
@@ -663,7 +663,7 @@ func getSeedingArrangement(size int) []int {
 	return bracket
 }
 
-func buildBracketRounds(t *event.Event, divID string, players []*player.Player) []RoundView {
+func buildBracketRounds(t *event.Event, divID string, players []*player.Player) []Round {
 	if len(players) == 0 {
 		return nil
 	}
@@ -697,13 +697,13 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 		current = append(current, Pair{P1: p1, P2: p2})
 	}
 
-	var rounds []RoundView
+	var rounds []Round
 
 	var thirdPlaceP1, thirdPlaceP2 *MatchSlot
 
 	for len(current) > 1 {
 		var next []Pair
-		var rvMatches []BracketMatchView
+		var rvMatches []BracketMatch
 
 		stageNameCurrent := "r32"
 		rem := len(current)
@@ -844,7 +844,7 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 				}
 			}
 
-			rvMatches = append(rvMatches, BracketMatchView{
+			rvMatches = append(rvMatches, BracketMatch{
 				Player1: p1,
 				Player2: p2,
 				Match:   foundMatch,
@@ -862,7 +862,7 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 			name = "Final"
 		}
 
-		rounds = append(rounds, RoundView{Name: name, Matches: rvMatches})
+		rounds = append(rounds, Round{Name: name, Matches: rvMatches})
 
 		current = next
 	}
@@ -915,9 +915,9 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 		// If only one finalist is present due to a genuine bye (size-1 bracket), allow that.
 		// But do NOT auto-crown when the other side is merely unresolved.
 
-		rounds = append(rounds, RoundView{
+		rounds = append(rounds, Round{
 			Name: "🏆 Final",
-			Matches: []BracketMatchView{
+			Matches: []BracketMatch{
 				{
 					Player1: p1,
 					Player2: p2,
@@ -930,9 +930,9 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 
 		// Only append the Champion row when we actually have a champion
 		if champion != nil {
-			rounds = append(rounds, RoundView{
+			rounds = append(rounds, Round{
 				Name: "Champion",
-				Matches: []BracketMatchView{
+				Matches: []BracketMatch{
 					{Player1: champion, Player2: nil},
 				},
 			})
@@ -959,9 +959,9 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 			}
 		}
 
-		rounds = append(rounds, RoundView{
+		rounds = append(rounds, Round{
 			Name: "🥉 3rd Place",
-			Matches: []BracketMatchView{
+			Matches: []BracketMatch{
 				{
 					Player1: thirdPlaceP1,
 					Player2: thirdPlaceP2,

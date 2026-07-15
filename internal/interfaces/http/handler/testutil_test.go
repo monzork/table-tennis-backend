@@ -145,7 +145,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 
 	startKnockoutUC := event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo)
 
-	tournamentHandler := handler.NewTournamentHandler(
+	tournamentHandler := handler.NewEventHandler(
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,
 		leaderboardUC, divisionUC, finishTournamentUC, exportTournamentUC, exportTournamentPdfUC,
 		movePlayerUC, createTeamUC, deleteTeamUC, assignPlayerToTeamUC, removePlayerFromTeamUC,
@@ -160,13 +160,15 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	getEventByIDUC := tournament.NewGetEventByIDUseCase(eventRepo)
 	getAllEventsUC := tournament.NewGetAllEventsUseCase(eventRepo)
 	deleteEventUC := tournament.NewDeleteEventUseCase(eventRepo)
-	eventHandler := handler.NewEventHandler(createEventUC, nil, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
+	eventHandler := handler.NewTournamentHandler(createEventUC, nil, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, nil)
+	teamMatchUC := match.NewTeamMatchOrchestratorUseCase(matchRepo)
+	startMatchUC := match.NewStartMatchUseCase(matchRepo, tournamentRepo, eventRepo, createMatchUC)
+	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, nil, teamMatchUC, startMatchUC)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)

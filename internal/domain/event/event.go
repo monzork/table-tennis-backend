@@ -58,6 +58,9 @@ type Match struct {
 	Pin           string
 	RoundNumber   int
 	QueuePosition int
+	GroupID       string
+	NextMatchID   string
+	NextMatchSlot string
 }
 
 type MatchSet struct {
@@ -444,6 +447,7 @@ type Repository interface {
 	AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error
 	RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error
 	GetOfficials(ctx context.Context, tournamentID string) ([]ParticipantSnapshot, error)
+	GetEventNumTables(ctx context.Context, eventID string) (int, error)
 }
 
 type MatchRepository interface {
@@ -451,9 +455,14 @@ type MatchRepository interface {
 	CountUnfinishedMatches(ctx context.Context, tournamentID string) (int, error)
 	CountFinishedMatches(ctx context.Context, tournamentID string) (int, error)
 	GetAll(ctx context.Context) ([]*Match, error)
+	GetByID(ctx context.Context, id string) (*Match, error)
+	GetSubMatches(ctx context.Context, parentMatchID string) ([]*Match, error)
+	GetMatchByParticipants(ctx context.Context, tournamentID, p1ID, p2ID, stage string) (*Match, error)
 	UpdateScore(ctx context.Context, id string, sets []MatchSet, stageRule StageRule) error
 	GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error)
 	GetOccupiedTablesByTournament(ctx context.Context, tournamentID string) ([]int, error)
+	IsTableOccupiedByOtherMatch(ctx context.Context, matchID string, tableNumber int) (bool, error)
+	UpdateMetadata(ctx context.Context, matchID string, refereeID *string, tableNumber *int) error
 	HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error)
 	DeleteByTournament(ctx context.Context, tournamentID string) error
 }

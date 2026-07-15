@@ -2,12 +2,13 @@ package handler
 
 import (
 	"table-tennis-backend/internal/domain/division"
+	"table-tennis-backend/internal/domain/bracket"
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
 	"testing"
 )
 
-func TestBuildTournamentViewModel_GroupPassCount(t *testing.T) {
+func TestBuildBracket_GroupPassCount(t *testing.T) {
 	tmap := make(map[string]string)
 
 	div1 := &division.Division{
@@ -89,15 +90,15 @@ func TestBuildTournamentViewModel_GroupPassCount(t *testing.T) {
 	addMatch(p5, p6, 11, 0, "div2")
 	addMatch(p4, p6, 11, 0, "div2")
 
-	vm := BuildTournamentViewModel(trn, []*division.Division{div1, div2}, tmap)
+	vm := bracket.BuildBracket(trn, []*division.Division{div1, div2}, tmap)
 
 	if len(vm.Divisions) != 2 {
 		t.Fatalf("expected 2 divisions, got %d", len(vm.Divisions))
 	}
 
 	// Validate Division 1
-	var div1View *DivisionView
-	var div2View *DivisionView
+	var div1View *bracket.Division
+	var div2View *bracket.Division
 	for i := range vm.Divisions {
 		if vm.Divisions[i].ID == "div1" {
 			div1View = &vm.Divisions[i]

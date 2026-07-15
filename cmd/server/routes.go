@@ -37,7 +37,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	})
 
 	// Public Events List
-	app.Get("/events", c.TournamentHandler.PublicList)
+	app.Get("/events", c.EventHandler.PublicList)
 
 	// Public Event Self-Registration (must be before /events/:id)
 	/* signupLimiter := limiter.New(limiter.Config{
@@ -52,10 +52,10 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	// app.Post("/events/register", signupLimiter, c.PublicHandler.RegisterToTournament)
 
 	// Public Detail Views
-	app.Get("/events/:id", c.TournamentHandler.PublicDetail)
-	app.Get("/events/:id/tv", c.TournamentHandler.PublicTVDashboard)
-	app.Get("/tournaments/:id", c.EventHandler.PublicDetail)
-	app.Get("/tournaments/:id/tv", c.EventHandler.PublicTVDashboard)
+	app.Get("/events/:id", c.EventHandler.PublicDetail)
+	app.Get("/events/:id/tv", c.EventHandler.PublicTVDashboard)
+	app.Get("/tournaments/:id", c.TournamentHandler.PublicDetail)
+	app.Get("/tournaments/:id/tv", c.TournamentHandler.PublicTVDashboard)
 
 	// User Registration
 	// Disabled: self-registration
@@ -165,42 +165,42 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	api.Post("/players/import", c.PlayerHandler.Import)
 
 	// Events API
-	admin.Get("/events/:id", c.TournamentHandler.Detail)
-	admin.Get("/events/:id/board", c.TournamentHandler.Board)
-	admin.Get("/events/:id/board/columns", c.TournamentHandler.BoardColumns)
-	api.Post("/events", c.TournamentHandler.Create)
-	api.Get("/events/:id/edit", c.TournamentHandler.ShowEditForm)
-	api.Put("/events/:id", c.TournamentHandler.Update)
-	api.Delete("/events/:id", c.TournamentHandler.Delete)
-	admin.Post("/events/:id/finish", c.TournamentHandler.Finish)
-	admin.Get("/events/:id/export", c.TournamentHandler.Export)
-	admin.Get("/events/:id/export/pdf", c.TournamentHandler.ExportPDF)
-	admin.Post("/events/:id/teams", c.TournamentHandler.CreateTeam)
-	admin.Delete("/events/:id/teams/:teamId", c.TournamentHandler.DeleteTeam)
-	admin.Post("/events/:id/teams/:teamId/players", c.TournamentHandler.AssignPlayerToTeam)
-	admin.Delete("/events/:id/teams/:teamId/players/:playerId", c.TournamentHandler.RemovePlayerFromTeam)
-	admin.Post("/events/:id/groups", c.TournamentHandler.AddGroup)
-	admin.Post("/events/:id/officials", c.TournamentHandler.AddOfficial)
-	admin.Delete("/events/:id/officials/:playerId", c.TournamentHandler.RemoveOfficial)
-	admin.Post("/events/:id/move-player", c.TournamentHandler.MovePlayer)
-	admin.Post("/events/:id/save-knockout-seeds", c.TournamentHandler.SaveKnockoutSeeds)
-	admin.Post("/events/:id/toggle-seeding-lock", c.TournamentHandler.ToggleSeedingLock)
-	admin.Post("/events/:id/divisions/:divId/start-knockout", c.TournamentHandler.StartKnockout)
-	admin.Post("/events/:id/regenerate-seeds", c.TournamentHandler.RegenerateGroupSeeds)
-	admin.Post("/events/:id/participants/elo-before", c.TournamentHandler.UpdateParticipantEloBefore)
-	admin.Post("/events/:id/recalculate-elo", c.TournamentHandler.RecalculateElo)
-	api.Delete("/events/:id/participants/:playerId", c.TournamentHandler.RemoveParticipant)
+	admin.Get("/events/:id", c.EventHandler.Detail)
+	admin.Get("/events/:id/board", c.EventHandler.Board)
+	admin.Get("/events/:id/board/columns", c.EventHandler.BoardColumns)
+	api.Post("/events", c.EventHandler.Create)
+	api.Get("/events/:id/edit", c.EventHandler.ShowEditForm)
+	api.Put("/events/:id", c.EventHandler.Update)
+	api.Delete("/events/:id", c.EventHandler.Delete)
+	admin.Post("/events/:id/finish", c.EventHandler.Finish)
+	admin.Get("/events/:id/export", c.EventHandler.Export)
+	admin.Get("/events/:id/export/pdf", c.EventHandler.ExportPDF)
+	admin.Post("/events/:id/teams", c.EventHandler.CreateTeam)
+	admin.Delete("/events/:id/teams/:teamId", c.EventHandler.DeleteTeam)
+	admin.Post("/events/:id/teams/:teamId/players", c.EventHandler.AssignPlayerToTeam)
+	admin.Delete("/events/:id/teams/:teamId/players/:playerId", c.EventHandler.RemovePlayerFromTeam)
+	admin.Post("/events/:id/groups", c.EventHandler.AddGroup)
+	admin.Post("/events/:id/officials", c.EventHandler.AddOfficial)
+	admin.Delete("/events/:id/officials/:playerId", c.EventHandler.RemoveOfficial)
+	admin.Post("/events/:id/move-player", c.EventHandler.MovePlayer)
+	admin.Post("/events/:id/save-knockout-seeds", c.EventHandler.SaveKnockoutSeeds)
+	admin.Post("/events/:id/toggle-seeding-lock", c.EventHandler.ToggleSeedingLock)
+	admin.Post("/events/:id/divisions/:divId/start-knockout", c.EventHandler.StartKnockout)
+	admin.Post("/events/:id/regenerate-seeds", c.EventHandler.RegenerateGroupSeeds)
+	admin.Post("/events/:id/participants/elo-before", c.EventHandler.UpdateParticipantEloBefore)
+	admin.Post("/events/:id/recalculate-elo", c.EventHandler.RecalculateElo)
+	api.Delete("/events/:id/participants/:playerId", c.EventHandler.RemoveParticipant)
 
 	// Tournaments API
 	admin.Get("/tournaments/division-select", c.AdminHandler.DivisionSelect)
-	admin.Get("/tournaments/:id", c.EventHandler.Detail)
-	admin.Get("/tournaments/:id/board", c.EventHandler.AdminBoard)
-	admin.Get("/tournaments/:id/board/columns", c.EventHandler.BoardColumns)
-	admin.Get("/tournaments/:id/edit", c.EventHandler.ShowEditForm)
-	api.Post("/tournaments", c.EventHandler.Create)
-	api.Put("/tournaments/:id", c.EventHandler.Update)
-	api.Delete("/tournaments/:id", c.EventHandler.Delete)
-	api.Post("/tournaments/bulk-delete", c.EventHandler.DeleteBulk)
+	admin.Get("/tournaments/:id", c.TournamentHandler.Detail)
+	admin.Get("/tournaments/:id/board", c.TournamentHandler.AdminBoard)
+	admin.Get("/tournaments/:id/board/columns", c.TournamentHandler.BoardColumns)
+	admin.Get("/tournaments/:id/edit", c.TournamentHandler.ShowEditForm)
+	api.Post("/tournaments", c.TournamentHandler.Create)
+	api.Put("/tournaments/:id", c.TournamentHandler.Update)
+	api.Delete("/tournaments/:id", c.TournamentHandler.Delete)
+	api.Post("/tournaments/bulk-delete", c.TournamentHandler.DeleteBulk)
 
 	// Matches API
 	admin.Post("/matches/score/update", c.MatchHandler.UpdateScore)
@@ -218,6 +218,6 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	api.Delete("/divisions/:id", c.DivisionHandler.Delete)
 
 	// Reports API
-	admin.Get("/tournaments/:id/export/pdf", c.EventHandler.ExportEventPDF)
+	admin.Get("/tournaments/:id/export/pdf", c.TournamentHandler.ExportEventPDF)
 	admin.Post("/notifications/broadcast", c.NotificationHandler.Broadcast)
 }

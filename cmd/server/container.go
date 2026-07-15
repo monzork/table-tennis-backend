@@ -24,8 +24,8 @@ import (
 
 type Container struct {
 	PlayerHandler       *handler.PlayerHandler
-	TournamentHandler   *handler.TournamentHandler
-	EventHandler        *handler.EventHandler
+	EventHandler   *handler.EventHandler
+	TournamentHandler        *handler.TournamentHandler
 	MatchHandler        *handler.MatchHandler
 	LeaderboardHandler  *handler.LeaderboardHandler
 	DivisionHandler     *handler.DivisionHandler
@@ -82,7 +82,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	addGroupUC := event.NewAddGroupUseCase(tournamentRepo)
 	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC)
 
-	tournamentHandler := handler.NewTournamentHandler(
+	tournamentHandler := handler.NewEventHandler(
 		createTournamentUC,
 		getTournamentByIDUC,
 		updateTournamentUC,
@@ -115,18 +115,20 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	getAllEventsUC := tournament.NewGetAllEventsUseCase(eventRepo)
 	deleteEventUC := tournament.NewDeleteEventUseCase(eventRepo)
 	updateEventUC := tournament.NewUpdateEventUseCase(eventRepo)
-	eventHandler := handler.NewEventHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
+	eventHandler := handler.NewTournamentHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
 
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
+	teamMatchUC := match.NewTeamMatchOrchestratorUseCase(matchRepo)
+	startMatchUC := match.NewStartMatchUseCase(matchRepo, tournamentRepo, eventRepo, createMatchUC)
 
 	notificationRepo := bun.NewPushSubscriptionRepository(bun.DB)
 	broadcastNotificationUC := notification.NewBroadcastPushNotificationUseCase(notificationRepo, cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey)
 
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, broadcastNotificationUC)
+	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, broadcastNotificationUC, teamMatchUC, startMatchUC)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
@@ -159,8 +161,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	notificationHandler := handler.NewNotificationHandler(notificationRepo, cfg.VAPIDPublicKey, broadcastNotificationUC)
 	return &Container{
 		PlayerHandler:       playerHandler,
-		TournamentHandler:   tournamentHandler,
-		EventHandler:        eventHandler,
+		EventHandler:   tournamentHandler,
+		TournamentHandler:        eventHandler,
 		MatchHandler:        matchHandler,
 		LeaderboardHandler:  leaderboardHandler,
 		DivisionHandler:     divisionHandler,

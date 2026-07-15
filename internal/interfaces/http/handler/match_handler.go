@@ -32,6 +32,8 @@ type MatchHandler struct {
 	updateScoreUC      *match.UpdateMatchScoreUseCase
 	finishTournamentUC *appTournament.FinishTournamentUseCase
 	broadcastPushUC    *notification.BroadcastPushNotificationUseCase
+	teamMatchUC        *match.TeamMatchOrchestratorUseCase
+	startMatchUC       *match.StartMatchUseCase
 }
 
 func NewMatchHandler(
@@ -44,6 +46,8 @@ func NewMatchHandler(
 	containerRepo *bun.EventRepository,
 	finishTournamentUC *appTournament.FinishTournamentUseCase,
 	broadcastPushUC *notification.BroadcastPushNotificationUseCase,
+	teamMatchUC *match.TeamMatchOrchestratorUseCase,
+	startMatchUC *match.StartMatchUseCase,
 ) *MatchHandler {
 	return &MatchHandler{
 		createUC:           createUC,
@@ -56,6 +60,8 @@ func NewMatchHandler(
 		autoAssignTablesUC: match.NewAutoAssignTablesUseCase(matchRepo, containerRepo),
 		finishTournamentUC: finishTournamentUC,
 		broadcastPushUC:    broadcastPushUC,
+		teamMatchUC:        teamMatchUC,
+		startMatchUC:       startMatchUC,
 	}
 }
 
@@ -174,7 +180,7 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid match ID")
 	}
 
-	mModel, err := h.matchRepo.GetByID(c.Context(), mUUID)
+	mModel, err := h.matchRepo.GetModelByID(c.Context(), mUUID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, "match not found")
 	}
@@ -405,7 +411,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 	matchStatus := "scheduled"
 	if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
 		mUUID, _ := uuid.Parse(matchID)
-		if mModel, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil {
+		if mModel, err := h.matchRepo.GetModelByID(c.Context(), mUUID); err == nil {
 			matchPin = mModel.Pin
 			matchRefereeID = mModel.RefereeID
 			matchTableNumber = mModel.TableNumber
@@ -432,12 +438,11 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 	var subMatches []bun.MatchModel
 	var teamFormat string
 	if tourney != nil && tourney.Type == "teams" {
-		tUUID, _ := uuid.Parse(tID)
 		t := tourney
 		// If matchID refers to a sub-match (has team_match_id), treat as regular singles/doubles
 		if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
 			mUUID, _ := uuid.Parse(matchID)
-			if existingMatch, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil && existingMatch.TeamMatchID != nil {
+			if existingMatch, err := h.matchRepo.GetModelByID(c.Context(), mUUID); err == nil && existingMatch.TeamMatchID != nil {
 				isSubMatch = true
 			}
 		}
@@ -458,65 +463,32 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 			}
 
 			// Render team matchup view
-			if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
-				parentUUID, _ := uuid.Parse(matchID)
-				_ = h.matchRepo.DB().NewSelect().Model(&subMatches).Where("team_match_id = ?", parentUUID).Order("round_number ASC").Scan(c.Context())
-			}
-
-			if len(subMatches) == 0 {
-				// Check if we need to auto-create parent match
-				var parentUUID uuid.UUID
-				if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
-					parentUUID, _ = uuid.Parse(matchID)
-				} else {
-					parentUUID = uuid.New()
-					matchID = parentUUID.String()
-
-					// Get player IDs for team A and team B
-					var teamAPlayerIDs, teamBPlayerIDs []string
-					if teamA != nil {
-						for _, p := range teamA.Players {
-							teamAPlayerIDs = append(teamAPlayerIDs, p.ID)
-						}
+			if matchID == "" || matchID == "nil" || matchID == "null" || matchID == "undefined" {
+				// Auto-create parent match if it doesn't exist
+				var teamAPlayerIDs, teamBPlayerIDs []string
+				if teamA != nil {
+					for _, p := range teamA.Players {
+						teamAPlayerIDs = append(teamAPlayerIDs, p.ID)
 					}
-					if teamB != nil {
-						for _, p := range teamB.Players {
-							teamBPlayerIDs = append(teamBPlayerIDs, p.ID)
-						}
-					}
-
-					if len(teamAPlayerIDs) > 0 && len(teamBPlayerIDs) > 0 {
-						_, _ = h.createUC.Execute(c.Context(), tID, "teams", teamAPlayerIDs, teamBPlayerIDs, stage)
+				}
+				if teamB != nil {
+					for _, p := range teamB.Players {
+						teamBPlayerIDs = append(teamBPlayerIDs, p.ID)
 					}
 				}
 
-				// Only create sub-matches if both teams have at least one player (FK constraint)
-				if len(subMatches) == 0 && teamA != nil && len(teamA.Players) > 0 && teamB != nil && len(teamB.Players) > 0 {
-					for order := 1; order <= 5; order++ {
-						subID := uuid.New()
-						matchType := "singles"
-						if teamFormat == "olympic" && order == 1 {
-							matchType = "doubles"
-						}
-
-						p1ID, _ := uuid.Parse(teamA.Players[0].ID)
-						p2ID, _ := uuid.Parse(teamB.Players[0].ID)
-
-						subModel := &bun.MatchModel{
-							ID:             subID,
-							TournamentID:   tUUID,
-							MatchType:      matchType,
-							TeamAPlayer1ID: p1ID,
-							TeamBPlayer1ID: p2ID,
-							Status:         "scheduled",
-							Stage:          stage,
-							RoundNumber:    order,
-							TeamMatchID:    &parentUUID,
-							Pin:            h.matchRepo.GenerateUniquePin(c.Context()),
-						}
-						_, _ = h.matchRepo.DB().NewInsert().Model(subModel).Exec(c.Context())
+				if len(teamAPlayerIDs) > 0 && len(teamBPlayerIDs) > 0 {
+					newMatch, _ := h.createUC.Execute(c.Context(), tID, "teams", teamAPlayerIDs, teamBPlayerIDs, stage)
+					if newMatch != nil {
+						matchID = newMatch.ID
 					}
-					_ = h.matchRepo.DB().NewSelect().Model(&subMatches).Where("team_match_id = ?", parentUUID).Order("round_number ASC").Scan(c.Context())
+				}
+			}
+
+			if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
+				err := h.teamMatchUC.EnsureTeamSubMatches(c.Context(), matchID, teamA, teamB, teamFormat, stage, h.matchRepo.DB())
+				if err != nil {
+					// Handle error
 				}
 			}
 		}
@@ -525,67 +497,58 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 	lang := getLang(c)
 	tMap := i18n.PrecomputedMaps[lang]
 
+	var matchesVM []map[string]interface{}
 	if isTeams {
-		playerNames := make(map[string]string)
-		var playerModels []bun.PlayerModel
-		_ = h.matchRepo.DB().NewSelect().Model(&playerModels).Scan(c.Context())
-		for _, p := range playerModels {
-			playerNames[p.ID.String()] = p.FullName()
-		}
-
-		var matchesVM []map[string]interface{}
-		for _, sm := range subMatches {
+		subs, _ := h.matchRepo.GetSubMatches(c.Context(), matchID)
+		
+		for _, sm := range subs {
 			var pAName, pBName string
 			teamAP2 := ""
 			teamBP2 := ""
 
 			if sm.MatchType == "singles" {
-				pAName = playerNames[sm.TeamAPlayer1ID.String()]
-				pBName = playerNames[sm.TeamBPlayer1ID.String()]
+				if len(sm.TeamA) > 0 {
+					pAName = sm.TeamA[0].FirstName + " " + sm.TeamA[0].LastName
+				}
+				if len(sm.TeamB) > 0 {
+					pBName = sm.TeamB[0].FirstName + " " + sm.TeamB[0].LastName
+				}
 			} else {
-				pAName = "Doubles"
-				pBName = "Doubles"
-				if sm.TeamAPlayer2ID != nil {
-					pAName = playerNames[sm.TeamAPlayer1ID.String()] + " & " + playerNames[sm.TeamAPlayer2ID.String()]
-					teamAP2 = sm.TeamAPlayer2ID.String()
-				} else {
-					pAName = playerNames[sm.TeamAPlayer1ID.String()]
+				if len(sm.TeamA) > 1 {
+					pAName = sm.TeamA[0].FirstName + " & " + sm.TeamA[1].FirstName
+					teamAP2 = sm.TeamA[1].ID
+				} else if len(sm.TeamA) > 0 {
+					pAName = sm.TeamA[0].FirstName
 				}
-				if sm.TeamBPlayer2ID != nil {
-					pBName = playerNames[sm.TeamBPlayer1ID.String()] + " & " + playerNames[sm.TeamBPlayer2ID.String()]
-					teamBP2 = sm.TeamBPlayer2ID.String()
-				} else {
-					pBName = playerNames[sm.TeamBPlayer1ID.String()]
-				}
-			}
-
-			// Calculate wins count exactly like renderTeamMatchFormInternal
-			var setModels []bun.MatchSetModel
-			_ = h.matchRepo.DB().NewSelect().Model(&setModels).Where("match_id = ?", sm.ID).Scan(c.Context())
-
-			winsA, winsB := 0, 0
-			for _, set := range setModels {
-				if set.ScoreA > set.ScoreB {
-					winsA++
-				} else if set.ScoreB > set.ScoreA {
-					winsB++
+				
+				if len(sm.TeamB) > 1 {
+					pBName = sm.TeamB[0].FirstName + " & " + sm.TeamB[1].FirstName
+					teamBP2 = sm.TeamB[1].ID
+				} else if len(sm.TeamB) > 0 {
+					pBName = sm.TeamB[0].FirstName
 				}
 			}
 
-			wt := ""
-			if sm.WinnerTeam != nil {
-				wt = *sm.WinnerTeam
-			}
+			winsA, winsB := sm.ScoreA(), sm.ScoreB()
 
 			alignA, alignB := getSubMatchAlignments(sm.RoundNumber, teamFormat)
 
+			teamA1ID := ""
+			if len(sm.TeamA) > 0 {
+				teamA1ID = sm.TeamA[0].ID
+			}
+			teamB1ID := ""
+			if len(sm.TeamB) > 0 {
+				teamB1ID = sm.TeamB[0].ID
+			}
+
 			matchesVM = append(matchesVM, map[string]interface{}{
-				"ID":             sm.ID.String(),
+				"ID":             sm.ID,
 				"RoundNumber":    sm.RoundNumber,
 				"MatchType":      sm.MatchType,
-				"TeamAPlayer1ID": sm.TeamAPlayer1ID.String(),
+				"TeamAPlayer1ID": teamA1ID,
 				"TeamAPlayer2ID": teamAP2,
-				"TeamBPlayer1ID": sm.TeamBPlayer1ID.String(),
+				"TeamBPlayer1ID": teamB1ID,
 				"TeamBPlayer2ID": teamBP2,
 				"Status":         sm.Status,
 				"PlayerAName":    pAName,
@@ -594,7 +557,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 				"AlignmentB":     alignB,
 				"ScoreA":         winsA,
 				"ScoreB":         winsB,
-				"WinnerTeam":     wt,
+				"WinnerTeam":     sm.WinnerTeam,
 			})
 		}
 
@@ -677,7 +640,7 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 	var existingMatch *bun.MatchModel
 	if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
 		mUUID, _ := uuid.Parse(matchID)
-		if em, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil {
+		if em, err := h.matchRepo.GetModelByID(c.Context(), mUUID); err == nil {
 			existingMatch = em
 		}
 	}
@@ -894,27 +857,28 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		if matchID == "" {
 			matchID = c.FormValue("matchId")
 		}
-		parentUUID, _ := uuid.Parse(matchID)
-
-		p1A, _ := uuid.Parse(c.FormValue("squad_a_p1"))
-		p2A, _ := uuid.Parse(c.FormValue("squad_a_p2"))
-		p3A, _ := uuid.Parse(c.FormValue("squad_a_p3"))
-
-		p1B, _ := uuid.Parse(c.FormValue("squad_b_p1"))
-		p2B, _ := uuid.Parse(c.FormValue("squad_b_p2"))
-		p3B, _ := uuid.Parse(c.FormValue("squad_b_p3"))
+		
+		squadA := []string{c.FormValue("squad_a_p1"), c.FormValue("squad_a_p2"), c.FormValue("squad_a_p3")}
+		squadB := []string{c.FormValue("squad_b_p1"), c.FormValue("squad_b_p2"), c.FormValue("squad_b_p3")}
 
 		// Validate that all required players are selected
-		if p1A == uuid.Nil || p2A == uuid.Nil || p3A == uuid.Nil || p1B == uuid.Nil || p2B == uuid.Nil || p3B == uuid.Nil {
-			return fiber.NewError(fiber.StatusBadRequest, "All 3 players must be selected for each team")
+		for _, p := range squadA {
+			if p == "" || p == uuid.Nil.String() {
+				return fiber.NewError(fiber.StatusBadRequest, "All 3 players must be selected for each team")
+			}
+		}
+		for _, p := range squadB {
+			if p == "" || p == uuid.Nil.String() {
+				return fiber.NewError(fiber.StatusBadRequest, "All 3 players must be selected for each team")
+			}
 		}
 
-		parent, err := h.matchRepo.GetByID(c.Context(), parentUUID)
+		parent, err := h.matchRepo.GetByID(c.Context(), matchID)
 		if err != nil {
 			return fiber.NewError(fiber.StatusNotFound, "parent match not found: "+err.Error())
 		}
 
-		t, err := h.tournamentRepo.GetByID(c.Context(), parent.TournamentID.String())
+		t, err := h.tournamentRepo.GetByID(c.Context(), parent.TournamentID)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "event not found: "+err.Error())
 		}
@@ -924,91 +888,9 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 			teamFormat = "olympic"
 		}
 
-		var subs []bun.MatchModel
-		_ = h.matchRepo.DB().NewSelect().Model(&subs).Where("team_match_id = ?", parentUUID).Order("round_number ASC").Scan(c.Context())
-
-		// Create sub-matches if they don't exist yet
-		if len(subs) == 0 {
-			for order := 1; order <= 5; order++ {
-				subID := uuid.New()
-				matchType := "singles"
-				if teamFormat == "olympic" && order == 1 {
-					matchType = "doubles"
-				}
-				subModel := &bun.MatchModel{
-					ID:             subID,
-					TournamentID:   parent.TournamentID,
-					MatchType:      matchType,
-					TeamAPlayer1ID: p1A,
-					TeamBPlayer1ID: p1B,
-					Status:         "scheduled",
-					Stage:          parent.Stage,
-					RoundNumber:    order,
-					TeamMatchID:    &parentUUID,
-					Pin:            h.matchRepo.GenerateUniquePin(c.Context()),
-				}
-				if _, err := h.matchRepo.DB().NewInsert().Model(subModel).Exec(c.Context()); err != nil {
-					return fiber.NewError(fiber.StatusInternalServerError, "failed to create sub-match: "+err.Error())
-				}
-			}
-			_ = h.matchRepo.DB().NewSelect().Model(&subs).Where("team_match_id = ?", parentUUID).Order("round_number ASC").Scan(c.Context())
-		}
-
-		for _, sub := range subs {
-			var teamAP1, teamAP2, teamBP1, teamBP2 uuid.UUID
-			if teamFormat == "olympic" {
-				switch sub.RoundNumber {
-				case 1:
-					teamAP1, teamAP2 = p1A, p2A
-					teamBP1, teamBP2 = p1B, p2B
-				case 2:
-					teamAP1 = p3A
-					teamBP1 = p3B
-				case 3:
-					teamAP1 = p1A
-					teamBP1 = p1B
-				case 4:
-					teamAP1 = p2A
-					teamBP1 = p2B
-				case 5:
-					teamAP1 = p3A
-					teamBP1 = p1B
-				}
-			} else {
-				switch sub.RoundNumber {
-				case 1:
-					teamAP1 = p1A
-					teamBP1 = p1B
-				case 2:
-					teamAP1 = p2A
-					teamBP1 = p2B
-				case 3:
-					teamAP1 = p3A
-					teamBP1 = p3B
-				case 4:
-					teamAP1 = p1A
-					teamBP1 = p2B
-				case 5:
-					teamAP1 = p2A
-					teamBP1 = p1B
-				}
-			}
-
-			var teamAP2Ptr, teamBP2Ptr *uuid.UUID
-			if teamAP2 != uuid.Nil {
-				teamAP2Ptr = &teamAP2
-			}
-			if teamBP2 != uuid.Nil {
-				teamBP2Ptr = &teamBP2
-			}
-
-			sub.TeamAPlayer1ID = teamAP1
-			sub.TeamAPlayer2ID = teamAP2Ptr
-			sub.TeamBPlayer1ID = teamBP1
-			sub.TeamBPlayer2ID = teamBP2Ptr
-			if _, err := h.matchRepo.DB().NewUpdate().Model(&sub).WherePK().Column("team_a_player_1_id", "team_a_player_2_id", "team_b_player_1_id", "team_b_player_2_id").Exec(c.Context()); err != nil {
-				return fiber.NewError(fiber.StatusInternalServerError, "failed to update sub-match: "+err.Error())
-			}
+		err = h.teamMatchUC.UpdateTeamSquads(c.Context(), matchID, squadA, squadB, teamFormat, parent.Stage, h.matchRepo.DB())
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		}
 
 		// Re-render the team matchup form in-place
@@ -1034,21 +916,10 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 
 	// If still no matchID, look for existing match first, then create on the fly
 	if matchID == "" && body.P1Id != "" && body.P2Id != "" {
-		tUUID, _ := uuid.Parse(body.TournamentID)
-		p1UUID, _ := uuid.Parse(body.P1Id)
-		p2UUID, _ := uuid.Parse(body.P2Id)
-
 		// Try to find existing match for these players
-		var existing bun.MatchModel
-		err := h.matchRepo.DB().NewSelect().Model(&existing).
-			Where("event_id = ?", tUUID).
-			Where("team_match_id IS NULL").
-			Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
-				p1UUID, p2UUID, p2UUID, p1UUID).
-			Where("stage = ?", body.Stage).
-			Scan(c.Context())
-		if err == nil {
-			matchID = existing.ID.String()
+		existing, err := h.matchRepo.GetMatchByParticipants(c.Context(), body.TournamentID, body.P1Id, body.P2Id, body.Stage)
+		if err == nil && existing != nil {
+			matchID = existing.ID
 		}
 
 		if matchID == "" {
@@ -1097,59 +968,49 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	refereeIDStr := c.FormValue("refereeId")
 	tableNumberStr := c.FormValue("tableNumber")
 	if matchID != "" && matchID != "nil" && matchID != "null" && matchID != "undefined" {
-		if mUUID, err := uuid.Parse(matchID); err == nil {
-			if m, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil {
-				if refereeIDStr != "" {
-					if refUUID, err := uuid.Parse(refereeIDStr); err == nil {
-						m.RefereeID = &refUUID
+		var refereePtr *string
+		if refereeIDStr != "" {
+			refereePtr = &refereeIDStr
+		}
+		
+		var tableNumPtr *int
+		if tableNumberStr != "" {
+			if tNum, err := strconv.Atoi(tableNumberStr); err == nil {
+				// Check if another match in this event/tournament is currently in_progress on this table
+				var occupiedList []int
+				if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
+					if t.EventID != nil {
+						occupiedList, _ = h.matchRepo.GetOccupiedTablesByEvent(c.Context(), *t.EventID)
+					} else {
+						occupiedList, _ = h.matchRepo.GetOccupiedTablesByTournament(c.Context(), t.ID)
 					}
-				} else {
-					m.RefereeID = nil
-				}
 
-				if tableNumberStr != "" {
-					if tNum, err := strconv.Atoi(tableNumberStr); err == nil {
-						// Check if another match in this event/tournament is currently in_progress on this table
-						var occupiedList []int
-						if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
-							if t.EventID != nil {
-								occupiedList, _ = h.matchRepo.GetOccupiedTablesByEvent(c.Context(), *t.EventID)
-							} else {
-								occupiedList, _ = h.matchRepo.GetOccupiedTablesByTournament(c.Context(), t.ID)
+					isOccupiedByOther := false
+					for _, occ := range occupiedList {
+						if occ == tNum {
+							occupied, _ := h.matchRepo.IsTableOccupiedByOtherMatch(c.Context(), matchID, tNum)
+							if occupied {
+								isOccupiedByOther = true
 							}
-
-							isOccupiedByOther := false
-							for _, occ := range occupiedList {
-								if occ == tNum {
-									count, err := h.matchRepo.DB().NewSelect().Model((*bun.MatchModel)(nil)).
-										Where("status = 'in_progress' AND table_number = ? AND id != ?", tNum, mUUID).
-										Count(c.Context())
-									if err == nil && count > 0 {
-										isOccupiedByOther = true
-									}
-									break
-								}
-							}
-
-							if isOccupiedByOther {
-								c.Set("HX-Trigger", `{"show-toast": {"message": "Table is currently occupied by another match!", "type": "error"}}`)
-								return fiber.NewError(fiber.StatusBadRequest, "Table is occupied")
-							}
+							break
 						}
-						m.TableNumber = &tNum
 					}
-				} else {
-					m.TableNumber = nil
-				}
 
-				_, _ = h.matchRepo.DB().NewUpdate().Model(m).WherePK().Column("referee_id", "table_number").Exec(c.Context())
+					if isOccupiedByOther {
+						c.Set("HX-Trigger", `{"show-toast": {"message": "Table is currently occupied by another match!", "type": "error"}}`)
+						return fiber.NewError(fiber.StatusBadRequest, "Table is occupied")
+					}
+				}
+				tableNumPtr = &tNum
 			}
 		}
+
+		_ = h.matchRepo.UpdateMetadata(c.Context(), matchID, refereePtr, tableNumPtr)
 	}
 
 	var prevStatus string
 	if mUUID, err := uuid.Parse(matchID); err == nil {
-		if prevMatch, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil {
+		if prevMatch, err := h.matchRepo.GetModelByID(c.Context(), mUUID); err == nil {
 			prevStatus = prevMatch.Status
 		}
 	}
@@ -1162,7 +1023,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	var nameA, nameB string
 	var scored *bun.MatchModel
 	if mUUID, err := uuid.Parse(matchID); err == nil {
-		scored, _ = h.matchRepo.GetByID(c.Context(), mUUID)
+		scored, _ = h.matchRepo.GetModelByID(c.Context(), mUUID)
 	}
 
 	if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
@@ -1209,41 +1070,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 
 	h.broadcastToTournamentOrEvent(c, body.TournamentID, broadcastData)
 
-	if scored != nil && scored.Status == "finished" && prevStatus != "finished" {
-		if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
-			if t.EventID != nil {
-				assigned, err := h.autoAssignTablesUC.Execute(c.Context(), *t.EventID)
-				if err == nil && len(assigned) > 0 {
-					for _, m := range assigned {
-						h.broadcastToTournamentOrEvent(c, body.TournamentID, map[string]string{
-							"event":        "start_match",
-							"tournamentId": m.TournamentID,
-							"matchId":      m.ID,
-							"tableNumber":  strconv.Itoa(*m.TableNumber),
-						})
-					}
-				}
-			}
-			if scored.Stage == "group" {
-				allDone := true
-				hasGroup := false
-				for _, tm := range t.Matches {
-					if tm.Stage == "group" && tm.TeamMatchID == nil {
-						hasGroup = true
-						if tm.Status != "finished" {
-							allDone = false
-							break
-						}
-					}
-				}
-				if hasGroup && allDone {
-					h.broadcastToTournamentOrEvent(c, body.TournamentID, map[string]string{
-						"event": "group_stage_finished",
-					})
-				}
-			}
-		}
-	}
+
 
 	if scored != nil && scored.Status == "finished" && prevStatus != "finished" {
 		if t, err := h.tournamentRepo.GetByID(c.Context(), body.TournamentID); err == nil {
@@ -1293,7 +1120,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 
 	// If this was a sub-match, return to the team matchup form instead of refreshing
 	mUUID, _ := uuid.Parse(matchID)
-	if scored, err := h.matchRepo.GetByID(c.Context(), mUUID); err == nil && scored.TeamMatchID != nil {
+	if scored, err := h.matchRepo.GetModelByID(c.Context(), mUUID); err == nil && scored.TeamMatchID != nil {
 		return h.renderTeamMatchForm(c, scored.TeamMatchID.String(), body.TournamentID, body.Stage)
 	}
 
@@ -1317,7 +1144,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 			return c.SendString("<div class='text-red-400 font-mono text-sm'>Match not found</div>")
 		}
 		parentUUID, _ := uuid.Parse(matchID)
-		parent, err := h.matchRepo.GetByID(c.Context(), parentUUID)
+		parent, err := h.matchRepo.GetModelByID(c.Context(), parentUUID)
 		if err != nil {
 			return c.SendString("<div class='text-red-400 font-mono text-sm'>Match not found: " + err.Error() + "</div>")
 		}
@@ -1527,7 +1354,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendString("<div class='text-red-400 font-mono text-sm'>Invalid match ID</div>")
 	}
-	m, err := h.matchRepo.GetByID(c.Context(), mUUID)
+	m, err := h.matchRepo.GetModelByID(c.Context(), mUUID)
 	if err != nil {
 		return c.SendString("<div class='text-red-400 font-mono text-sm'>Match not found</div>")
 	}
@@ -1600,7 +1427,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 	}
 
 	// Fetch updated status to check if finished
-	updatedMatch, err := h.matchRepo.GetByID(c.Context(), m.ID)
+	updatedMatch, err := h.matchRepo.GetModelByID(c.Context(), m.ID)
 	if err == nil && m.Status != "finished" && updatedMatch.Status == "finished" {
 		// If it's a referee submission, notify admin
 		if isRefereeSubmission && m.RefereeID != nil {
@@ -1814,7 +1641,7 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, tourna
 		return ErrorHandler(err)
 	}
 
-	parent, err := h.matchRepo.GetByID(c.Context(), parentUUID)
+	parent, err := h.matchRepo.GetModelByID(c.Context(), parentUUID)
 	if err != nil {
 		return ErrorHandler(err)
 	}
@@ -2102,7 +1929,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 				created, err := h.createUC.Execute(c.Context(), tID, matchType, []string{p1Id}, []string{p2Id}, stage)
 				if err == nil {
 					cUUID, _ := uuid.Parse(created.ID)
-					m, _ = h.matchRepo.GetByID(c.Context(), cUUID)
+					m, _ = h.matchRepo.GetModelByID(c.Context(), cUUID)
 					matchID = created.ID
 				}
 			}
@@ -2111,7 +1938,7 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 		matchID = matchIDStr
 		mUUID, err := uuid.Parse(matchIDStr)
 		if err == nil {
-			m, _ = h.matchRepo.GetByID(c.Context(), mUUID)
+			m, _ = h.matchRepo.GetModelByID(c.Context(), mUUID)
 		}
 	}
 
@@ -2345,7 +2172,7 @@ func (h *MatchHandler) Reset(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid match ID")
 	}
 
-	m, err := h.matchRepo.GetByID(c.Context(), mUUID)
+	m, err := h.matchRepo.GetModelByID(c.Context(), mUUID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, "match not found")
 	}
@@ -2389,7 +2216,7 @@ func (h *MatchHandler) ShowMatchScorePage(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid match ID")
 	}
-	m, err := h.matchRepo.GetByID(c.Context(), mUUID)
+	m, err := h.matchRepo.GetModelByID(c.Context(), mUUID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusNotFound, "Match not found")
 	}
@@ -2584,7 +2411,7 @@ func (h *MatchHandler) ValidateMatchPIN(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("<p class=\"text-red-400 font-mono text-sm text-center\">Invalid match ID</p>")
 	}
-	m, err := h.matchRepo.GetByID(c.Context(), mUUID)
+	m, err := h.matchRepo.GetModelByID(c.Context(), mUUID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).SendString("<p class=\"text-red-400 font-mono text-sm text-center\">Match not found</p>")
 	}
