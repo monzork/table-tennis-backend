@@ -145,6 +145,9 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 
 	startKnockoutUC := event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo, divisionRepo)
 	getEventDetailViewUC := event.NewGetEventDetailViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC)
+	getPublicDetailViewUC := event.NewGetPublicEventDetailViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC)
+	tvDashboardUC := event.NewGetPublicTVDashboardViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC)
+	boardViewUC := event.NewGetBoardViewUseCase(getTournamentByIDUC, divisionUC)
 
 	tournamentHandler := handler.NewEventHandler(
 		createTournamentUC, getTournamentByIDUC, updateTournamentUC, deleteTournamentUC,
@@ -152,7 +155,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 		movePlayerUC, createTeamUC, deleteTeamUC, assignPlayerToTeamUC, removePlayerFromTeamUC,
 		getTournamentsUC, getOccupiedTablesUC, regenerateSeedsUC, updateParticipantEloUC,
 		removeParticipantUC, saveKnockoutSeedsUC, toggleSeedingLockUC, addGroupUC, recalculateEloUC,
-		startKnockoutUC, getEventDetailViewUC,
+		startKnockoutUC, getEventDetailViewUC, getPublicDetailViewUC, tvDashboardUC, boardViewUC,
 	)
 
 	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)

@@ -266,7 +266,7 @@ func (h *TournamentHandler) ExportEventPDF(c *fiber.Ctx) error {
 	return c.Send(pdfBytes)
 }
 
-func (h *TournamentHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.Tournament, []*divisionDomain.Division, []BoardCard, []BoardCard, []BoardCard, error) {
+func (h *TournamentHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.Tournament, []*divisionDomain.Division, []event.BoardCard, []event.BoardCard, []event.BoardCard, error) {
 	ctx := c.Context()
 
 	// Ensure deep fetch of the tournament so all events and matches are loaded.
@@ -278,15 +278,15 @@ func (h *TournamentHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDo
 
 	divs, _ := h.divisionUC.GetAll(ctx)
 
-	var inProgress []BoardCard
-	var finished []BoardCard
+	var inProgress []event.BoardCard
+	var finished []event.BoardCard
 
 	type activePool struct {
 		id             string
 		tournamentID   string
 		divisionName   string
 		tournamentName string
-		pool           []BoardCard
+		pool           []event.BoardCard
 	}
 	var activePools []activePool
 
@@ -319,13 +319,13 @@ func (h *TournamentHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDo
 		}
 
 		// Group scheduled cards by division
-		scheduledByDiv := make(map[string][]BoardCard)
+		scheduledByDiv := make(map[string][]event.BoardCard)
 		for _, card := range s {
 			scheduledByDiv[card.DivisionName] = append(scheduledByDiv[card.DivisionName], card)
 		}
 
 		// Group in-progress cards by division
-		inProgressByDiv := make(map[string][]BoardCard)
+		inProgressByDiv := make(map[string][]event.BoardCard)
 		for _, card := range i {
 			inProgressByDiv[card.DivisionName] = append(inProgressByDiv[card.DivisionName], card)
 		}
@@ -340,8 +340,8 @@ func (h *TournamentHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDo
 		}
 
 		for divName := range allDivNamesMap {
-			var u []BoardCard
-			var v []BoardCard
+			var u []event.BoardCard
+			var v []event.BoardCard
 			for _, card := range scheduledByDiv[divName] {
 				if card.MatchID == "" {
 					v = append(v, card)
@@ -472,12 +472,12 @@ func (h *TournamentHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDo
 	}
 
 	// 2. Tournament-Driven queue scheduling simulation
-	pools := make(map[string][]BoardCard)
+	pools := make(map[string][]event.BoardCard)
 	for _, ap := range activePools {
 		pools[ap.id] = ap.pool
 	}
 
-	var globalScheduled []BoardCard
+	var globalScheduled []event.BoardCard
 	type runningMatch struct {
 		divisionName string
 		endTime      time.Time
@@ -532,7 +532,7 @@ func (h *TournamentHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDo
 
 		// Identify candidates
 		type candidate struct {
-			card         BoardCard
+			card         event.BoardCard
 			maxAvail     time.Time
 			ratio        float64
 			poolIdx      string
@@ -810,7 +810,7 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 }
 
 // buildEventTables creates a TableVM slice from an tournament's NumTables + occupied tables.
-func buildEventTables(e *eventDomain.Tournament, inProgress []BoardCard) []TableVM {
+func buildEventTables(e *eventDomain.Tournament, inProgress []event.BoardCard) []TableVM {
 	var tables []TableVM
 	if e == nil {
 		return tables
@@ -953,7 +953,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	return c.Redirect("/admin/tournaments/" + id)
 }
 
-func FilterEventBoardCards(cards []BoardCard, q string, divs []string, cats []string) []BoardCard {
+func FilterEventBoardCards(cards []event.BoardCard, q string, divs []string, cats []string) []event.BoardCard {
 	if q == "" && len(divs) == 0 && len(cats) == 0 {
 		return cards
 	}
@@ -968,7 +968,7 @@ func FilterEventBoardCards(cards []BoardCard, q string, divs []string, cats []st
 		catMap[cat] = true
 	}
 
-	var filtered []BoardCard
+	var filtered []event.BoardCard
 	for _, card := range cards {
 		matchesSearch := q == "" || strings.Contains(strings.ToLower(card.PlayerAName), q) ||
 			strings.Contains(strings.ToLower(card.PlayerBName), q) ||

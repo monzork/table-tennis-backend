@@ -108,6 +108,9 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		recalculateTournamentEloUC,
 		event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo, divisionRepo),
 		event.NewGetEventDetailViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
+		event.NewGetPublicEventDetailViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
+		event.NewGetPublicTVDashboardViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
+		event.NewGetBoardViewUseCase(getTournamentByIDUC, divisionUC),
 	)
 	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
 	exportEventPdfUC := event.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGenerator)
