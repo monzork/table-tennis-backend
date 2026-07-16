@@ -929,7 +929,7 @@ func (h *EventHandler) Board(c *fiber.Ctx) error {
 
 	tables := event.BuildTableVMs(view.Event, "", h.getOccupiedTables(c.Context(), view.Event))
 
-	return c.Render("admin/board", fiber.Map{
+	return c.Render("admin/event-board", fiber.Map{
 		"Event":        view.Event,
 		"Scheduled":    view.Scheduled,
 		"InProgress":   view.InProgress,
