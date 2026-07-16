@@ -36,8 +36,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 		return ctx.Redirect("/rankings/singles")
 	})
 
-	// Public Events List
-	app.Get("/events", c.EventHandler.PublicList)
+
 
 	// Public Event Self-Registration (must be before /events/:id)
 	/* signupLimiter := limiter.New(limiter.Config{
@@ -143,7 +142,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 
 	admin.Get("/", c.AdminHandler.Dashboard)
 	admin.Get("/players", c.AdminHandler.Players)
-	admin.Get("/events", c.AdminHandler.Events)
+
 	admin.Get("/tournaments", c.AdminHandler.Tournaments)
 	admin.Get("/divisions", c.AdminHandler.Divisions)
 	admin.Get("/player-field", c.AdminHandler.NewPlayerField)

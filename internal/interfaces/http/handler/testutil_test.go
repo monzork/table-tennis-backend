@@ -324,7 +324,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Use(authMiddleware)
 	admin.Get("/", adminHandler.Dashboard)
 	admin.Get("/players", adminHandler.Players)
-	admin.Get("/events", adminHandler.Events)
+
 	admin.Get("/tournaments", adminHandler.Tournaments)
 	admin.Get("/tournaments/division-select", adminHandler.DivisionSelect)
 	admin.Get("/tournaments/:id", eventHandler.Detail)

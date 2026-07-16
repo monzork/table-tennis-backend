@@ -107,39 +107,7 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 	}, "layouts/admin")
 }
 
-func (h *AdminHandler) Events(c *fiber.Ctx) error {
-	type result struct {
-		players   any
-		events    any
-		divisions any
-	}
-	var res result
-	var wg sync.WaitGroup
-	wg.Add(3)
 
-	go func() {
-		defer wg.Done()
-		p, _ := h.leaderboard.ExecuteSingles(c.Context())
-		res.players = p
-	}()
-	go func() {
-		defer wg.Done()
-		t, _ := h.getTournaments.Execute(c.Context())
-		res.events = t
-	}()
-	go func() {
-		defer wg.Done()
-		d, _ := h.divisionUC.GetAll(c.Context())
-		res.divisions = d
-	}()
-	wg.Wait()
-
-	return c.Render("admin/events", fiber.Map{
-		"Players":   res.players,
-		"Events":    res.events,
-		"Divisions": res.divisions,
-	}, "layouts/admin")
-}
 
 func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 	type result struct {
