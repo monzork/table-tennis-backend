@@ -24,10 +24,10 @@ type PublicEventDetailView struct {
 }
 
 type GetPublicEventDetailViewUseCase struct {
-	getByID          *GetTournamentByIDUseCase
-	leaderboardUC    *leaderboard.GetLeaderboardUseCase
-	divisionUC       *division.DivisionUseCase
-	buildBoardCards  func(*tournamentDomain.Event, []*divisionDomain.Division) ([]BoardCard, []BoardCard, []BoardCard) // We'll inject or use a domain service for BoardCards if needed, wait.
+	getByID         *GetTournamentByIDUseCase
+	leaderboardUC   *leaderboard.GetLeaderboardUseCase
+	divisionUC      *division.DivisionUseCase
+	buildBoardCards func(*tournamentDomain.Event, []*divisionDomain.Division) ([]BoardCard, []BoardCard, []BoardCard) // We'll inject or use a domain service for BoardCards if needed, wait.
 }
 
 func NewGetPublicEventDetailViewUseCase(getByID *GetTournamentByIDUseCase, leaderboardUC *leaderboard.GetLeaderboardUseCase, divisionUC *division.DivisionUseCase) *GetPublicEventDetailViewUseCase {
@@ -215,5 +215,3 @@ func (uc *GetPublicEventDetailViewUseCase) Execute(ctx context.Context, tourname
 		JSONLD:           jsonLD,
 	}, nil
 }
-
-

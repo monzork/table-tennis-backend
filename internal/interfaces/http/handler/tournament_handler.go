@@ -819,7 +819,7 @@ func (h *EventHandler) PublicTVDashboard(c *fiber.Ctx) error {
 		return ErrorHandler(err)
 	}
 
-	tables := buildTables(view.Event, "", h.getOccupiedTables(c.Context(), view.Event))
+	tables := event.BuildTableVMs(view.Event, "", h.getOccupiedTables(c.Context(), view.Event))
 
 	return c.Render("public/tv-dashboard", merge(tMap(lang), fiber.Map{
 		"Event":            view.Event,
@@ -832,41 +832,15 @@ func (h *EventHandler) PublicTVDashboard(c *fiber.Ctx) error {
 	})) // No layout for TV
 }
 
-
-type TableVM struct {
-	Number int
-	IsUsed bool
-}
+// TableVM is a view model for a table's status. Defined in application/event/board_helpers.go.
+// This alias keeps templates working without change.
+type TableVM = event.TableVM
 
 func (h *EventHandler) getOccupiedTables(ctx context.Context, t *tournamentDomain.Event) []int {
 	occupiedList, _ := h.getOccupiedTablesUC.Execute(ctx, t)
 	return occupiedList
 }
 
-func buildTables(t *tournamentDomain.Event, excludeMatchID string, globalOccupied []int) []TableVM {
-	var tables []TableVM
-	if t == nil || t.NumTables <= 0 {
-		return tables
-	}
-	used := make(map[int]bool)
-	for _, m := range t.Matches {
-		if m.Status == "in_progress" && m.TableNumber != nil {
-			if m.ID != excludeMatchID {
-				used[*m.TableNumber] = true
-			}
-		}
-	}
-	for _, occ := range globalOccupied {
-		used[occ] = true
-	}
-	for i := 1; i <= t.NumTables; i++ {
-		tables = append(tables, TableVM{
-			Number: i,
-			IsUsed: used[i],
-		})
-	}
-	return tables
-}
 
 func FilterBoardCards(cards []event.BoardCard, q string, divs []string) []event.BoardCard {
 	if q == "" && len(divs) == 0 {
@@ -1257,7 +1231,7 @@ func (h *EventHandler) Board(c *fiber.Ctx) error {
 		return ErrorHandler(err)
 	}
 
-	tables := buildTables(view.Event, "", h.getOccupiedTables(c.Context(), view.Event))
+	tables := event.BuildTableVMs(view.Event, "", h.getOccupiedTables(c.Context(), view.Event))
 
 	return c.Render("admin/board", fiber.Map{
 		"Event":        view.Event,
@@ -1299,7 +1273,7 @@ func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
 	t := res.event
 	divs := res.divisions
 	scheduled, inProgress, finished := BuildBoardCards(t, divs)
-	tables := buildTables(t, "", h.getOccupiedTables(c.Context(), t))
+	tables := event.BuildTableVMs(t, "", h.getOccupiedTables(c.Context(), t))
 
 	q := strings.ToLower(c.Query("q"))
 	var selectedDivs []string

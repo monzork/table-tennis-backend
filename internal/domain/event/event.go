@@ -466,12 +466,59 @@ type MatchRepository interface {
 	HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error)
 	DeleteByTournament(ctx context.Context, tournamentID string) error
 	FinishMatch(ctx context.Context, cmd FinishMatchCommand) error
+	StartMatch(ctx context.Context, cmd StartMatchCommand) (*StartMatchResult, error)
+	FindOrCreateMatch(ctx context.Context, tournamentID, p1ID, p2ID, stage, matchType string) (string, error)
+	// Team match orchestration
+	CreateSubMatches(ctx context.Context, cmd CreateSubMatchesCommand) error
+	UpdateSubMatchSquads(ctx context.Context, cmd UpdateSubMatchSquadsCommand) error
 }
 
 // FinishMatchCommand carries all data needed to finish a match including bracket advancement.
 type FinishMatchCommand struct {
 	MatchID    string
 	WinnerTeam string
+}
+
+// StartMatchCommand carries all inputs needed to atomically start a match.
+type StartMatchCommand struct {
+	MatchID        string
+	TournamentID   string
+	TableNumber    *int // nil = auto-assign
+	TotalTables    int
+	IsHighPriority bool // true for 1st division, semi/final stages
+}
+
+// StartMatchResult holds outcome of starting a match.
+type StartMatchResult struct {
+	TableNumber int
+	Pin         string
+	PlayerAName string
+	PlayerBName string
+}
+
+// CreateSubMatchesCommand carries all data needed to create sub-matches for a team match.
+type CreateSubMatchesCommand struct {
+	ParentMatchID string
+	TournamentID  string
+	Stage         string
+	TeamFormat    string // "olympic" or "corbillon"
+	TeamAPlayers  []string // player IDs
+	TeamBPlayers  []string
+}
+
+// SubMatchSquadAssignment describes player assignments for a single sub-match.
+type SubMatchSquadAssignment struct {
+	SubMatchID     string
+	TeamAPlayer1ID string
+	TeamAPlayer2ID string // empty = no second player
+	TeamBPlayer1ID string
+	TeamBPlayer2ID string
+}
+
+// UpdateSubMatchSquadsCommand carries all player assignments for the sub-matches of a team match.
+type UpdateSubMatchSquadsCommand struct {
+	ParentMatchID string
+	Assignments   []SubMatchSquadAssignment
 }
 
 func (t *Event) HasMatchesStarted() bool {

@@ -962,3 +962,266 @@ func (r *MatchRepository) UpdateMetadata(ctx context.Context, matchID string, re
 
 	return err
 }
+
+// ErrTableOccupied is returned by StartMatch when the requested table is in use by another in-progress match.
+var ErrTableOccupied = fmt.Errorf("table occupied by another in-progress match")
+
+// StartMatch atomically assigns a table, generates a PIN if missing, and marks the match in_progress.
+// If cmd.TableNumber is nil, the best available table is selected using the priority heuristic.
+// Returns ErrTableOccupied if the requested (or only available) table is taken.
+func (r *MatchRepository) StartMatch(ctx context.Context, cmd event.StartMatchCommand) (*event.StartMatchResult, error) {
+	mUUID, err := uuid.Parse(cmd.MatchID)
+	if err != nil {
+		return nil, err
+	}
+	m, err := r.GetModelByID(ctx, mUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Determine occupied tables
+	var occupiedList []int
+	if cmd.TournamentID != "" {
+		tModel := new(TournamentModel)
+		if err2 := r.db.NewSelect().Model(tModel).Where("id = ?", cmd.TournamentID).Scan(ctx); err2 == nil && tModel.EventID != nil {
+			occupiedList, _ = r.GetOccupiedTablesByEvent(ctx, tModel.EventID.String())
+		} else {
+			occupiedList, _ = r.GetOccupiedTablesByTournament(ctx, cmd.TournamentID)
+		}
+	}
+
+	occupiedMap := make(map[int]bool)
+	for _, n := range occupiedList {
+		occupiedMap[n] = true
+	}
+
+	totalTables := cmd.TotalTables
+	if totalTables <= 0 {
+		totalTables = 4
+	}
+
+	if cmd.TableNumber != nil {
+		// Validate requested table is not in use by another match
+		count, err := r.db.NewSelect().Model((*MatchModel)(nil)).
+			Where("status = 'in_progress' AND table_number = ? AND id != ?", *cmd.TableNumber, mUUID).
+			Count(ctx)
+		if err == nil && count > 0 {
+			return nil, ErrTableOccupied
+		}
+		m.TableNumber = cmd.TableNumber
+	} else {
+		// Auto-assign: collect available tables
+		var available []int
+		for i := 1; i <= totalTables; i++ {
+			if !occupiedMap[i] {
+				available = append(available, i)
+			}
+		}
+		if len(available) == 0 {
+			return nil, ErrTableOccupied
+		}
+
+		assigned := available[0]
+		if cmd.IsHighPriority {
+			if !occupiedMap[1] {
+				assigned = 1
+			} else if !occupiedMap[2] && totalTables >= 2 {
+				assigned = 2
+			} else {
+				assigned = available[0]
+			}
+		} else {
+			found := false
+			for _, tbl := range available {
+				if tbl >= 3 {
+					if !found || tbl > assigned {
+						assigned = tbl
+						found = true
+					}
+				}
+			}
+			if !found {
+				if !occupiedMap[2] && totalTables >= 2 {
+					assigned = 2
+				} else {
+					assigned = available[0]
+				}
+			}
+		}
+		m.TableNumber = &assigned
+	}
+
+	m.Status = "in_progress"
+	now := time.Now()
+	m.UpdatedAt = &now
+	if m.Pin == "" {
+		m.Pin = r.GenerateUniquePin(ctx)
+	}
+
+	if _, err = r.db.NewUpdate().Model(m).WherePK().Column("status", "updated_at", "table_number", "pin").Exec(ctx); err != nil {
+		return nil, err
+	}
+
+	// Fetch player names for notifications
+	pAName, pBName := "TBD", "TBD"
+	var pA, pB PlayerModel
+	if err2 := r.db.NewSelect().Model(&pA).Where("id = ?", m.TeamAPlayer1ID).Scan(ctx); err2 == nil {
+		pAName = pA.FullName()
+	}
+	if err2 := r.db.NewSelect().Model(&pB).Where("id = ?", m.TeamBPlayer1ID).Scan(ctx); err2 == nil {
+		pBName = pB.FullName()
+	}
+
+	tableNumber := 0
+	if m.TableNumber != nil {
+		tableNumber = *m.TableNumber
+	}
+
+	return &event.StartMatchResult{
+		TableNumber: tableNumber,
+		Pin:         m.Pin,
+		PlayerAName: pAName,
+		PlayerBName: pBName,
+	}, nil
+}
+
+// FindOrCreateMatch looks for an existing match between p1 and p2 in a tournament/stage,
+// and creates one if it doesn't exist. Returns the match ID.
+func (r *MatchRepository) FindOrCreateMatch(ctx context.Context, tournamentID, p1ID, p2ID, stage, matchType string) (string, error) {
+	tUUID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return "", err
+	}
+	p1UUID, err := uuid.Parse(p1ID)
+	if err != nil {
+		return "", err
+	}
+	p2UUID, err := uuid.Parse(p2ID)
+	if err != nil {
+		return "", err
+	}
+
+	var existing MatchModel
+	err = r.db.NewSelect().Model(&existing).
+		Where("event_id = ?", tUUID).
+		Where("team_match_id IS NULL").
+		Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
+			p1UUID, p2UUID, p2UUID, p1UUID).
+		Where("stage = ?", stage).
+		Scan(ctx)
+	if err == nil {
+		return existing.ID.String(), nil
+	}
+
+	// Not found — create it
+	newID := uuid.New()
+	pin := r.GenerateUniquePin(ctx)
+	model := &MatchModel{
+		ID:             newID,
+		TournamentID:   tUUID,
+		MatchType:      matchType,
+		TeamAPlayer1ID: p1UUID,
+		TeamBPlayer1ID: p2UUID,
+		Status:         "scheduled",
+		Stage:          stage,
+		Pin:            pin,
+	}
+	if _, err = r.db.NewInsert().Model(model).Exec(ctx); err != nil {
+		return "", err
+	}
+	return newID.String(), nil
+}
+
+// CreateSubMatches atomically creates the 5 sub-matches for a team match if they don't exist yet.
+func (r *MatchRepository) CreateSubMatches(ctx context.Context, cmd event.CreateSubMatchesCommand) error {
+	parentUUID, err := uuid.Parse(cmd.ParentMatchID)
+	if err != nil {
+		return err
+	}
+	tUUID, err := uuid.Parse(cmd.TournamentID)
+	if err != nil {
+		return err
+	}
+
+	// Idempotency: if subs already exist, do nothing
+	var count int
+	count, err = ExtractDB(ctx, r.db).NewSelect().Model((*MatchModel)(nil)).Where("team_match_id = ?", parentUUID).Count(ctx)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	if len(cmd.TeamAPlayers) == 0 || len(cmd.TeamBPlayers) == 0 {
+		return fmt.Errorf("both teams must have players to create sub-matches")
+	}
+
+	teamFormat := cmd.TeamFormat
+	if teamFormat == "" {
+		teamFormat = "olympic"
+	}
+
+	p1A, _ := uuid.Parse(cmd.TeamAPlayers[0])
+	p1B, _ := uuid.Parse(cmd.TeamBPlayers[0])
+
+	models := make([]MatchModel, 5)
+	for order := 1; order <= 5; order++ {
+		matchType := "singles"
+		if teamFormat == "olympic" && order == 1 {
+			matchType = "doubles"
+		}
+		pin := r.GenerateUniquePin(ctx)
+		models[order-1] = MatchModel{
+			ID:             uuid.New(),
+			TournamentID:   tUUID,
+			MatchType:      matchType,
+			TeamAPlayer1ID: p1A,
+			TeamBPlayer1ID: p1B,
+			Status:         "scheduled",
+			Stage:          cmd.Stage,
+			RoundNumber:    order,
+			TeamMatchID:    &parentUUID,
+			Pin:            pin,
+		}
+	}
+
+	_, err = ExtractDB(ctx, r.db).NewInsert().Model(&models).Exec(ctx)
+	return err
+}
+
+// UpdateSubMatchSquads bulk-updates player assignments for all sub-matches of a team match.
+func (r *MatchRepository) UpdateSubMatchSquads(ctx context.Context, cmd event.UpdateSubMatchSquadsCommand) error {
+	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
+		for _, a := range cmd.Assignments {
+			subUUID, err := uuid.Parse(a.SubMatchID)
+			if err != nil {
+				return err
+			}
+			p1A, _ := uuid.Parse(a.TeamAPlayer1ID)
+			p1B, _ := uuid.Parse(a.TeamBPlayer1ID)
+
+			var p2APtr, p2BPtr *uuid.UUID
+			if a.TeamAPlayer2ID != "" {
+				u, _ := uuid.Parse(a.TeamAPlayer2ID)
+				p2APtr = &u
+			}
+			if a.TeamBPlayer2ID != "" {
+				u, _ := uuid.Parse(a.TeamBPlayer2ID)
+				p2BPtr = &u
+			}
+
+			_, err = tx.NewUpdate().Table("matches").
+				Set("team_a_player_1_id = ?", p1A).
+				Set("team_a_player_2_id = ?", p2APtr).
+				Set("team_b_player_1_id = ?", p1B).
+				Set("team_b_player_2_id = ?", p2BPtr).
+				Where("id = ?", subUUID).
+				Exec(ctx)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}

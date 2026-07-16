@@ -186,4 +186,59 @@ func TestMatchHandler(t *testing.T) {
 			t.Errorf("expected start on table 2 to succeed, got %v", resp3.StatusCode)
 		}
 	})
+
+	t.Run("Priority Table Assignment Heuristic", func(t *testing.T) {
+		// Clear previously occupied tables
+		matchRepo.DB().NewUpdate().Table("matches").Set("status = 'scheduled'").Exec(ctx)
+
+		// Create a tournament with 4 tables
+		tourney4, _ := tournamentDomain.NewTournament(uuid.New().String(), "Test Tourney 4", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 4, []*playerDomain.Player{p1, p2}, false)
+		tournamentRepo.Save(ctx, tourney4)
+
+		// Create a low priority match (group stage, non-1st division)
+		mLow := &tournamentDomain.Match{ID: uuid.New().String(), TournamentID: tourney4.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled", Stage: "group"}
+		matchRepo.Save(ctx, mLow)
+
+		// Start low priority match (auto-assign)
+		reqLow := httptest.NewRequest("POST", fmt.Sprintf("/matches/%s/start", mLow.ID), strings.NewReader(url.Values{}.Encode()))
+		reqLow.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		reqLow.Header.Set("Cookie", sessionCookie)
+		respLow, _ := app.Test(reqLow)
+		if respLow.StatusCode != 200 {
+			t.Errorf("expected start low priority match to succeed, got %v", respLow.StatusCode)
+		}
+
+		mLowUUID, _ := uuid.Parse(mLow.ID)
+		mLowModel, _ := matchRepo.GetModelByID(ctx, mLowUUID)
+		if mLowModel.TableNumber == nil || *mLowModel.TableNumber < 3 {
+			v := 0
+			if mLowModel.TableNumber != nil {
+				v = *mLowModel.TableNumber
+			}
+			t.Errorf("expected low priority match to be assigned table >= 3, got %d", v)
+		}
+
+		// Create a high priority match (final stage)
+		mHigh := &tournamentDomain.Match{ID: uuid.New().String(), TournamentID: tourney4.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled", Stage: "final"}
+		matchRepo.Save(ctx, mHigh)
+
+		// Start high priority match
+		reqHigh := httptest.NewRequest("POST", fmt.Sprintf("/matches/%s/start", mHigh.ID), strings.NewReader(url.Values{}.Encode()))
+		reqHigh.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		reqHigh.Header.Set("Cookie", sessionCookie)
+		respHigh, _ := app.Test(reqHigh)
+		if respHigh.StatusCode != 200 {
+			t.Errorf("expected start high priority match to succeed, got %v", respHigh.StatusCode)
+		}
+
+		mHighUUID, _ := uuid.Parse(mHigh.ID)
+		mHighModel, _ := matchRepo.GetModelByID(ctx, mHighUUID)
+		if mHighModel.TableNumber == nil || *mHighModel.TableNumber != 1 {
+			v := 0
+			if mHighModel.TableNumber != nil {
+				v = *mHighModel.TableNumber
+			}
+			t.Errorf("expected high priority match to be assigned table 1, got %d", v)
+		}
+	})
 }
