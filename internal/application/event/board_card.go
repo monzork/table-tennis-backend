@@ -1,5 +1,7 @@
 package event
 
+import "time"
+
 type BoardCard struct {
 	MatchID        string
 	Status         string
@@ -20,6 +22,7 @@ type BoardCard struct {
 	TournamentID   string
 	TournamentName string
 	QueuePosition  int
-	RoundNumber    int
-	Category       string
+	RoundNumber        int
+	Category           string
+	EstimatedStartTime *time.Time
 }

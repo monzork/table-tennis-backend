@@ -214,9 +214,13 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 
 	// 3. Greedy rest-interleaving scheduler
 	lastActivity := make(map[string]time.Time)
+	matchesPlayed := make(map[string]int)
+	
+	now := time.Now()
+
 	for _, m := range t.Matches {
 		if m.Status == "in_progress" || m.Status == "finished" {
-			tAct := time.Time{}
+			tAct := now
 			if m.UpdatedAt != nil {
 				tAct = *m.UpdatedAt
 			}
@@ -224,11 +228,13 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 				if lastActivity[p.ID].Before(tAct) {
 					lastActivity[p.ID] = tAct
 				}
+				matchesPlayed[p.ID]++
 			}
 			for _, p := range m.TeamB {
 				if lastActivity[p.ID].Before(tAct) {
 					lastActivity[p.ID] = tAct
 				}
+				matchesPlayed[p.ID]++
 			}
 		}
 	}
@@ -245,51 +251,83 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 		}
 	}
 
-	simClock := time.Now().Add(24 * time.Hour)
-
 	scheduleMatchGreedy := func(pool *[]BoardCard) {
 		for len(*pool) > 0 {
 			bestIdx := -1
 			var bestPenalty time.Time
 			var bestSum int64
+			var bestMatchesPlayed int
 
 			for i, c := range *pool {
 				t1 := lastActivity[c.P1Id]
 				t2 := lastActivity[c.P2Id]
+				
+				mp1 := matchesPlayed[c.P1Id]
+				mp2 := matchesPlayed[c.P2Id]
+				maxMp := mp1
+				if mp2 > maxMp {
+					maxMp = mp2
+				}
+
 				penalty := t1
 				if t2.After(t1) {
 					penalty = t2
 				}
 				sum := t1.UnixNano() + t2.UnixNano()
 
-				if bestIdx == -1 || penalty.Before(bestPenalty) {
+				// Primary sort: lowest max matches played (so everyone plays at least one game before others play their second)
+				// Secondary sort: lowest penalty time (longest rested)
+				// Tertiary sort: lowest sum of activity times
+				
+				if bestIdx == -1 || maxMp < bestMatchesPlayed {
 					bestIdx = i
+					bestMatchesPlayed = maxMp
 					bestPenalty = penalty
 					bestSum = sum
-				} else if penalty.Equal(bestPenalty) {
-					if sum < bestSum {
+				} else if maxMp == bestMatchesPlayed {
+					if penalty.Before(bestPenalty) {
 						bestIdx = i
 						bestPenalty = penalty
 						bestSum = sum
-					} else if sum == bestSum {
-						if (*pool)[i].MatchID < (*pool)[bestIdx].MatchID {
+					} else if penalty.Equal(bestPenalty) {
+						if sum < bestSum {
 							bestIdx = i
 							bestPenalty = penalty
 							bestSum = sum
+						} else if sum == bestSum {
+							if (*pool)[i].MatchID < (*pool)[bestIdx].MatchID {
+								bestIdx = i
+								bestPenalty = penalty
+								bestSum = sum
+							}
 						}
 					}
 				}
 			}
 
 			picked := (*pool)[bestIdx]
+			
+			// Calculate estimated start time
+			estStart := now
+			if bestPenalty.After(now) {
+				estStart = bestPenalty
+			}
+			
+			// Give them 15 mins of rest for the next match they might play
+			nextAvail := estStart.Add(15 * time.Minute)
+			
+			estStartCopy := estStart // Copy for pointer
+			picked.EstimatedStartTime = &estStartCopy
+			
 			reordered = append(reordered, picked)
 
-			simClock = simClock.Add(time.Second)
 			if picked.P1Id != "" {
-				lastActivity[picked.P1Id] = simClock
+				lastActivity[picked.P1Id] = nextAvail
+				matchesPlayed[picked.P1Id]++
 			}
 			if picked.P2Id != "" {
-				lastActivity[picked.P2Id] = simClock
+				lastActivity[picked.P2Id] = nextAvail
+				matchesPlayed[picked.P2Id]++
 			}
 			*pool = append((*pool)[:bestIdx], (*pool)[bestIdx+1:]...)
 		}

@@ -146,12 +146,15 @@
                             {{range .Scheduled}}
                                 <div class="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-3 shadow-lg opacity-80">
                                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+                                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5 flex-wrap">
                                             {{if .TournamentName}}{{.TournamentName}}{{else}}{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}}{{end}} • {{.Stage}}
                                             {{if eq .Category "men"}}
                                                 <span class="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-black">M</span>
                                             {{else if eq .Category "women"}}
                                                 <span class="px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[8px] font-black">F</span>
+                                            {{end}}
+                                            {{if .EstimatedStartTime}}
+                                                <span class="rest-countdown hidden text-[9px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400/80 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono" data-time="{{.EstimatedStartTime.Format "2006-01-02T15:04:05Z07:00"}}"></span>
                                             {{end}}
                                         </span>
                                         {{if .TableNumber}}
@@ -262,6 +265,25 @@
                 }
             });
         }, 20); // 50fps smooth scrolling
+
+        // Countdown Timer Logic
+        setInterval(() => {
+            const now = new Date();
+            document.querySelectorAll('.rest-countdown').forEach(el => {
+                const estStart = new Date(el.dataset.time);
+                if (isNaN(estStart.getTime())) return;
+                
+                const diffMs = estStart - now;
+                if (diffMs > 0) {
+                    const mins = Math.floor(diffMs / 60000);
+                    const secs = Math.floor((diffMs % 60000) / 1000);
+                    el.innerText = `REST: ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+        }, 1000);
     </script>
 </body>
 </html>

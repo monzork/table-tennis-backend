@@ -309,7 +309,12 @@
                                     {{$scheduledCount = 1}}
                                     <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 sm:gap-3 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                                         <div class="flex justify-between items-center border-b border-yellow-500/20 pb-2">
-                                            <span class="text-[10px] font-bold uppercase tracking-widest text-yellow-400/80 truncate pr-2">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}{{if gt .RoundNumber 0}} • Match #{{.RoundNumber}}{{end}}</span>
+                                            <div class="flex items-center gap-2 truncate pr-2">
+                                                <span class="text-[10px] font-bold uppercase tracking-widest text-yellow-400/80">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}{{if gt .RoundNumber 0}} • Match #{{.RoundNumber}}{{end}}</span>
+                                                {{if .EstimatedStartTime}}
+                                                  <span class="rest-countdown hidden text-[9px] font-black uppercase tracking-widest bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded font-mono" data-time="{{.EstimatedStartTime.Format "2006-01-02T15:04:05Z07:00"}}"></span>
+                                                {{end}}
+                                            </div>
                                             <span class="px-2 py-0.5 rounded bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest shrink-0 animate-pulse">{{t $.T "tv.table"}} {{.TableNumber}}</span>
                                         </div>
                                         <div class="flex flex-col sm:flex-row justify-center sm:justify-between items-stretch sm:items-center text-base sm:text-lg gap-1 sm:gap-0">
@@ -334,7 +339,12 @@
                                     {{$scheduledCount = 1}}
                                     <div class="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-lg opacity-70">
                                         <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 truncate pr-2">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}{{if gt .RoundNumber 0}} • Match #{{.RoundNumber}}{{end}}</span>
+                                            <div class="flex items-center gap-2 truncate pr-2">
+                                                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}{{if gt .RoundNumber 0}} • Match #{{.RoundNumber}}{{end}}</span>
+                                                {{if .EstimatedStartTime}}
+                                                  <span class="rest-countdown hidden text-[9px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400/80 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono" data-time="{{.EstimatedStartTime.Format "2006-01-02T15:04:05Z07:00"}}"></span>
+                                                {{end}}
+                                            </div>
                                             <span class="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-widest border border-white/10 shrink-0">{{t $.T "tv.waiting"}}</span>
                                         </div>
                                         <div class="flex flex-col sm:flex-row justify-center sm:justify-between items-stretch sm:items-center text-base sm:text-lg gap-1 sm:gap-0">
@@ -536,6 +546,25 @@
                 announceGroupFinished();
             }
         });
+
+        // Countdown Timer Logic
+        setInterval(() => {
+            const now = new Date();
+            document.querySelectorAll('.rest-countdown').forEach(el => {
+                const estStart = new Date(el.dataset.time);
+                if (isNaN(estStart.getTime())) return;
+                
+                const diffMs = estStart - now;
+                if (diffMs > 0) {
+                    const mins = Math.floor(diffMs / 60000);
+                    const secs = Math.floor((diffMs % 60000) / 1000);
+                    el.innerText = `REST: ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+        }, 1000);
     </script>
 
     <!-- Push Notification Prompt Banner -->
