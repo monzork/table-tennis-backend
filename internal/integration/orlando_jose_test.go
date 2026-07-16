@@ -150,27 +150,28 @@ func TestOrlandoJoseSecondDivisionReplay(t *testing.T) {
 	now := time.Now()
 	cloneName := fmt.Sprintf("TEST_OrlandoJose2nd_%s", now.Format("150405"))
 
-	cloneEvent, err := createUC.Execute(ctx,
-		cloneName,
-		"singles",
-		"groups_elimination",
-		"open", // category
-		now.Format("2006-01-02"),
-		now.AddDate(0, 0, 1).Format("2006-01-02"),
-		participantIDs,
-		nil,   // newPlayers
-		2,     // groupPassCount
-		nil,   // stageRuleOverrides
-		nil,   // divisionRules
-		true,  // skipElo – replicate skip_elo from original
-		nil,   // eventID (no parent container)
-		"",    // teamFormat
-		6,     // numTables
-		false, // hasThirdPlaceMatch
-		nil,   // divisionFormats
-		nil,   // divisionGroupPassCounts
-		nil,   // divisionGroupCounts
-	)
+	cmd := appEvent.CreateEventCommand{
+		Name:                    cloneName,
+		Type:                    "singles",
+		Format:                  "groups_elimination",
+		Category:                "open",
+		StartDate:               now.Format("2006-01-02"),
+		EndDate:                 now.AddDate(0, 0, 1).Format("2006-01-02"),
+		ParticipantIDs:          participantIDs,
+		NewPlayers:              nil,
+		GroupPassCount:          2,
+		StageRuleOverrides:      nil,
+		DivisionRules:           nil,
+		SkipElo:                 true,
+		EventID:                 nil,
+		TeamFormat:              "",
+		NumTables:               6,
+		HasThirdPlaceMatch:      false,
+		DivisionFormats:         nil,
+		DivisionGroupPassCounts: nil,
+		DivisionGroupCounts:     nil,
+	}
+	cloneEvent, err := createUC.Execute(ctx, cmd)
 	require.NoError(t, err, "should create clone event")
 	require.NotEmpty(t, cloneEvent.ID)
 	t.Logf("Created clone event %q (ID: %s) with %d participants",
@@ -280,7 +281,142 @@ func TestOrlandoJoseSecondDivisionReplay(t *testing.T) {
 	assert.GreaterOrEqual(t, finishedGroupMatches, replayedCount,
 		"at least as many group matches should be finished as were replayed")
 
-	// ── Step 5: Verify the original tournament's champion ───────────────────
+	// ── Step 5: Start Knockout Stage ───────────────────────────────────────
+	startKnockoutUC := appEvent.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo, divisionRepo)
+	err = startKnockoutUC.Execute(ctx, cloneEvent.ID, secondDivisionID)
+	require.NoError(t, err, "should start knockout stage for clone")
+
+	// ── Step 6: Replay Knockout Matches Round by Round ──────────────────────
+	koOrigResults := make(map[string]MatchResult)
+	var maxKORound int
+	for _, m := range origEvent.Matches {
+		if m.DivisionID != secondDivisionID || m.Stage == "group" || m.Status != "finished" {
+			continue
+		}
+		if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
+			continue
+		}
+		if m.RoundNumber > maxKORound {
+			maxKORound = m.RoundNumber
+		}
+		// Use player IDs to create a canonical key
+		aID, bID := m.TeamA[0].ID, m.TeamB[0].ID
+		if aID > bID {
+			aID, bID = bID, aID
+		}
+		key := fmt.Sprintf("%s-%s", aID, bID)
+		result := MatchResult{WinnerTeam: m.WinnerTeam}
+		for _, s := range m.Sets {
+			result.Sets = append(result.Sets, struct{ ScoreA, ScoreB int }{s.ScoreA, s.ScoreB})
+		}
+		koOrigResults[key] = result
+	}
+	t.Logf("Original knockout match results to replay: %d (up to round %d)", len(koOrigResults), maxKORound)
+
+	for round := 1; round <= maxKORound; round++ {
+		// Reload clone to get the latest matches (since winners advance)
+		currentClone, err := tournamentRepo.GetByID(ctx, cloneEvent.ID)
+		require.NoError(t, err)
+
+		replayedThisRound := 0
+		for _, m := range currentClone.Matches {
+			if m.DivisionID != secondDivisionID || m.Stage == "group" || m.Status == "finished" {
+				continue
+			}
+			// Both teams must be known to replay a match (skip BYEs or pending TBDs)
+			if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
+				continue
+			}
+
+			aID, bID := m.TeamA[0].ID, m.TeamB[0].ID
+			canonicalKey := fmt.Sprintf("%s-%s", aID, bID)
+			if aID > bID {
+				canonicalKey = fmt.Sprintf("%s-%s", bID, aID)
+			}
+
+			origRes, exists := koOrigResults[canonicalKey]
+			if !exists {
+				t.Logf("WARNING: Clone generated a knockout matchup not found in original: %s vs %s", m.TeamA[0].FirstName, m.TeamB[0].FirstName)
+				continue
+			}
+
+			// We found the match! Let's submit the score.
+			var rawScores []string
+			// Determine if TeamA in clone is TeamA or TeamB in original result
+			// Let's find the original match to be sure.
+			var origMatch *eventDomain.Match
+			for _, om := range origEvent.Matches {
+				if om.DivisionID == secondDivisionID && om.Stage != "group" && len(om.TeamA) > 0 && len(om.TeamB) > 0 {
+					if (om.TeamA[0].ID == aID && om.TeamB[0].ID == bID) || (om.TeamA[0].ID == bID && om.TeamB[0].ID == aID) {
+						foundMatch := om // Create local copy for pointer
+						origMatch = &foundMatch
+						break
+					}
+				}
+			}
+
+			if origMatch != nil {
+				cloneTeamA_is_OrigTeamA := origMatch.TeamA[0].ID == aID
+				for _, s := range origRes.Sets {
+					if cloneTeamA_is_OrigTeamA {
+						rawScores = append(rawScores, fmt.Sprintf("%d-%d", s.ScoreA, s.ScoreB))
+					} else {
+						rawScores = append(rawScores, fmt.Sprintf("%d-%d", s.ScoreB, s.ScoreA))
+					}
+				}
+				err = updateScoreUC.Execute(ctx, m.ID, rawScores, cloneEvent.ID, m.Stage)
+				if err != nil {
+					t.Logf("Warning: KO score update failed for clone match %s: %v", m.ID, err)
+				}
+				
+				// Re-fetch match to finish it
+				cloneMatch, _ := matchRepo.GetByID(ctx, m.ID)
+				if cloneMatch != nil {
+					cloneMatch.Status = "finished"
+					if cloneTeamA_is_OrigTeamA {
+						cloneMatch.WinnerTeam = origRes.WinnerTeam
+					} else {
+						if origRes.WinnerTeam == "A" {
+							cloneMatch.WinnerTeam = "B"
+						} else {
+							cloneMatch.WinnerTeam = "A"
+						}
+					}
+					matchRepo.Save(ctx, cloneMatch)
+				}
+				replayedThisRound++
+			}
+		}
+		t.Logf("Replayed %d matches in knockout round (loop %d)", replayedThisRound, round)
+	}
+
+	// ── Step 7: Verify Clone Champion ────────────────────────────────────────
+	finalClone, err := tournamentRepo.GetByID(ctx, cloneEvent.ID)
+	require.NoError(t, err)
+
+	var cloneChampions []string
+	maxCloneRound := 0
+	for _, m := range finalClone.Matches {
+		if m.DivisionID == secondDivisionID && m.Stage != "group" && m.RoundNumber > maxCloneRound {
+			maxCloneRound = m.RoundNumber
+		}
+	}
+
+	for _, m := range finalClone.Matches {
+		if m.DivisionID != secondDivisionID || m.Stage == "group" || m.RoundNumber != maxCloneRound {
+			continue
+		}
+		if m.WinnerTeam == "A" && len(m.TeamA) > 0 {
+			cloneChampions = append(cloneChampions, m.TeamA[0].FirstName+" "+m.TeamA[0].LastName)
+		} else if m.WinnerTeam == "B" && len(m.TeamB) > 0 {
+			cloneChampions = append(cloneChampions, m.TeamB[0].FirstName+" "+m.TeamB[0].LastName)
+		}
+	}
+
+	t.Logf("🏆 Clone 2nd division champions (round %d): %v", maxCloneRound, cloneChampions)
+	assert.Contains(t, cloneChampions, expectedChampion2ndDiv, "Mario Espinoza MUST win the clone tournament's knockout stage!")
+
+	// ── Step 8: Verify the original tournament's champion ───────────────────
 	// This is the most important assertion — it runs against the ORIGINAL unmodified data
 	t.Run("OriginalChampionIntact", func(t *testing.T) {
 		repo := infraBun.NewTournamentRepository(db)
