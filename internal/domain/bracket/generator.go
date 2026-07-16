@@ -975,3 +975,107 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 
 	return rounds
 }
+
+// ValidateSameGroupSeparation checks whether a proposed seed ordering (players[0] = seed 1,
+// players[1] = seed 2, …) ensures that no two players from the same source group are
+// placed in the same bracket half.
+//
+// groups is the list of group-stage groups (each with its Players field).
+// players is the ordered list of advancing players in the proposed seed order.
+//
+// Returns an error that names every conflicting pair, or nil if the arrangement is valid.
+func ValidateSameGroupSeparation(groups []Group, players []*player.Player) error {
+	if len(players) < 2 {
+		return nil
+	}
+
+	// Build a map: player ID → group name, so we can detect same-group pairs quickly.
+	playerGroup := make(map[string]string, len(players))
+	for _, g := range groups {
+		for _, p := range g.Players {
+			playerGroup[p.ID] = g.Name
+		}
+	}
+
+	bracketSize := nextPow2(len(players))
+	if bracketSize < 2 {
+		return nil
+	}
+	arrangement := getSeedingArrangement(bracketSize)
+
+	// Build match-up tree for the first round to determine which seeds land in each half.
+	// The top half is slots 0 .. halfSize-1 of the arrangement; bottom half is the rest.
+	halfSize := len(arrangement) / 2
+
+	// Map seed number → bracket half (0 = top, 1 = bottom).
+	seedHalf := make(map[int]int, len(arrangement))
+	for i, s := range arrangement {
+		if i < halfSize {
+			seedHalf[s] = 0
+		} else {
+			seedHalf[s] = 1
+		}
+	}
+
+	// For each advancing player, record their proposed seed (1-indexed) and the half they'd land in.
+	type entry struct {
+		name  string
+		seed  int
+		half  int
+		group string
+	}
+	entries := make([]entry, 0, len(players))
+	for i, p := range players {
+		if p == nil {
+			continue
+		}
+		seed := i + 1
+		half, ok := seedHalf[seed]
+		if !ok {
+			// Seeds beyond the bracket size go to the bottom half (they are byes).
+			half = 1
+		}
+		entries = append(entries, entry{
+			name:  p.FirstNameWithSecond() + " " + p.LastNameWithSecond(),
+			seed:  seed,
+			half:  half,
+			group: playerGroup[p.ID],
+		})
+	}
+
+	// Detect same-group players landing in the same half.
+	type halfGroup struct {
+		group string
+		half  int
+	}
+	seen := make(map[halfGroup]entry)
+	var conflicts []string
+
+	for _, e := range entries {
+		if e.group == "" {
+			continue // player not in any tracked group — skip
+		}
+		key := halfGroup{group: e.group, half: e.half}
+		if prev, exists := seen[key]; exists {
+			halfName := "top"
+			if e.half == 1 {
+				halfName = "bottom"
+			}
+			conflicts = append(conflicts,
+				fmt.Sprintf("'%s' (seed %d) and '%s' (seed %d) are from the same group '%s' and are both in the %s half of the bracket",
+					prev.name, prev.seed, e.name, e.seed, e.group, halfName,
+				),
+			)
+		} else {
+			seen[key] = e
+		}
+	}
+
+	if len(conflicts) > 0 {
+		return fmt.Errorf(
+			"ITTF rule violation: same-group players must be separated into opposite bracket halves.\n%s",
+			strings.Join(conflicts, "\n"),
+		)
+	}
+	return nil
+}

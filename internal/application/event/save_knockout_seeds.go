@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"strings"
+	"table-tennis-backend/internal/domain/bracket"
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
@@ -88,6 +89,25 @@ func (uc *SaveKnockoutSeedsUseCase) Execute(ctx context.Context, tournamentID, d
 				}
 			}
 		}
+	}
+
+	// Validate ITTF separation rule
+	var divisionGroups []bracket.Group
+	for _, g := range t.Groups {
+		if strings.HasPrefix(g.Name, divName+" - ") && !strings.HasSuffix(g.Name, "- Knockout Seeds") {
+			divisionGroups = append(divisionGroups, bracket.Group{
+				Name:    g.Name,
+				Players: g.Players,
+			})
+		} else if divName == "Open Bracket" && strings.HasPrefix(g.Name, "Group ") {
+			divisionGroups = append(divisionGroups, bracket.Group{
+				Name:    g.Name,
+				Players: g.Players,
+			})
+		}
+	}
+	if err := bracket.ValidateSameGroupSeparation(divisionGroups, players); err != nil {
+		return err
 	}
 
 	if knockoutGroup != nil {

@@ -45,6 +45,10 @@ func (uc *StartKnockoutStageUseCase) Execute(ctx context.Context, tournamentID, 
 	var firstRoundMatches []event.Match
 	for _, div := range vm.Divisions {
 		if div.ID == divID && div.AllGroupsFinished && len(div.KnockoutRounds) > 0 {
+			if err := bracket.ValidateSameGroupSeparation(div.Groups, div.KnockoutAdvancing); err != nil {
+				return err
+			}
+
 			for _, r := range div.KnockoutRounds {
 				// Only schedule matches from the very first round that have valid players
 				for _, mv := range r.Matches {
