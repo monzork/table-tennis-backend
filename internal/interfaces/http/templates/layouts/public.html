@@ -278,6 +278,9 @@
                     <a href="/rankings/doubles" class="snap-start shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Doubles"}}text-white border-b-2 border-white{{end}}">
                         {{t .T "nav.doubles"}}
                     </a>
+                    <a href="/events" class="snap-start shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Events"}}text-white border-b-2 border-white{{end}}">
+                        {{t .T "nav.events"}}
+                    </a>
 
                 </div>
 
@@ -326,6 +329,10 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
             <span class="text-[9px] font-bold uppercase tracking-widest">Theme</span>
         </button>
+        <a href="/events" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors {{if eq .Type "Events"}}text-white{{end}}">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            <span class="text-[9px] font-bold uppercase tracking-widest">{{t .T "nav.mob_tournaments"}}</span>
+        </a>
 
         <button type="button" onclick="window.requestPushPermission()" class="flex flex-col items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
