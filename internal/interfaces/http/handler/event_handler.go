@@ -1,260 +1,320 @@
 package handler
 
 import (
+	"context"
 	"fmt"
-	"sort"
-	"strconv"
+
 	"strings"
 	"sync"
-	"time"
-
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
-	"table-tennis-backend/internal/application/tournament"
 	"table-tennis-backend/internal/domain/bracket"
 	divisionDomain "table-tennis-backend/internal/domain/division"
-	eventDomain "table-tennis-backend/internal/domain/tournament"
+	tournamentDomain "table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-type TournamentHandler struct {
-	createUC      *tournament.CreateEventUseCase
-	updateUC      *tournament.UpdateEventUseCase
-	getByID       *tournament.GetEventByIDUseCase
-	getAll        *tournament.GetAllEventsUseCase
-	deleteUC      *tournament.DeleteEventUseCase
-	divisionUC    *division.DivisionUseCase
-	leaderboardUC *leaderboard.GetLeaderboardUseCase
-	exportPdfUC   *event.ExportEventPdfUseCase
+type EventHandler struct {
+	createUC               *event.CreateTournamentUseCase
+	getByID                *event.GetTournamentByIDUseCase
+	updateUC               *event.UpdateTournamentUseCase
+	deleteUC               *event.DeleteTournamentUseCase
+	leaderboardUC          *leaderboard.GetLeaderboardUseCase
+	divisionUC             *division.DivisionUseCase
+	finishUC               *event.FinishTournamentUseCase
+	exportUC               *event.ExportTournamentReportUseCase
+	exportPdfUC            *event.ExportTournamentPdfUseCase
+	movePlayerUC           *event.MovePlayerUseCase
+	createTeamUC           *event.CreateTeamUseCase
+	deleteTeamUC           *event.DeleteTeamUseCase
+	assignPlayerToTeamUC   *event.AssignPlayerToTeamUseCase
+	removePlayerFromTeamUC *event.RemovePlayerFromTeamUseCase
+	getTournamentsUC       *event.GetTournamentsUseCase
+	getOccupiedTablesUC    *event.GetOccupiedTablesUseCase
+	regenerateSeedsUC      *event.RegenerateGroupSeedsUseCase
+	updateParticipantEloUC *event.UpdateParticipantEloBeforeUseCase
+	removeParticipantUC    *event.RemoveParticipantUseCase
+	saveKnockoutSeedsUC    *event.SaveKnockoutSeedsUseCase
+	toggleSeedingLockUC    *event.ToggleSeedingLockUseCase
+	addGroupUC             *event.AddGroupUseCase
+	recalculateEloUC       *event.RecalculateTournamentEloUseCase
+	startKnockoutUC        *event.StartKnockoutStageUseCase
+	getDetailViewUC        *event.GetEventDetailViewUseCase
+	getPublicDetailViewUC  *event.GetPublicEventDetailViewUseCase
+	tvDashboardUC          *event.GetPublicTVDashboardViewUseCase
+	boardViewUC            *event.GetBoardViewUseCase
+	editFormViewUC         *event.GetEditFormViewUseCase
 }
 
-func NewTournamentHandler(
-	createUC *tournament.CreateEventUseCase,
-	updateUC *tournament.UpdateEventUseCase,
-	getByID *tournament.GetEventByIDUseCase,
-	getAll *tournament.GetAllEventsUseCase,
-	deleteUC *tournament.DeleteEventUseCase,
-	divisionUC *division.DivisionUseCase,
+func NewEventHandler(
+	createUC *event.CreateTournamentUseCase,
+	getByID *event.GetTournamentByIDUseCase,
+	updateUC *event.UpdateTournamentUseCase,
+	deleteUC *event.DeleteTournamentUseCase,
 	leaderboardUC *leaderboard.GetLeaderboardUseCase,
-	exportPdfUC *event.ExportEventPdfUseCase,
-) *TournamentHandler {
-	return &TournamentHandler{
-		createUC:      createUC,
-		updateUC:      updateUC,
-		getByID:       getByID,
-		getAll:        getAll,
-		deleteUC:      deleteUC,
-		divisionUC:    divisionUC,
-		leaderboardUC: leaderboardUC,
-		exportPdfUC:   exportPdfUC,
+	divisionUC *division.DivisionUseCase,
+	finishUC *event.FinishTournamentUseCase,
+	exportUC *event.ExportTournamentReportUseCase,
+	exportPdfUC *event.ExportTournamentPdfUseCase,
+	movePlayerUC *event.MovePlayerUseCase,
+	createTeamUC *event.CreateTeamUseCase,
+	deleteTeamUC *event.DeleteTeamUseCase,
+	assignPlayerToTeamUC *event.AssignPlayerToTeamUseCase,
+	removePlayerFromTeamUC *event.RemovePlayerFromTeamUseCase,
+	getTournamentsUC *event.GetTournamentsUseCase,
+	getOccupiedTablesUC *event.GetOccupiedTablesUseCase,
+	regenerateSeedsUC *event.RegenerateGroupSeedsUseCase,
+	updateParticipantEloUC *event.UpdateParticipantEloBeforeUseCase,
+	removeParticipantUC *event.RemoveParticipantUseCase,
+	saveKnockoutSeedsUC *event.SaveKnockoutSeedsUseCase,
+	toggleSeedingLockUC *event.ToggleSeedingLockUseCase,
+	addGroupUC *event.AddGroupUseCase,
+	recalculateEloUC *event.RecalculateTournamentEloUseCase,
+	startKnockoutUC *event.StartKnockoutStageUseCase,
+	getDetailViewUC *event.GetEventDetailViewUseCase,
+	getPublicDetailViewUC *event.GetPublicEventDetailViewUseCase,
+	tvDashboardUC *event.GetPublicTVDashboardViewUseCase,
+	boardViewUC *event.GetBoardViewUseCase,
+	editFormViewUC *event.GetEditFormViewUseCase,
+) *EventHandler {
+	return &EventHandler{
+		createUC:               createUC,
+		getByID:                getByID,
+		updateUC:               updateUC,
+		deleteUC:               deleteUC,
+		leaderboardUC:          leaderboardUC,
+		divisionUC:             divisionUC,
+		finishUC:               finishUC,
+		exportUC:               exportUC,
+		exportPdfUC:            exportPdfUC,
+		movePlayerUC:           movePlayerUC,
+		createTeamUC:           createTeamUC,
+		deleteTeamUC:           deleteTeamUC,
+		assignPlayerToTeamUC:   assignPlayerToTeamUC,
+		removePlayerFromTeamUC: removePlayerFromTeamUC,
+		getTournamentsUC:       getTournamentsUC,
+		getOccupiedTablesUC:    getOccupiedTablesUC,
+		regenerateSeedsUC:      regenerateSeedsUC,
+		updateParticipantEloUC: updateParticipantEloUC,
+		removeParticipantUC:    removeParticipantUC,
+		saveKnockoutSeedsUC:    saveKnockoutSeedsUC,
+		toggleSeedingLockUC:    toggleSeedingLockUC,
+		addGroupUC:             addGroupUC,
+		recalculateEloUC:       recalculateEloUC,
+		startKnockoutUC:        startKnockoutUC,
+		getDetailViewUC:        getDetailViewUC,
+		getPublicDetailViewUC:  getPublicDetailViewUC,
+		tvDashboardUC:          tvDashboardUC,
+		boardViewUC:            boardViewUC,
+		editFormViewUC:         editFormViewUC,
 	}
 }
 
-func (h *TournamentHandler) Create(c *fiber.Ctx) error {
-	name := c.FormValue("name")
-	skipElo := c.FormValue("skipElo") == "on"
-	var divisionIDs []string
-	for _, rawId := range c.Request().PostArgs().PeekMulti("divisionIds[]") {
-		divisionIDs = append(divisionIDs, string(rawId))
-	}
-	if len(divisionIDs) == 0 {
-		if divID := c.FormValue("divisionId"); divID != "" {
-			divisionIDs = append(divisionIDs, divID)
-		}
-	}
-	if skipElo {
-		divisionIDs = []string{"none"}
-	}
-	startDate := c.FormValue("startDate")
-	endDate := c.FormValue("endDate")
+func (h *EventHandler) StartKnockout(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	divID := c.Params("divId")
 
-	parseCategoryConfig := func(catKey string, defaultFormat string) tournament.CategoryConfig {
-		auto := c.FormValue("auto"+catKey) == "on"
-		format := c.FormValue("format" + catKey)
-		if format == "" {
-			format = c.FormValue("format")
-			if format == "" {
-				format = defaultFormat
-			}
-		}
-		passCount := 2
-		fmt.Sscanf(c.FormValue("groupPassCount"+catKey), "%d", &passCount)
-
-		var ids []string
-		for _, rawId := range c.Request().PostArgs().PeekMulti("participantIds" + catKey + "[]") {
-			ids = append(ids, string(rawId))
-		}
-
-		// Fallback to global player pool if specific category pool is empty
-		if len(ids) == 0 {
-			for _, rawId := range c.Request().PostArgs().PeekMulti("participant_ids[]") {
-				ids = append(ids, string(rawId))
-			}
-		}
-
-		return tournament.CategoryConfig{
-			Auto:           auto,
-			Format:         format,
-			GroupPassCount: passCount,
-			PlayerIDs:      ids,
-		}
-	}
-
-	singlesMen := parseCategoryConfig("SinglesMen", "groups_elimination")
-	singlesWomen := parseCategoryConfig("SinglesWomen", "groups_elimination")
-	doublesMen := parseCategoryConfig("DoublesMen", "elimination")
-	doublesWomen := parseCategoryConfig("DoublesWomen", "elimination")
-	doublesMixed := parseCategoryConfig("DoublesMixed", "elimination")
-	teamsMen := parseCategoryConfig("TeamsMen", "round_robin")
-	teamsWomen := parseCategoryConfig("TeamsWomen", "round_robin")
-
-	var existingTournamentIDs []string
-	for _, rawId := range c.Request().PostArgs().PeekMulti("existingTournamentIds[]") {
-		existingTournamentIDs = append(existingTournamentIDs, string(rawId))
-	}
-
-	e, err := h.createUC.Execute(
-		c.Context(), name, divisionIDs, skipElo, startDate, endDate,
-		singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen,
-		existingTournamentIDs,
-	)
+	err := h.startKnockoutUC.Execute(c.Context(), tournamentID, divID)
 	if err != nil {
 		return ErrorHandler(err)
 	}
 
-	var rowBuf strings.Builder
-	if err := c.App().Config().Views.Render(&rowBuf, "admin/partials/tournament-row", e); err != nil {
+	c.Set("HX-Trigger", `{"show-toast": {"message": "Knockout matches created and scheduled!", "type": "success"}}`)
+	return c.SendString("")
+}
+
+
+func (h *EventHandler) Create(c *fiber.Ctx) error {
+	cmd, err := parseCreateEventCommand(c)
+	if err != nil {
 		return ErrorHandler(err)
 	}
 
-	toastHTML := fmt.Sprintf(`
-<td style="display:none;">
-	<div id="toast-container" hx-swap-oob="beforeend">
-		<div class="flex items-center gap-3 px-5 py-4 rounded-2xl bg-club-panel border border-white/10 shadow-2xl transition-all duration-500 max-w-sm toast-slide-in pointer-tournaments-auto">
-			<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-			<span class="text-xs font-bold uppercase tracking-wider text-white/90">Grand Tournament "%s" initialized successfully!</span>
-		</div>
-	</div>
-</td>`, e.Name)
-
-	rowStr := rowBuf.String()
-	if idx := strings.LastIndex(rowStr, "</tr>"); idx != -1 {
-		rowStr = rowStr[:idx] + toastHTML + rowStr[idx:]
-	} else {
-		rowStr = rowStr + toastHTML
+	t, err := h.createUC.Execute(c.Context(), cmd)
+	if err != nil {
+		return ErrorHandler(err)
 	}
 
-	c.Set("Content-Type", "text/html")
-	return c.SendString(rowStr)
+	return c.Render("admin/partials/event-row", t)
 }
 
-func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
+func (h *EventHandler) Detail(c *fiber.Ctx) error {
 	id := c.Params("id")
+	statusFilter := c.Query("status", "all")
+	playerSearch := c.Query("player_search", "")
 
-	type result struct {
-		tournament any
-		err        error
-		divisions  any
-	}
-	var res result
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		res.tournament, res.err = h.getByID.Execute(c.Context(), id)
-	}()
-	go func() {
-		defer wg.Done()
-		res.divisions, _ = h.divisionUC.GetAll(c.Context())
-	}()
-	wg.Wait()
-
-	if res.err != nil {
-		return ErrorHandler(res.err)
+	view, err := h.getDetailViewUC.Execute(c.Context(), id, statusFilter, playerSearch)
+	if err != nil {
+		return ErrorHandler(err)
 	}
 
-	return c.Render("admin/tournament-detail", fiber.Map{
-		"Tournament": res.tournament,
-		"Divisions":  res.divisions,
+	return c.Render("admin/event-detail", fiber.Map{
+		"Event":                 view.Event,
+		"Players":               view.Players,
+		"Divisions":             view.Divisions,
+		"BracketViewModel":      view.BracketViewModel,
+		"AvailableParticipants": view.AvailableParticipants,
+		"StatusFilter":          statusFilter,
+		"PlayerSearch":          playerSearch,
+		"PlayerPins":            view.PlayerPins,
+		"Officials":             view.Officials,
+		"ParticipantRows":       view.ParticipantRows,
 	}, "layouts/admin")
 }
 
-func (h *TournamentHandler) Delete(c *fiber.Ctx) error {
+func (h *EventHandler) AddOfficial(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	var body struct {
+		PlayerID string `form:"playerId"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return ErrorHandler(err)
+	}
+	if err := h.getByID.AddOfficial(c.Context(), tournamentID, body.PlayerID); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/events/%s", tournamentID))
+}
+
+func (h *EventHandler) RemoveOfficial(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	playerID := c.Params("playerId")
+	if err := h.getByID.RemoveOfficial(c.Context(), tournamentID, playerID); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/events/%s", tournamentID))
+}
+
+func (h *EventHandler) RemoveParticipant(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	playerID := c.Params("playerId")
+	if err := h.removeParticipantUC.Execute(c.Context(), tournamentID, playerID); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/events/%s", tournamentID))
+}
+
+func (h *EventHandler) ShowEditForm(c *fiber.Ctx) error {
 	id := c.Params("id")
-	if err := h.deleteUC.Execute(c.Context(), id); err != nil {
+	view, err := h.editFormViewUC.Execute(c.Context(), id)
+	if err != nil {
+		return ErrorHandler(err)
+	}
+	return c.Render("admin/partials/event-edit-form", fiber.Map{
+		"Event":     view.Event,
+		"Players":   view.Players,
+		"Divisions": view.Divisions,
+	})
+}
+
+
+func (h *EventHandler) Update(c *fiber.Ctx) error {
+	cmd, err := parseUpdateEventCommand(c)
+	if err != nil {
+		return ErrorHandler(err)
+	}
+	t, err := h.updateUC.Execute(c.Context(), cmd)
+	if err != nil {
 		return ErrorHandler(err)
 	}
 
 	if c.Get("HX-Request") != "" {
-		if c.Get("HX-Current-URL") != "" && fmt.Sprintf("/admin/tournaments/%s", id) == c.Get("HX-Current-URL") {
-			c.Set("HX-Redirect", "/admin/tournaments")
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Render("admin/partials/event-row", t)
+}
+
+func (h *EventHandler) Delete(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if err := h.deleteUC.Execute(c.Context(), id); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		if c.Get("HX-Current-URL") != "" && fmt.Sprintf("/admin/events/%s", id) == c.Get("HX-Current-URL") {
+			c.Set("HX-Redirect", "/admin/events")
 		}
 		return c.SendString("")
 	}
 	return c.SendString("")
 }
 
-func (h *TournamentHandler) DeleteBulk(c *fiber.Ctx) error {
+func (h *EventHandler) Finish(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	if err := h.finishUC.Execute(c.Context(), idStr); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.JSON(fiber.Map{"status": "finished"})
+}
+
+func (h *EventHandler) RegenerateGroupSeeds(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	if err := h.regenerateSeedsUC.Execute(c.Context(), idStr); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Trigger", "reload-bracket, reload-matches")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.JSON(fiber.Map{"status": "regenerated"})
+}
+
+func (h *EventHandler) UpdateParticipantEloBefore(c *fiber.Ctx) error {
+	idStr := c.Params("id")
 	var body struct {
-		IDs []string `json:"ids" form:"ids"`
+		PlayerID   string `form:"playerId"`
+		SinglesElo int16  `form:"singlesElo"`
+		DoublesElo int16  `form:"doublesElo"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return ErrorHandler(err)
 	}
-
-	if len(body.IDs) > 0 {
-		if err := h.deleteUC.ExecuteBulk(c.Context(), body.IDs); err != nil {
-			return ErrorHandler(err)
-		}
+	if body.PlayerID == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "playerId is required")
 	}
-
+	if err := h.updateParticipantEloUC.Execute(c.Context(), idStr, body.PlayerID, body.SinglesElo, body.DoublesElo); err != nil {
+		return ErrorHandler(err)
+	}
 	if c.Get("HX-Request") != "" {
-		c.Set("HX-Redirect", "/admin/tournaments")
+		c.Set("HX-Trigger", "reload-bracket, reload-matches")
 		return c.SendStatus(fiber.StatusOK)
 	}
-	return c.Redirect("/admin/tournaments")
+	return c.JSON(fiber.Map{"status": "updated"})
 }
 
-func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
-	lang := getLang(c)
-	id := c.Params("id")
-
-	type result struct {
-		tournament any
-		err        error
-		divisions  any
-	}
-	var res result
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		res.tournament, res.err = h.getByID.Execute(c.Context(), id)
-	}()
-	go func() {
-		defer wg.Done()
-		res.divisions, _ = h.divisionUC.GetAll(c.Context())
-	}()
-	wg.Wait()
-
-	if res.err != nil {
-		return ErrorHandler(res.err)
+func (h *EventHandler) Export(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	csvBytes, err := h.exportUC.Execute(c.Context(), idStr)
+	if err != nil {
+		return ErrorHandler(err)
 	}
 
-	return c.Render("public/tournament-detail", merge(tMap(lang), fiber.Map{
-		"Tournament":   res.tournament,
-		"Divisions":    res.divisions,
-		"Type":         "Events", // highlight events tab in layout
-		"OGImage":      c.BaseURL() + "/open_tdm.jpeg",
-		"CanonicalURL": c.BaseURL() + c.Path(),
-	}), "layouts/public")
+	c.Set("Content-Type", "text/csv")
+	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"event_report_%s.csv\"", idStr))
+	return c.Send(csvBytes)
 }
 
-func (h *TournamentHandler) ExportEventPDF(c *fiber.Ctx) error {
+func (h *EventHandler) ExportPDF(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	pdfBytes, err := h.exportPdfUC.Execute(c.Context(), idStr)
 	if err != nil {
@@ -262,388 +322,559 @@ func (h *TournamentHandler) ExportEventPDF(c *fiber.Ctx) error {
 	}
 
 	c.Set("Content-Type", "application/pdf")
-	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"tournament_report_%s.pdf\"", idStr))
+	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"event_report_%s.pdf\"", idStr))
 	return c.Send(pdfBytes)
 }
 
-func (h *TournamentHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDomain.Tournament, []*divisionDomain.Division, []event.BoardCard, []event.BoardCard, []event.BoardCard, error) {
-	ctx := c.Context()
+func (h *EventHandler) MovePlayer(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var body struct {
+		PlayerID      string `json:"playerId" form:"playerId"`
+		TargetGroupID string `json:"targetGroupId" form:"targetGroupId"`
+		TargetIndex   *int   `json:"targetIndex" form:"targetIndex"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return ErrorHandler(err)
+	}
 
-	// Ensure deep fetch of the tournament so all events and matches are loaded.
-	// Actually, getByID uses GetByIDDeep behind the scenes which includes events and matches.
-	e, err := h.getByID.Execute(ctx, eventID)
+	targetIndex := -1
+	if body.TargetIndex != nil {
+		targetIndex = *body.TargetIndex
+	}
+
+	if err := h.movePlayerUC.Execute(c.Context(), id, body.PlayerID, body.TargetGroupID, targetIndex); err != nil {
+		return ErrorHandler(err)
+	}
+
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Trigger", "reload-bracket, reload-matches")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.SendString("OK")
+}
+
+func (h *EventHandler) SaveKnockoutSeeds(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var body struct {
+		DivID     string `json:"divId" form:"divId"`
+		PlayerIDs string `json:"playerIds" form:"playerIds"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return ErrorHandler(err)
+	}
+
+	if err := h.saveKnockoutSeedsUC.Execute(c.Context(), id, body.DivID, body.PlayerIDs); err != nil {
+		return ErrorHandler(err)
+	}
+
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Trigger", "reload-bracket, reload-matches")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.SendString("OK")
+}
+
+func (h *EventHandler) AddGroup(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var body struct {
+		DivisionName string `json:"divisionName" form:"divisionName"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return ErrorHandler(err)
+	}
+
+	if err := h.addGroupUC.Execute(c.Context(), id, body.DivisionName); err != nil {
+		return ErrorHandler(err)
+	}
+
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Trigger", "reload-bracket, reload-matches")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.SendString("OK")
+}
+
+func (h *EventHandler) CreateTeam(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	var body struct {
+		Name string `form:"name"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return ErrorHandler(err)
+	}
+	if _, err := h.createTeamUC.Execute(c.Context(), tournamentID, body.Name); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/events/%s", tournamentID))
+}
+
+func (h *EventHandler) DeleteTeam(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	teamID := c.Params("teamId")
+	if err := h.deleteTeamUC.Execute(c.Context(), teamID); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/events/%s", tournamentID))
+}
+
+func (h *EventHandler) AssignPlayerToTeam(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	teamID := c.Params("teamId")
+	var body struct {
+		PlayerID string `form:"playerId"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return ErrorHandler(err)
+	}
+	if err := h.assignPlayerToTeamUC.Execute(c.Context(), teamID, body.PlayerID); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/events/%s", tournamentID))
+}
+
+func (h *EventHandler) RemovePlayerFromTeam(c *fiber.Ctx) error {
+	tournamentID := c.Params("id")
+	teamID := c.Params("teamId")
+	playerID := c.Params("playerId")
+	if err := h.removePlayerFromTeamUC.Execute(c.Context(), teamID, playerID); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect(fmt.Sprintf("/admin/events/%s", tournamentID))
+}
+
+func (h *EventHandler) PublicList(c *fiber.Ctx) error {
+	lang := getLang(c)
+	events, err := h.getTournamentsUC.Execute(c.Context())
 	if err != nil {
-		return nil, nil, nil, nil, nil, err
+		return ErrorHandler(err)
+	}
+	return c.Render("public/events", merge(tMap(lang), fiber.Map{
+		"Events":       events,
+		"Type":         "Events",
+		"OGImage":      c.BaseURL() + "/open_tdm.jpeg",
+		"Title":        "Events",
+		"CanonicalURL": c.BaseURL() + c.Path(),
+	}), "layouts/public")
+}
+
+func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
+	lang := getLang(c)
+	id := c.Params("id")
+	statusFilter := c.Query("status", "all")
+	playerSearch := c.Query("player_search", "")
+	canonicalURL := c.BaseURL() + c.Path()
+	tmap, _ := c.Locals("T").(map[string]string)
+
+	view, err := h.getPublicDetailViewUC.Execute(
+		c.Context(), id, statusFilter, playerSearch, canonicalURL, BuildBoardCards, tmap,
+	)
+	if err != nil {
+		return ErrorHandler(err)
 	}
 
-	divs, _ := h.divisionUC.GetAll(ctx)
+	return c.Render("public/event-detail", merge(tMap(lang), fiber.Map{
+		"Event":            view.Event,
+		"Divisions":        view.Divisions,
+		"BracketViewModel": view.BracketViewModel,
+		"Type":             "Events",
+		"StatusFilter":     statusFilter,
+		"PlayerSearch":     playerSearch,
+		"RefereeNames":     view.RefereeNames,
+		"CanonicalURL":     canonicalURL,
+		"OGImage":          c.BaseURL() + "/open_tdm.jpeg",
+		"JSONLD":           view.JSONLD,
+		"Title":            view.Event.Name,
+		"Description":      fmt.Sprintf("%s Event. Register and view live bracket.", view.Event.Name),
+	}), "layouts/public")
+}
 
-	var inProgress []event.BoardCard
-	var finished []event.BoardCard
+func (h *EventHandler) PublicTVDashboard(c *fiber.Ctx) error {
+	lang := getLang(c)
+	id := c.Params("id")
+	playerSearch := c.Query("player_search", "")
+	tmap, _ := c.Locals("T").(map[string]string)
 
-	type activePool struct {
-		id             string
-		tournamentID   string
-		divisionName   string
-		tournamentName string
-		pool           []event.BoardCard
+	view, err := h.tvDashboardUC.Execute(c.Context(), id, playerSearch, BuildBoardCards, tmap)
+	if err != nil {
+		return ErrorHandler(err)
 	}
-	var activePools []activePool
 
-	divPlayerCounts := make(map[string]int)
+	tables := event.BuildTableVMs(view.Event, "", h.getOccupiedTables(c.Context(), view.Event))
 
-	// Global tracker for initial player availability based on finished matches
-	lastActivity := make(map[string]time.Time)
+	return c.Render("public/tv-dashboard", merge(tMap(lang), fiber.Map{
+		"Event":            view.Event,
+		"Divisions":        view.Divisions,
+		"BracketViewModel": view.BracketViewModel,
+		"Scheduled":        view.Scheduled,
+		"InProgress":       view.InProgress,
+		"Finished":         view.Finished,
+		"Tables":           tables,
+	})) // No layout for TV
+}
 
-	for _, t := range e.Events {
-		s, i, f := BuildBoardCards(t, divs)
+// TableVM is a view model for a table's status. Defined in application/event/board_helpers.go.
+// This alias keeps templates working without change.
+type TableVM = event.TableVM
 
-		// Build the view model to get player counts per division
-		vm := bracket.BuildBracket(t, divs, nil)
-		for _, dv := range vm.Divisions {
-			divPlayerCounts[dv.Name] += len(dv.Players)
+func (h *EventHandler) getOccupiedTables(ctx context.Context, t *tournamentDomain.Event) []int {
+	occupiedList, _ := h.getOccupiedTablesUC.Execute(ctx, t)
+	return occupiedList
+}
+
+
+func FilterBoardCards(cards []event.BoardCard, q string, divs []string) []event.BoardCard {
+	if q == "" && len(divs) == 0 {
+		return cards
+	}
+
+	divMap := make(map[string]bool)
+	for _, d := range divs {
+		divMap[d] = true
+	}
+
+	var filtered []event.BoardCard
+	for _, card := range cards {
+		matchesSearch := q == "" || strings.Contains(strings.ToLower(card.PlayerAName), q) ||
+			strings.Contains(strings.ToLower(card.PlayerBName), q) ||
+			strings.Contains(strings.ToLower(card.GroupName), q)
+		matchesDiv := len(divMap) == 0 || divMap[card.DivisionName]
+
+		if matchesSearch && matchesDiv {
+			filtered = append(filtered, card)
 		}
+	}
+	return filtered
+}
 
-		// Inject TournamentName and TournamentID into cards
-		for idx := range s {
-			s[idx].TournamentName = t.Name
-			s[idx].TournamentID = t.ID
+func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division) (scheduled, inProgress, finished []event.BoardCard) {
+	nameOf := func(players []*player.Player) string {
+		if len(players) == 0 {
+			return "TBD"
 		}
-		for idx := range i {
-			i[idx].TournamentName = t.Name
-			i[idx].TournamentID = t.ID
+		p := players[0]
+		if len(players) > 1 {
+			return p.FirstNameWithSecond() + " / " + players[1].FirstNameWithSecond()
 		}
-		for idx := range f {
-			f[idx].TournamentName = t.Name
-			f[idx].TournamentID = t.ID
+		return p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
+	}
+	idOf := func(players []*player.Player) string {
+		if len(players) == 0 {
+			return ""
 		}
+		return players[0].ID
+	}
 
-		// Group scheduled cards by division
-		scheduledByDiv := make(map[string][]event.BoardCard)
-		for _, card := range s {
-			scheduledByDiv[card.DivisionName] = append(scheduledByDiv[card.DivisionName], card)
-		}
-
-		// Group in-progress cards by division
-		inProgressByDiv := make(map[string][]event.BoardCard)
-		for _, card := range i {
-			inProgressByDiv[card.DivisionName] = append(inProgressByDiv[card.DivisionName], card)
-		}
-
-		// Collect all active divisions in this event
-		allDivNamesMap := make(map[string]bool)
-		for _, card := range s {
-			allDivNamesMap[card.DivisionName] = true
-		}
-		for _, card := range i {
-			allDivNamesMap[card.DivisionName] = true
-		}
-
-		for divName := range allDivNamesMap {
-			var u []event.BoardCard
-			var v []event.BoardCard
-			for _, card := range scheduledByDiv[divName] {
-				if card.MatchID == "" {
-					v = append(v, card)
-				} else {
-					u = append(u, card)
-				}
-			}
-
-			pool := append(u, v...)
-			poolKey := fmt.Sprintf("%s:%s", t.ID, divName)
-
-			activePools = append(activePools, activePool{
-				id:             poolKey,
-				tournamentID:   t.ID,
-				divisionName:   divName,
-				tournamentName: t.Name,
-				pool:           pool,
-			})
-		}
-
-		inProgress = append(inProgress, i...)
-		finished = append(finished, f...)
-
-		// Track last activity based on database finished matches
-		for _, m := range t.Matches {
-			if m.Status == "finished" {
-				tAct := time.Time{}
-				if m.UpdatedAt != nil {
-					tAct = *m.UpdatedAt
-				}
-				for _, p := range m.TeamA {
-					if lastActivity[p.ID].Before(tAct) {
-						lastActivity[p.ID] = tAct
+	findGroupName := func(playerID string) string {
+		for _, g := range t.Groups {
+			for _, p := range g.Players {
+				if p.ID == playerID {
+					name := g.Name
+					if idx := strings.Index(g.Name, " - "); idx != -1 {
+						name = g.Name[idx+3:]
 					}
-				}
-				for _, p := range m.TeamB {
-					if lastActivity[p.ID].Before(tAct) {
-						lastActivity[p.ID] = tAct
-					}
+					return name
 				}
 			}
 		}
+		return ""
 	}
 
-	// Calculate unique active divisions across all events
-	activeDivisionsMap := make(map[string]bool)
-	for _, ap := range activePools {
-		activeDivisionsMap[ap.divisionName] = true
-	}
-
-	type activeDivInfo struct {
-		name        string
-		playerCount int
-	}
-	var activeDivs []activeDivInfo
-	totalPlayers := 0
-
-	for divName := range activeDivisionsMap {
-		pCount := divPlayerCounts[divName]
-		if pCount <= 0 {
-			pCount = 1
-		}
-		activeDivs = append(activeDivs, activeDivInfo{
-			name:        divName,
-			playerCount: pCount,
-		})
-		totalPlayers += pCount
-	}
-
-	// 1. Proportional Table Allocation (Hamilton Method) globally by Division Name
-	maxTables := e.NumTables
-	if maxTables <= 0 {
-		maxTables = 6 // default fallback
-	}
-
-	allocated := make(map[string]int)
-	remainingTables := maxTables
-	numActiveDivs := len(activeDivs)
-
-	if numActiveDivs > 0 {
-		if remainingTables >= numActiveDivs {
-			for _, ad := range activeDivs {
-				allocated[ad.name] = 1
-				remainingTables--
-			}
-		} else {
-			// Sort active divisions by player count descending
-			sort.Slice(activeDivs, func(i, j int) bool {
-				return activeDivs[i].playerCount > activeDivs[j].playerCount
-			})
-			for _, ad := range activeDivs {
-				if remainingTables > 0 {
-					allocated[ad.name] = 1
-					remainingTables--
-				} else {
-					allocated[ad.name] = 0
-				}
-			}
-		}
-
-		if remainingTables > 0 && totalPlayers > 0 {
-			type remainderInfo struct {
-				name      string
-				remainder float64
-			}
-			var remainders []remainderInfo
-			allocatedSum := 0
-
-			for _, ad := range activeDivs {
-				share := float64(ad.playerCount) / float64(totalPlayers) * float64(remainingTables)
-				intShare := int(share)
-				allocated[ad.name] += intShare
-				allocatedSum += intShare
-				remainders = append(remainders, remainderInfo{
-					name:      ad.name,
-					remainder: share - float64(intShare),
-				})
-			}
-
-			leftover := remainingTables - allocatedSum
-			sort.Slice(remainders, func(i, j int) bool {
-				return remainders[i].remainder > remainders[j].remainder
-			})
-			for i := 0; i < leftover && i < len(remainders); i++ {
-				allocated[remainders[i].name]++
-			}
-		}
-	}
-
-	// 2. Tournament-Driven queue scheduling simulation
-	pools := make(map[string][]event.BoardCard)
-	for _, ap := range activePools {
-		pools[ap.id] = ap.pool
-	}
-
-	var globalScheduled []event.BoardCard
-	type runningMatch struct {
-		divisionName string
-		endTime      time.Time
-	}
-	var runningMatches []runningMatch
-
-	simClock := time.Now()
-	availableTime := make(map[string]time.Time)
-	scheduledCounts := make(map[string]int)
-
-	// Pre-fill player availableTime from database finished matches
-	for pID, tAct := range lastActivity {
-		availableTime[pID] = tAct.Add(10 * time.Minute) // 10 minutes of rest after their last finished match
-	}
-
-	// Initialize in-progress matches
-	for _, c := range inProgress {
-		avail := time.Now().Add(25 * time.Minute) // 15 mins play + 10 mins rest
-		if c.P1Id != "" {
-			availableTime[c.P1Id] = avail
-		}
-		if c.P2Id != "" {
-			availableTime[c.P2Id] = avail
-		}
-		runningMatches = append(runningMatches, runningMatch{
-			divisionName: c.DivisionName,
-			endTime:      time.Now().Add(15 * time.Minute),
-		})
-	}
-
-	getPlayerAvail := func(playerID string) time.Time {
+	findDivisionName := func(playerID string) string {
 		if playerID == "" {
-			return time.Time{}
+			return ""
 		}
-		if t, ok := availableTime[playerID]; ok {
-			return t
-		}
-		return time.Time{}
-	}
-
-	for {
-		// Clean up finished matches at current simClock
-		var nextRunning []runningMatch
-		activeCount := make(map[string]int)
-		for _, rm := range runningMatches {
-			if rm.endTime.After(simClock) {
-				nextRunning = append(nextRunning, rm)
-				activeCount[rm.divisionName]++
+		var targetPlayer *player.Player
+		for _, p := range t.Participants {
+			if p.ID == playerID {
+				targetPlayer = p
+				break
 			}
 		}
-		runningMatches = nextRunning
-
-		// Identify candidates
-		type candidate struct {
-			card         event.BoardCard
-			maxAvail     time.Time
-			ratio        float64
-			poolIdx      string
-			divisionName string
+		if targetPlayer == nil {
+			return ""
 		}
-		var candidates []candidate
-
-		for id, pool := range pools {
-			if len(pool) == 0 {
+		elo := targetPlayer.SinglesElo
+		if t.Type == "doubles" || t.Type == "mixed_doubles" {
+			elo = targetPlayer.DoublesElo
+		}
+		for _, d := range divs {
+			if d.MinElo == 0 && d.MaxElo == nil {
 				continue
 			}
-			c := pool[0]
-			t1 := getPlayerAvail(c.P1Id)
-			t2 := getPlayerAvail(c.P2Id)
-			maxAvail := t1
-			if t2.After(t1) {
-				maxAvail = t2
-			}
-
-			divName := c.DivisionName
-			alloc := allocated[divName]
-			var ratio float64
-			if alloc > 0 {
-				ratio = float64(activeCount[divName]) / float64(alloc)
-			} else {
-				ratio = float64(activeCount[divName]) / 0.5
-			}
-
-			candidates = append(candidates, candidate{
-				card:         c,
-				maxAvail:     maxAvail,
-				ratio:        ratio,
-				poolIdx:      id,
-				divisionName: divName,
-			})
-		}
-
-		if len(candidates) == 0 {
-			break
-		}
-
-		// Check available candidates
-		var availableCandidates []candidate
-		for _, cand := range candidates {
-			if !cand.maxAvail.After(simClock) {
-				availableCandidates = append(availableCandidates, cand)
+			if (d.Category == "both" || d.Category == t.Type) && elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
+				return d.Name
 			}
 		}
-
-		var chosen candidate
-		if len(availableCandidates) > 0 {
-			sort.Slice(availableCandidates, func(i, j int) bool {
-				c1, c2 := availableCandidates[i], availableCandidates[j]
-				u1 := c1.ratio < 1.0
-				u2 := c2.ratio < 1.0
-				if u1 != u2 {
-					return u1
-				}
-				if c1.ratio != c2.ratio {
-					return c1.ratio < c2.ratio
-				}
-				// Prioritize the division with the larger player count (allocated tables)
-				alloc1 := allocated[c1.divisionName]
-				alloc2 := allocated[c2.divisionName]
-				if alloc1 != alloc2 {
-					return alloc1 > alloc2 // descending
-				}
-				// Alternate between events of the same division to prevent category starvation
-				count1 := scheduledCounts[c1.poolIdx]
-				count2 := scheduledCounts[c2.poolIdx]
-				if count1 != count2 {
-					return count1 < count2
-				}
-				if !c1.maxAvail.Equal(c2.maxAvail) {
-					return c1.maxAvail.Before(c2.maxAvail)
-				}
-				return c1.poolIdx < c2.poolIdx
-			})
-			chosen = availableCandidates[0]
-		} else {
-			// Time warp
-			sort.Slice(candidates, func(i, j int) bool {
-				return candidates[i].maxAvail.Before(candidates[j].maxAvail)
-			})
-			simClock = candidates[0].maxAvail
-			continue
-		}
-
-		globalScheduled = append(globalScheduled, chosen.card)
-		scheduledCounts[chosen.poolIdx]++
-
-		// Occupy table globally by division name
-		runningMatches = append(runningMatches, runningMatch{
-			divisionName: chosen.divisionName,
-			endTime:      simClock.Add(20 * time.Minute),
-		})
-
-		// Lock players
-		avail := simClock.Add(30 * time.Minute)
-		if chosen.card.P1Id != "" {
-			availableTime[chosen.card.P1Id] = avail
-		}
-		if chosen.card.P2Id != "" {
-			availableTime[chosen.card.P2Id] = avail
-		}
-
-		// Advance pool
-		pools[chosen.poolIdx] = pools[chosen.poolIdx][1:]
+		return "Open Bracket"
 	}
 
-	// Mark players currently in a match across the entire tournament and set global QueuePosition
+	// 1. Process actual matches in database
+	for i := range t.Matches {
+		m := &t.Matches[i]
+		if m.TeamMatchID != nil { // skip sub-matches
+			continue
+		}
+		card := event.BoardCard{
+			MatchID:     m.ID,
+			Status:      m.Status,
+			Stage:       m.Stage,
+			BestOf:      t.GetEffectiveStageRule(m.Stage, m.DivisionID).BestOf,
+			PlayerAName: nameOf(m.TeamA),
+			PlayerBName: nameOf(m.TeamB),
+			P1Id:        idOf(m.TeamA),
+			P2Id:        idOf(m.TeamB),
+			TableNumber: m.TableNumber,
+			ScoreA:      m.ScoreA(),
+			ScoreB:      m.ScoreB(),
+			Pin:         m.Pin,
+			RoundNumber: m.RoundNumber,
+			Category:    t.EventCategory,
+			GroupName: func() string {
+				if len(m.TeamA) > 0 {
+					return findGroupName(m.TeamA[0].ID)
+				}
+				return ""
+			}(),
+			DivisionName: func() string {
+				if len(m.TeamA) > 0 {
+					return findDivisionName(m.TeamA[0].ID)
+				}
+				return ""
+			}(),
+		}
+		switch m.Status {
+		case "in_progress":
+			inProgress = append(inProgress, card)
+		case "finished":
+			finished = append(finished, card)
+		default:
+			scheduled = append(scheduled, card)
+		}
+	}
+
+	// 2. Identify virtual matches that should be scheduled based on the format
+	vm := bracket.BuildBracket(t, divs, nil)
+	for _, dv := range vm.Divisions {
+		if vm.Format == "round_robin" {
+			for _, mv := range dv.RoundRobinMatches {
+				if mv.Player1 != nil && mv.Player2 != nil {
+					if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID, mv.Stage) {
+						groupName := findGroupName(mv.Player1.ID)
+						scheduled = append(scheduled, event.BoardCard{
+							MatchID:      "",
+							Status:       "scheduled",
+							Stage:        mv.Stage,
+							BestOf:       mv.BestOf,
+							PlayerAName:  mv.Player1.FirstNameWithSecond() + " " + mv.Player1.LastNameWithSecond(),
+							PlayerBName:  mv.Player2.FirstNameWithSecond() + " " + mv.Player2.LastNameWithSecond(),
+							P1Id:         mv.Player1.ID,
+							P2Id:         mv.Player2.ID,
+							TableNumber:  nil,
+							ScoreA:       0,
+							ScoreB:       0,
+							Pin:          "",
+							GroupName:    groupName,
+							DivisionName: dv.Name,
+							Category:     t.EventCategory,
+						})
+					}
+				}
+			}
+		} else if vm.Format == "groups_elimination" {
+			for _, g := range dv.Groups {
+				for _, mv := range g.Matches {
+					if mv.Player1 != nil && mv.Player2 != nil {
+						if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID, mv.Stage) {
+							scheduled = append(scheduled, event.BoardCard{
+								MatchID:      "",
+								Status:       "scheduled",
+								Stage:        mv.Stage,
+								BestOf:       mv.BestOf,
+								PlayerAName:  mv.Player1.FirstNameWithSecond() + " " + mv.Player1.LastNameWithSecond(),
+								PlayerBName:  mv.Player2.FirstNameWithSecond() + " " + mv.Player2.LastNameWithSecond(),
+								P1Id:         mv.Player1.ID,
+								P2Id:         mv.Player2.ID,
+								TableNumber:  nil,
+								ScoreA:       0,
+								ScoreB:       0,
+								Pin:          "",
+								GroupName:    g.Name,
+								DivisionName: dv.Name,
+								Category:     t.EventCategory,
+							})
+						}
+					}
+				}
+			}
+			if dv.AllGroupsFinished {
+				for _, round := range dv.KnockoutRounds {
+					for _, bmv := range round.Matches {
+						if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
+							if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID, bmv.Stage) {
+								scheduled = append(scheduled, event.BoardCard{
+									MatchID:      "",
+									Status:       "scheduled",
+									Stage:        bmv.Stage,
+									BestOf:       bmv.BestOf,
+									PlayerAName:  bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
+									PlayerBName:  bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
+									P1Id:         bmv.Player1.Player.ID,
+									P2Id:         bmv.Player2.Player.ID,
+									TableNumber:  nil,
+									ScoreA:       0,
+									ScoreB:       0,
+									Pin:          "",
+									GroupName:    "",
+									DivisionName: dv.Name,
+									Category:     t.EventCategory,
+								})
+							}
+						}
+					}
+				}
+			}
+		} else if vm.Format == "elimination" {
+			for _, round := range dv.KnockoutRounds {
+				for _, bmv := range round.Matches {
+					if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
+						if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID, bmv.Stage) {
+							scheduled = append(scheduled, event.BoardCard{
+								MatchID:      "",
+								Status:       "scheduled",
+								Stage:        bmv.Stage,
+								BestOf:       bmv.BestOf,
+								PlayerAName:  bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
+								PlayerBName:  bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
+								P1Id:         bmv.Player1.Player.ID,
+								P2Id:         bmv.Player2.Player.ID,
+								TableNumber:  nil,
+								ScoreA:       0,
+								ScoreB:       0,
+								Pin:          "",
+								GroupName:    "",
+								DivisionName: dv.Name,
+								Category:     t.EventCategory,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Track last activity to allow players to rest
+	lastActivity := make(map[string]time.Time)
+	for _, m := range t.Matches {
+		if m.Status == "in_progress" || m.Status == "finished" {
+			tAct := time.Time{}
+			if m.UpdatedAt != nil {
+				tAct = *m.UpdatedAt
+			}
+			for _, p := range m.TeamA {
+				if lastActivity[p.ID].Before(tAct) {
+					lastActivity[p.ID] = tAct
+				}
+			}
+			for _, p := range m.TeamB {
+				if lastActivity[p.ID].Before(tAct) {
+					lastActivity[p.ID] = tAct
+				}
+			}
+		}
+	}
+
+	// We'll simulate a clock starting from a baseline to pick the best next match
+	// for maximum rest interleaving (especially interleaving different groups).
+	var reordered []event.BoardCard
+	var unstarted []event.BoardCard
+	var virtualScheduled []event.BoardCard
+
+	// Virtual matches (MatchID == "") are handled after real matches
+	for _, c := range scheduled {
+		if c.MatchID == "" {
+			virtualScheduled = append(virtualScheduled, c)
+		} else {
+			unstarted = append(unstarted, c)
+		}
+	}
+
+	simClock := time.Now().Add(24 * time.Hour) // start in future to override past matches
+
+	scheduleMatchGreedy := func(pool *[]event.BoardCard) {
+		for len(*pool) > 0 {
+			bestIdx := -1
+			var bestPenalty time.Time
+			var bestSum int64
+
+			for i, c := range *pool {
+				t1 := lastActivity[c.P1Id]
+				t2 := lastActivity[c.P2Id]
+
+				penalty := t1
+				if t2.After(t1) {
+					penalty = t2
+				}
+
+				sum := t1.UnixNano() + t2.UnixNano()
+
+				if bestIdx == -1 || penalty.Before(bestPenalty) {
+					bestIdx = i
+					bestPenalty = penalty
+					bestSum = sum
+				} else if penalty.Equal(bestPenalty) {
+					if sum < bestSum {
+						bestIdx = i
+						bestPenalty = penalty
+						bestSum = sum
+					} else if sum == bestSum {
+						if (*pool)[i].MatchID < (*pool)[bestIdx].MatchID {
+							bestIdx = i
+							bestPenalty = penalty
+							bestSum = sum
+						}
+					}
+				}
+			}
+
+			picked := (*pool)[bestIdx]
+			reordered = append(reordered, picked)
+
+			simClock = simClock.Add(time.Second) // advance simulated time
+			if picked.P1Id != "" {
+				lastActivity[picked.P1Id] = simClock
+			}
+			if picked.P2Id != "" {
+				lastActivity[picked.P2Id] = simClock
+			}
+
+			// Remove from pool
+			*pool = append((*pool)[:bestIdx], (*pool)[bestIdx+1:]...)
+		}
+	}
+
+	// Schedule real matches first, then virtual matches
+	scheduleMatchGreedy(&unstarted)
+	scheduleMatchGreedy(&virtualScheduled)
+
+	scheduled = reordered
+
+	// Mark players currently in a match
 	inMatchPlayers := make(map[string]bool)
 	for _, c := range inProgress {
 		if c.P1Id != "" {
@@ -653,332 +884,135 @@ func (h *TournamentHandler) getBoardData(c *fiber.Ctx, eventID string) (*eventDo
 			inMatchPlayers[c.P2Id] = true
 		}
 	}
-	for i := range globalScheduled {
-		if globalScheduled[i].P1Id != "" && inMatchPlayers[globalScheduled[i].P1Id] {
-			globalScheduled[i].P1InMatch = true
-		} else {
-			globalScheduled[i].P1InMatch = false
+	for i := range scheduled {
+		if scheduled[i].P1Id != "" && inMatchPlayers[scheduled[i].P1Id] {
+			scheduled[i].P1InMatch = true
 		}
-		if globalScheduled[i].P2Id != "" && inMatchPlayers[globalScheduled[i].P2Id] {
-			globalScheduled[i].P2InMatch = true
-		} else {
-			globalScheduled[i].P2InMatch = false
+		if scheduled[i].P2Id != "" && inMatchPlayers[scheduled[i].P2Id] {
+			scheduled[i].P2InMatch = true
 		}
-		globalScheduled[i].QueuePosition = i + 1
+		scheduled[i].QueuePosition = i + 1
 	}
 
-	return e, divs, globalScheduled, inProgress, finished, nil
+	return
 }
 
-func (h *TournamentHandler) AdminBoard(c *fiber.Ctx) error {
-	lang := getLang(c)
-	e, _, scheduled, inProgress, finished, err := h.getBoardData(c, c.Params("id"))
-	if err != nil {
-		return ErrorHandler(err)
+func matchExists(matches []tournamentDomain.Match, p1ID, p2ID string, stage string) bool {
+	for _, m := range matches {
+		if m.TeamMatchID != nil {
+			continue
+		}
+		if m.Stage != stage {
+			continue
+		}
+		if len(m.TeamA) > 0 && len(m.TeamB) > 0 {
+			if (m.TeamA[0].ID == p1ID && m.TeamB[0].ID == p2ID) || (m.TeamA[0].ID == p2ID && m.TeamB[0].ID == p1ID) {
+				return true
+			}
+		}
 	}
+	return false
+}
 
-	// Build AllDivisions and AllCategories from the board cards
-	uniqueDivsMap := make(map[string]bool)
-	uniqueCatsMap := make(map[string]bool)
-	for _, card := range scheduled {
-		if card.DivisionName != "" {
-			uniqueDivsMap[card.DivisionName] = true
-		}
-		if card.Category != "" {
-			uniqueCatsMap[card.Category] = true
-		}
-	}
-	for _, card := range inProgress {
-		if card.DivisionName != "" {
-			uniqueDivsMap[card.DivisionName] = true
-		}
-		if card.Category != "" {
-			uniqueCatsMap[card.Category] = true
-		}
-	}
-	for _, card := range finished {
-		if card.DivisionName != "" {
-			uniqueDivsMap[card.DivisionName] = true
-		}
-		if card.Category != "" {
-			uniqueCatsMap[card.Category] = true
-		}
-	}
-	var allDivs []string
-	for d := range uniqueDivsMap {
-		allDivs = append(allDivs, d)
-	}
-	var allCats []string
-	for cat := range uniqueCatsMap {
-		allCats = append(allCats, cat)
-	}
-
-	// Parse filter params
-	q := strings.ToLower(c.Query("q"))
+func (h *EventHandler) Board(c *fiber.Ctx) error {
+	id := c.Params("id")
+	q := c.Query("q", "")
 	var selectedDivs []string
 	for _, d := range c.Request().URI().QueryArgs().PeekMulti("div") {
 		selectedDivs = append(selectedDivs, string(d))
 	}
-	var selectedCats []string
-	for _, cat := range c.Request().URI().QueryArgs().PeekMulti("cat") {
-		selectedCats = append(selectedCats, string(cat))
-	}
 
-	if c.Query("q") != "" || len(selectedDivs) > 0 || len(selectedCats) > 0 {
-		scheduled = FilterEventBoardCards(scheduled, q, selectedDivs, selectedCats)
-		inProgress = FilterEventBoardCards(inProgress, q, selectedDivs, selectedCats)
-		finished = FilterEventBoardCards(finished, q, selectedDivs, selectedCats)
-	}
-	selectedDivsMap := make(map[string]bool)
-	for _, d := range selectedDivs {
-		selectedDivsMap[d] = true
-	}
-	selectedCatsMap := make(map[string]bool)
-	for _, cat := range selectedCats {
-		selectedCatsMap[cat] = true
-	}
-
-	// Build tables from tournament NumTables
-	tables := buildEventTables(e, inProgress)
-
-	return c.Render("admin/tournament-board", merge(tMap(lang), fiber.Map{
-		"Tournament":    e,
-		"Scheduled":     scheduled,
-		"InProgress":    inProgress,
-		"Finished":      finished,
-		"AllDivisions":  allDivs,
-		"AllCategories": allCats,
-		"QueryQ":        c.Query("q"),
-		"SelectedDivs":  selectedDivsMap,
-		"SelectedCats":  selectedCatsMap,
-		"Tables":        tables,
-	}), "layouts/admin")
-}
-
-func (h *TournamentHandler) PublicTVDashboard(c *fiber.Ctx) error {
-	lang := getLang(c)
-	e, _, scheduled, inProgress, finished, err := h.getBoardData(c, c.Params("id"))
+	view, err := h.boardViewUC.Execute(c.Context(), id, q, selectedDivs, BuildBoardCards, FilterBoardCards)
 	if err != nil {
 		return ErrorHandler(err)
 	}
 
-	tables := buildEventTables(e, inProgress)
+	tables := event.BuildTableVMs(view.Event, "", h.getOccupiedTables(c.Context(), view.Event))
 
-	return c.Render("public/tournament-board", merge(tMap(lang), fiber.Map{
-		"Tournament": e,
-		"Scheduled":  scheduled,
-		"InProgress": inProgress,
-		"Finished":   finished,
-		"Tables":     tables,
-	}))
+	return c.Render("admin/board", fiber.Map{
+		"Event":        view.Event,
+		"Scheduled":    view.Scheduled,
+		"InProgress":   view.InProgress,
+		"Finished":     view.Finished,
+		"AllDivisions": view.AllDivs,
+		"SelectedDivs": selectedDivs,
+		"Query":        q,
+		"Tables":       tables,
+	}, "layouts/admin")
 }
 
-func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
-	lang := getLang(c)
-	e, _, scheduled, inProgress, finished, err := h.getBoardData(c, c.Params("id"))
-	if err != nil {
-		return c.SendString("<div class='text-red-400'>Error loading board</div>")
+func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	type result struct {
+		event     *tournamentDomain.Event
+		err       error
+		divisions []*divisionDomain.Division
 	}
+	var res result
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		res.event, res.err = h.getByID.Execute(c.Context(), id)
+	}()
+	go func() {
+		defer wg.Done()
+		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
+	wg.Wait()
+
+	if res.err != nil {
+		return ErrorHandler(res.err)
+	}
+	t := res.event
+	divs := res.divisions
+	scheduled, inProgress, finished := BuildBoardCards(t, divs)
+	tables := event.BuildTableVMs(t, "", h.getOccupiedTables(c.Context(), t))
 
 	q := strings.ToLower(c.Query("q"))
 	var selectedDivs []string
 	for _, d := range c.Request().URI().QueryArgs().PeekMulti("div") {
 		selectedDivs = append(selectedDivs, string(d))
 	}
-	var selectedCats []string
-	for _, cat := range c.Request().URI().QueryArgs().PeekMulti("cat") {
-		selectedCats = append(selectedCats, string(cat))
+
+	if c.Query("q") != "" || len(selectedDivs) > 0 {
+		scheduled = FilterBoardCards(scheduled, q, selectedDivs)
+		inProgress = FilterBoardCards(inProgress, q, selectedDivs)
+		finished = FilterBoardCards(finished, q, selectedDivs)
 	}
 
-	if c.Query("q") != "" || len(selectedDivs) > 0 || len(selectedCats) > 0 {
-		scheduled = FilterEventBoardCards(scheduled, q, selectedDivs, selectedCats)
-		inProgress = FilterEventBoardCards(inProgress, q, selectedDivs, selectedCats)
-		finished = FilterEventBoardCards(finished, q, selectedDivs, selectedCats)
-	}
-
-	// Build tables from tournament NumTables
-	tables := buildEventTables(e, inProgress)
-
-	return c.Render("admin/partials/tournament-board-columns", fiber.Map{
-		"Tournament": e,
+	return c.Render("admin/partials/board-columns", fiber.Map{
+		"Event":      t,
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
 		"Tables":     tables,
-		"T":          tMap(lang)["T"],
+		"T":          c.Locals("T"),
+		"Lang":       c.Locals("Lang"),
 	})
 }
 
-// buildEventTables creates a TableVM slice from an tournament's NumTables + occupied tables.
-func buildEventTables(e *eventDomain.Tournament, inProgress []event.BoardCard) []TableVM {
-	var tables []TableVM
-	if e == nil {
-		return tables
+func (h *EventHandler) ToggleSeedingLock(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	if err := h.toggleSeedingLockUC.Execute(c.Context(), id); err != nil {
+		return c.Status(500).SendString("Failed to toggle seeding lock")
 	}
 
-	numTables := e.NumTables
-	for _, t := range e.Events {
-		if t.NumTables > numTables {
-			numTables = t.NumTables
-		}
-	}
-
-	if numTables <= 0 {
-		return tables
-	}
-
-	usedTables := make(map[int]bool)
-	for _, match := range inProgress {
-		if match.TableNumber != nil {
-			usedTables[*match.TableNumber] = true
-		}
-	}
-
-	for i := 1; i <= numTables; i++ {
-		tables = append(tables, TableVM{
-			Number: i,
-			IsUsed: usedTables[i],
-		})
-	}
-	return tables
+	c.Set("HX-Trigger", "reload-board")
+	return c.SendStatus(200)
 }
 
-func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
+func (h *EventHandler) RecalculateElo(c *fiber.Ctx) error {
 	id := c.Params("id")
-	e, err := h.getByID.Execute(c.Context(), id)
-	if err != nil {
+	if err := h.recalculateEloUC.Execute(c.Context(), id); err != nil {
 		return ErrorHandler(err)
 	}
-	divs, _ := h.divisionUC.GetAll(c.Context())
-
-	type DivPriority struct {
-		ID         string
-		Name       string
-		Priorities string
-	}
-	var divPriorities []DivPriority
-	for _, d := range divs {
-		var pStr string
-		if e.TablePriorities != nil {
-			if p, ok := e.TablePriorities[d.ID]; ok {
-				var pStrs []string
-				for _, num := range p {
-					pStrs = append(pStrs, strconv.Itoa(num))
-				}
-				pStr = strings.Join(pStrs, ",")
-			}
-		}
-		divPriorities = append(divPriorities, DivPriority{
-			ID:         d.ID,
-			Name:       d.Name,
-			Priorities: pStr,
-		})
-	}
-
-	return c.Render("admin/partials/tournament-edit-form", fiber.Map{
-		"Tournament":    e,
-		"DivPriorities": divPriorities,
-	})
-}
-
-func (h *TournamentHandler) Update(c *fiber.Ctx) error {
-	id := c.Params("id")
-	name := c.FormValue("name")
-	startDate := c.FormValue("startDate")
-	endDate := c.FormValue("endDate")
-	var numTables int
-	fmt.Sscanf(c.FormValue("numTables"), "%d", &numTables)
-
-	tablePriorities := make(map[string][]int)
-	c.Request().PostArgs().VisitAll(func(key, value []byte) {
-		k := string(key)
-		if strings.HasPrefix(k, "priority_") {
-			divID := strings.TrimPrefix(k, "priority_")
-			valStr := string(value)
-			var tables []int
-			for _, part := range strings.Split(valStr, ",") {
-				part = strings.TrimSpace(part)
-				if part == "" {
-					continue
-				}
-				if t, err := strconv.Atoi(part); err == nil {
-					tables = append(tables, t)
-				}
-			}
-			if len(tables) > 0 {
-				tablePriorities[divID] = tables
-			}
-		}
-	})
-
-	e, err := h.updateUC.Execute(c.Context(), id, name, startDate, endDate, numTables, tablePriorities)
-	if err != nil {
-		return ErrorHandler(err)
-	}
-
 	if c.Get("HX-Request") != "" {
-		c.Set("HX-Trigger", "tournament-updated")
-		divs, _ := h.divisionUC.GetAll(c.Context())
-
-		type DivPriority struct {
-			ID         string
-			Name       string
-			Priorities string
-		}
-		var divPriorities []DivPriority
-		for _, d := range divs {
-			var pStr string
-			if e.TablePriorities != nil {
-				if p, ok := e.TablePriorities[d.ID]; ok {
-					var pStrs []string
-					for _, num := range p {
-						pStrs = append(pStrs, strconv.Itoa(num))
-					}
-					pStr = strings.Join(pStrs, ",")
-				}
-			}
-			divPriorities = append(divPriorities, DivPriority{
-				ID:         d.ID,
-				Name:       d.Name,
-				Priorities: pStr,
-			})
-		}
-
-		return c.Render("admin/partials/tournament-edit-form", fiber.Map{
-			"Tournament":    e,
-			"DivPriorities": divPriorities,
-			"Success":       true,
-		})
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
 	}
-	return c.Redirect("/admin/tournaments/" + id)
-}
-
-func FilterEventBoardCards(cards []event.BoardCard, q string, divs []string, cats []string) []event.BoardCard {
-	if q == "" && len(divs) == 0 && len(cats) == 0 {
-		return cards
-	}
-
-	divMap := make(map[string]bool)
-	for _, d := range divs {
-		divMap[d] = true
-	}
-
-	catMap := make(map[string]bool)
-	for _, cat := range cats {
-		catMap[cat] = true
-	}
-
-	var filtered []event.BoardCard
-	for _, card := range cards {
-		matchesSearch := q == "" || strings.Contains(strings.ToLower(card.PlayerAName), q) ||
-			strings.Contains(strings.ToLower(card.PlayerBName), q) ||
-			strings.Contains(strings.ToLower(card.GroupName), q)
-		matchesDiv := len(divMap) == 0 || divMap[card.DivisionName]
-		matchesCat := len(catMap) == 0 || catMap[card.Category]
-
-		if matchesSearch && matchesDiv && matchesCat {
-			filtered = append(filtered, card)
-		}
-	}
-	return filtered
+	return c.JSON(fiber.Map{"status": "recalculated"})
 }
