@@ -35,7 +35,7 @@
     </style>
 </head>
 <body class="bg-black text-white p-6 lg:overflow-hidden" hx-ext="ws" ws-connect="/ws/brackets/tournament_{{.Tournament.ID}}"
-      hx-on::ws-before-message="try { const data = JSON.parse(tournament.detail.message); if(data.tournament === 'score_updated') { htmx.trigger('body', 'reload-tv'); } } catch(e) {}">
+      hx-on::ws-before-message="try { const data = JSON.parse(event.detail.message); if(data.tournament === 'score_updated') { htmx.trigger('body', 'reload-tv'); } } catch(e) {}">
 
     <div class="min-h-screen lg:h-screen flex flex-col gap-6"
          hx-get="/tournaments/{{.Tournament.ID}}/tv"

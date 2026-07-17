@@ -45,7 +45,7 @@
       <button hx-post="/admin/events/{{.Event.ID}}/regenerate-seeds"
         hx-swap="none"
         hx-confirm="Regenerate group seeds from current player Elo? This re-groups players by division and deletes any matches created so far."
-        hx-on::response-error="showToast(tournament.detail.xhr.responseText, 'error')"
+        hx-on::response-error="showToast(event.detail.xhr.responseText, 'error')"
         {{if .Event.ManualSeedingLocked}}disabled title="Seeding is locked"{{end}}
         class="w-full sm:w-auto text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-center {{if .Event.ManualSeedingLocked}}bg-gray-800 text-gray-500 border border-gray-700 cursor-not-allowed opacity-50{{else}}bg-amber-500/20 hover:bg-amber-500/40 text-amber-400 border border-amber-500/30{{end}}">
         Regenerate Seeds
@@ -54,7 +54,7 @@
       {{if not .Event.SkipElo}}
       <button hx-post="/admin/events/{{.Event.ID}}/recalculate-elo"
         hx-confirm="Are you sure you want to recalculate ELO for all matches in this event?"
-        hx-on::response-error="showToast(tournament.detail.xhr.responseText, 'error')"
+        hx-on::response-error="showToast(event.detail.xhr.responseText, 'error')"
         class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider shadow-lg shadow-amber-500/20 text-center font-bold">
         Recalculate ELO
       </button>
@@ -99,7 +99,7 @@
           All Participants <span class="text-gray-700 ml-1">({{len .Event.Participants}})</span>
         </h2>
       </div>
-      <div class="flex items-center gap-2" onclick="tournament.preventDefault()">
+      <div class="flex items-center gap-2" onclick="event.preventDefault()">
         <span class="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Sort:</span>
         <button onclick="sortParticipants('elo')" id="sort-elo-btn"
           class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all bg-white text-black border-white">
@@ -409,7 +409,7 @@
       <form hx-post="/admin/events/{{.Event.ID}}/participants/elo-before"
         hx-swap="none"
         hx-on::before-request="document.getElementById('edit-elo-modal').classList.add('hidden')"
-        hx-on::response-error="showToast(tournament.detail.xhr.responseText, 'error')"
+        hx-on::response-error="showToast(event.detail.xhr.responseText, 'error')"
         class="space-y-4">
         <input type="hidden" id="elo-edit-player-id" name="playerId" value="">
         <div class="space-y-2">
@@ -448,7 +448,7 @@
            hx-on::ws-open="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🟢 Live'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-green-400'; }"
            hx-on::ws-close="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-red-400'; }"
            hx-on::ws-error="const el = document.getElementById('ws-status'); if(el) { el.textContent = '🔴 Reconnecting…'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-red-400'; }"
-           hx-on::ws-before-message="try { const data = JSON.parse(tournament.detail.message); if(data.tournament === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); htmx.trigger('#custom-matches-list', 'reload-matches'); if (typeof showToast === 'function') { if (data.matchStatus === 'finished' && data.message) { showToast(data.message, 'success'); } else { showToast('📡 Score updated in real-time', 'success'); } } } else if(data.tournament === 'referee_notification') { const container = document.getElementById('referee-alerts-container'); if (container) { const alertId = 'alert-' + Math.random().toString(36).substr(2, 9); const alertHtml = `<div id='${alertId}' onclick='this.remove()' class='cursor-pointer flex items-center justify-between p-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded-2xl shadow-xl backdrop-blur-md animate-fade-in hover:bg-yellow-500/20 transition-colors'><div class='flex items-center gap-3'><span class='text-xl'>🔔</span><div class='flex flex-col'><span class='text-xs font-bold uppercase tracking-widest text-yellow-500 font-mono'>Referee Alert</span><span class='text-sm font-semibold text-white/90'>${data.message}</span></div></div><button class='text-gray-400 hover:text-white transition-colors p-1'><svg class='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg></button></div>`; container.insertAdjacentHTML('beforeend', alertHtml); } } } catch(e) {}">
+           hx-on::ws-before-message="try { const data = JSON.parse(event.detail.message); if(data.tournament === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); htmx.trigger('#custom-matches-list', 'reload-matches'); if (typeof showToast === 'function') { if (data.matchStatus === 'finished' && data.message) { showToast(data.message, 'success'); } else { showToast('📡 Score updated in real-time', 'success'); } } } else if(data.tournament === 'referee_notification') { const container = document.getElementById('referee-alerts-container'); if (container) { const alertId = 'alert-' + Math.random().toString(36).substr(2, 9); const alertHtml = `<div id='${alertId}' onclick='this.remove()' class='cursor-pointer flex items-center justify-between p-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded-2xl shadow-xl backdrop-blur-md animate-fade-in hover:bg-yellow-500/20 transition-colors'><div class='flex items-center gap-3'><span class='text-xl'>🔔</span><div class='flex flex-col'><span class='text-xs font-bold uppercase tracking-widest text-yellow-500 font-mono'>Referee Alert</span><span class='text-sm font-semibold text-white/90'>${data.message}</span></div></div><button class='text-gray-400 hover:text-white transition-colors p-1'><svg class='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg></button></div>`; container.insertAdjacentHTML('beforeend', alertHtml); } } } catch(e) {}">
     <div class="flex items-center justify-between">
       <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Event Draw</h2>
       <span id="ws-status" class="text-[9px] font-bold uppercase tracking-widest text-yellow-400">⏳ Connecting…</span>

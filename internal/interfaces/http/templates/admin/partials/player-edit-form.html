@@ -1,6 +1,6 @@
 <h2 class="text-2xl font-extrabold uppercase mb-8 tracking-tighter">Edit <span class="text-white">Athlete</span>.</h2>
 
-<form hx-put="/players/{{.Player.ID}}" hx-target="#player-{{.Player.ID}}" hx-swap="outerHTML" class="space-y-4" hx-on::after-request="if(tournament.target === this && tournament.detail.successful) document.getElementById('edit-player-modal').classList.add('hidden')">
+<form hx-put="/players/{{.Player.ID}}" hx-target="#player-{{.Player.ID}}" hx-swap="outerHTML" class="space-y-4" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('edit-player-modal').classList.add('hidden')">
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">First Name</label>

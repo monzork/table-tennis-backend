@@ -51,7 +51,7 @@
         <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">Grand Tournament</span>.</h2>
         
         <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" 
-              hx-on::after-request="if(tournament.target === this && tournament.detail.successful) { document.getElementById('add-tournament-modal').classList.add('hidden'); this.reset(); document.getElementById('empty-state')?.remove(); }"
+              hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-tournament-modal').classList.add('hidden'); this.reset(); document.getElementById('empty-state')?.remove(); }"
               class="space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div class="space-y-2">

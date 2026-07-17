@@ -22,7 +22,7 @@
         </div>
         <div class="space-y-2">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Format</label>
-            <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" hx-on:change="this.value === 'groups_elimination' ? (document.getElementById('edit-group-pass-count-container').classList.remove('hidden'), document.getElementById('edit-group-pass-count-input').disabled = false) : (document.getElementById('edit-group-pass-count-container').classList.add('hidden'), document.getElementById('edit-group-pass-count-input').disabled = true); document.querySelectorAll('select[name^=\'division_formats\']').forEach(s => s.dispatchEvent(new Tournament('change')))">
+            <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" hx-on:change="this.value === 'groups_elimination' ? (document.getElementById('edit-group-pass-count-container').classList.remove('hidden'), document.getElementById('edit-group-pass-count-input').disabled = false) : (document.getElementById('edit-group-pass-count-container').classList.add('hidden'), document.getElementById('edit-group-pass-count-input').disabled = true); document.querySelectorAll('select[name^=\'division_formats\']').forEach(s => s.dispatchEvent(new Event('change')))">
                 <option value="elimination" {{if eq .Event.Format "elimination"}}selected{{end}}>Elimination</option>
                 <option value="groups_elimination" {{if eq .Event.Format "groups_elimination"}}selected{{end}}>Group + Knockout</option>
                 <option value="round_robin" {{if eq .Event.Format "round_robin"}}selected{{end}}>All Against All</option>
@@ -82,7 +82,7 @@
                 hx-trigger="keyup changed delay:300ms" 
                 hx-target="#edit-player-selection-grid"
                 hx-include="#edit-player-search, #edit-category-select, #edit-selected-participants-hidden input"
-                onkeydown="if (tournament.key === 'Enter') { tournament.preventDefault(); }"
+                onkeydown="if (tournament.key === 'Enter') { event.preventDefault(); }"
                 placeholder="Search athletes by name..." 
                 class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-white transition-all pl-10">
             <svg class="w-4 h-4 absolute left-3 top-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>

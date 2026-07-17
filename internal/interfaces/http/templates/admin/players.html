@@ -51,7 +51,7 @@
         <h2 class="text-2xl font-bold uppercase mb-2 tracking-wide">Import Players</h2>
         <p class="text-gray-400 text-sm mb-6">Upload a <strong>.csv</strong> or <strong>.xlsx</strong> file. Required columns: <code class="text-white bg-white/10 px-1 rounded">first_name</code>, <code class="text-white bg-white/10 px-1 rounded">last_name</code>, <code class="text-white bg-white/10 px-1 rounded">gender</code> (M/F), <code class="text-white bg-white/10 px-1 rounded">country</code>, <code class="text-white bg-white/10 px-1 rounded">birthdate</code> (YYYY-MM-DD).</p>
 
-        <form hx-post="/players/import" hx-encoding="multipart/form-data" hx-target="#import-result" hx-on::after-request="if(tournament.target === this && tournament.detail.successful) setTimeout(() => document.getElementById('import-player-modal').classList.add('hidden'), 1500)">
+        <form hx-post="/players/import" hx-encoding="multipart/form-data" hx-target="#import-result" hx-on::after-request="if(event.target === this && event.detail.successful) setTimeout(() => document.getElementById('import-player-modal').classList.add('hidden'), 1500)">
             <input type="file" name="file" accept=".csv,.xlsx,.xls" required class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 mb-4 cursor-pointer">
             
             <div class="flex gap-4 mb-5">
@@ -74,7 +74,7 @@
     <div class="bg-club-panel border border-white/10 p-8 rounded-2xl max-w-md w-full relative">
         <button hx-on:click="document.getElementById('add-player-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
         <h2 class="text-2xl font-bold uppercase mb-6 tracking-wide">New Athlete</h2>
-        <form hx-post="/players" hx-target="#player-list" hx-swap="beforeend" hx-on::after-request="if(tournament.target === this && tournament.detail.successful) { document.getElementById('add-player-modal').classList.add('hidden'); this.reset(); document.getElementById('add-country').dispatchEvent(new Tournament('change')); }" class="space-y-4">
+        <form hx-post="/players" hx-target="#player-list" hx-swap="beforeend" hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-player-modal').classList.add('hidden'); this.reset(); document.getElementById('add-country').dispatchEvent(new Event('change')); }" class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <input type="text" name="firstName" placeholder="First Name" required class="bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
                 <input type="text" name="secondName" placeholder="Second Name (Opt)" class="bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
