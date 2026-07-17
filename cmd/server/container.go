@@ -45,41 +45,42 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	getPlayerByIDUC := player.NewGetPlayerByIDUseCase(playerRepo)
 	searchPlayerUC := player.NewSearchPlayersUseCase(playerRepo)
 	searchPlayerSelectionUC := player.NewSearchPlayersForSelectionUseCase(playerRepo)
-	tournamentRepo := bun.NewTournamentRepository(bun.DB)
+	eventRepo := bun.NewEventRepository(bun.DB)
+	tournamentRepo := bun.NewTournamentRepository(bun.DB, eventRepo)
 
 	dispatcher := tournaments.NewInMemoryDispatcher()
-	enrollPlayerUC := event.NewEnrollPlayerUseCase(tournamentRepo, dispatcher)
-	getTournamentsUC := event.NewGetTournamentsUseCase(tournamentRepo)
+	enrollPlayerUC := event.NewEnrollPlayerUseCase(eventRepo, dispatcher)
+	getTournamentsUC := event.NewGetTournamentsUseCase(eventRepo)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 
 	divisionRepo := bun.NewDivisionRepository(bun.DB)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 
-	createTournamentUC := event.NewCreateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
-	getTournamentByIDUC := event.NewGetTournamentByIDUseCase(tournamentRepo, divisionRepo)
-	updateTournamentUC := event.NewUpdateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
-	deleteTournamentUC := event.NewDeleteTournamentUseCase(tournamentRepo)
+	createTournamentUC := event.NewCreateTournamentUseCase(eventRepo, playerRepo, divisionRepo)
+	getTournamentByIDUC := event.NewGetTournamentByIDUseCase(eventRepo, divisionRepo)
+	updateTournamentUC := event.NewUpdateTournamentUseCase(eventRepo, playerRepo, divisionRepo)
+	deleteTournamentUC := event.NewDeleteTournamentUseCase(eventRepo)
 	matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
-	finishTournamentUC := event.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
-	recalculateTournamentEloUC := event.NewRecalculateTournamentEloUseCase(tournamentRepo, playerRepo)
-	exportTournamentUC := event.NewExportTournamentReportUseCase(tournamentRepo)
+	finishTournamentUC := event.NewFinishTournamentUseCase(eventRepo, matchRepo, playerRepo)
+	recalculateTournamentEloUC := event.NewRecalculateTournamentEloUseCase(eventRepo, playerRepo)
+	exportTournamentUC := event.NewExportTournamentReportUseCase(eventRepo)
 	pdfGenerator := pdfinfra.NewGoFpdfGenerator()
-	exportTournamentPdfUC := event.NewExportTournamentPdfUseCase(tournamentRepo, divisionRepo, pdfGenerator)
-	movePlayerUC := event.NewMovePlayerUseCase(tournamentRepo)
-	createTeamUC := event.NewCreateTeamUseCase(tournamentRepo)
-	deleteTeamUC := event.NewDeleteTeamUseCase(tournamentRepo)
-	assignPlayerToTeamUC := event.NewAssignPlayerToTeamUseCase(tournamentRepo)
-	removePlayerFromTeamUC := event.NewRemovePlayerFromTeamUseCase(tournamentRepo)
-	regenerateSeedsUC := event.NewRegenerateGroupSeedsUseCase(tournamentRepo, matchRepo, divisionRepo)
+	exportTournamentPdfUC := event.NewExportTournamentPdfUseCase(eventRepo, divisionRepo, pdfGenerator)
+	movePlayerUC := event.NewMovePlayerUseCase(eventRepo)
+	createTeamUC := event.NewCreateTeamUseCase(eventRepo)
+	deleteTeamUC := event.NewDeleteTeamUseCase(eventRepo)
+	assignPlayerToTeamUC := event.NewAssignPlayerToTeamUseCase(eventRepo)
+	removePlayerFromTeamUC := event.NewRemovePlayerFromTeamUseCase(eventRepo)
+	regenerateSeedsUC := event.NewRegenerateGroupSeedsUseCase(eventRepo, matchRepo, divisionRepo)
 	dispatcher.Subscribe(tournaments.PlayerEnrolledEventName, func(ctx context.Context, e tournaments.Tournament) error {
 		if pe, ok := e.(tournaments.PlayerEnrolledEvent); ok {
 			_ = regenerateSeedsUC.Execute(ctx, pe.TournamentID)
 		}
 		return nil
 	})
-	updateParticipantEloUC := event.NewUpdateParticipantEloBeforeUseCase(tournamentRepo, regenerateSeedsUC)
-	addGroupUC := event.NewAddGroupUseCase(tournamentRepo)
+	updateParticipantEloUC := event.NewUpdateParticipantEloBeforeUseCase(eventRepo, regenerateSeedsUC)
+	addGroupUC := event.NewAddGroupUseCase(eventRepo)
 	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC)
 
 	tournamentHandler := handler.NewEventHandler(
@@ -101,43 +102,42 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		event.NewGetOccupiedTablesUseCase(matchRepo),
 		regenerateSeedsUC,
 		updateParticipantEloUC,
-		event.NewRemoveParticipantUseCase(tournamentRepo),
-		event.NewSaveKnockoutSeedsUseCase(tournamentRepo, divisionRepo),
-		event.NewToggleSeedingLockUseCase(tournamentRepo),
+		event.NewRemoveParticipantUseCase(eventRepo),
+		event.NewSaveKnockoutSeedsUseCase(eventRepo, divisionRepo),
+		event.NewToggleSeedingLockUseCase(eventRepo),
 		addGroupUC,
 		recalculateTournamentEloUC,
-		event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo, divisionRepo),
+		event.NewStartKnockoutStageUseCase(eventRepo, matchRepo, divisionRepo),
 		event.NewGetEventDetailViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
 		event.NewGetPublicEventDetailViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
 		event.NewGetPublicTVDashboardViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
 		event.NewGetBoardViewUseCase(getTournamentByIDUC, divisionUC),
 		event.NewGetEditFormViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
 	)
-	eventRepo := bun.NewEventRepository(bun.DB, tournamentRepo)
-	exportEventPdfUC := event.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGenerator)
-	createEventUC := tournament.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
-	getEventByIDUC := tournament.NewGetEventByIDUseCase(eventRepo)
-	getAllEventsUC := tournament.NewGetAllEventsUseCase(eventRepo)
-	deleteEventUC := tournament.NewDeleteEventUseCase(eventRepo)
-	updateEventUC := tournament.NewUpdateEventUseCase(eventRepo)
+	exportEventPdfUC := event.NewExportEventPdfUseCase(tournamentRepo, divisionRepo, pdfGenerator)
+	createEventUC := tournament.NewCreateEventUseCase(tournamentRepo, eventRepo, playerRepo, divisionRepo)
+	getEventByIDUC := tournament.NewGetEventByIDUseCase(tournamentRepo)
+	getAllEventsUC := tournament.NewGetAllEventsUseCase(tournamentRepo)
+	deleteEventUC := tournament.NewDeleteEventUseCase(tournamentRepo)
+	updateEventUC := tournament.NewUpdateEventUseCase(tournamentRepo)
 	eventHandler := handler.NewTournamentHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
 
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
-	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
+	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, eventRepo, divisionRepo)
 	finishMatchUC := match.NewFinishMatchUseCase()
-	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
+	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, eventRepo)
 	teamMatchUC := match.NewTeamMatchOrchestratorUseCase(matchRepo)
-	startMatchUC := match.NewStartMatchUseCase(matchRepo, tournamentRepo, eventRepo, createMatchUC)
+	startMatchUC := match.NewStartMatchUseCase(matchRepo, eventRepo, tournamentRepo, createMatchUC)
 
 	notificationRepo := bun.NewPushSubscriptionRepository(bun.DB)
 	broadcastNotificationUC := notification.NewBroadcastPushNotificationUseCase(notificationRepo, cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey)
 
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, broadcastNotificationUC, teamMatchUC, startMatchUC)
+	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, eventRepo, tournamentRepo, finishTournamentUC, broadcastNotificationUC, teamMatchUC, startMatchUC)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
-	selfRegisterUC := event.NewSelfRegisterUseCase(tournamentRepo, playerRepo)
+	selfRegisterUC := event.NewSelfRegisterUseCase(eventRepo, playerRepo)
 	publicHandler := handler.NewPublicHandler(playerUC, selfRegisterUC)
 
 	qrGenerator := qrinfra.NewGoQRCodeGenerator()

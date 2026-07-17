@@ -51,10 +51,10 @@ type TeamMatchFormView struct {
 
 type GetTeamMatchFormViewUseCase struct {
 	matchRepo      *bun.MatchRepository
-	tournamentRepo *bun.TournamentRepository
+	tournamentRepo *bun.EventRepository
 }
 
-func NewGetTeamMatchFormViewUseCase(matchRepo *bun.MatchRepository, tournamentRepo *bun.TournamentRepository) *GetTeamMatchFormViewUseCase {
+func NewGetTeamMatchFormViewUseCase(matchRepo *bun.MatchRepository, tournamentRepo *bun.EventRepository) *GetTeamMatchFormViewUseCase {
 	return &GetTeamMatchFormViewUseCase{
 		matchRepo:      matchRepo,
 		tournamentRepo: tournamentRepo,

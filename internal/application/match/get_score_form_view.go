@@ -45,7 +45,7 @@ type ScoreFormView struct {
 // GetScoreFormViewUseCase orchestrates all data fetching needed to render the score entry form.
 type GetScoreFormViewUseCase struct {
 	matchRepo      *bun.MatchRepository
-	tournamentRepo *bun.TournamentRepository
+	tournamentRepo *bun.EventRepository
 	playerRepo     *bun.PlayerRepository
 	createMatchUC  *CreateMatchUseCase
 	teamMatchUC    *TeamMatchOrchestratorUseCase
@@ -53,7 +53,7 @@ type GetScoreFormViewUseCase struct {
 
 func NewGetScoreFormViewUseCase(
 	matchRepo *bun.MatchRepository,
-	tournamentRepo *bun.TournamentRepository,
+	tournamentRepo *bun.EventRepository,
 	playerRepo *bun.PlayerRepository,
 	createMatchUC *CreateMatchUseCase,
 	teamMatchUC *TeamMatchOrchestratorUseCase,

@@ -2,7 +2,7 @@
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
         <div>
             <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight uppercase">Events <span class="text-white">.</span></h1>
-            <p class="text-gray-400 mt-1">Manage Series Tournaments</p>
+            <p class="text-gray-400 mt-1">Manage Categories & Brackets</p>
         </div>
         <div class="flex gap-3">
             <a href="/admin/reports/all-events/pdf" target="_blank" class="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm flex items-center gap-2">
@@ -47,14 +47,14 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         
-        <h2 id="add-event-modal-title" class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">New Tournament</span>.</h2>
+        <h2 id="add-event-modal-title" class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">New Event</span>.</h2>
         
         <form hx-post="/events" hx-target="#event-list" hx-swap="beforeend" class="space-y-6" hx-on::after-request="if(event.target === this && event.detail.successful) { closeModal('add-event-modal'); this.reset(); document.getElementById('selected-participants-hidden').innerHTML = ''; document.getElementById('new-players-list').innerHTML = ''; }" hx-on:submit="console.log('submitting event...')">
             <!-- Container for selected participant IDs -->
             <div id="selected-participants-hidden"></div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div class="space-y-2">
-                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Tournament Name</label>
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
                     <input type="text" name="name" placeholder="e.g., Grand Smash" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
                 </div>
                 <div class="space-y-2">
@@ -76,7 +76,7 @@
             </div>
 
             <div class="space-y-2">
-                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Tournament Category</label>
+                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Category</label>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <label class="cursor-pointer group">
                         <input type="radio" id="category-open" name="eventCategory" value="open" checked 
@@ -518,7 +518,7 @@
                                 hx-trigger="keyup changed delay:300ms" 
                                 hx-target="#player-selection-grid"
                                 hx-include="#player-search, input[name='eventCategory']:checked, #selected-participants-hidden input"
-                                onkeydown="if (tournament.key === 'Enter') { event.preventDefault(); }"
+                                onkeydown="if (event.key === 'Enter') { event.preventDefault(); }"
                                 placeholder="Search athletes by name..." 
                                 class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-white transition-all pl-10">
                             <svg class="w-4 h-4 absolute left-3 top-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>

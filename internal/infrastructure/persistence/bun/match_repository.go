@@ -565,7 +565,7 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*event.Match, error) {
 func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error) {
 	var tids []uuid.UUID
 	err := ExtractDB(ctx, r.db).NewSelect().
-		Model((*TournamentModel)(nil)).
+		Model((*EventModel)(nil)).
 		Column("id").
 		Where("tournament_id = ?", eventID).
 		Scan(ctx, &tids)
@@ -982,7 +982,7 @@ func (r *MatchRepository) StartMatch(ctx context.Context, cmd event.StartMatchCo
 	// Determine occupied tables
 	var occupiedList []int
 	if cmd.TournamentID != "" {
-		tModel := new(TournamentModel)
+		tModel := new(EventModel)
 		if err2 := r.db.NewSelect().Model(tModel).Where("id = ?", cmd.TournamentID).Scan(ctx); err2 == nil && tModel.EventID != nil {
 			occupiedList, _ = r.GetOccupiedTablesByEvent(ctx, tModel.EventID.String())
 		} else {

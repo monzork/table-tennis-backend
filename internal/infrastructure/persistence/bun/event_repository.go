@@ -14,15 +14,15 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type TournamentRepository struct {
+type EventRepository struct {
 	db *bun.DB
 }
 
-func NewTournamentRepository(db *bun.DB) *TournamentRepository {
-	return &TournamentRepository{db: db}
+func NewEventRepository(db *bun.DB) *EventRepository {
+	return &EventRepository{db: db}
 }
 
-func (r *TournamentRepository) DB() *bun.DB { return r.db }
+func (r *EventRepository) DB() *bun.DB { return r.db }
 
 // generateUniqueTournamentPIN generates a 4-digit PIN (1000-9999) using crypto/rand,
 // not already in usedPINs, then adds it to the set to prevent future collisions.
@@ -39,7 +39,7 @@ func generateUniqueTournamentPIN(usedPINs map[string]bool) string {
 	}
 }
 
-func (r *TournamentRepository) Save(ctx context.Context, t *event.Event) error {
+func (r *EventRepository) Save(ctx context.Context, t *event.Event) error {
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
 		if err := r.saveTx(ctx, tx, t); err != nil {
@@ -49,11 +49,11 @@ func (r *TournamentRepository) Save(ctx context.Context, t *event.Event) error {
 	})
 }
 
-func (r *TournamentRepository) SaveTx(ctx context.Context, tx bun.IDB, t *event.Event) error {
+func (r *EventRepository) SaveTx(ctx context.Context, tx bun.IDB, t *event.Event) error {
 	return r.saveTx(ctx, tx, t)
 }
 
-func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event) error {
+func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event) error {
 	tID, err := uuid.Parse(t.ID)
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.
 		eventIDPtr = &uid
 	}
 
-	model := &TournamentModel{
+	model := &EventModel{
 		ID:                      tID,
 		Name:                    t.Name,
 		Type:                    t.Type,
@@ -98,13 +98,13 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.
 	// Save participants in bulk with unique PINs per event
 	if len(t.Participants) > 0 {
 		usedPINs := make(map[string]bool)
-		partModels := make([]TournamentParticipantModel, len(t.Participants))
+		partModels := make([]EventParticipantModel, len(t.Participants))
 		for i, p := range t.Participants {
 			pID, err := uuid.Parse(p.ID)
 			if err != nil {
 				return err
 			}
-			partModels[i] = TournamentParticipantModel{
+			partModels[i] = EventParticipantModel{
 				TournamentID:     tID,
 				PlayerID:         pID,
 				Pin:              generateUniqueTournamentPIN(usedPINs),
@@ -200,8 +200,8 @@ func (r *TournamentRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.
 	return nil
 }
 
-func (r *TournamentRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
-	var models []TournamentModel
+func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
+	var models []EventModel
 	if err := ExtractDB(ctx, r.db).NewSelect().Model(&models).Order("start_date DESC").Scan(ctx); err != nil {
 		return nil, err
 	}
@@ -268,13 +268,13 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*event.Event, erro
 // GetByIDLite returns a event without eagerly loading the heavy Matches
 // relation (which JOINs 4 player tables per match and then fetches all sets).
 // Use this when you only need metadata, participants, teams, and rules.
-func (r *TournamentRepository) GetByIDLite(ctx context.Context, idStr string) (*event.Event, error) {
+func (r *EventRepository) GetByIDLite(ctx context.Context, idStr string) (*event.Event, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return nil, err
 	}
 
-	model := new(TournamentModel)
+	model := new(EventModel)
 	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(model).
 		Relation("Participants", func(q *bun.SelectQuery) *bun.SelectQuery {
@@ -407,13 +407,13 @@ func (r *TournamentRepository) GetByIDLite(ctx context.Context, idStr string) (*
 	}, nil
 }
 
-func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*event.Event, error) {
+func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Event, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return nil, err
 	}
 
-	model := new(TournamentModel)
+	model := new(EventModel)
 	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(model).
 		Relation("Participants", func(q *bun.SelectQuery) *bun.SelectQuery {
@@ -784,7 +784,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*even
 	}, nil
 }
 
-func (r *TournamentRepository) Update(ctx context.Context, t *event.Event) error {
+func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 	tID, err := uuid.Parse(t.ID)
 	if err != nil {
 		return err
@@ -801,7 +801,7 @@ func (r *TournamentRepository) Update(ctx context.Context, t *event.Event) error
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
-		model := &TournamentModel{
+		model := &EventModel{
 			ID:                      tID,
 			Name:                    t.Name,
 			Type:                    t.Type,
@@ -837,7 +837,7 @@ func (r *TournamentRepository) Update(ctx context.Context, t *event.Event) error
 		existingEloAfterSingles := make(map[string]*int16)
 		existingEloAfterDoubles := make(map[string]*int16)
 		{
-			var existingParts []TournamentParticipantModel
+			var existingParts []EventParticipantModel
 			_ = tx.NewSelect().Model(&existingParts).Column("player_id", "pin", "elo_before_singles", "elo_before_doubles", "elo_after_singles", "elo_after_doubles").Where("event_id = ?", tID).Scan(ctx)
 			for _, ep := range existingParts {
 				pIDStr := ep.PlayerID.String()
@@ -866,7 +866,7 @@ func (r *TournamentRepository) Update(ctx context.Context, t *event.Event) error
 				}
 			}
 
-			partModels := make([]TournamentParticipantModel, len(t.Participants))
+			partModels := make([]EventParticipantModel, len(t.Participants))
 			for i, p := range t.Participants {
 				pID, err := uuid.Parse(p.ID)
 				if err != nil {
@@ -887,7 +887,7 @@ func (r *TournamentRepository) Update(ctx context.Context, t *event.Event) error
 					eloBeforeD = existingD
 				}
 
-				partModels[i] = TournamentParticipantModel{
+				partModels[i] = EventParticipantModel{
 					TournamentID:     tID,
 					PlayerID:         pID,
 					Pin:              pin,
@@ -991,7 +991,7 @@ func (r *TournamentRepository) Update(ctx context.Context, t *event.Event) error
 	})
 }
 
-func (r *TournamentRepository) UpdateGroups(ctx context.Context, t *event.Event) error {
+func (r *EventRepository) UpdateGroups(ctx context.Context, t *event.Event) error {
 	tID, err := uuid.Parse(t.ID)
 	if err != nil {
 		return err
@@ -1043,7 +1043,7 @@ func (r *TournamentRepository) UpdateGroups(ctx context.Context, t *event.Event)
 	})
 }
 
-func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
+func (r *EventRepository) Delete(ctx context.Context, idStr string) error {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return err
@@ -1054,7 +1054,7 @@ func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
 		tx.NewDelete().TableExpr("group_participants").Where("group_id IN (SELECT id FROM groups WHERE event_id = ?)", id).Exec(ctx)
 		tx.NewDelete().TableExpr("groups").Where("event_id = ?", id).Exec(ctx)
 		tx.NewDelete().TableExpr("event_participants").Where("event_id = ?", id).Exec(ctx)
-		_, err = tx.NewDelete().Model(&TournamentModel{}).Where("id = ?", id).Exec(ctx)
+		_, err = tx.NewDelete().Model(&EventModel{}).Where("id = ?", id).Exec(ctx)
 		if err != nil {
 			return err
 		}
@@ -1062,8 +1062,8 @@ func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
 	})
 }
 
-func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, deep bool) ([]*event.Event, error) {
-	var models []TournamentModel
+func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, deep bool) ([]*event.Event, error) {
+	var models []EventModel
 	if err := ExtractDB(ctx, r.db).NewSelect().
 		Model(&models).
 		Relation("StageRules").
@@ -1086,7 +1086,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	// Use errgroup for concurrent loading
 	eg, egCtx := errgroup.WithContext(ctx)
 
-	var allPartModels []TournamentParticipantModel
+	var allPartModels []EventParticipantModel
 	var allTeamModels []TeamModel
 	var allTPModels []TeamPlayerModel
 
@@ -1191,7 +1191,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	}
 
 	// Index participants by event
-	partsByTournament := make(map[uuid.UUID][]TournamentParticipantModel)
+	partsByTournament := make(map[uuid.UUID][]EventParticipantModel)
 	for _, pt := range allPartModels {
 		partsByTournament[pt.TournamentID] = append(partsByTournament[pt.TournamentID], pt)
 	}
@@ -1542,7 +1542,7 @@ func (r *TournamentRepository) GetByEventID(ctx context.Context, eventID uuid.UU
 	return events, nil
 }
 
-func (r *TournamentRepository) SaveTeam(ctx context.Context, team *event.Team) error {
+func (r *EventRepository) SaveTeam(ctx context.Context, team *event.Team) error {
 	tID, err := uuid.Parse(team.TournamentID)
 	if err != nil {
 		return err
@@ -1561,7 +1561,7 @@ func (r *TournamentRepository) SaveTeam(ctx context.Context, team *event.Team) e
 	return err
 }
 
-func (r *TournamentRepository) DeleteTeam(ctx context.Context, idStr string) error {
+func (r *EventRepository) DeleteTeam(ctx context.Context, idStr string) error {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return err
@@ -1570,7 +1570,7 @@ func (r *TournamentRepository) DeleteTeam(ctx context.Context, idStr string) err
 	return err
 }
 
-func (r *TournamentRepository) AddPlayerToTeam(ctx context.Context, teamIDStr string, playerIDStr string) error {
+func (r *EventRepository) AddPlayerToTeam(ctx context.Context, teamIDStr string, playerIDStr string) error {
 	teamID, err := uuid.Parse(teamIDStr)
 	if err != nil {
 		return err
@@ -1637,7 +1637,7 @@ func (r *TournamentRepository) AddPlayerToTeam(ctx context.Context, teamIDStr st
 	return err
 }
 
-func (r *TournamentRepository) RemovePlayerFromTeam(ctx context.Context, teamIDStr string, playerIDStr string) error {
+func (r *EventRepository) RemovePlayerFromTeam(ctx context.Context, teamIDStr string, playerIDStr string) error {
 	teamID, err := uuid.Parse(teamIDStr)
 	if err != nil {
 		return err
@@ -1650,7 +1650,7 @@ func (r *TournamentRepository) RemovePlayerFromTeam(ctx context.Context, teamIDS
 	return err
 }
 
-func (r *TournamentRepository) UpdateParticipantElo(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
+func (r *EventRepository) UpdateParticipantElo(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return err
@@ -1670,7 +1670,7 @@ func (r *TournamentRepository) UpdateParticipantElo(ctx context.Context, tournam
 // UpdateParticipantEloBefore corrects the Elo snapshot a participant was seeded
 // with for this event (elo_before_singles/doubles), e.g. when the player's
 // stored Elo was fixed after they were already registered.
-func (r *TournamentRepository) UpdateParticipantEloBefore(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
+func (r *EventRepository) UpdateParticipantEloBefore(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return err
@@ -1687,7 +1687,7 @@ func (r *TournamentRepository) UpdateParticipantEloBefore(ctx context.Context, t
 	return err
 }
 
-func (r *TournamentRepository) UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error {
+func (r *EventRepository) UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error {
 	if len(players) == 0 {
 		return nil
 	}
@@ -1719,7 +1719,7 @@ func (r *TournamentRepository) UpdateParticipantsElo(ctx context.Context, tourna
 
 // AddParticipant inserts a single player into event_participants, e.g. to
 // enroll a newly-created player into a event outside of event creation.
-func (r *TournamentRepository) AddParticipant(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
+func (r *EventRepository) AddParticipant(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return err
@@ -1728,7 +1728,7 @@ func (r *TournamentRepository) AddParticipant(ctx context.Context, tournamentID 
 	if err != nil {
 		return err
 	}
-	model := &TournamentParticipantModel{
+	model := &EventParticipantModel{
 		TournamentID:     tID,
 		PlayerID:         pID,
 		Pin:              r.generateUniqueParticipantPIN(ctx, tID),
@@ -1740,7 +1740,7 @@ func (r *TournamentRepository) AddParticipant(ctx context.Context, tournamentID 
 }
 
 // RemoveParticipant deletes a player from event_participants and any group they belong to.
-func (r *TournamentRepository) RemoveParticipant(ctx context.Context, tournamentID string, playerID string) error {
+func (r *EventRepository) RemoveParticipant(ctx context.Context, tournamentID string, playerID string) error {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return err
@@ -1765,14 +1765,14 @@ func (r *TournamentRepository) RemoveParticipant(ctx context.Context, tournament
 	})
 }
 
-func (r *TournamentRepository) generateUniqueParticipantPIN(ctx context.Context, tournamentID uuid.UUID) string {
+func (r *EventRepository) generateUniqueParticipantPIN(ctx context.Context, tournamentID uuid.UUID) string {
 	for {
 		var b [4]byte
 		_, _ = cryptorand.Read(b[:])
 		pinVal := int(binary.BigEndian.Uint32(b[:]))%9000 + 1000
 		pin := fmt.Sprintf("%04d", pinVal)
 		count, err := ExtractDB(ctx, r.db).NewSelect().
-			Model((*TournamentParticipantModel)(nil)).
+			Model((*EventParticipantModel)(nil)).
 			Where("event_id = ? AND pin = ?", tournamentID, pin).
 			Count(ctx)
 		if err == nil && count == 0 {
@@ -1781,12 +1781,12 @@ func (r *TournamentRepository) generateUniqueParticipantPIN(ctx context.Context,
 	}
 }
 
-func (r *TournamentRepository) GetEventNumTables(ctx context.Context, eventID string) (int, error) {
+func (r *EventRepository) GetEventNumTables(ctx context.Context, eventID string) (int, error) {
 	eID, err := uuid.Parse(eventID)
 	if err != nil {
 		return 0, err
 	}
-	var eventModel EventModel
+	var eventModel TournamentModel
 	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(&eventModel).
 		Column("num_tables").
@@ -1798,13 +1798,13 @@ func (r *TournamentRepository) GetEventNumTables(ctx context.Context, eventID st
 	return eventModel.NumTables, nil
 }
 
-func (r *TournamentRepository) GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]event.ParticipantSnapshot, error) {
+func (r *EventRepository) GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]event.ParticipantSnapshot, error) {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return nil, err
 	}
 
-	var snapshots []TournamentParticipantModel
+	var snapshots []EventParticipantModel
 	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(&snapshots).
 		Where("event_id = ?", tID).
@@ -1828,7 +1828,7 @@ func (r *TournamentRepository) GetParticipantSnapshots(ctx context.Context, tour
 }
 
 // GetParticipantPIN returns the PIN for a specific player in a specific event.
-func (r *TournamentRepository) GetParticipantPIN(ctx context.Context, tournamentID, playerID string) (string, error) {
+func (r *EventRepository) GetParticipantPIN(ctx context.Context, tournamentID, playerID string) (string, error) {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return "", err
@@ -1837,7 +1837,7 @@ func (r *TournamentRepository) GetParticipantPIN(ctx context.Context, tournament
 	if err != nil {
 		return "", err
 	}
-	var part TournamentParticipantModel
+	var part EventParticipantModel
 	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(&part).
 		Where("event_id = ? AND player_id = ?", tID, pID).
@@ -1849,12 +1849,12 @@ func (r *TournamentRepository) GetParticipantPIN(ctx context.Context, tournament
 }
 
 // GetParticipantPINsByTournament returns a map of playerID -> PIN for all participants in a event.
-func (r *TournamentRepository) GetParticipantPINsByTournament(ctx context.Context, tournamentID string) (map[string]string, error) {
+func (r *EventRepository) GetParticipantPINsByTournament(ctx context.Context, tournamentID string) (map[string]string, error) {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return nil, err
 	}
-	var parts []TournamentParticipantModel
+	var parts []EventParticipantModel
 	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(&parts).
 		Column("player_id", "pin").
@@ -1871,7 +1871,7 @@ func (r *TournamentRepository) GetParticipantPINsByTournament(ctx context.Contex
 }
 
 // GetParticipantOrOfficialByPIN checks both event participants and officials for a matching PIN.
-func (r *TournamentRepository) GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error) {
+func (r *EventRepository) GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error) {
 	if pin == "" {
 		return "", fmt.Errorf("empty pin")
 	}
@@ -1895,7 +1895,7 @@ func (r *TournamentRepository) GetParticipantOrOfficialByPIN(ctx context.Context
 	return "", fmt.Errorf("no participant or official found with the given PIN")
 }
 
-func (r *TournamentRepository) AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error {
+func (r *EventRepository) AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return err
@@ -1904,7 +1904,7 @@ func (r *TournamentRepository) AddOfficial(ctx context.Context, tournamentID str
 	if err != nil {
 		return err
 	}
-	official := &TournamentOfficialModel{
+	official := &EventOfficialModel{
 		TournamentID: tID,
 		PlayerID:     pID,
 		Pin:          pin,
@@ -1913,7 +1913,7 @@ func (r *TournamentRepository) AddOfficial(ctx context.Context, tournamentID str
 	return err
 }
 
-func (r *TournamentRepository) RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error {
+func (r *EventRepository) RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return err
@@ -1922,16 +1922,16 @@ func (r *TournamentRepository) RemoveOfficial(ctx context.Context, tournamentID 
 	if err != nil {
 		return err
 	}
-	_, err = ExtractDB(ctx, r.db).NewDelete().Model((*TournamentOfficialModel)(nil)).Where("event_id = ? AND player_id = ?", tID, pID).Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewDelete().Model((*EventOfficialModel)(nil)).Where("event_id = ? AND player_id = ?", tID, pID).Exec(ctx)
 	return err
 }
 
-func (r *TournamentRepository) GetOfficials(ctx context.Context, tournamentID string) ([]event.ParticipantSnapshot, error) {
+func (r *EventRepository) GetOfficials(ctx context.Context, tournamentID string) ([]event.ParticipantSnapshot, error) {
 	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return nil, err
 	}
-	var officials []TournamentOfficialModel
+	var officials []EventOfficialModel
 	if err := ExtractDB(ctx, r.db).NewSelect().Model(&officials).Where("event_id = ?", tID).Scan(ctx); err != nil {
 		return nil, err
 	}
@@ -1945,7 +1945,7 @@ func (r *TournamentRepository) GetOfficials(ctx context.Context, tournamentID st
 	return snapshots, nil
 }
 
-func (r *TournamentRepository) UpdateEventIDBulk(ctx context.Context, tournamentIDs []string, eventID string) error {
+func (r *EventRepository) UpdateEventIDBulk(ctx context.Context, tournamentIDs []string, eventID string) error {
 	if len(tournamentIDs) == 0 {
 		return nil
 	}
@@ -1966,7 +1966,7 @@ func (r *TournamentRepository) UpdateEventIDBulk(ctx context.Context, tournament
 	}
 
 	_, err = ExtractDB(ctx, r.db).NewUpdate().
-		Model((*TournamentModel)(nil)).
+		Model((*EventModel)(nil)).
 		Set("tournament_id = ?", eventUUID).
 		Where("id IN (?)", bun.List(uuids)).
 		Exec(ctx)

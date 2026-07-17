@@ -10,21 +10,21 @@ import (
 	"github.com/uptrace/bun"
 )
 
-type EventRepository struct {
+type TournamentRepository struct {
 	db             *bun.DB
-	tournamentRepo *TournamentRepository
+	tournamentRepo *EventRepository
 }
 
-func NewEventRepository(db *bun.DB, tournamentRepo *TournamentRepository) *EventRepository {
-	return &EventRepository{
+func NewTournamentRepository(db *bun.DB, tournamentRepo *EventRepository) *TournamentRepository {
+	return &TournamentRepository{
 		db:             db,
 		tournamentRepo: tournamentRepo,
 	}
 }
 
-func (r *EventRepository) DB() *bun.DB { return r.db }
+func (r *TournamentRepository) DB() *bun.DB { return r.db }
 
-func (r *EventRepository) Save(ctx context.Context, e *tournament.Tournament) error {
+func (r *TournamentRepository) Save(ctx context.Context, e *tournament.Tournament) error {
 	id, err := uuid.Parse(e.ID)
 	if err != nil {
 		return err
@@ -32,7 +32,7 @@ func (r *EventRepository) Save(ctx context.Context, e *tournament.Tournament) er
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
-		model := &EventModel{
+		model := &TournamentModel{
 			ID:          id,
 			Name:        e.Name,
 			DivisionIDs: e.DivisionIDs,
@@ -57,13 +57,13 @@ func (r *EventRepository) Save(ctx context.Context, e *tournament.Tournament) er
 	})
 }
 
-func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*tournament.Tournament, error) {
+func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tournament.Tournament, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return nil, err
 	}
 
-	model := new(EventModel)
+	model := new(TournamentModel)
 	err = ExtractDB(ctx, r.db).NewSelect().Model(model).Where("id = ?", id).Scan(ctx)
 	if err != nil {
 		return nil, err
@@ -83,13 +83,13 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*tournamen
 	}, nil
 }
 
-func (r *EventRepository) GetByIDDeep(ctx context.Context, idStr string) (*tournament.Tournament, error) {
+func (r *TournamentRepository) GetByIDDeep(ctx context.Context, idStr string) (*tournament.Tournament, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return nil, err
 	}
 
-	model := new(EventModel)
+	model := new(TournamentModel)
 	err = ExtractDB(ctx, r.db).NewSelect().Model(model).Where("id = ?", id).Scan(ctx)
 	if err != nil {
 		return nil, err
@@ -109,8 +109,8 @@ func (r *EventRepository) GetByIDDeep(ctx context.Context, idStr string) (*tourn
 	}, nil
 }
 
-func (r *EventRepository) GetAll(ctx context.Context) ([]*tournament.Tournament, error) {
-	var models []EventModel
+func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tournament, error) {
+	var models []TournamentModel
 	if err := ExtractDB(ctx, r.db).NewSelect().Model(&models).Order("created_at DESC").Scan(ctx); err != nil {
 		return nil, err
 	}
@@ -125,17 +125,17 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*tournament.Tournament,
 		eventIDs[i] = m.ID
 	}
 
-	var allTournamentModels []TournamentModel
-	_ = ExtractDB(ctx, r.db).NewSelect().Model(&allTournamentModels).Where("tournament_id IN (?)", bun.List(eventIDs)).Scan(ctx)
+	var allEventModels []EventModel
+	_ = ExtractDB(ctx, r.db).NewSelect().Model(&allEventModels).Where("tournament_id IN (?)", bun.List(eventIDs)).Scan(ctx)
 
 	// Collect event IDs for batch loading participants and teams
-	tournamentIDs := make([]uuid.UUID, len(allTournamentModels))
-	for i, tm := range allTournamentModels {
+	tournamentIDs := make([]uuid.UUID, len(allEventModels))
+	for i, tm := range allEventModels {
 		tournamentIDs[i] = tm.ID
 	}
 
 	// Batch-load participants, teams, team players, and players
-	var allPartModels []TournamentParticipantModel
+	var allPartModels []EventParticipantModel
 	if len(tournamentIDs) > 0 {
 		_ = ExtractDB(ctx, r.db).NewSelect().Model(&allPartModels).Where("event_id IN (?)", bun.List(tournamentIDs)).Scan(ctx)
 	}
@@ -195,7 +195,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*tournament.Tournament,
 	}
 
 	// Index everything
-	partsByTournament := make(map[uuid.UUID][]TournamentParticipantModel)
+	partsByTournament := make(map[uuid.UUID][]EventParticipantModel)
 	for _, pt := range allPartModels {
 		partsByTournament[pt.TournamentID] = append(partsByTournament[pt.TournamentID], pt)
 	}
@@ -210,7 +210,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*tournament.Tournament,
 
 	// Build events indexed by tournament
 	tournamentsByEvent := make(map[string][]*event.Event)
-	for _, m := range allTournamentModels {
+	for _, m := range allEventModels {
 		var participantPlayers []*player.Player
 		for _, pt := range partsByTournament[m.ID] {
 			if pm, ok := playerCache[pt.PlayerID]; ok {
@@ -282,12 +282,12 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*tournament.Tournament,
 	return tournaments, nil
 }
 
-func (r *EventRepository) Update(ctx context.Context, e *tournament.Tournament) error {
+func (r *TournamentRepository) Update(ctx context.Context, e *tournament.Tournament) error {
 	id, err := uuid.Parse(e.ID)
 	if err != nil {
 		return err
 	}
-	model := &EventModel{
+	model := &TournamentModel{
 		ID:          id,
 		Name:        e.Name,
 		DivisionIDs: e.DivisionIDs,
@@ -300,7 +300,7 @@ func (r *EventRepository) Update(ctx context.Context, e *tournament.Tournament) 
 	return err
 }
 
-func (r *EventRepository) Delete(ctx context.Context, idStr string) error {
+func (r *TournamentRepository) Delete(ctx context.Context, idStr string) error {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return err
@@ -311,7 +311,7 @@ func (r *EventRepository) Delete(ctx context.Context, idStr string) error {
 		// Find all events belonging to this tournament
 		var tournamentIDs []uuid.UUID
 		err := tx.NewSelect().
-			Model((*TournamentModel)(nil)).
+			Model((*EventModel)(nil)).
 			Column("id").
 			Where("tournament_id = ?", id).
 			Scan(ctx, &tournamentIDs)
@@ -335,13 +335,13 @@ func (r *EventRepository) Delete(ctx context.Context, idStr string) error {
 
 		// Delete the events themselves
 		if len(tournamentIDs) > 0 {
-			if _, err := tx.NewDelete().Model((*TournamentModel)(nil)).Where("tournament_id = ?", id).Exec(ctx); err != nil {
+			if _, err := tx.NewDelete().Model((*EventModel)(nil)).Where("tournament_id = ?", id).Exec(ctx); err != nil {
 				return err
 			}
 		}
 
 		// Delete the tournament
-		if _, err := tx.NewDelete().Model(&EventModel{}).Where("id = ?", id).Exec(ctx); err != nil {
+		if _, err := tx.NewDelete().Model(&TournamentModel{}).Where("id = ?", id).Exec(ctx); err != nil {
 			return err
 		}
 
@@ -349,7 +349,7 @@ func (r *EventRepository) Delete(ctx context.Context, idStr string) error {
 	})
 }
 
-func (r *EventRepository) DeleteEvents(ctx context.Context, idStrs []string) error {
+func (r *TournamentRepository) DeleteEvents(ctx context.Context, idStrs []string) error {
 	if len(idStrs) == 0 {
 		return nil
 	}
@@ -367,7 +367,7 @@ func (r *EventRepository) DeleteEvents(ctx context.Context, idStrs []string) err
 
 		var tournamentIDs []uuid.UUID
 		err := tx.NewSelect().
-			Model((*TournamentModel)(nil)).
+			Model((*EventModel)(nil)).
 			Column("id").
 			Where("tournament_id IN (?)", bun.List(ids)).
 			Scan(ctx, &tournamentIDs)
@@ -388,12 +388,12 @@ func (r *EventRepository) DeleteEvents(ctx context.Context, idStrs []string) err
 		}
 
 		if len(tournamentIDs) > 0 {
-			if _, err := tx.NewDelete().Model((*TournamentModel)(nil)).Where("tournament_id IN (?)", bun.List(ids)).Exec(ctx); err != nil {
+			if _, err := tx.NewDelete().Model((*EventModel)(nil)).Where("tournament_id IN (?)", bun.List(ids)).Exec(ctx); err != nil {
 				return err
 			}
 		}
 
-		if _, err := tx.NewDelete().Model(&EventModel{}).Where("id IN (?)", bun.List(ids)).Exec(ctx); err != nil {
+		if _, err := tx.NewDelete().Model(&TournamentModel{}).Where("id IN (?)", bun.List(ids)).Exec(ctx); err != nil {
 			return err
 		}
 

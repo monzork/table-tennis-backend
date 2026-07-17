@@ -7,7 +7,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-type EventModel struct {
+type TournamentModel struct {
 	bun.BaseModel `bun:"table:tournaments"`
 
 	ID          uuid.UUID  `bun:"id,pk,type:uuid"`

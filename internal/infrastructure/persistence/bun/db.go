@@ -61,7 +61,7 @@ func Connect() {
 
 	// Bun requires join-table models to be registered for any lookup
 	DB.RegisterModel(
-		(*TournamentParticipantModel)(nil),
+		(*EventParticipantModel)(nil),
 		(*GroupParticipantModel)(nil),
 		(*TeamModel)(nil),
 		(*TeamPlayerModel)(nil),

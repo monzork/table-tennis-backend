@@ -23,8 +23,8 @@ import (
 type MatchHandler struct {
 	playerRepo          *bun.PlayerRepository
 	matchRepo           *bun.MatchRepository
-	tournamentRepo      *bun.TournamentRepository
-	containerRepo       *bun.EventRepository
+	tournamentRepo      *bun.EventRepository
+	containerRepo       *bun.TournamentRepository
 	autoAssignTablesUC  *match.AutoAssignTablesUseCase
 	createUC            *match.CreateMatchUseCase
 	finishUC            *match.FinishMatchUseCase
@@ -43,8 +43,8 @@ func NewMatchHandler(
 	updateScoreUC *match.UpdateMatchScoreUseCase,
 	playerRepo *bun.PlayerRepository,
 	matchRepo *bun.MatchRepository,
-	tournamentRepo *bun.TournamentRepository,
-	containerRepo *bun.EventRepository,
+	tournamentRepo *bun.EventRepository,
+	containerRepo *bun.TournamentRepository,
 	finishTournamentUC *appTournament.FinishTournamentUseCase,
 	broadcastPushUC *notification.BroadcastPushNotificationUseCase,
 	teamMatchUC *match.TeamMatchOrchestratorUseCase,

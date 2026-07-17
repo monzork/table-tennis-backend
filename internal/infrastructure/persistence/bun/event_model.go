@@ -9,7 +9,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-type TournamentModel struct {
+type EventModel struct {
 	bun.BaseModel `bun:"table:events"`
 
 	ID                      uuid.UUID         `bun:"id,pk,type:uuid"`
@@ -37,7 +37,7 @@ type TournamentModel struct {
 	CreatedAt           time.Time                `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt           *time.Time               `bun:"updated_at,nullzero"`
 
-	Participants  []TournamentParticipantModel `bun:"rel:has-many,join:id=event_id"`
+	Participants  []EventParticipantModel `bun:"rel:has-many,join:id=event_id"`
 	Groups        []GroupModel                 `bun:"rel:has-many,join:id=event_id"`
 	Teams         []TeamModel                  `bun:"rel:has-many,join:id=event_id"`
 	Matches       []MatchModel                 `bun:"rel:has-many,join:id=event_id"`
@@ -46,7 +46,7 @@ type TournamentModel struct {
 }
 
 // join table — no back-refs to avoid circular resolution at RegisterModel time
-type TournamentParticipantModel struct {
+type EventParticipantModel struct {
 	bun.BaseModel `bun:"table:event_participants"`
 
 	TournamentID uuid.UUID `bun:"event_id,pk,type:uuid"`
@@ -61,7 +61,7 @@ type TournamentParticipantModel struct {
 	Player *PlayerModel `bun:"rel:belongs-to,join:player_id=id"`
 }
 
-type TournamentOfficialModel struct {
+type EventOfficialModel struct {
 	bun.BaseModel `bun:"table:event_officials"`
 
 	TournamentID uuid.UUID `bun:"event_id,pk,type:uuid"`
