@@ -108,50 +108,45 @@ func TestBuildBracket_GroupPassCount(t *testing.T) {
 		}
 	}
 
-	if len(div1View.KnockoutAdvancing) != 2 {
-		t.Errorf("expected 2 advancing in div1, got %d", len(div1View.KnockoutAdvancing))
+	if len(div1View.KnockoutBrackets) == 0 {
+		t.Fatalf("expected KnockoutBrackets for div1")
+	}
+	if len(div1View.KnockoutBrackets[0].Advancing) != 2 {
+		t.Errorf("expected 2 advancing in div1, got %d", len(div1View.KnockoutBrackets[0].Advancing))
 	} else {
-		// p1 and p2 should advance since they were top 2
-		// Because of ITTF knockout seeds, p1 (seed 1) is at index 0, p2 (seed 2) is at index 1
-		if div1View.KnockoutAdvancing[0].ID != "p1" || div1View.KnockoutAdvancing[1].ID != "p2" {
-			t.Errorf("div1 advancing incorrect: %v", div1View.KnockoutAdvancing)
+		if div1View.KnockoutBrackets[0].Advancing[0].ID != "p1" || div1View.KnockoutBrackets[0].Advancing[1].ID != "p2" {
+			t.Errorf("div1 advancing incorrect: %v", div1View.KnockoutBrackets[0].Advancing)
 		}
 	}
 
-	if len(div2View.KnockoutAdvancing) != 3 {
-		t.Errorf("expected 3 advancing in div2, got %d", len(div2View.KnockoutAdvancing))
+	if len(div2View.KnockoutBrackets) == 0 {
+		t.Fatalf("expected KnockoutBrackets for div2")
+	}
+	if len(div2View.KnockoutBrackets[0].Advancing) != 3 {
+		t.Errorf("expected 3 advancing in div2, got %d", len(div2View.KnockoutBrackets[0].Advancing))
 	} else {
-		// p4, p5, p6 should advance (all 3 in the group)
-		// Bracket size 4, arrangement: 1, 4, 3, 2.
-		// p4 is seed 1 (goes to index 0).
-		// p5 is seed 2 (goes to bottom half).
-		// p6 is seed 3 (goes to top half).
-		// We just need to check they are all present.
 		found := map[string]bool{}
-		for _, p := range div2View.KnockoutAdvancing {
+		for _, p := range div2View.KnockoutBrackets[0].Advancing {
 			found[p.ID] = true
 		}
 		if !found["p4"] || !found["p5"] || !found["p6"] {
-			t.Errorf("div2 advancing incorrect, expected p4, p5, p6, got: %v", div2View.KnockoutAdvancing)
+			t.Errorf("div2 advancing incorrect, expected p4, p5, p6, got: %v", div2View.KnockoutBrackets[0].Advancing)
 		}
 	}
 
-	if len(div1View.KnockoutRounds) == 0 {
-		t.Errorf("expected KnockoutRounds for div1")
+	if len(div1View.KnockoutBrackets[0].Rounds) == 0 {
+		t.Errorf("expected Rounds for div1 bracket")
 	} else {
-		// Bracket size for 2 players should be 2 (1 round) + final
-		// buildBracketRounds generates all rounds up to Final
-		if len(div1View.KnockoutRounds[0].Matches) != 1 {
-			t.Errorf("expected 1 match in div1 first round, got %d", len(div1View.KnockoutRounds[0].Matches))
+		if len(div1View.KnockoutBrackets[0].Rounds[0].Matches) != 1 {
+			t.Errorf("expected 1 match in div1 first round, got %d", len(div1View.KnockoutBrackets[0].Rounds[0].Matches))
 		}
 	}
 
-	if len(div2View.KnockoutRounds) == 0 {
-		t.Errorf("expected KnockoutRounds for div2")
+	if len(div2View.KnockoutBrackets[0].Rounds) == 0 {
+		t.Errorf("expected Rounds for div2 bracket")
 	} else {
-		// Bracket size for 3 players should be 4 (2 rounds) + final
-		if len(div2View.KnockoutRounds[0].Matches) != 2 {
-			t.Errorf("expected 2 matches in div2 first round, got %d", len(div2View.KnockoutRounds[0].Matches))
+		if len(div2View.KnockoutBrackets[0].Rounds[0].Matches) != 2 {
+			t.Errorf("expected 2 matches in div2 first round, got %d", len(div2View.KnockoutBrackets[0].Rounds[0].Matches))
 		}
 	}
 }

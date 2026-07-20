@@ -51,7 +51,7 @@ func SetupTestDB() (*bun.DB, error) {
 	bunDB := bun.NewDB(db, sqlitedialect.New())
 
 	bunDB.RegisterModel(
-		(*bunRepo.TournamentParticipantModel)(nil),
+		(*bunRepo.EventParticipantModel)(nil),
 		(*bunRepo.GroupParticipantModel)(nil),
 		(*bunRepo.TeamPlayerModel)(nil),
 	)
@@ -65,13 +65,13 @@ func SetupTestDB() (*bun.DB, error) {
 		(*bunRepo.PlayerModel)(nil),
 		(*bunRepo.StageRuleModel)(nil),
 		(*bunRepo.TournamentModel)(nil),
-		(*bunRepo.TournamentParticipantModel)(nil),
+		(*bunRepo.EventParticipantModel)(nil),
 		(*bunRepo.GroupModel)(nil),
 		(*bunRepo.GroupParticipantModel)(nil),
 		(*bunRepo.RuleModel)(nil),
 		(*bunRepo.TeamModel)(nil),
 		(*bunRepo.TeamPlayerModel)(nil),
-		(*bunRepo.TournamentOfficialModel)(nil),
+		(*bunRepo.EventOfficialModel)(nil),
 		(*bunRepo.PushSubscriptionModel)(nil),
 		(*bunRepo.DivisionRuleModel)(nil),
 	}
@@ -107,7 +107,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	searchPlayerUC := player.NewSearchPlayersUseCase(playerRepo)
 	searchPlayerSelectionUC := player.NewSearchPlayersForSelectionUseCase(playerRepo)
 	importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
-	tournamentRepoForEnroll := bunRepo.NewTournamentRepository(db)
+	tournamentRepoForEnroll := bunRepo.NewEventRepository(db)
 	dispatcher := tournaments.NewInMemoryDispatcher()
 	enrollPlayerUC := event.NewEnrollPlayerUseCase(tournamentRepoForEnroll, dispatcher)
 	getTournamentsUC := event.NewGetTournamentsUseCase(tournamentRepoForEnroll)
@@ -118,7 +118,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	divisionRepo := bunRepo.NewDivisionRepository(db)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 
-	tournamentRepo := bunRepo.NewTournamentRepository(db)
+	tournamentRepo := bunRepo.NewEventRepository(db)
 	createTournamentUC := event.NewCreateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
 	getTournamentByIDUC := event.NewGetTournamentByIDUseCase(tournamentRepo, divisionRepo)
 	updateTournamentUC := event.NewUpdateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
@@ -159,7 +159,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 		startKnockoutUC, getEventDetailViewUC, getPublicDetailViewUC, tvDashboardUC, boardViewUC, editFormViewUC,
 	)
 
-	eventRepo := bunRepo.NewEventRepository(db, tournamentRepo)
+	eventRepo := bunRepo.NewTournamentRepository(db, tournamentRepo)
 	exportEventPdfUC := event.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGen)
 	createEventUC := tournament.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
 	getEventByIDUC := tournament.NewGetEventByIDUseCase(eventRepo)

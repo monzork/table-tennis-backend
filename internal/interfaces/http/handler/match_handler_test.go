@@ -36,7 +36,7 @@ func TestMatchHandler(t *testing.T) {
 	// Seed players & event for match
 	ctx := context.Background()
 	playerRepo := bunRepo.NewPlayerRepository(db)
-	tournamentRepo := bunRepo.NewTournamentRepository(db)
+	tournamentRepo := bunRepo.NewEventRepository(db)
 	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
 
 	p1, _ := playerDomain.NewPlayer(uuid.New().String(), "Alice", "Smith", time.Now(), "F", "", "", "")

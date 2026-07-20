@@ -23,7 +23,7 @@ func TestPublicHandler_TournamentSelfRegistration(t *testing.T) {
 
 	ctx := context.Background()
 	playerRepo := bunRepo.NewPlayerRepository(db)
-	tournamentRepo := bunRepo.NewTournamentRepository(db)
+	tournamentRepo := bunRepo.NewEventRepository(db)
 
 	// Create a player that is already registered
 	existingPlayer, err := playerDomain.NewPlayer(uuid.New().String(), "Jane", "Doe", time.Now().AddDate(-25, 0, 0), "F", "NIC", "", "")

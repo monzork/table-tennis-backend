@@ -242,11 +242,12 @@
             {{end}}
           </h3>
           {{if and .AllGroupsFinished (gt (len .Groups) 0)}}
+            {{range .KnockoutBrackets}}
             <!-- KNOCKOUT SEEDS TABLE FOR DRAG AND DROP -->
             <div class="mb-12 max-w-2xl mx-auto">
               <div class="flex items-center justify-between mb-4">
-                <h4 class="text-sm font-bold uppercase tracking-widest text-white/80">Knockout Seeds</h4>
-                <p class="text-[10px] text-gray-400 uppercase tracking-widest">{{len .KnockoutAdvancing}} Players Advancing</p>
+                <h4 class="text-sm font-bold uppercase tracking-widest text-white/80">Knockout Seeds{{if .Name}} - {{.Name}}{{end}}</h4>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest">{{len .Advancing}} Players Advancing</p>
               </div>
               <div class="glass border border-white/5 rounded-2xl overflow-hidden shadow-2xl relative">
                 <div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-tournaments-none"></div>
@@ -260,10 +261,10 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-white/5">
-                    {{$divID := .ID}}
-                    {{$knockoutGroupID := .KnockoutGroupID}}
+                    {{$divID := $.ID}}
+                    {{$knockoutGroupID := .GroupID}}
                     {{$canMoveKnockout := and (not $.IsPublic) (not $.Event.ManualSeedingLocked)}}
-                    {{range $idx, $p := .KnockoutAdvancing}}
+                    {{range $idx, $p := .Advancing}}
                     <tr 
                       data-player-id="{{$p.ID}}"
                       {{if $canMoveKnockout}}
@@ -314,7 +315,7 @@
                <p class="text-xs text-gray-400">The visual bracket tree is best viewed on larger screens. Please scroll down to the <strong class="text-white">Match List</strong> to see your upcoming games.</p>
             </div>
             <div class="hidden sm:flex gap-8 min-w-max px-2 py-4 overflow-x-auto justify-center items-center">
-              {{range $ri, $round := .KnockoutRoundsLeft}}
+              {{range $ri, $round := .RoundsLeft}}
               <div class="flex flex-col gap-0 bracket-round">
                  <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
                  <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
@@ -407,7 +408,7 @@
                  </div>
               </div>
               {{end}}
-                            {{range $ri, $round := .KnockoutRoundsCenter}}
+                            {{range $ri, $round := .RoundsCenter}}
               <div class="flex flex-col gap-0 bracket-round">
                  <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
                  <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
@@ -500,7 +501,7 @@
                  </div>
               </div>
               {{end}}
-                            {{range $ri, $round := .KnockoutRoundsRight}}
+                            {{range $ri, $round := .RoundsRight}}
               <div class="flex flex-col gap-0 bracket-round">
                  <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
                  <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
@@ -594,6 +595,8 @@
               </div>
               {{end}}
             </div>
+            <div class="mt-8 border-t border-white/5 pt-8"></div>
+            {{end}}
           {{else}}
             <div class="glass rounded-3xl border border-white/10 border-dashed p-12 text-center text-gray-500">
                <svg class="w-12 h-12 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -678,12 +681,16 @@
         </div>
       {{end}}
 
+      {{range .KnockoutBrackets}}
+      <div class="mb-4 text-center">
+         <h3 class="text-lg font-black text-white uppercase tracking-widest">{{.Name}}</h3>
+      </div>
       <div class="block sm:hidden mb-8 text-center glass rounded-2xl p-6 border border-white/5">
          <div class="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2">📱 Mobile Optimized View</div>
          <p class="text-xs text-gray-400">The visual bracket tree is best viewed on larger screens. Please scroll down to the <strong class="text-white">Match List</strong> to see your upcoming games.</p>
       </div>
       <div class="hidden sm:flex gap-8 min-w-max px-2 py-4 overflow-x-auto justify-center items-center">
-        {{range $ri, $round := .KnockoutRoundsLeft}}
+        {{range $ri, $round := .RoundsLeft}}
               <div class="flex flex-col gap-0 bracket-round">
                  <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
                  <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
@@ -776,7 +783,7 @@
                  </div>
               </div>
               {{end}}
-                            {{range $ri, $round := .KnockoutRoundsCenter}}
+                            {{range $ri, $round := .RoundsCenter}}
               <div class="flex flex-col gap-0 bracket-round">
                  <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
                  <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
@@ -869,7 +876,7 @@
                  </div>
               </div>
               {{end}}
-                            {{range $ri, $round := .KnockoutRoundsRight}}
+                            {{range $ri, $round := .RoundsRight}}
               <div class="flex flex-col gap-0 bracket-round">
                  <div class="proj-round-label text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 text-center">{{.Name}}</div>
                  <div class="flex flex-col justify-around flex-1" style="gap: {{if eq $ri 0}}8px{{else}}0px{{end}}">
@@ -963,6 +970,8 @@
               </div>
               {{end}}
       </div>
+      <div class="mt-8 border-t border-white/5 pt-8"></div>
+      {{end}}
     {{end}}
   </div>
   {{end}}

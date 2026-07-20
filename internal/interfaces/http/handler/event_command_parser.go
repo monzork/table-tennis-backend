@@ -17,8 +17,9 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 		StartDate      string `form:"startDate"`
 		EndDate        string `form:"endDate"`
 		GroupPassCount int    `form:"groupPassCount"`
-		TeamFormat     string `form:"teamFormat"`
-		NumTables      int    `form:"numTables" json:"numTables"`
+		TeamFormat            string `form:"teamFormat"`
+		NumTables             int    `form:"numTables" json:"numTables"`
+		KnockoutBracketsCount int    `form:"knockoutBracketsCount"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return event.CreateEventCommand{}, err
@@ -156,6 +157,7 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 		DivisionFormats:         divisionFormats,
 		DivisionGroupPassCounts: divisionGroupPassCounts,
 		DivisionGroupCounts:     divisionGroupCounts,
+		KnockoutBracketsCount:   body.KnockoutBracketsCount,
 	}, nil
 }
 
@@ -170,8 +172,9 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		EndDate          string `form:"endDate"`
 		GroupPassCount   int    `form:"groupPassCount"`
 		RegistrationOpen bool   `form:"registrationOpen"`
-		TeamFormat       string `form:"teamFormat"`
-		NumTables        int    `form:"numTables" json:"numTables"`
+		TeamFormat            string `form:"teamFormat"`
+		NumTables             int    `form:"numTables" json:"numTables"`
+		KnockoutBracketsCount int    `form:"knockoutBracketsCount"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return event.UpdateEventCommand{}, err
@@ -311,5 +314,6 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		DivisionFormats:         divisionFormats,
 		DivisionGroupPassCounts: divisionGroupPassCounts,
 		DivisionGroupCounts:     divisionGroupCounts,
+		KnockoutBracketsCount:   body.KnockoutBracketsCount,
 	}, nil
 }

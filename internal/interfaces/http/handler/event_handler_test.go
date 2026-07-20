@@ -35,7 +35,7 @@ func TestTournamentHandler(t *testing.T) {
 
 	ctx := context.Background()
 	playerRepo := bunRepo.NewPlayerRepository(db)
-	tournamentRepo := bunRepo.NewTournamentRepository(db)
+	tournamentRepo := bunRepo.NewEventRepository(db)
 
 	p1, _ := playerDomain.NewPlayer(uuid.New().String(), "Test", "Player1", time.Now(), "M", "", "", "")
 	playerRepo.Save(ctx, p1)
@@ -65,7 +65,7 @@ func TestTournamentHandler(t *testing.T) {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
 
-		var tm bunRepo.TournamentModel
+		var tm bunRepo.EventModel
 		err = db.NewSelect().Model(&tm).Where("name = ?", "Grand Slam").Scan(context.Background())
 		if err != nil {
 			t.Fatalf("failed to find event in DB: %v", err)
@@ -118,7 +118,7 @@ func TestTournamentHandler(t *testing.T) {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
 
-		var tm bunRepo.TournamentModel
+		var tm bunRepo.EventModel
 		err = db.NewSelect().Model(&tm).Where("id = ?", createdTournamentID).Scan(context.Background())
 		if err != nil {
 			t.Fatalf("failed to find event in DB: %v", err)
@@ -136,7 +136,6 @@ func TestTournamentHandler(t *testing.T) {
 			t.Errorf("expected division group counts override, got %v", tm.DivisionGroupCounts)
 		}
 
-		// Verify 4 groups were generated
 		tourneyReloaded, err := tournamentRepo.GetByID(ctx, createdTournamentID)
 		if err != nil {
 			t.Fatalf("failed to load tourney: %v", err)
@@ -159,7 +158,7 @@ func TestTournamentHandler(t *testing.T) {
 			t.Errorf("expected 200 OK, got %v\n", resp.StatusCode)
 		}
 
-		var tm bunRepo.TournamentModel
+		var tm bunRepo.EventModel
 		db.NewSelect().Model(&tm).Where("id = ?", createdTournamentID).Scan(context.Background())
 		if tm.Status != "finished" {
 			t.Errorf("expected status 'finished', got '%s'", tm.Status)
@@ -255,7 +254,7 @@ func TestTournamentHandler(t *testing.T) {
 			t.Fatalf("expected 200 OK, got %v", resp.StatusCode)
 		}
 
-		var tm bunRepo.TournamentModel
+		var tm bunRepo.EventModel
 		err = db.NewSelect().Model(&tm).Where("name = ?", "Move Players Tourney").Scan(context.Background())
 		if err != nil {
 			t.Fatalf("failed to find event: %v", err)

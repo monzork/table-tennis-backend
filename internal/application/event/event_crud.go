@@ -138,6 +138,7 @@ type UpdateEventCommand struct {
 	DivisionFormats         map[string]string
 	DivisionGroupPassCounts map[string]int
 	DivisionGroupCounts     map[string]int
+	KnockoutBracketsCount   int
 }
 
 func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventCommand) (*tournamentDomain.Event, error) {
@@ -190,6 +191,7 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 	t.TeamFormat = cmd.TeamFormat
 	t.NumTables = cmd.NumTables
 	t.HasThirdPlaceMatch = cmd.HasThirdPlaceMatch
+	t.KnockoutBracketsCount = cmd.KnockoutBracketsCount
 
 	// Preserve existing teams and conditionally preserve/regenerate groups
 	if existing, err := uc.repo.GetByID(ctx, cmd.ID); err == nil {
@@ -267,7 +269,7 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 				}
 			}
 
-			if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
+			if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" || t.Format == "single_division_multiple_brackets" {
 				if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err != nil {
 					return nil, err
 				}
@@ -292,7 +294,7 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 			}
 		}
 
-		if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
+		if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" || t.Format == "single_division_multiple_brackets" {
 			if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err != nil {
 				return nil, err
 			}

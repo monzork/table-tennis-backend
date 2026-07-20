@@ -106,7 +106,7 @@ type DivisionSeeder struct {
 }
 
 func (s *DivisionSeeder) AssignGroups(t *Event) error {
-	if t.Format != "groups_elimination" && t.Format != "round_robin" && t.Format != "elimination" {
+	if t.Format != "groups_elimination" && t.Format != "round_robin" && t.Format != "elimination" && t.Format != "single_division_multiple_brackets" {
 		t.Groups = []Group{}
 		return nil
 	}
@@ -139,7 +139,7 @@ func (s *DivisionSeeder) AssignGroups(t *Event) error {
 		copy(units, t.Participants)
 	}
 
-	if t.SkipElo || len(s.Divisions) == 0 {
+	if t.SkipElo || len(s.Divisions) == 0 || t.Format == "single_division_multiple_brackets" {
 		divGroups = append(divGroups, DivGroup{
 			Name:    "Open Bracket",
 			Players: units,

@@ -45,6 +45,7 @@ type CreateEventCommand struct {
 	DivisionFormats         map[string]string
 	DivisionGroupPassCounts map[string]int
 	DivisionGroupCounts     map[string]int
+	KnockoutBracketsCount   int
 }
 
 func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventCommand) (*tournamentDomain.Event, error) {
@@ -110,9 +111,9 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 	t.DivisionGroupPassCounts = cmd.DivisionGroupPassCounts
 	t.DivisionGroupCounts = cmd.DivisionGroupCounts
 
-	// Save the event to DB
 	t.TeamFormat = cmd.TeamFormat
 	t.NumTables = cmd.NumTables
+	t.KnockoutBracketsCount = cmd.KnockoutBracketsCount
 
 	// Fetch divisions list to seed groups per-division
 	var divsList []tournamentDomain.DivisionSeeding
@@ -132,7 +133,7 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 		}
 	}
 
-	if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" {
+	if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" || t.Format == "single_division_multiple_brackets" {
 		if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err != nil {
 			return nil, err
 		}
@@ -178,6 +179,7 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 			pairT.DivisionFormats = cmd.DivisionFormats
 			pairT.DivisionGroupPassCounts = cmd.DivisionGroupPassCounts
 			pairT.DivisionGroupCounts = cmd.DivisionGroupCounts
+			pairT.KnockoutBracketsCount = cmd.KnockoutBracketsCount
 			if pairT.Format == "groups_elimination" || pairT.Format == "round_robin" || pairT.Format == "elimination" {
 				(&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(pairT)
 			}

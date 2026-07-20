@@ -88,6 +88,7 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 		WinnerName:              t.WinnerName,
 		NumTables:               t.NumTables,
 		HasThirdPlaceMatch:      t.HasThirdPlaceMatch,
+		KnockoutBracketsCount:   t.KnockoutBracketsCount,
 		Metrics:                 t.Metrics,
 		ManualSeedingLocked:     t.ManualSeedingLocked,
 	}
@@ -257,6 +258,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 			WinnerName:              m.WinnerName,
 			NumTables:               m.NumTables,
 			HasThirdPlaceMatch:      m.HasThirdPlaceMatch,
+			KnockoutBracketsCount:   m.KnockoutBracketsCount,
 			Metrics:                 m.Metrics,
 			ManualSeedingLocked:     m.ManualSeedingLocked,
 			Participants:            participants,
@@ -402,6 +404,7 @@ func (r *EventRepository) GetByIDLite(ctx context.Context, idStr string) (*event
 		TeamFormat:              model.TeamFormat,
 		NumTables:               model.NumTables,
 		HasThirdPlaceMatch:      model.HasThirdPlaceMatch,
+		KnockoutBracketsCount:   model.KnockoutBracketsCount,
 		Metrics:                 model.Metrics,
 		ManualSeedingLocked:     model.ManualSeedingLocked,
 	}, nil
@@ -779,6 +782,7 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 		TeamFormat:              model.TeamFormat,
 		NumTables:               model.NumTables,
 		HasThirdPlaceMatch:      model.HasThirdPlaceMatch,
+		KnockoutBracketsCount:   model.KnockoutBracketsCount,
 		Metrics:                 model.Metrics,
 		ManualSeedingLocked:     model.ManualSeedingLocked,
 	}, nil
@@ -821,11 +825,12 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			WinnerName:              t.WinnerName,
 			NumTables:               t.NumTables,
 			HasThirdPlaceMatch:      t.HasThirdPlaceMatch,
+			KnockoutBracketsCount:   t.KnockoutBracketsCount,
 			Metrics:                 t.Metrics,
 			ManualSeedingLocked:     t.ManualSeedingLocked,
 		}
 
-		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "tournament_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "metrics", "manual_seeding_locked", "division_formats", "division_group_pass_counts", "division_group_counts").Exec(ctx)
+		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "tournament_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked", "division_formats", "division_group_pass_counts", "division_group_counts").Exec(ctx)
 		if err != nil {
 			return err
 		}

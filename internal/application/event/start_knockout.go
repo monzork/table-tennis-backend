@@ -44,29 +44,31 @@ func (uc *StartKnockoutStageUseCase) Execute(ctx context.Context, tournamentID, 
 
 	var firstRoundMatches []event.Match
 	for _, div := range vm.Divisions {
-		if div.ID == divID && div.AllGroupsFinished && len(div.KnockoutRounds) > 0 {
-			if err := bracket.ValidateSameGroupSeparation(div.Groups, div.KnockoutAdvancing); err != nil {
-				return err
-			}
+		if div.ID == divID && div.AllGroupsFinished && len(div.KnockoutBrackets) > 0 {
+			for _, bracketBracket := range div.KnockoutBrackets {
+				if err := bracket.ValidateSameGroupSeparation(div.Groups, bracketBracket.Advancing); err != nil {
+					return err
+				}
 
-			for _, r := range div.KnockoutRounds {
-				// Only schedule matches from the very first round that have valid players
-				for _, mv := range r.Matches {
-					if mv.Player1 != nil && mv.Player2 != nil && mv.Player1.Player != nil && mv.Player2.Player != nil {
-						if mv.Match == nil {
-							firstRoundMatches = append(firstRoundMatches, event.Match{
-								TournamentID: tournamentID,
-								DivisionID:   divID,
-								Stage:        mv.Stage,
-								RoundNumber:  1,
-								MatchType:    t.Type,
-								TeamA:        []*player.Player{mv.Player1.Player},
-								TeamB:        []*player.Player{mv.Player2.Player},
-							})
+				if len(bracketBracket.Rounds) > 0 {
+					r := bracketBracket.Rounds[0]
+					// Only schedule matches from the very first round that have valid players
+					for _, mv := range r.Matches {
+						if mv.Player1 != nil && mv.Player2 != nil && mv.Player1.Player != nil && mv.Player2.Player != nil {
+							if mv.Match == nil {
+								firstRoundMatches = append(firstRoundMatches, event.Match{
+									TournamentID: tournamentID,
+									DivisionID:   divID,
+									Stage:        mv.Stage,
+									RoundNumber:  1,
+									MatchType:    t.Type,
+									TeamA:        []*player.Player{mv.Player1.Player},
+									TeamB:        []*player.Player{mv.Player2.Player},
+								})
+							}
 						}
 					}
 				}
-				break // Only first round of knockout (since it's a tree, the rounds array usually has the first round first)
 			}
 			break
 		}

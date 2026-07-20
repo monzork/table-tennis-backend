@@ -167,7 +167,32 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 				}
 			}
 			if dv.AllGroupsFinished {
-				for _, round := range dv.KnockoutRounds {
+				for _, bracket := range dv.KnockoutBrackets {
+					for _, round := range bracket.Rounds {
+						for _, bmv := range round.Matches {
+							if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
+								if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID, bmv.Stage) {
+									scheduled = append(scheduled, BoardCard{
+										MatchID:      "",
+										Status:       "scheduled",
+										Stage:        bmv.Stage,
+										BestOf:       bmv.BestOf,
+										PlayerAName:  bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
+										PlayerBName:  bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
+										P1Id:         bmv.Player1.Player.ID,
+										P2Id:         bmv.Player2.Player.ID,
+										DivisionName: dv.Name,
+										Category:     t.EventCategory,
+									})
+								}
+							}
+						}
+					}
+				}
+			}
+		} else if vm.Format == "elimination" {
+			for _, bracket := range dv.KnockoutBrackets {
+				for _, round := range bracket.Rounds {
 					for _, bmv := range round.Matches {
 						if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
 							if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID, bmv.Stage) {
@@ -184,27 +209,6 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 									Category:     t.EventCategory,
 								})
 							}
-						}
-					}
-				}
-			}
-		} else if vm.Format == "elimination" {
-			for _, round := range dv.KnockoutRounds {
-				for _, bmv := range round.Matches {
-					if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
-						if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID, bmv.Stage) {
-							scheduled = append(scheduled, BoardCard{
-								MatchID:      "",
-								Status:       "scheduled",
-								Stage:        bmv.Stage,
-								BestOf:       bmv.BestOf,
-								PlayerAName:  bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
-								PlayerBName:  bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
-								P1Id:         bmv.Player1.Player.ID,
-								P2Id:         bmv.Player2.Player.ID,
-								DivisionName: dv.Name,
-								Category:     t.EventCategory,
-							})
 						}
 					}
 				}

@@ -43,13 +43,18 @@ type Division struct {
 	Groups            []Group
 	AllGroupsFinished bool
 
-	KnockoutRounds       []Round
-	KnockoutRoundsLeft   []Round
-	KnockoutRoundsRight  []Round
-	KnockoutRoundsCenter []Round
+	KnockoutBrackets []KnockoutBracket
+}
 
-	KnockoutGroupID   string
-	KnockoutAdvancing []*player.Player
+type KnockoutBracket struct {
+	Tier         int
+	Name         string
+	Advancing    []*player.Player
+	GroupID      string
+	Rounds       []Round
+	RoundsLeft   []Round
+	RoundsRight  []Round
+	RoundsCenter []Round
 }
 
 type PlayerStanding = event.PlayerStanding
@@ -138,7 +143,7 @@ func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]str
 		return ei > ej
 	})
 
-	if t.SkipElo {
+	if t.SkipElo || t.Format == "single_division_multiple_brackets" {
 		openPlayers := participants
 		var openGroupID string
 		if t.Format == "elimination" {
@@ -291,38 +296,104 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 			}
 		}
 		dv.RoundRobinFinished = expectedMatches > 0 && finishedMatches >= expectedMatches
-	} else if divFormat == "groups_elimination" {
+	} else if divFormat == "groups_elimination" || divFormat == "single_division_multiple_brackets" {
 		dv.Groups, dv.AllGroupsFinished = buildGroupEliminationGroups(t, divID, name, players)
 
 		if dv.AllGroupsFinished {
-			var advancing []*player.Player
-			var knockoutGroup *event.Group
+			bracketsCount := t.KnockoutBracketsCount
+			if bracketsCount <= 0 {
+				bracketsCount = 1
+			}
+
+			passCount := t.GetGroupPassCount(divID)
+			if passCount == 0 {
+				passCount = 2
+			}
+
+			// Pre-collect any knockout groups created by manual draw
+			var knockoutGroups []*event.Group
 			for i := range t.Groups {
-				if t.Groups[i].Name == name+" - Knockout Seeds" {
-					knockoutGroup = &t.Groups[i]
-					break
+				if strings.Contains(t.Groups[i].Name, name+" -") && strings.Contains(t.Groups[i].Name, "Knockout Seeds") {
+					knockoutGroups = append(knockoutGroups, &t.Groups[i])
 				}
 			}
 
-			if knockoutGroup != nil {
-				advancing = knockoutGroup.Players
-				dv.KnockoutGroupID = knockoutGroup.ID
-			} else {
-				passCount := t.GetGroupPassCount(divID)
-				if passCount == 0 {
-					passCount = 2
+			for tier := 0; tier < bracketsCount; tier++ {
+				var tierAdvancing []*player.Player
+				var tierGroupID string
+
+				// Attempt to load from DB
+				var kg *event.Group
+				expectedName := fmt.Sprintf("%s - Tier %d Knockout Seeds", name, tier)
+				if bracketsCount == 1 {
+					expectedName = name + " - Knockout Seeds"
 				}
-				advancing = buildITTFKnockoutSeeds(dv.Groups, passCount)
-				dv.KnockoutGroupID = "virtual-knockout-" + divID
+				for _, g := range knockoutGroups {
+					if g.Name == expectedName {
+						kg = g
+						break
+					}
+				}
+
+				if kg != nil {
+					tierAdvancing = kg.Players
+					tierGroupID = kg.ID
+				} else {
+					// Build virtually from group standings
+					tierGroups := make([]Group, len(dv.Groups))
+					for gi, g := range dv.Groups {
+						tierGroups[gi] = Group{
+							ID:        g.ID,
+							Name:      g.Name,
+							Standings: []PlayerStanding{},
+						}
+						startIdx := tier * passCount
+						endIdx := startIdx + passCount
+						for idx := startIdx; idx < endIdx && idx < len(g.Standings); idx++ {
+							tierGroups[gi].Standings = append(tierGroups[gi].Standings, g.Standings[idx])
+						}
+					}
+					tierAdvancing = buildITTFKnockoutSeeds(tierGroups, passCount)
+					tierGroupID = fmt.Sprintf("virtual-knockout-%s-tier%d", divID, tier)
+				}
+
+				tierName := "Main Bracket"
+				if tier > 0 {
+					tierName = fmt.Sprintf("Tier %d Bracket", tier+1)
+				}
+				if bracketsCount == 1 {
+					tierName = ""
+				}
+
+				tierRounds := buildBracketRounds(t, divID, tierAdvancing, tier)
+				left, right, center := splitKnockoutRounds(tierRounds)
+
+				dv.KnockoutBrackets = append(dv.KnockoutBrackets, KnockoutBracket{
+					Tier:         tier,
+					Name:         tierName,
+					Advancing:    tierAdvancing,
+					GroupID:      tierGroupID,
+					Rounds:       tierRounds,
+					RoundsLeft:   left,
+					RoundsRight:  right,
+					RoundsCenter: center,
+				})
 			}
-			dv.KnockoutAdvancing = advancing
-			dv.KnockoutRounds = buildBracketRounds(t, divID, advancing)
 		}
 	} else {
-		dv.KnockoutRounds = buildBracketRounds(t, divID, players)
+		tierRounds := buildBracketRounds(t, divID, players, 0)
+		left, right, center := splitKnockoutRounds(tierRounds)
+		dv.KnockoutBrackets = append(dv.KnockoutBrackets, KnockoutBracket{
+			Tier:         0,
+			Name:         "",
+			Advancing:    players,
+			GroupID:      dv.GroupID,
+			Rounds:       tierRounds,
+			RoundsLeft:   left,
+			RoundsRight:  right,
+			RoundsCenter: center,
+		})
 	}
-
-	dv.KnockoutRoundsLeft, dv.KnockoutRoundsRight, dv.KnockoutRoundsCenter = splitKnockoutRounds(dv.KnockoutRounds)
 
 	return dv
 }
@@ -663,7 +734,7 @@ func getSeedingArrangement(size int) []int {
 	return bracket
 }
 
-func buildBracketRounds(t *event.Event, divID string, players []*player.Player) []Round {
+func buildBracketRounds(t *event.Event, divID string, players []*player.Player, tier int) []Round {
 	if len(players) == 0 {
 		return nil
 	}
@@ -715,6 +786,9 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 			stageNameCurrent = "semifinal"
 		} else if rem == 1 {
 			stageNameCurrent = "final"
+		}
+		if tier > 0 {
+			stageNameCurrent = fmt.Sprintf("tier%d_%s", tier, stageNameCurrent)
 		}
 
 		for i := 0; i < len(current); i += 2 {
@@ -885,7 +959,11 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 				if tm.TeamMatchID != nil {
 					continue
 				}
-				if tm.Stage != "final" {
+				finalStage := "final"
+				if tier > 0 {
+					finalStage = fmt.Sprintf("tier%d_%s", tier, finalStage)
+				}
+				if tm.Stage != finalStage {
 					continue
 				}
 				if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
@@ -915,6 +993,10 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 		// If only one finalist is present due to a genuine bye (size-1 bracket), allow that.
 		// But do NOT auto-crown when the other side is merely unresolved.
 
+		finalStageStr := "final"
+		if tier > 0 {
+			finalStageStr = fmt.Sprintf("tier%d_final", tier)
+		}
 		rounds = append(rounds, Round{
 			Name: "🏆 Final",
 			Matches: []BracketMatch{
@@ -922,7 +1004,7 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 					Player1: p1,
 					Player2: p2,
 					Match:   finalMatch,
-					Stage:   "final",
+					Stage:   finalStageStr,
 					BestOf:  getBestOfForStage(t, "final", divID),
 				},
 			},
@@ -947,7 +1029,11 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 				if tm.TeamMatchID != nil {
 					continue
 				}
-				if tm.Stage != "3rd_place" {
+				thirdStage := "3rd_place"
+				if tier > 0 {
+					thirdStage = fmt.Sprintf("tier%d_%s", tier, thirdStage)
+				}
+				if tm.Stage != thirdStage {
 					continue
 				}
 				if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
@@ -959,6 +1045,10 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 			}
 		}
 
+		thirdStageStr := "3rd_place"
+		if tier > 0 {
+			thirdStageStr = fmt.Sprintf("tier%d_3rd_place", tier)
+		}
 		rounds = append(rounds, Round{
 			Name: "🥉 3rd Place",
 			Matches: []BracketMatch{
@@ -966,7 +1056,7 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player) 
 					Player1: thirdPlaceP1,
 					Player2: thirdPlaceP2,
 					Match:   thirdPlaceMatch,
-					Stage:   "3rd_place",
+					Stage:   thirdStageStr,
 					BestOf:  getBestOfForStage(t, "3rd_place", divID),
 				},
 			},

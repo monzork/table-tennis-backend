@@ -34,7 +34,7 @@ func TestTournamentHandler_MovePlayer(t *testing.T) {
 
 	ctx := context.Background()
 	playerRepo := bunRepo.NewPlayerRepository(db)
-	tournamentRepo := bunRepo.NewTournamentRepository(db)
+	tournamentRepo := bunRepo.NewEventRepository(db)
 
 	// Seed player
 	p, _ := playerDomain.NewPlayer(uuid.New().String(), "Jose", "Mena", time.Now(), "M", "", "", "")

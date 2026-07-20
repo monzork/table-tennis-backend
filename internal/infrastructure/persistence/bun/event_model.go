@@ -29,12 +29,13 @@ type EventModel struct {
 	DivisionGroupPassCounts map[string]int    `bun:"division_group_pass_counts,type:json"`
 	DivisionGroupCounts     map[string]int    `bun:"division_group_counts,type:json"`
 
-	WinnerName          string                   `bun:"winner_name,nullzero"`
-	NumTables           int                      `bun:"num_tables,notnull,default:0"`
-	HasThirdPlaceMatch  bool                     `bun:"has_third_place_match,notnull,default:false"`
-	Metrics             *event.TournamentMetrics `bun:"metrics,type:jsonb"`
-	ManualSeedingLocked bool                     `bun:"manual_seeding_locked,notnull,default:false"`
-	CreatedAt           time.Time                `bun:"created_at,notnull,default:current_timestamp"`
+	WinnerName            string                   `bun:"winner_name,nullzero"`
+	NumTables             int                      `bun:"num_tables,notnull,default:0"`
+	HasThirdPlaceMatch    bool                     `bun:"has_third_place_match,notnull,default:false"`
+	KnockoutBracketsCount int                      `bun:"knockout_brackets_count,notnull,default:1"`
+	Metrics               *event.TournamentMetrics `bun:"metrics,type:jsonb"`
+	ManualSeedingLocked   bool                     `bun:"manual_seeding_locked,notnull,default:false"`
+	CreatedAt             time.Time                `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt           *time.Time               `bun:"updated_at,nullzero"`
 
 	Participants  []EventParticipantModel `bun:"rel:has-many,join:id=event_id"`

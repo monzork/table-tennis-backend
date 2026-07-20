@@ -182,6 +182,7 @@ type Event struct {
 	HasThirdPlaceMatch      bool
 	Metrics                 *TournamentMetrics
 	ManualSeedingLocked     bool
+	KnockoutBracketsCount   int
 }
 
 func NewTournament(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Event, error) {
@@ -224,9 +225,10 @@ func NewTournament(id string, name string, tournamentType string, format string,
 		RegistrationOpen:   false,
 		EventID:            nil,
 		SkipElo:            false,
-		Teams:              []*Team{},
-		NumTables:          0,
-		HasThirdPlaceMatch: hasThirdPlaceMatch,
+		Teams:                 []*Team{},
+		NumTables:             0,
+		HasThirdPlaceMatch:    hasThirdPlaceMatch,
+		KnockoutBracketsCount: 1,
 	}
 	t.StageRules = DefaultStageRules(t.ID)
 
