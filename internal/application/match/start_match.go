@@ -3,7 +3,7 @@ package match
 import (
 	"context"
 	"errors"
-	"strconv"
+
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/tournament"
 )
@@ -25,8 +25,8 @@ func NewStartMatchUseCase(matchRepo event.MatchRepository, eventRepo event.Repos
 }
 
 // StartMatch assigns a table (if not provided) and starts the match.
-func (uc *StartMatchUseCase) Execute(ctx context.Context, matchID string, manualTableStr string) (*event.Match, error) {
-	m, err := uc.matchRepo.GetByID(ctx, matchID)
+func (uc *StartMatchUseCase) Execute(ctx context.Context, cmd event.StartMatchCommand) (*event.StartMatchResult, error) {
+	m, err := uc.matchRepo.GetByID(ctx, cmd.MatchID)
 	if err != nil {
 		return nil, errors.New("Match not found")
 	}
@@ -37,14 +37,12 @@ func (uc *StartMatchUseCase) Execute(ctx context.Context, matchID string, manual
 	}
 
 	// Manual override
-	if manualTableStr != "" {
-		if tNum, err := strconv.Atoi(manualTableStr); err == nil {
-			isOccupied, _ := uc.matchRepo.IsTableOccupiedByOtherMatch(ctx, m.ID, tNum)
-			if isOccupied {
-				return nil, errors.New("Table is occupied")
-			}
-			m.TableNumber = &tNum
+	if cmd.TableNumber != nil {
+		isOccupied, _ := uc.matchRepo.IsTableOccupiedByOtherMatch(ctx, m.ID, *cmd.TableNumber)
+		if isOccupied {
+			return nil, event.ErrTableOccupied
 		}
+		m.TableNumber = cmd.TableNumber
 	}
 
 	// Auto-assign table logic if missing
@@ -54,7 +52,10 @@ func (uc *StartMatchUseCase) Execute(ctx context.Context, matchID string, manual
 			eventNumTables, _ = uc.eventRepo.GetEventNumTables(ctx, *t.EventID)
 		}
 
-		totalTables := 4
+		totalTables := cmd.TotalTables
+		if totalTables <= 0 {
+			totalTables = 4
+		}
 		if t.NumTables > 0 {
 			totalTables = t.NumTables
 		}
@@ -82,7 +83,7 @@ func (uc *StartMatchUseCase) Execute(ctx context.Context, matchID string, manual
 		}
 
 		if len(availableTables) == 0 {
-			return nil, errors.New("No tables available")
+			return nil, event.ErrTableOccupied
 		}
 
 		assignedTable := availableTables[0]
@@ -107,20 +108,32 @@ func (uc *StartMatchUseCase) Execute(ctx context.Context, matchID string, manual
 
 		// Fallback to highest available if no priority match found
 		if !priorityFound {
-			found := false
-			for _, tbl := range availableTables {
-				if tbl >= 3 {
-					if !found || tbl > assignedTable {
-						assignedTable = tbl
-						found = true
+			if cmd.IsHighPriority {
+				if !occupiedMap[1] {
+					assignedTable = 1
+				} else if !occupiedMap[2] && totalTables >= 2 {
+					assignedTable = 2
+				} else {
+					assignedTable = availableTables[0]
+				}
+			} else {
+				found := false
+				for _, tbl := range availableTables {
+					if tbl >= 3 {
+						if !found || tbl > assignedTable {
+							assignedTable = tbl
+							found = true
+						}
 					}
 				}
-			}
-			if !found {
-				if !occupiedMap[2] && totalTables >= 2 {
-					assignedTable = 2
-				} else if !occupiedMap[1] {
-					assignedTable = 1
+				if !found {
+					if !occupiedMap[2] && totalTables >= 2 {
+						assignedTable = 2
+					} else if !occupiedMap[1] {
+						assignedTable = 1
+					} else {
+						assignedTable = availableTables[0]
+					}
 				}
 			}
 		}
@@ -134,5 +147,22 @@ func (uc *StartMatchUseCase) Execute(ctx context.Context, matchID string, manual
 		return nil, err
 	}
 
-	return m, nil
+	pAName, pBName := "TBD", "TBD"
+	if len(m.TeamA) > 0 {
+		pAName = m.TeamA[0].FullName()
+	}
+	if len(m.TeamB) > 0 {
+		pBName = m.TeamB[0].FullName()
+	}
+	tableNumber := 0
+	if m.TableNumber != nil {
+		tableNumber = *m.TableNumber
+	}
+
+	return &event.StartMatchResult{
+		TableNumber: tableNumber,
+		Pin:         m.Pin,
+		PlayerAName: pAName,
+		PlayerBName: pBName,
+	}, nil
 }

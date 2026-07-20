@@ -443,6 +443,8 @@ type ParticipantSnapshot struct {
 	EloAfterDoubles  *int16
 }
 
+var ErrTableOccupied = errors.New("table occupied by another in-progress match")
+
 type Repository interface {
 	Save(ctx context.Context, t *Event) error
 	GetByID(ctx context.Context, id string) (*Event, error)
@@ -484,7 +486,6 @@ type MatchRepository interface {
 	HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error)
 	DeleteByTournament(ctx context.Context, tournamentID string) error
 	FinishMatch(ctx context.Context, cmd FinishMatchCommand) error
-	StartMatch(ctx context.Context, cmd StartMatchCommand) (*StartMatchResult, error)
 	FindOrCreateMatch(ctx context.Context, tournamentID, p1ID, p2ID, stage, matchType string) (string, error)
 	// Team match orchestration
 	CreateSubMatches(ctx context.Context, cmd CreateSubMatchesCommand) error

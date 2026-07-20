@@ -395,6 +395,33 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 				})
 			}
 		}
+	} else if t.Format == "double_elimination" {
+		winnersRounds := buildBracketRounds(t, divID, players, 0)
+		leftW, rightW, centerW := splitKnockoutRounds(winnersRounds)
+		dv.KnockoutBrackets = append(dv.KnockoutBrackets, KnockoutBracket{
+			Tier:         0,
+			Name:         "Winners Bracket",
+			Advancing:    players,
+			GroupID:      dv.GroupID,
+			Rounds:       winnersRounds,
+			RoundsLeft:   leftW,
+			RoundsRight:  rightW,
+			RoundsCenter: centerW,
+		})
+
+		// Generate full dynamic losers bracket using winners rounds outcomes
+		losersRounds := buildLosersBracketRounds(t, divID, len(players), winnersRounds)
+		leftL, rightL, centerL := splitKnockoutRounds(losersRounds)
+		dv.KnockoutBrackets = append(dv.KnockoutBrackets, KnockoutBracket{
+			Tier:         1,
+			Name:         "Losers Bracket",
+			Advancing:    players,
+			GroupID:      dv.GroupID + "-losers",
+			Rounds:       losersRounds,
+			RoundsLeft:   leftL,
+			RoundsRight:  rightL,
+			RoundsCenter: centerL,
+		})
 	} else {
 		tierRounds := buildBracketRounds(t, divID, players, 0)
 		left, right, center := splitKnockoutRounds(tierRounds)
@@ -747,6 +774,136 @@ func getSeedingArrangement(size int) []int {
 		bracket = newBracket
 	}
 	return bracket
+}
+
+func getMatchWinner(m BracketMatch) *MatchSlot {
+	if m.Match == nil || m.Match.Status != "finished" {
+		return &MatchSlot{Seed: 0, Player: nil}
+	}
+	if m.Player1 != nil && m.Player1.Player != nil && m.Player2 != nil && m.Player2.Player != nil {
+		if m.Match.WinnerTeam == "A" {
+			if len(m.Match.TeamA) > 0 && m.Match.TeamA[0].ID == m.Player1.Player.ID {
+				return m.Player1
+			}
+			return m.Player2
+		} else {
+			if len(m.Match.TeamB) > 0 && m.Match.TeamB[0].ID == m.Player1.Player.ID {
+				return m.Player1
+			}
+			return m.Player2
+		}
+	}
+	return &MatchSlot{Seed: 0, Player: nil}
+}
+
+func getMatchLoser(m BracketMatch) *MatchSlot {
+	if m.Match == nil || m.Match.Status != "finished" {
+		return &MatchSlot{Seed: 0, Player: nil}
+	}
+	if m.Player1 != nil && m.Player1.Player != nil && m.Player2 != nil && m.Player2.Player != nil {
+		if m.Match.WinnerTeam == "A" {
+			if len(m.Match.TeamA) > 0 && m.Match.TeamA[0].ID == m.Player1.Player.ID {
+				return m.Player2
+			}
+			return m.Player1
+		} else {
+			if len(m.Match.TeamB) > 0 && m.Match.TeamB[0].ID == m.Player1.Player.ID {
+				return m.Player2
+			}
+			return m.Player1
+		}
+	}
+	return &MatchSlot{Seed: 0, Player: nil}
+}
+
+func buildLosersBracketRounds(t *event.Event, divID string, numPlayers int, wRounds []Round) []Round {
+	size := nextPow2(numPlayers)
+	if size < 4 {
+		return nil
+	}
+	
+	winnersRoundsCount := len(wRounds)
+	losersRoundsCount := 2*winnersRoundsCount - 2
+	if losersRoundsCount <= 0 {
+		return nil
+	}
+
+	var rounds []Round
+	matchesInRound := size / 4
+
+	for i := 0; i < losersRoundsCount; i++ {
+		roundName := fmt.Sprintf("Losers Round %d", i+1)
+		if i == losersRoundsCount-1 {
+			roundName = "Losers Final"
+		} else if i == losersRoundsCount-2 {
+			roundName = "Losers Semifinal"
+		}
+		
+		var matches []BracketMatch
+		for j := 0; j < matchesInRound; j++ {
+			var p1, p2 *MatchSlot
+			
+			if i == 0 {
+			    if len(wRounds) > 0 && 2*j+1 < len(wRounds[0].Matches) {
+			        p1 = getMatchLoser(wRounds[0].Matches[2*j])
+			        p2 = getMatchLoser(wRounds[0].Matches[2*j+1])
+			    }
+			} else if i % 2 == 1 {
+			    wDropRound := (i + 1) / 2
+			    if i > 0 && len(rounds) >= i && j < len(rounds[i-1].Matches) {
+			        p1 = getMatchWinner(rounds[i-1].Matches[j])
+			    }
+			    crossJ := matchesInRound - 1 - j
+			    if wDropRound < len(wRounds) && crossJ < len(wRounds[wDropRound].Matches) {
+			        p2 = getMatchLoser(wRounds[wDropRound].Matches[crossJ])
+			    }
+			} else {
+			    if i > 0 && len(rounds) >= i && 2*j+1 < len(rounds[i-1].Matches) {
+			        p1 = getMatchWinner(rounds[i-1].Matches[2*j])
+			        p2 = getMatchWinner(rounds[i-1].Matches[2*j+1])
+			    }
+			}
+			
+			if p1 == nil { p1 = &MatchSlot{Seed: 0, Player: nil} }
+			if p2 == nil { p2 = &MatchSlot{Seed: 0, Player: nil} }
+
+			matches = append(matches, BracketMatch{
+				Player1: p1,
+				Player2: p2,
+				Stage:   "loser_bracket",
+				BestOf:  5,
+			})
+		}
+		rounds = append(rounds, Round{
+			Name:    roundName,
+			Matches: matches,
+		})
+
+		if i%2 != 0 && matchesInRound > 1 {
+			matchesInRound /= 2
+		}
+	}
+	
+	// Try to attach DB matches if they exist
+	for rIdx, r := range rounds {
+	    for mIdx, m := range r.Matches {
+	        if m.Player1.Player != nil && m.Player2.Player != nil {
+	            for k := range t.Matches {
+	                tm := t.Matches[k]
+	                if tm.TeamMatchID != nil || tm.Stage != "loser_bracket" { continue }
+	                if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
+                        if (tm.TeamA[0].ID == m.Player1.Player.ID && tm.TeamB[0].ID == m.Player2.Player.ID) || 
+                           (tm.TeamA[0].ID == m.Player2.Player.ID && tm.TeamB[0].ID == m.Player1.Player.ID) {
+                            rounds[rIdx].Matches[mIdx].Match = &t.Matches[k]
+                            break
+                        }
+	                }
+	            }
+	        }
+	    }
+	}
+	
+	return rounds
 }
 
 func buildBracketRounds(t *event.Event, divID string, players []*player.Player, tier int) []Round {

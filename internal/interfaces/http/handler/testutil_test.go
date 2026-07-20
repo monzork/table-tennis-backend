@@ -165,7 +165,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	getEventByIDUC := tournament.NewGetEventByIDUseCase(eventRepo)
 	getAllEventsUC := tournament.NewGetAllEventsUseCase(eventRepo)
 	deleteEventUC := tournament.NewDeleteEventUseCase(eventRepo)
-	eventHandler := handler.NewTournamentHandler(createEventUC, nil, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC)
+	getBoardUC := tournament.NewGetBoardDataUseCase(eventRepo, divisionRepo)
+	eventHandler := handler.NewTournamentHandler(createEventUC, nil, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC, getBoardUC)
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)

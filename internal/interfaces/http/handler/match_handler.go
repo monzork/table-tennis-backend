@@ -1200,9 +1200,9 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 		IsHighPriority: isHighPriority,
 	}
 
-	res, err := h.matchRepo.StartMatch(c.Context(), cmd)
+	res, err := h.startMatchUC.Execute(c.Context(), cmd)
 	if err != nil {
-		if err == bun.ErrTableOccupied {
+		if err == event.ErrTableOccupied {
 			msg := "All tables are currently occupied!"
 			if tableNumber != nil {
 				msg = fmt.Sprintf("Table %d is currently occupied by another match!", *tableNumber)

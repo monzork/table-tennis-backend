@@ -1,0 +1,20 @@
+<div class="space-y-8 animate-fade-in text-white/90">
+    <header class="flex flex-col gap-3">
+        <div>
+            <a href="/admin/tournaments/{{.Tournament.ID}}" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-white transition-colors mb-4">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to {{.Tournament.Name}}
+            </a>
+        </div>
+        <div>
+            <h1 class="text-4xl font-extrabold tracking-tight uppercase">Health Dashboard <span class="text-blue-500">.</span></h1>
+            <p class="text-gray-400 mt-1">Live metrics and analytics for the current tournament</p>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" hx-get="/admin/tournaments/{{.Tournament.ID}}/health/metrics" hx-trigger="load, every 10s">
+        <div class="glass p-6 rounded-2xl border border-white/10 flex items-center justify-center h-32">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        </div>
+    </div>
+</div>

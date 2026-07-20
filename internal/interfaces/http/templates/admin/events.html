@@ -140,6 +140,13 @@
                         </div>
                     </label>
                     <label class="cursor-pointer group">
+                        <input type="radio" name="format" value="double_elimination" class="hidden peer format-radio" onchange="document.querySelectorAll('select[name^=\'division_formats\']').forEach(s => s.dispatchEvent(new Event('change')))">
+                        <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center h-full flex flex-col justify-center">
+                            <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Double Elim</span>
+                            <span class="text-[9px] text-gray-500 uppercase mt-1">Losers Bracket</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer group">
                         <input type="radio" name="format" value="groups_elimination" class="hidden peer format-radio" onchange="document.querySelectorAll('select[name^=\'division_formats\']').forEach(s => s.dispatchEvent(new Event('change')))">
                         <div class="p-4 rounded-xl border border-white/5 bg-black/20 peer-checked:border-white/40 peer-checked:bg-white/10 transition-all text-center h-full flex flex-col justify-center">
                             <span class="block text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Group + Knockout</span>

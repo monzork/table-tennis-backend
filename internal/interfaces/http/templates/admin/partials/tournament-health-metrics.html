@@ -1,0 +1,36 @@
+{{if .Metrics}}
+<div class="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
+    <div>
+        <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-1">Total Matches</p>
+        <h3 class="text-3xl font-extrabold uppercase text-white">{{.Metrics.TotalMatchesPlayed}}</h3>
+    </div>
+</div>
+<div class="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
+    <div>
+        <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-1">Total Sets</p>
+        <h3 class="text-3xl font-extrabold uppercase text-white">{{.Metrics.TotalSetsPlayed}}</h3>
+    </div>
+</div>
+<div class="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
+    <div>
+        <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-1">Total Points</p>
+        <h3 class="text-3xl font-extrabold uppercase text-white">{{.Metrics.TotalPointsScored}}</h3>
+    </div>
+</div>
+<div class="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
+    <div>
+        <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-1">Avg Match Time</p>
+        <h3 class="text-3xl font-extrabold uppercase text-white">
+            {{if gt .Metrics.AverageMatchDurationSeconds 0}}
+                {{.AvgMatchMinutes}}m
+            {{else}}
+                0m
+            {{end}}
+        </h3>
+    </div>
+</div>
+{{else}}
+<div class="col-span-4 glass p-12 rounded-2xl border border-white/10 text-center text-gray-500">
+    Metrics are not yet available for this tournament. Check back later once matches have been played.
+</div>
+{{end}}
