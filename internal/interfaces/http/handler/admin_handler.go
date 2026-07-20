@@ -107,8 +107,6 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 	}, "layouts/admin")
 }
 
-
-
 func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 	type result struct {
 		tournaments any

@@ -154,35 +154,37 @@ type TournamentMetrics struct {
 }
 
 type Event struct {
-	ID                      string
-	Name                    string
-	Type                    string            // "singles", "doubles", "teams"
-	EventCategory           string            // "men", "women", "mixed", "open"
-	Format                  string            // "elimination", "groups_elimination", "round_robin"
-	DivisionFormats         map[string]string // overrides Format per division
-	DivisionGroupPassCounts map[string]int    // overrides GroupPassCount per division
-	DivisionGroupCounts     map[string]int    // overrides number of groups per division
-	Status                  string            // "in_progress", "finished"
-	WinnerName              string            // Name of the winner (player or team)
-	Participants            []*player.Player
-	StartDate               time.Time
-	EndDate                 time.Time
-	Rules                   []Rule
-	StageRules              []StageRule
-	DivisionRules           []DivisionRule // Division-specific rules override stage rules
-	Matches                 []Match
-	Groups                  []Group
-	GroupPassCount          int
-	RegistrationOpen        bool
-	EventID                 *string
-	SkipElo                 bool
-	Teams                   []*Team
-	TeamFormat              string // "olympic", "swaythling", or ""
-	NumTables               int
-	HasThirdPlaceMatch      bool
-	Metrics                 *TournamentMetrics
-	ManualSeedingLocked     bool
-	KnockoutBracketsCount   int
+	ID                            string
+	Name                          string
+	Type                          string            // "singles", "doubles", "teams"
+	EventCategory                 string            // "men", "women", "mixed", "open"
+	Format                        string            // "elimination", "groups_elimination", "round_robin"
+	DivisionFormats               map[string]string // overrides Format per division
+	DivisionGroupPassCounts       map[string]int    // overrides GroupPassCount per division
+	DivisionLosersGroupPassCounts map[string]int    // overrides LosersGroupPassCount per division
+	DivisionGroupCounts           map[string]int    // overrides number of groups per division
+	Status                        string            // "in_progress", "finished"
+	WinnerName                    string            // Name of the winner (player or team)
+	Participants                  []*player.Player
+	StartDate                     time.Time
+	EndDate                       time.Time
+	Rules                         []Rule
+	StageRules                    []StageRule
+	DivisionRules                 []DivisionRule // Division-specific rules override stage rules
+	Matches                       []Match
+	Groups                        []Group
+	GroupPassCount                int
+	LosersGroupPassCount          int
+	RegistrationOpen              bool
+	EventID                       *string
+	SkipElo                       bool
+	Teams                         []*Team
+	TeamFormat                    string // "olympic", "swaythling", or ""
+	NumTables                     int
+	HasThirdPlaceMatch            bool
+	Metrics                       *TournamentMetrics
+	ManualSeedingLocked           bool
+	KnockoutBracketsCount         int
 }
 
 func NewTournament(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Event, error) {
@@ -210,21 +212,21 @@ func NewTournament(id string, name string, tournamentType string, format string,
 	}
 
 	t := &Event{
-		ID:                 id,
-		Name:               name,
-		Type:               tournamentType,
-		EventCategory:      category,
-		Format:             format,
-		Participants:       participants,
-		StartDate:          start,
-		EndDate:            end,
-		Rules:              rules,
-		Matches:            []Match{},
-		Groups:             []Group{},
-		GroupPassCount:     groupPassCount,
-		RegistrationOpen:   false,
-		EventID:            nil,
-		SkipElo:            false,
+		ID:                    id,
+		Name:                  name,
+		Type:                  tournamentType,
+		EventCategory:         category,
+		Format:                format,
+		Participants:          participants,
+		StartDate:             start,
+		EndDate:               end,
+		Rules:                 rules,
+		Matches:               []Match{},
+		Groups:                []Group{},
+		GroupPassCount:        groupPassCount,
+		RegistrationOpen:      false,
+		EventID:               nil,
+		SkipElo:               false,
 		Teams:                 []*Team{},
 		NumTables:             0,
 		HasThirdPlaceMatch:    hasThirdPlaceMatch,
@@ -259,6 +261,20 @@ func (t *Event) GetGroupPassCount(divisionID string) int {
 		}
 	}
 	return t.GroupPassCount
+}
+
+// GetLosersGroupPassCount returns the specific losers group pass count for a division if it exists, otherwise falls back to the global event pass count.
+func (t *Event) GetLosersGroupPassCount(divisionID string) int {
+	if t.DivisionLosersGroupPassCounts != nil {
+		if count, ok := t.DivisionLosersGroupPassCounts[divisionID]; ok && count > 0 {
+			return count
+		}
+	}
+	if t.LosersGroupPassCount > 0 {
+		return t.LosersGroupPassCount
+	}
+	// Fallback to GroupPassCount if LosersGroupPassCount is not explicitly set
+	return t.GetGroupPassCount(divisionID)
 }
 
 // GetDivisionGroupCount returns the specific group count for a division if it exists, otherwise returns 0 (which means it should be calculated dynamically).
@@ -503,7 +519,7 @@ type CreateSubMatchesCommand struct {
 	ParentMatchID string
 	TournamentID  string
 	Stage         string
-	TeamFormat    string // "olympic" or "corbillon"
+	TeamFormat    string   // "olympic" or "corbillon"
 	TeamAPlayers  []string // player IDs
 	TeamBPlayers  []string
 }

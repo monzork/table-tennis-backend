@@ -305,9 +305,13 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 				bracketsCount = 1
 			}
 
-			passCount := t.GetGroupPassCount(divID)
-			if passCount == 0 {
-				passCount = 2
+			mainPassCount := t.GetGroupPassCount(divID)
+			if mainPassCount == 0 {
+				mainPassCount = 2
+			}
+			losersPassCount := t.GetLosersGroupPassCount(divID)
+			if losersPassCount == 0 {
+				losersPassCount = mainPassCount
 			}
 
 			// Pre-collect any knockout groups created by manual draw
@@ -347,13 +351,24 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 							Name:      g.Name,
 							Standings: []PlayerStanding{},
 						}
-						startIdx := tier * passCount
-						endIdx := startIdx + passCount
+						var startIdx, endIdx int
+						if tier == 0 {
+							startIdx = 0
+							endIdx = mainPassCount
+						} else {
+							startIdx = mainPassCount + (tier-1)*losersPassCount
+							endIdx = startIdx + losersPassCount
+						}
+
 						for idx := startIdx; idx < endIdx && idx < len(g.Standings); idx++ {
 							tierGroups[gi].Standings = append(tierGroups[gi].Standings, g.Standings[idx])
 						}
 					}
-					tierAdvancing = buildITTFKnockoutSeeds(tierGroups, passCount)
+					currentPassCount := mainPassCount
+					if tier > 0 {
+						currentPassCount = losersPassCount
+					}
+					tierAdvancing = buildITTFKnockoutSeeds(tierGroups, currentPassCount)
 					tierGroupID = fmt.Sprintf("virtual-knockout-%s-tier%d", divID, tier)
 				}
 

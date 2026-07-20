@@ -117,28 +117,30 @@ type StageRuleOverride struct {
 }
 
 type UpdateEventCommand struct {
-	ID                      string
-	Name                    string
-	Type                    string
-	Format                  string
-	Category                string
-	StartDate               string
-	EndDate                 string
-	RegistrationOpen        bool
-	ParticipantIDs          []string
-	NewPlayers              []NewPlayerData
-	GroupPassCount          int
-	StageRuleOverrides      []StageRuleOverride
-	DivisionRules           []tournamentDomain.DivisionRule
-	SkipElo                 bool
-	EventID                 *string
-	TeamFormat              string
-	NumTables               int
-	HasThirdPlaceMatch      bool
-	DivisionFormats         map[string]string
-	DivisionGroupPassCounts map[string]int
-	DivisionGroupCounts     map[string]int
-	KnockoutBracketsCount   int
+	ID                            string
+	Name                          string
+	Type                          string
+	Format                        string
+	Category                      string
+	StartDate                     string
+	EndDate                       string
+	RegistrationOpen              bool
+	ParticipantIDs                []string
+	NewPlayers                    []NewPlayerData
+	GroupPassCount                int
+	LosersGroupPassCount          int
+	StageRuleOverrides            []StageRuleOverride
+	DivisionRules                 []tournamentDomain.DivisionRule
+	SkipElo                       bool
+	EventID                       *string
+	TeamFormat                    string
+	NumTables                     int
+	HasThirdPlaceMatch            bool
+	DivisionFormats               map[string]string
+	DivisionGroupPassCounts       map[string]int
+	DivisionLosersGroupPassCounts map[string]int
+	DivisionGroupCounts           map[string]int
+	KnockoutBracketsCount         int
 }
 
 func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventCommand) (*tournamentDomain.Event, error) {
@@ -186,6 +188,8 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 	t.SkipElo = cmd.SkipElo
 	t.DivisionFormats = cmd.DivisionFormats
 	t.DivisionGroupPassCounts = cmd.DivisionGroupPassCounts
+	t.DivisionLosersGroupPassCounts = cmd.DivisionLosersGroupPassCounts
+	t.LosersGroupPassCount = cmd.LosersGroupPassCount
 	t.DivisionGroupCounts = cmd.DivisionGroupCounts
 	t.EventID = cmd.EventID
 	t.TeamFormat = cmd.TeamFormat

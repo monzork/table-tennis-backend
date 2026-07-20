@@ -183,10 +183,17 @@
                 </div>
             </div>
 
-            <div id="group-pass-count-container" class="space-y-2">
-                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Knockout Pass Count</label>
-                <input type="number" name="groupPassCount" value="2" min="1" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
-                <p class="text-[10px] text-gray-500">Number of participants advancing from each group to the knockout stage.</p>
+            <div id="group-pass-count-container" class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Knockout Pass Count</label>
+                    <input type="number" name="groupPassCount" value="2" min="1" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                    <p class="text-[10px] text-gray-500">Main bracket advancers.</p>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Loser Bracket Pass Count</label>
+                    <input type="number" name="losersGroupPassCount" value="0" min="0" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                    <p class="text-[10px] text-gray-500">Loser bracket advancers (0 to disable).</p>
+                </div>
             </div>
             <style>
                 #group-pass-count-container { display: none; }
@@ -339,14 +346,18 @@
                                 <option value="round_robin">All Against All</option>
                             </select>
                         </div>
-                        <div class="grid grid-cols-2 gap-3" id="division-group-settings-{{.ID}}" style="display: none;">
+                        <div class="grid grid-cols-3 gap-3" id="division-group-settings-{{.ID}}" style="display: none;">
                             <div class="space-y-1 mt-2 mb-3">
-                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Knockout Pass Count</label>
-                                <input type="number" name="division_group_pass_counts[{{.ID}}]" value="" min="1" placeholder="Leave empty for default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Main Pass</label>
+                                <input type="number" name="division_group_pass_counts[{{.ID}}]" value="" min="1" placeholder="Default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                             </div>
                             <div class="space-y-1 mt-2 mb-3">
-                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Number of Groups</label>
-                                <input type="number" name="division_group_counts[{{.ID}}]" value="" min="1" placeholder="Leave empty for auto (4 players/group)" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest">Loser Pass</label>
+                                <input type="number" name="division_losers_group_pass_counts[{{.ID}}]" value="" min="0" placeholder="Default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                            </div>
+                            <div class="space-y-1 mt-2 mb-3">
+                                <label class="text-[10px] text-gray-500 uppercase tracking-widest"># of Groups</label>
+                                <input type="number" name="division_group_counts[{{.ID}}]" value="" min="1" placeholder="Auto" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                             </div>
                         </div>
                         

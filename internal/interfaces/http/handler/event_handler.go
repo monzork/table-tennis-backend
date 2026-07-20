@@ -127,7 +127,6 @@ func (h *EventHandler) StartKnockout(c *fiber.Ctx) error {
 	return c.SendString("")
 }
 
-
 func (h *EventHandler) Create(c *fiber.Ctx) error {
 	cmd, err := parseCreateEventCommand(c)
 	if err != nil {
@@ -222,7 +221,6 @@ func (h *EventHandler) ShowEditForm(c *fiber.Ctx) error {
 		"Divisions": view.Divisions,
 	})
 }
-
 
 func (h *EventHandler) Update(c *fiber.Ctx) error {
 	cmd, err := parseUpdateEventCommand(c)
@@ -536,7 +534,6 @@ func (h *EventHandler) getOccupiedTables(ctx context.Context, t *tournamentDomai
 	occupiedList, _ := h.getOccupiedTablesUC.Execute(ctx, t)
 	return occupiedList
 }
-
 
 func FilterBoardCards(cards []event.BoardCard, q string, divs []string) []event.BoardCard {
 	if q == "" && len(divs) == 0 {

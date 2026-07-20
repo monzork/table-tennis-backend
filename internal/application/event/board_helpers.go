@@ -219,7 +219,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 	// 3. Greedy rest-interleaving scheduler
 	lastActivity := make(map[string]time.Time)
 	matchesPlayed := make(map[string]int)
-	
+
 	now := time.Now()
 
 	for _, m := range t.Matches {
@@ -265,7 +265,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 			for i, c := range *pool {
 				t1 := lastActivity[c.P1Id]
 				t2 := lastActivity[c.P2Id]
-				
+
 				mp1 := matchesPlayed[c.P1Id]
 				mp2 := matchesPlayed[c.P2Id]
 				maxMp := mp1
@@ -282,7 +282,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 				// Primary sort: lowest max matches played (so everyone plays at least one game before others play their second)
 				// Secondary sort: lowest penalty time (longest rested)
 				// Tertiary sort: lowest sum of activity times
-				
+
 				if bestIdx == -1 || maxMp < bestMatchesPlayed {
 					bestIdx = i
 					bestMatchesPlayed = maxMp
@@ -310,19 +310,19 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 			}
 
 			picked := (*pool)[bestIdx]
-			
+
 			// Calculate estimated start time
 			estStart := now
 			if bestPenalty.After(now) {
 				estStart = bestPenalty
 			}
-			
+
 			// Give them 15 mins of rest for the next match they might play
 			nextAvail := estStart.Add(15 * time.Minute)
-			
+
 			estStartCopy := estStart // Copy for pointer
 			picked.EstimatedStartTime = &estStartCopy
-			
+
 			reordered = append(reordered, picked)
 
 			if picked.P1Id != "" {

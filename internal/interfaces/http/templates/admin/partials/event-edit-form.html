@@ -22,7 +22,7 @@
         </div>
         <div class="space-y-2">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Format</label>
-            <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" hx-on:change="this.value === 'groups_elimination' ? (document.getElementById('edit-group-pass-count-container').classList.remove('hidden'), document.getElementById('edit-group-pass-count-input').disabled = false) : (document.getElementById('edit-group-pass-count-container').classList.add('hidden'), document.getElementById('edit-group-pass-count-input').disabled = true); document.querySelectorAll('select[name^=\'division_formats\']').forEach(s => s.dispatchEvent(new Event('change')))">
+            <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" hx-on:change="this.value === 'groups_elimination' ? (document.getElementById('edit-group-pass-count-container').classList.remove('hidden'), document.getElementById('edit-group-pass-count-input').disabled = false, document.getElementById('edit-losers-group-pass-count-input').disabled = false) : (document.getElementById('edit-group-pass-count-container').classList.add('hidden'), document.getElementById('edit-group-pass-count-input').disabled = true, document.getElementById('edit-losers-group-pass-count-input').disabled = true); document.querySelectorAll('select[name^=\'division_formats\']').forEach(s => s.dispatchEvent(new Event('change')))">
                 <option value="elimination" {{if eq .Event.Format "elimination"}}selected{{end}}>Elimination</option>
                 <option value="groups_elimination" {{if eq .Event.Format "groups_elimination"}}selected{{end}}>Group + Knockout</option>
                 <option value="round_robin" {{if eq .Event.Format "round_robin"}}selected{{end}}>All Against All</option>
@@ -68,9 +68,15 @@
         </div>
     </div>
     
-    <div id="edit-group-pass-count-container" class="space-y-2 {{if ne .Event.Format "groups_elimination"}}hidden{{end}}">
-        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Knockout Pass Count</label>
-        <input type="number" id="edit-group-pass-count-input" name="groupPassCount" value="{{.Event.GroupPassCount}}" min="1" {{if ne .Event.Format "groups_elimination"}}disabled{{end}} class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
+    <div id="edit-group-pass-count-container" class="grid grid-cols-2 gap-4 {{if ne .Event.Format "groups_elimination"}}hidden{{end}}">
+        <div class="space-y-2">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Knockout Pass Count</label>
+            <input type="number" id="edit-group-pass-count-input" name="groupPassCount" value="{{.Event.GroupPassCount}}" min="1" {{if ne .Event.Format "groups_elimination"}}disabled{{end}} class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+        <div class="space-y-2">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Loser Pass Count</label>
+            <input type="number" id="edit-losers-group-pass-count-input" name="losersGroupPassCount" value="{{.Event.LosersGroupPassCount}}" min="0" {{if ne .Event.Format "groups_elimination"}}disabled{{end}} class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
     </div>
     
     <div class="space-y-2">
@@ -282,18 +288,24 @@
                         <option value="round_robin" {{if eq $divFormat "round_robin"}}selected{{end}}>All Against All</option>
                     </select>
                 </div>
-                <div class="grid grid-cols-2 gap-3" id="edit-division-group-settings-{{.ID}}" style="display: {{if or (eq $divFormat "groups_elimination") (and (not $divFormat) (eq $.Event.Format "groups_elimination"))}}grid{{else}}none{{end}};">
+                <div class="grid grid-cols-3 gap-3" id="edit-division-group-settings-{{.ID}}" style="display: {{if or (eq $divFormat "groups_elimination") (and (not $divFormat) (eq $.Event.Format "groups_elimination"))}}grid{{else}}none{{end}};">
                     {{$divPassCount := ""}}
                     {{if $.Event.DivisionGroupPassCounts}}{{$divPassCount = index $.Event.DivisionGroupPassCounts .ID}}{{end}}
                     <div class="space-y-1 mt-2 mb-3">
-                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Knockout Pass Count</label>
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Main Pass</label>
                         <input type="number" name="division_group_pass_counts[{{.ID}}]" value="{{if $divPassCount}}{{$divPassCount}}{{end}}" min="1" placeholder="Leave empty for default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                    </div>
+                    {{$divLosersPassCount := ""}}
+                    {{if $.Event.DivisionLosersGroupPassCounts}}{{$divLosersPassCount = index $.Event.DivisionLosersGroupPassCounts .ID}}{{end}}
+                    <div class="space-y-1 mt-2 mb-3">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Loser Pass</label>
+                        <input type="number" name="division_losers_group_pass_counts[{{.ID}}]" value="{{if $divLosersPassCount}}{{$divLosersPassCount}}{{end}}" min="0" placeholder="Default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                     </div>
                     {{$divGroupCount := ""}}
                     {{if $.Event.DivisionGroupCounts}}{{$divGroupCount = index $.Event.DivisionGroupCounts .ID}}{{end}}
                     <div class="space-y-1 mt-2 mb-3">
-                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Number of Groups</label>
-                        <input type="number" name="division_group_counts[{{.ID}}]" value="{{if $divGroupCount}}{{$divGroupCount}}{{end}}" min="1" placeholder="Leave empty for auto (4 players/group)" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest"># of Groups</label>
+                        <input type="number" name="division_group_counts[{{.ID}}]" value="{{if $divGroupCount}}{{$divGroupCount}}{{end}}" min="1" placeholder="Auto" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                     </div>
                 </div>
                 
