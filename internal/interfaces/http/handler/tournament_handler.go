@@ -456,7 +456,7 @@ func (h *TournamentHandler) TournamentHealthMetrics(c *fiber.Ctx) error {
 		overall.AveragePointsPerMatch = float64(overall.TotalPointsScored) / float64(matchesCount)
 		overall.AverageSetsPerMatch = float64(overall.TotalSetsPlayed) / float64(matchesCount)
 	}
-	
+
 	// Set pointer to struct or nil if no matches
 	var metricsPtr *domainEvent.TournamentMetrics
 	if matchesCount > 0 {

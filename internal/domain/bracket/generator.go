@@ -821,7 +821,7 @@ func buildLosersBracketRounds(t *event.Event, divID string, numPlayers int, wRou
 	if size < 4 {
 		return nil
 	}
-	
+
 	winnersRoundsCount := len(wRounds)
 	losersRoundsCount := 2*winnersRoundsCount - 2
 	if losersRoundsCount <= 0 {
@@ -838,34 +838,38 @@ func buildLosersBracketRounds(t *event.Event, divID string, numPlayers int, wRou
 		} else if i == losersRoundsCount-2 {
 			roundName = "Losers Semifinal"
 		}
-		
+
 		var matches []BracketMatch
 		for j := 0; j < matchesInRound; j++ {
 			var p1, p2 *MatchSlot
-			
+
 			if i == 0 {
-			    if len(wRounds) > 0 && 2*j+1 < len(wRounds[0].Matches) {
-			        p1 = getMatchLoser(wRounds[0].Matches[2*j])
-			        p2 = getMatchLoser(wRounds[0].Matches[2*j+1])
-			    }
-			} else if i % 2 == 1 {
-			    wDropRound := (i + 1) / 2
-			    if i > 0 && len(rounds) >= i && j < len(rounds[i-1].Matches) {
-			        p1 = getMatchWinner(rounds[i-1].Matches[j])
-			    }
-			    crossJ := matchesInRound - 1 - j
-			    if wDropRound < len(wRounds) && crossJ < len(wRounds[wDropRound].Matches) {
-			        p2 = getMatchLoser(wRounds[wDropRound].Matches[crossJ])
-			    }
+				if len(wRounds) > 0 && 2*j+1 < len(wRounds[0].Matches) {
+					p1 = getMatchLoser(wRounds[0].Matches[2*j])
+					p2 = getMatchLoser(wRounds[0].Matches[2*j+1])
+				}
+			} else if i%2 == 1 {
+				wDropRound := (i + 1) / 2
+				if i > 0 && len(rounds) >= i && j < len(rounds[i-1].Matches) {
+					p1 = getMatchWinner(rounds[i-1].Matches[j])
+				}
+				crossJ := matchesInRound - 1 - j
+				if wDropRound < len(wRounds) && crossJ < len(wRounds[wDropRound].Matches) {
+					p2 = getMatchLoser(wRounds[wDropRound].Matches[crossJ])
+				}
 			} else {
-			    if i > 0 && len(rounds) >= i && 2*j+1 < len(rounds[i-1].Matches) {
-			        p1 = getMatchWinner(rounds[i-1].Matches[2*j])
-			        p2 = getMatchWinner(rounds[i-1].Matches[2*j+1])
-			    }
+				if i > 0 && len(rounds) >= i && 2*j+1 < len(rounds[i-1].Matches) {
+					p1 = getMatchWinner(rounds[i-1].Matches[2*j])
+					p2 = getMatchWinner(rounds[i-1].Matches[2*j+1])
+				}
 			}
-			
-			if p1 == nil { p1 = &MatchSlot{Seed: 0, Player: nil} }
-			if p2 == nil { p2 = &MatchSlot{Seed: 0, Player: nil} }
+
+			if p1 == nil {
+				p1 = &MatchSlot{Seed: 0, Player: nil}
+			}
+			if p2 == nil {
+				p2 = &MatchSlot{Seed: 0, Player: nil}
+			}
 
 			matches = append(matches, BracketMatch{
 				Player1: p1,
@@ -883,26 +887,28 @@ func buildLosersBracketRounds(t *event.Event, divID string, numPlayers int, wRou
 			matchesInRound /= 2
 		}
 	}
-	
+
 	// Try to attach DB matches if they exist
 	for rIdx, r := range rounds {
-	    for mIdx, m := range r.Matches {
-	        if m.Player1.Player != nil && m.Player2.Player != nil {
-	            for k := range t.Matches {
-	                tm := t.Matches[k]
-	                if tm.TeamMatchID != nil || tm.Stage != "loser_bracket" { continue }
-	                if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
-                        if (tm.TeamA[0].ID == m.Player1.Player.ID && tm.TeamB[0].ID == m.Player2.Player.ID) || 
-                           (tm.TeamA[0].ID == m.Player2.Player.ID && tm.TeamB[0].ID == m.Player1.Player.ID) {
-                            rounds[rIdx].Matches[mIdx].Match = &t.Matches[k]
-                            break
-                        }
-	                }
-	            }
-	        }
-	    }
+		for mIdx, m := range r.Matches {
+			if m.Player1.Player != nil && m.Player2.Player != nil {
+				for k := range t.Matches {
+					tm := t.Matches[k]
+					if tm.TeamMatchID != nil || tm.Stage != "loser_bracket" {
+						continue
+					}
+					if len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
+						if (tm.TeamA[0].ID == m.Player1.Player.ID && tm.TeamB[0].ID == m.Player2.Player.ID) ||
+							(tm.TeamA[0].ID == m.Player2.Player.ID && tm.TeamB[0].ID == m.Player1.Player.ID) {
+							rounds[rIdx].Matches[mIdx].Match = &t.Matches[k]
+							break
+						}
+					}
+				}
+			}
+		}
 	}
-	
+
 	return rounds
 }
 

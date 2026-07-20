@@ -93,8 +93,8 @@ func TestBracketGenerator_LosersGroupPassCount(t *testing.T) {
 		t.Errorf("Tier 2 should have 1 match in round 1, got %d", len(tier2.Rounds[0].Matches))
 	}
 
-	tourney.DivisionLosersGroupPassCounts = map[string]int{
-		"div1": 2,
+	tourney.DivisionConfigs = map[string]event.DivisionConfig{
+		"div1": {LosersGroupPassCount: 2},
 	}
 
 	br = bracket.BuildBracket(tourney, divs, map[string]string{})
@@ -104,7 +104,7 @@ func TestBracketGenerator_LosersGroupPassCount(t *testing.T) {
 
 	if len(tier2.Rounds[0].Matches) != 2 {
 		t.Errorf("With override, Tier 2 should have 2 matches in round 1, got %d (Rounds len: %d, tierAdvancing len: %d)", len(tier2.Rounds[0].Matches), len(tier2.Rounds), len(tier2.Advancing))
-		t.Logf("Event DivisionLosersGroupPassCounts: %v", tourney.DivisionLosersGroupPassCounts)
+		t.Logf("Event DivisionConfigs: %v", tourney.DivisionConfigs)
 		t.Logf("GetLosersGroupPassCount('div1'): %d", tourney.GetLosersGroupPassCount("div1"))
 		t.Logf("Actual divID in view: %s", divView.ID)
 		t.Logf("Actual tier2 pass count used: %d", tourney.GetLosersGroupPassCount(divView.ID))

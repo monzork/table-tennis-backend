@@ -26,28 +26,26 @@ type NewPlayerData struct {
 }
 
 type CreateEventCommand struct {
-	Name                          string
-	Type                          string
-	Format                        string
-	Category                      string
-	StartDate                     string
-	EndDate                       string
-	ParticipantIDs                []string
-	NewPlayers                    []NewPlayerData
-	GroupPassCount                int
-	LosersGroupPassCount          int
-	StageRuleOverrides            []StageRuleOverride
-	DivisionRules                 []tournamentDomain.DivisionRule
-	SkipElo                       bool
-	EventID                       *string
-	TeamFormat                    string
-	NumTables                     int
-	HasThirdPlaceMatch            bool
-	DivisionFormats               map[string]string
-	DivisionGroupPassCounts       map[string]int
-	DivisionLosersGroupPassCounts map[string]int
-	DivisionGroupCounts           map[string]int
-	KnockoutBracketsCount         int
+	Name                 string
+	Type                 string
+	Format               string
+	Category             string
+	StartDate            string
+	EndDate              string
+	ParticipantIDs       []string
+	NewPlayers           []NewPlayerData
+	GroupPassCount       int
+	LosersGroupPassCount int
+	StageRuleOverrides   []StageRuleOverride
+	DivisionRules        []tournamentDomain.DivisionRule
+	SkipElo              bool
+	EventID              *string
+	TeamFormat           string
+	NumTables            int
+	HasThirdPlaceMatch   bool
+
+	DivisionConfigs       map[string]tournamentDomain.DivisionConfig
+	KnockoutBracketsCount int
 }
 
 func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventCommand) (*tournamentDomain.Event, error) {
@@ -109,11 +107,9 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 		return nil, err
 	}
 	t.SkipElo = cmd.SkipElo
-	t.DivisionFormats = cmd.DivisionFormats
-	t.DivisionGroupPassCounts = cmd.DivisionGroupPassCounts
-	t.DivisionLosersGroupPassCounts = cmd.DivisionLosersGroupPassCounts
+
 	t.LosersGroupPassCount = cmd.LosersGroupPassCount
-	t.DivisionGroupCounts = cmd.DivisionGroupCounts
+	t.DivisionConfigs = cmd.DivisionConfigs
 
 	t.TeamFormat = cmd.TeamFormat
 	t.NumTables = cmd.NumTables
@@ -180,11 +176,9 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 		if err == nil {
 			pairT.SkipElo = cmd.SkipElo
 			pairT.EventID = cmd.EventID
-			pairT.DivisionFormats = cmd.DivisionFormats
-			pairT.DivisionGroupPassCounts = cmd.DivisionGroupPassCounts
-			pairT.DivisionLosersGroupPassCounts = cmd.DivisionLosersGroupPassCounts
+
 			pairT.LosersGroupPassCount = cmd.LosersGroupPassCount
-			pairT.DivisionGroupCounts = cmd.DivisionGroupCounts
+			pairT.DivisionConfigs = cmd.DivisionConfigs
 			pairT.KnockoutBracketsCount = cmd.KnockoutBracketsCount
 			if pairT.Format == "groups_elimination" || pairT.Format == "round_robin" || pairT.Format == "elimination" {
 				(&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(pairT)

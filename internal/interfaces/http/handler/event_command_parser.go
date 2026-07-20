@@ -108,25 +108,28 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 		eventID = &eIDStr
 	}
 
-	divisionFormats := make(map[string]string)
-	divisionGroupPassCounts := make(map[string]int)
-	divisionLosersGroupPassCounts := make(map[string]int)
-	divisionGroupCounts := make(map[string]int)
+	divisionConfigs := make(map[string]tournamentDomain.DivisionConfig)
 	for _, divIDBytes := range divisionIDs {
 		divID := string(divIDBytes)
 		if divID == "" {
 			continue
 		}
+
+		cfg := tournamentDomain.DivisionConfig{}
+		hasCfg := false
+
 		dfStr := string(c.Request().PostArgs().Peek("division_formats[" + divID + "]"))
 		if dfStr != "" {
-			divisionFormats[divID] = dfStr
+			cfg.Format = dfStr
+			hasCfg = true
 		}
 		dgpcStr := string(c.Request().PostArgs().Peek("division_group_pass_counts[" + divID + "]"))
 		if dgpcStr != "" {
 			dgpc := 0
 			fmt.Sscanf(dgpcStr, "%d", &dgpc)
 			if dgpc > 0 {
-				divisionGroupPassCounts[divID] = dgpc
+				cfg.GroupPassCount = dgpc
+				hasCfg = true
 			}
 		}
 		dlgpcStr := string(c.Request().PostArgs().Peek("division_losers_group_pass_counts[" + divID + "]"))
@@ -134,7 +137,8 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 			dlgpc := 0
 			fmt.Sscanf(dlgpcStr, "%d", &dlgpc)
 			if dlgpc > 0 {
-				divisionLosersGroupPassCounts[divID] = dlgpc
+				cfg.LosersGroupPassCount = dlgpc
+				hasCfg = true
 			}
 		}
 		dgcStr := string(c.Request().PostArgs().Peek("division_group_counts[" + divID + "]"))
@@ -142,34 +146,37 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 			dgc := 0
 			fmt.Sscanf(dgcStr, "%d", &dgc)
 			if dgc > 0 {
-				divisionGroupCounts[divID] = dgc
+				cfg.GroupCount = dgc
+				hasCfg = true
 			}
+		}
+
+		if hasCfg {
+			divisionConfigs[divID] = cfg
 		}
 	}
 
 	return event.CreateEventCommand{
-		Name:                          body.Name,
-		Type:                          body.Type,
-		Format:                        body.Format,
-		Category:                      body.EventCategory,
-		StartDate:                     body.StartDate,
-		EndDate:                       body.EndDate,
-		ParticipantIDs:                participantIDs,
-		NewPlayers:                    newPlayers,
-		GroupPassCount:                body.GroupPassCount,
-		LosersGroupPassCount:          body.LosersGroupPassCount,
-		StageRuleOverrides:            stageRules,
-		DivisionRules:                 divisionRules,
-		SkipElo:                       skipElo,
-		EventID:                       eventID,
-		TeamFormat:                    body.TeamFormat,
-		NumTables:                     body.NumTables,
-		HasThirdPlaceMatch:            hasThirdPlaceMatch,
-		DivisionFormats:               divisionFormats,
-		DivisionGroupPassCounts:       divisionGroupPassCounts,
-		DivisionLosersGroupPassCounts: divisionLosersGroupPassCounts,
-		DivisionGroupCounts:           divisionGroupCounts,
-		KnockoutBracketsCount:         body.KnockoutBracketsCount,
+		Name:                 body.Name,
+		Type:                 body.Type,
+		Format:               body.Format,
+		Category:             body.EventCategory,
+		StartDate:            body.StartDate,
+		EndDate:              body.EndDate,
+		ParticipantIDs:       participantIDs,
+		NewPlayers:           newPlayers,
+		GroupPassCount:       body.GroupPassCount,
+		LosersGroupPassCount: body.LosersGroupPassCount,
+		StageRuleOverrides:   stageRules,
+		DivisionRules:        divisionRules,
+		SkipElo:              skipElo,
+		EventID:              eventID,
+		TeamFormat:           body.TeamFormat,
+		NumTables:            body.NumTables,
+		HasThirdPlaceMatch:   hasThirdPlaceMatch,
+
+		DivisionConfigs:       divisionConfigs,
+		KnockoutBracketsCount: body.KnockoutBracketsCount,
 	}, nil
 }
 
@@ -275,25 +282,28 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		eventID = &eIDStr
 	}
 
-	divisionFormats := make(map[string]string)
-	divisionGroupPassCounts := make(map[string]int)
-	divisionLosersGroupPassCounts := make(map[string]int)
-	divisionGroupCounts := make(map[string]int)
+	divisionConfigs := make(map[string]tournamentDomain.DivisionConfig)
 	for _, divIDBytes := range divisionIDs {
 		divID := string(divIDBytes)
 		if divID == "" {
 			continue
 		}
+
+		cfg := tournamentDomain.DivisionConfig{}
+		hasCfg := false
+
 		dfStr := string(c.Request().PostArgs().Peek("division_formats[" + divID + "]"))
 		if dfStr != "" {
-			divisionFormats[divID] = dfStr
+			cfg.Format = dfStr
+			hasCfg = true
 		}
 		dgpcStr := string(c.Request().PostArgs().Peek("division_group_pass_counts[" + divID + "]"))
 		if dgpcStr != "" {
 			dgpc := 0
 			fmt.Sscanf(dgpcStr, "%d", &dgpc)
 			if dgpc > 0 {
-				divisionGroupPassCounts[divID] = dgpc
+				cfg.GroupPassCount = dgpc
+				hasCfg = true
 			}
 		}
 		dlgpcStr := string(c.Request().PostArgs().Peek("division_losers_group_pass_counts[" + divID + "]"))
@@ -301,7 +311,8 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 			dlgpc := 0
 			fmt.Sscanf(dlgpcStr, "%d", &dlgpc)
 			if dlgpc > 0 {
-				divisionLosersGroupPassCounts[divID] = dlgpc
+				cfg.LosersGroupPassCount = dlgpc
+				hasCfg = true
 			}
 		}
 		dgcStr := string(c.Request().PostArgs().Peek("division_group_counts[" + divID + "]"))
@@ -309,35 +320,38 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 			dgc := 0
 			fmt.Sscanf(dgcStr, "%d", &dgc)
 			if dgc > 0 {
-				divisionGroupCounts[divID] = dgc
+				cfg.GroupCount = dgc
+				hasCfg = true
 			}
+		}
+
+		if hasCfg {
+			divisionConfigs[divID] = cfg
 		}
 	}
 
 	return event.UpdateEventCommand{
-		ID:                            id,
-		Name:                          body.Name,
-		Type:                          body.Type,
-		Format:                        body.Format,
-		Category:                      body.EventCategory,
-		StartDate:                     body.StartDate,
-		EndDate:                       body.EndDate,
-		RegistrationOpen:              body.RegistrationOpen,
-		ParticipantIDs:                participantIDs,
-		NewPlayers:                    newPlayers,
-		GroupPassCount:                body.GroupPassCount,
-		LosersGroupPassCount:          body.LosersGroupPassCount,
-		StageRuleOverrides:            stageRules,
-		DivisionRules:                 divisionRules,
-		SkipElo:                       skipElo,
-		EventID:                       eventID,
-		TeamFormat:                    body.TeamFormat,
-		NumTables:                     body.NumTables,
-		HasThirdPlaceMatch:            hasThirdPlaceMatch,
-		DivisionFormats:               divisionFormats,
-		DivisionGroupPassCounts:       divisionGroupPassCounts,
-		DivisionLosersGroupPassCounts: divisionLosersGroupPassCounts,
-		DivisionGroupCounts:           divisionGroupCounts,
-		KnockoutBracketsCount:         body.KnockoutBracketsCount,
+		ID:                   id,
+		Name:                 body.Name,
+		Type:                 body.Type,
+		Format:               body.Format,
+		Category:             body.EventCategory,
+		StartDate:            body.StartDate,
+		EndDate:              body.EndDate,
+		RegistrationOpen:     body.RegistrationOpen,
+		ParticipantIDs:       participantIDs,
+		NewPlayers:           newPlayers,
+		GroupPassCount:       body.GroupPassCount,
+		LosersGroupPassCount: body.LosersGroupPassCount,
+		StageRuleOverrides:   stageRules,
+		DivisionRules:        divisionRules,
+		SkipElo:              skipElo,
+		EventID:              eventID,
+		TeamFormat:           body.TeamFormat,
+		NumTables:            body.NumTables,
+		HasThirdPlaceMatch:   hasThirdPlaceMatch,
+
+		DivisionConfigs:       divisionConfigs,
+		KnockoutBracketsCount: body.KnockoutBracketsCount,
 	}, nil
 }

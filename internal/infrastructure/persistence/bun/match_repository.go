@@ -963,8 +963,6 @@ func (r *MatchRepository) UpdateMetadata(ctx context.Context, matchID string, re
 	return err
 }
 
-
-
 // FindOrCreateMatch looks for an existing match between p1 and p2 in a tournament/stage,
 // and creates one if it doesn't exist. Returns the match ID.
 func (r *MatchRepository) FindOrCreateMatch(ctx context.Context, tournamentID, p1ID, p2ID, stage, matchType string) (string, error) {

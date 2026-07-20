@@ -3,6 +3,7 @@ package handler_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -115,7 +116,8 @@ func TestTournamentHandler(t *testing.T) {
 		}
 
 		if resp.StatusCode != 200 {
-			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+			body, _ := io.ReadAll(resp.Body)
+			t.Errorf("expected 200 OK, got %v, body: %s", resp.StatusCode, string(body))
 		}
 
 		var tm bunRepo.EventModel
@@ -126,14 +128,14 @@ func TestTournamentHandler(t *testing.T) {
 		if tm.Name != "Grand Slam Updated" {
 			t.Errorf("expected updated name 'Grand Slam Updated', got '%s'", tm.Name)
 		}
-		if tm.DivisionFormats[divID] != "groups_elimination" {
-			t.Errorf("expected division formats override, got %v", tm.DivisionFormats)
+		if tm.DivisionConfigs[divID].Format != "groups_elimination" {
+			t.Errorf("expected division formats override, got %v", tm.DivisionConfigs)
 		}
-		if tm.DivisionGroupPassCounts[divID] != 3 {
-			t.Errorf("expected division group pass counts override, got %v", tm.DivisionGroupPassCounts)
+		if tm.DivisionConfigs[divID].GroupPassCount != 3 {
+			t.Errorf("expected division group pass counts override, got %v", tm.DivisionConfigs)
 		}
-		if tm.DivisionGroupCounts[divID] != 4 {
-			t.Errorf("expected division group counts override, got %v", tm.DivisionGroupCounts)
+		if tm.DivisionConfigs[divID].GroupCount != 4 {
+			t.Errorf("expected division group counts override, got %v", tm.DivisionConfigs)
 		}
 
 		tourneyReloaded, err := tournamentRepo.GetByID(ctx, createdTournamentID)
@@ -338,7 +340,7 @@ func TestTournamentHandler(t *testing.T) {
 		}
 
 		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Regen Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
-		tourney.DivisionGroupCounts = map[string]int{divID: 5} // override group count to 5
+		tourney.DivisionConfigs = map[string]tournamentDomain.DivisionConfig{divID: {GroupCount: 5}} // override group count to 5
 		tournamentRepo.Save(ctx, tourney)
 
 		req := httptest.NewRequest("POST", fmt.Sprintf("/admin/events/%s/regenerate-seeds", tourney.ID), nil)

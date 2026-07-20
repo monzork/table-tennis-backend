@@ -42,9 +42,9 @@ func TestBuildBracket_GroupPassCount(t *testing.T) {
 		Format:       "groups_elimination",
 		Type:         "singles",
 		Participants: players,
-		DivisionGroupPassCounts: map[string]int{
-			"div1": 2,
-			"div2": 3,
+		DivisionConfigs: map[string]event.DivisionConfig{
+			"div1": {GroupPassCount: 2},
+			"div2": {GroupPassCount: 3},
 		},
 		Groups: []event.Group{
 			{

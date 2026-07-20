@@ -279,7 +279,7 @@
                 <input type="hidden" name="division_rule[division_id][]" value="{{.ID}}">
                 
                 {{$divFormat := ""}}
-                {{if $.Event.DivisionFormats}}{{$divFormat = index $.Event.DivisionFormats .ID}}{{end}}
+                {{if $.Event.DivisionConfigs}}{{if index $.Event.DivisionConfigs .ID}}{{$cfg := index $.Event.DivisionConfigs .ID}}{{$divFormat = $cfg.Format}}{{end}}{{end}}
                 <div class="space-y-1 mt-2 mb-3">
                     <label class="text-[10px] text-gray-500 uppercase tracking-widest">Format Override</label>
                     <select name="division_formats[{{.ID}}]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none" onchange="const isGroupElim = this.value === 'groups_elimination' || (this.value === '' && document.getElementById('edit-format-select').value === 'groups_elimination'); document.getElementById('edit-division-group-settings-{{.ID}}').style.display = isGroupElim ? 'grid' : 'none'">
@@ -291,7 +291,7 @@
                 </div>
                 <div class="grid grid-cols-3 gap-3" id="edit-division-group-settings-{{.ID}}" style="display: {{if or (eq $divFormat "groups_elimination") (and (not $divFormat) (eq $.Event.Format "groups_elimination"))}}grid{{else}}none{{end}};">
                     {{$divPassCount := ""}}
-                    {{if $.Event.DivisionGroupPassCounts}}{{$divPassCount = index $.Event.DivisionGroupPassCounts .ID}}{{end}}
+                    {{if $.Event.DivisionConfigs}}{{if index $.Event.DivisionConfigs .ID}}{{$cfg := index $.Event.DivisionConfigs .ID}}{{$divPassCount = $cfg.GroupPassCount}}{{end}}{{end}}
                     <div class="space-y-1 mt-2 mb-3">
                         <label class="text-[10px] text-gray-500 uppercase tracking-widest">Main Pass</label>
                         <input type="number" name="division_group_pass_counts[{{.ID}}]" value="{{if $divPassCount}}{{$divPassCount}}{{end}}" min="1" placeholder="Leave empty for default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
@@ -303,7 +303,7 @@
                         <input type="number" name="division_losers_group_pass_counts[{{.ID}}]" value="{{if $divLosersPassCount}}{{$divLosersPassCount}}{{end}}" min="0" placeholder="Default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                     </div>
                     {{$divGroupCount := ""}}
-                    {{if $.Event.DivisionGroupCounts}}{{$divGroupCount = index $.Event.DivisionGroupCounts .ID}}{{end}}
+                    {{if $.Event.DivisionConfigs}}{{if index $.Event.DivisionConfigs .ID}}{{$cfg := index $.Event.DivisionConfigs .ID}}{{$divGroupCount = $cfg.GroupCount}}{{end}}{{end}}
                     <div class="space-y-1 mt-2 mb-3">
                         <label class="text-[10px] text-gray-500 uppercase tracking-widest"># of Groups</label>
                         <input type="number" name="division_group_counts[{{.ID}}]" value="{{if $divGroupCount}}{{$divGroupCount}}{{end}}" min="1" placeholder="Auto" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">

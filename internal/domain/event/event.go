@@ -153,38 +153,43 @@ type TournamentMetrics struct {
 	DivisionMetrics map[string]DivisionMetric `json:"divisionMetrics,omitempty"`
 }
 
+type DivisionConfig struct {
+	Format               string   `json:"format,omitempty"`
+	GroupPassCount       int      `json:"groupPassCount,omitempty"`
+	LosersGroupPassCount int      `json:"losersGroupPassCount,omitempty"`
+	GroupCount           int      `json:"groupCount,omitempty"`
+	ManualKnockoutSeeds  []string `json:"manualKnockoutSeeds,omitempty"`
+}
+
 type Event struct {
-	ID                            string
-	Name                          string
-	Type                          string            // "singles", "doubles", "teams"
-	EventCategory                 string            // "men", "women", "mixed", "open"
-	Format                        string            // "elimination", "groups_elimination", "round_robin"
-	DivisionFormats               map[string]string // overrides Format per division
-	DivisionGroupPassCounts       map[string]int    // overrides GroupPassCount per division
-	DivisionLosersGroupPassCounts map[string]int    // overrides LosersGroupPassCount per division
-	DivisionGroupCounts           map[string]int    // overrides number of groups per division
-	Status                        string            // "in_progress", "finished"
-	WinnerName                    string            // Name of the winner (player or team)
-	Participants                  []*player.Player
-	StartDate                     time.Time
-	EndDate                       time.Time
-	Rules                         []Rule
-	StageRules                    []StageRule
-	DivisionRules                 []DivisionRule // Division-specific rules override stage rules
-	Matches                       []Match
-	Groups                        []Group
-	GroupPassCount                int
-	LosersGroupPassCount          int
-	RegistrationOpen              bool
-	EventID                       *string
-	SkipElo                       bool
-	Teams                         []*Team
-	TeamFormat                    string // "olympic", "swaythling", or ""
-	NumTables                     int
-	HasThirdPlaceMatch            bool
-	Metrics                       *TournamentMetrics
-	ManualSeedingLocked           bool
-	KnockoutBracketsCount         int
+	ID                    string
+	Name                  string
+	Type                  string // "singles", "doubles", "teams"
+	EventCategory         string // "men", "women", "mixed", "open"
+	Format                string // "elimination", "groups_elimination", "round_robin"
+	DivisionConfigs       map[string]DivisionConfig
+	Status                string // "in_progress", "finished"
+	WinnerName            string // Name of the winner (player or team)
+	Participants          []*player.Player
+	StartDate             time.Time
+	EndDate               time.Time
+	Rules                 []Rule
+	StageRules            []StageRule
+	DivisionRules         []DivisionRule // Division-specific rules override stage rules
+	Matches               []Match
+	Groups                []Group
+	GroupPassCount        int
+	LosersGroupPassCount  int
+	RegistrationOpen      bool
+	EventID               *string
+	SkipElo               bool
+	Teams                 []*Team
+	TeamFormat            string // "olympic", "swaythling", or ""
+	NumTables             int
+	HasThirdPlaceMatch    bool
+	Metrics               *TournamentMetrics
+	ManualSeedingLocked   bool
+	KnockoutBracketsCount int
 }
 
 func NewTournament(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Event, error) {
@@ -245,9 +250,9 @@ func NewTournament(id string, name string, tournamentType string, format string,
 
 // GetDivisionFormat returns the specific format for a division if it exists, otherwise falls back to the global event format.
 func (t *Event) GetDivisionFormat(divisionID string) string {
-	if t.DivisionFormats != nil {
-		if fmt, ok := t.DivisionFormats[divisionID]; ok && fmt != "" {
-			return fmt
+	if t.DivisionConfigs != nil {
+		if cfg, ok := t.DivisionConfigs[divisionID]; ok && cfg.Format != "" {
+			return cfg.Format
 		}
 	}
 	return t.Format
@@ -255,9 +260,9 @@ func (t *Event) GetDivisionFormat(divisionID string) string {
 
 // GetGroupPassCount returns the specific group pass count for a division if it exists, otherwise falls back to the global event pass count.
 func (t *Event) GetGroupPassCount(divisionID string) int {
-	if t.DivisionGroupPassCounts != nil {
-		if count, ok := t.DivisionGroupPassCounts[divisionID]; ok && count > 0 {
-			return count
+	if t.DivisionConfigs != nil {
+		if cfg, ok := t.DivisionConfigs[divisionID]; ok && cfg.GroupPassCount > 0 {
+			return cfg.GroupPassCount
 		}
 	}
 	return t.GroupPassCount
@@ -265,23 +270,19 @@ func (t *Event) GetGroupPassCount(divisionID string) int {
 
 // GetLosersGroupPassCount returns the specific losers group pass count for a division if it exists, otherwise falls back to the global event pass count.
 func (t *Event) GetLosersGroupPassCount(divisionID string) int {
-	if t.DivisionLosersGroupPassCounts != nil {
-		if count, ok := t.DivisionLosersGroupPassCounts[divisionID]; ok && count > 0 {
-			return count
+	if t.DivisionConfigs != nil {
+		if cfg, ok := t.DivisionConfigs[divisionID]; ok {
+			return cfg.LosersGroupPassCount
 		}
 	}
-	if t.LosersGroupPassCount > 0 {
-		return t.LosersGroupPassCount
-	}
-	// Fallback to GroupPassCount if LosersGroupPassCount is not explicitly set
-	return t.GetGroupPassCount(divisionID)
+	return t.LosersGroupPassCount
 }
 
-// GetDivisionGroupCount returns the specific group count for a division if it exists, otherwise returns 0 (which means it should be calculated dynamically).
-func (t *Event) GetDivisionGroupCount(divisionID string) int {
-	if t.DivisionGroupCounts != nil {
-		if count, ok := t.DivisionGroupCounts[divisionID]; ok && count > 0 {
-			return count
+// GetGroupCount returns the specific group count for a division if it exists, otherwise returns 0 (which means it should be calculated dynamically).
+func (t *Event) GetGroupCount(divisionID string) int {
+	if t.DivisionConfigs != nil {
+		if cfg, ok := t.DivisionConfigs[divisionID]; ok && cfg.GroupCount > 0 {
+			return cfg.GroupCount
 		}
 	}
 	return 0

@@ -117,30 +117,28 @@ type StageRuleOverride struct {
 }
 
 type UpdateEventCommand struct {
-	ID                            string
-	Name                          string
-	Type                          string
-	Format                        string
-	Category                      string
-	StartDate                     string
-	EndDate                       string
-	RegistrationOpen              bool
-	ParticipantIDs                []string
-	NewPlayers                    []NewPlayerData
-	GroupPassCount                int
-	LosersGroupPassCount          int
-	StageRuleOverrides            []StageRuleOverride
-	DivisionRules                 []tournamentDomain.DivisionRule
-	SkipElo                       bool
-	EventID                       *string
-	TeamFormat                    string
-	NumTables                     int
-	HasThirdPlaceMatch            bool
-	DivisionFormats               map[string]string
-	DivisionGroupPassCounts       map[string]int
-	DivisionLosersGroupPassCounts map[string]int
-	DivisionGroupCounts           map[string]int
-	KnockoutBracketsCount         int
+	ID                   string
+	Name                 string
+	Type                 string
+	Format               string
+	Category             string
+	StartDate            string
+	EndDate              string
+	RegistrationOpen     bool
+	ParticipantIDs       []string
+	NewPlayers           []NewPlayerData
+	GroupPassCount       int
+	LosersGroupPassCount int
+	StageRuleOverrides   []StageRuleOverride
+	DivisionRules        []tournamentDomain.DivisionRule
+	SkipElo              bool
+	EventID              *string
+	TeamFormat           string
+	NumTables            int
+	HasThirdPlaceMatch   bool
+
+	DivisionConfigs       map[string]tournamentDomain.DivisionConfig
+	KnockoutBracketsCount int
 }
 
 func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventCommand) (*tournamentDomain.Event, error) {
@@ -186,11 +184,9 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 	}
 	t.RegistrationOpen = cmd.RegistrationOpen
 	t.SkipElo = cmd.SkipElo
-	t.DivisionFormats = cmd.DivisionFormats
-	t.DivisionGroupPassCounts = cmd.DivisionGroupPassCounts
-	t.DivisionLosersGroupPassCounts = cmd.DivisionLosersGroupPassCounts
+
 	t.LosersGroupPassCount = cmd.LosersGroupPassCount
-	t.DivisionGroupCounts = cmd.DivisionGroupCounts
+	t.DivisionConfigs = cmd.DivisionConfigs
 	t.EventID = cmd.EventID
 	t.TeamFormat = cmd.TeamFormat
 	t.NumTables = cmd.NumTables
@@ -222,32 +218,9 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 		typeChanged := existing.Type != cmd.Type
 		categoryChanged := existing.EventCategory != cmd.Category
 
-		// Check if division group counts or division formats changed
-		divGroupCountsChanged := false
-		if len(existing.DivisionGroupCounts) != len(cmd.DivisionGroupCounts) {
-			divGroupCountsChanged = true
-		} else {
-			for k, v := range cmd.DivisionGroupCounts {
-				if existing.DivisionGroupCounts[k] != v {
-					divGroupCountsChanged = true
-					break
-				}
-			}
-		}
+		divConfigsChanged := cmd.DivisionConfigs != nil
 
-		divFormatsChanged := false
-		if len(existing.DivisionFormats) != len(cmd.DivisionFormats) {
-			divFormatsChanged = true
-		} else {
-			for k, v := range cmd.DivisionFormats {
-				if existing.DivisionFormats[k] != v {
-					divFormatsChanged = true
-					break
-				}
-			}
-		}
-
-		preserveGroups := !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && !divGroupCountsChanged && !divFormatsChanged && len(existing.Groups) > 0
+		preserveGroups := !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && !divConfigsChanged && len(existing.Groups) > 0
 		if existing.ManualSeedingLocked {
 			preserveGroups = true
 		}

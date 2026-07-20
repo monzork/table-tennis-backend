@@ -215,8 +215,8 @@ func (s *DivisionSeeder) AssignGroups(t *Event) error {
 			continue
 		}
 
-		numGroups := t.GetDivisionGroupCount(dg.DivisionID)
-		if numGroups <= 0 {
+		numGroups := t.GetGroupCount(dg.DivisionID)
+		if numGroups == 0 {
 			numGroups = n / 4
 			if n%4 != 0 {
 				numGroups++

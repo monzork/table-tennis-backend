@@ -120,6 +120,7 @@ func (h *EventHandler) StartKnockout(c *fiber.Ctx) error {
 
 	err := h.startKnockoutUC.Execute(c.Context(), tournamentID, divID)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -130,11 +131,13 @@ func (h *EventHandler) StartKnockout(c *fiber.Ctx) error {
 func (h *EventHandler) Create(c *fiber.Ctx) error {
 	cmd, err := parseCreateEventCommand(c)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
 	t, err := h.createUC.Execute(c.Context(), cmd)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -148,6 +151,7 @@ func (h *EventHandler) Detail(c *fiber.Ctx) error {
 
 	view, err := h.getDetailViewUC.Execute(c.Context(), id, statusFilter, playerSearch)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -171,9 +175,11 @@ func (h *EventHandler) AddOfficial(c *fiber.Ctx) error {
 		PlayerID string `form:"playerId"`
 	}
 	if err := c.BodyParser(&body); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if err := h.getByID.AddOfficial(c.Context(), tournamentID, body.PlayerID); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -187,6 +193,7 @@ func (h *EventHandler) RemoveOfficial(c *fiber.Ctx) error {
 	tournamentID := c.Params("id")
 	playerID := c.Params("playerId")
 	if err := h.getByID.RemoveOfficial(c.Context(), tournamentID, playerID); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -200,6 +207,7 @@ func (h *EventHandler) RemoveParticipant(c *fiber.Ctx) error {
 	tournamentID := c.Params("id")
 	playerID := c.Params("playerId")
 	if err := h.removeParticipantUC.Execute(c.Context(), tournamentID, playerID); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -213,6 +221,7 @@ func (h *EventHandler) ShowEditForm(c *fiber.Ctx) error {
 	id := c.Params("id")
 	view, err := h.editFormViewUC.Execute(c.Context(), id)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	return c.Render("admin/partials/event-edit-form", fiber.Map{
@@ -225,10 +234,12 @@ func (h *EventHandler) ShowEditForm(c *fiber.Ctx) error {
 func (h *EventHandler) Update(c *fiber.Ctx) error {
 	cmd, err := parseUpdateEventCommand(c)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	t, err := h.updateUC.Execute(c.Context(), cmd)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -242,6 +253,7 @@ func (h *EventHandler) Update(c *fiber.Ctx) error {
 func (h *EventHandler) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if err := h.deleteUC.Execute(c.Context(), id); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -256,6 +268,7 @@ func (h *EventHandler) Delete(c *fiber.Ctx) error {
 func (h *EventHandler) Finish(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	if err := h.finishUC.Execute(c.Context(), idStr); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -268,6 +281,7 @@ func (h *EventHandler) Finish(c *fiber.Ctx) error {
 func (h *EventHandler) RegenerateGroupSeeds(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	if err := h.regenerateSeedsUC.Execute(c.Context(), idStr); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -285,12 +299,14 @@ func (h *EventHandler) UpdateParticipantEloBefore(c *fiber.Ctx) error {
 		DoublesElo int16  `form:"doublesElo"`
 	}
 	if err := c.BodyParser(&body); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if body.PlayerID == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "playerId is required")
 	}
 	if err := h.updateParticipantEloUC.Execute(c.Context(), idStr, body.PlayerID, body.SinglesElo, body.DoublesElo); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -304,6 +320,7 @@ func (h *EventHandler) Export(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	csvBytes, err := h.exportUC.Execute(c.Context(), idStr)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -316,6 +333,7 @@ func (h *EventHandler) ExportPDF(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	pdfBytes, err := h.exportPdfUC.Execute(c.Context(), idStr)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -332,6 +350,7 @@ func (h *EventHandler) MovePlayer(c *fiber.Ctx) error {
 		TargetIndex   *int   `json:"targetIndex" form:"targetIndex"`
 	}
 	if err := c.BodyParser(&body); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -341,6 +360,7 @@ func (h *EventHandler) MovePlayer(c *fiber.Ctx) error {
 	}
 
 	if err := h.movePlayerUC.Execute(c.Context(), id, body.PlayerID, body.TargetGroupID, targetIndex); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -358,10 +378,12 @@ func (h *EventHandler) SaveKnockoutSeeds(c *fiber.Ctx) error {
 		PlayerIDs string `json:"playerIds" form:"playerIds"`
 	}
 	if err := c.BodyParser(&body); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
 	if err := h.saveKnockoutSeedsUC.Execute(c.Context(), id, body.DivID, body.PlayerIDs); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -378,10 +400,12 @@ func (h *EventHandler) AddGroup(c *fiber.Ctx) error {
 		DivisionName string `json:"divisionName" form:"divisionName"`
 	}
 	if err := c.BodyParser(&body); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
 	if err := h.addGroupUC.Execute(c.Context(), id, body.DivisionName); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -398,9 +422,11 @@ func (h *EventHandler) CreateTeam(c *fiber.Ctx) error {
 		Name string `form:"name"`
 	}
 	if err := c.BodyParser(&body); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if _, err := h.createTeamUC.Execute(c.Context(), tournamentID, body.Name); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -414,6 +440,7 @@ func (h *EventHandler) DeleteTeam(c *fiber.Ctx) error {
 	tournamentID := c.Params("id")
 	teamID := c.Params("teamId")
 	if err := h.deleteTeamUC.Execute(c.Context(), teamID); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -430,9 +457,11 @@ func (h *EventHandler) AssignPlayerToTeam(c *fiber.Ctx) error {
 		PlayerID string `form:"playerId"`
 	}
 	if err := c.BodyParser(&body); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if err := h.assignPlayerToTeamUC.Execute(c.Context(), teamID, body.PlayerID); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -447,6 +476,7 @@ func (h *EventHandler) RemovePlayerFromTeam(c *fiber.Ctx) error {
 	teamID := c.Params("teamId")
 	playerID := c.Params("playerId")
 	if err := h.removePlayerFromTeamUC.Execute(c.Context(), teamID, playerID); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
@@ -460,6 +490,7 @@ func (h *EventHandler) PublicList(c *fiber.Ctx) error {
 	lang := getLang(c)
 	events, err := h.getTournamentsUC.Execute(c.Context())
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	return c.Render("public/events", merge(tMap(lang), fiber.Map{
@@ -483,6 +514,7 @@ func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 		c.Context(), id, statusFilter, playerSearch, canonicalURL, BuildBoardCards, tmap,
 	)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -510,6 +542,7 @@ func (h *EventHandler) PublicTVDashboard(c *fiber.Ctx) error {
 
 	view, err := h.tvDashboardUC.Execute(c.Context(), id, playerSearch, BuildBoardCards, tmap)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -925,6 +958,7 @@ func (h *EventHandler) Board(c *fiber.Ctx) error {
 
 	view, err := h.boardViewUC.Execute(c.Context(), id, q, selectedDivs, BuildBoardCards, FilterBoardCards)
 	if err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
@@ -1009,6 +1043,7 @@ func (h *EventHandler) ToggleSeedingLock(c *fiber.Ctx) error {
 func (h *EventHandler) RecalculateElo(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if err := h.recalculateEloUC.Execute(c.Context(), id); err != nil {
+		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
