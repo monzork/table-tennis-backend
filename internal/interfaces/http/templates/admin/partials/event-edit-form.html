@@ -1,4 +1,4 @@
-<h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Edit <span class="text-white">Tournament</span></h2>
+<h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Edit <span class="text-white">Event</span></h2>
 <form hx-put="/events/{{.Event.ID}}" hx-target="#edit-modal-content" hx-on:htmx:before-request="sessionStorage.setItem('pending_toast', 'Event updated successfully!')" class="space-y-5">
     <div id="edit-selected-participants-hidden">
         {{range .Event.Participants}}
@@ -8,7 +8,7 @@
     {{if .Event.SkipElo}}<input type="hidden" name="skipElo" value="on">{{end}}
     {{if .Event.EventID}}<input type="hidden" name="eventId" value="{{.Event.EventID}}">{{end}}
     <div class="space-y-2">
-        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Tournament Name</label>
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
         <input type="text" name="name" value="{{.Event.Name}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
     </div>
     <div class="grid grid-cols-2 gap-4">
@@ -297,7 +297,7 @@
                         <input type="number" name="division_group_pass_counts[{{.ID}}]" value="{{if $divPassCount}}{{$divPassCount}}{{end}}" min="1" placeholder="Leave empty for default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                     </div>
                     {{$divLosersPassCount := ""}}
-                    {{if $.Event.DivisionLosersGroupPassCounts}}{{$divLosersPassCount = index $.Event.DivisionLosersGroupPassCounts .ID}}{{end}}
+                    {{if $.Event.DivisionConfigs}}{{if index $.Event.DivisionConfigs .ID}}{{$cfg := index $.Event.DivisionConfigs .ID}}{{$divLosersPassCount = $cfg.LosersGroupPassCount}}{{end}}{{end}}
                     <div class="space-y-1 mt-2 mb-3">
                         <label class="text-[10px] text-gray-500 uppercase tracking-widest">Loser Pass</label>
                         <input type="number" name="division_losers_group_pass_counts[{{.ID}}]" value="{{if $divLosersPassCount}}{{$divLosersPassCount}}{{end}}" min="0" placeholder="Default" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">

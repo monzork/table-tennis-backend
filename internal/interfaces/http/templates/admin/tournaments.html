@@ -1,7 +1,7 @@
 <div class="space-y-8 animate-fade-in text-white/90">
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
         <div>
-            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight uppercase">Grand Tournaments <span class="text-white">.</span></h1>
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight uppercase">Tournaments <span class="text-white">.</span></h1>
             <p class="text-gray-400 mt-1">Manage Multi-Bracket Division Events</p>
         </div>
         <div class="flex flex-wrap sm:flex-nowrap gap-3 items-center w-full sm:w-auto">
@@ -13,7 +13,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 Delete Selected
             </button>
-            <button hx-on:click="document.getElementById('add-tournament-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Grand Tournament</button>
+            <button hx-on:click="document.getElementById('add-tournament-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Tournament</button>
         </div>
     </header>
 
@@ -34,7 +34,7 @@
                 {{range .Tournaments}}
                 {{template "admin/partials/tournament-row" .}}
                 {{else}}
-                 <tr id="empty-state"><td colspan="6" class="p-4 text-center text-gray-500">No Grand Tournaments yet. Click Add to create one.</td></tr>
+                 <tr id="empty-state"><td colspan="6" class="p-4 text-center text-gray-500">No Tournaments yet. Click Add to create one.</td></tr>
                 {{end}}
             </tbody>
         </table>
@@ -48,7 +48,7 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         
-        <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">Grand Tournament</span>.</h2>
+        <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">Tournament</span>.</h2>
         
         <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" 
               hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-tournament-modal').classList.add('hidden'); this.reset(); document.getElementById('empty-state')?.remove(); }"
@@ -359,7 +359,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-5 rounded-2xl transition-all uppercase tracking-widest shadow-lg transform hover:-translate-y-0.5 mt-6">Initialize Grand Tournament</button>
+            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-5 rounded-2xl transition-all uppercase tracking-widest shadow-lg transform hover:-translate-y-0.5 mt-6">Initialize Tournament</button>
         </form>
     </div>
 </div>
