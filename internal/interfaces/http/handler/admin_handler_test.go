@@ -65,5 +65,29 @@ func TestAdminHandler(t *testing.T) {
 		if resp.StatusCode != 200 {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
+
+		// Test admin pages
+		adminEndpoints := []string{
+			"/admin/players",
+			"/admin/tournaments",
+			"/admin/divisions",
+			"/admin/new-player-field",
+			"/admin/close-modal",
+			"/admin/tournaments/division-select",
+		}
+		
+		for _, ep := range adminEndpoints {
+			t.Run("Access "+ep, func(t *testing.T) {
+				req := httptest.NewRequest("GET", ep, nil)
+				req.Header.Set("Cookie", sessionCookie)
+				resp, err := app.Test(req)
+				if err != nil {
+					t.Fatalf("test request failed: %v", err)
+				}
+				if resp.StatusCode != 200 {
+					t.Errorf("expected 200 OK for %s, got %v", ep, resp.StatusCode)
+				}
+			})
+		}
 	})
 }

@@ -1542,6 +1542,7 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 			TeamFormat:           m.TeamFormat,
 			NumTables:            m.NumTables,
 			HasThirdPlaceMatch:   m.HasThirdPlaceMatch,
+			Metrics:              m.Metrics,
 		}
 	}
 	return events, nil

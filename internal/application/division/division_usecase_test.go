@@ -104,3 +104,80 @@ func TestDivisionUseCase_Delete(t *testing.T) {
 		t.Fatalf("expected 0 divisions, got %d", len(divs))
 	}
 }
+
+func TestDivisionUseCase_GetById(t *testing.T) {
+	repo := newMockRepo()
+	uc := division.NewDivisionUseCase(repo)
+	ctx := context.Background()
+
+	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "", "")
+
+	d, err := uc.GetById(ctx, "id1")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if d.Name != "Div 1" {
+		t.Errorf("expected Div 1, got %s", d.Name)
+	}
+
+	_, err = uc.GetById(ctx, "invalid")
+	if err == nil {
+		t.Fatal("expected error for not found, got nil")
+	}
+}
+
+func TestDivisionUseCase_Save_Update(t *testing.T) {
+	repo := newMockRepo()
+	uc := division.NewDivisionUseCase(repo)
+	ctx := context.Background()
+
+	// Initial save
+	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "cat1", "red")
+
+	maxElo := int16(1200)
+	err := uc.Save(ctx, "id1", "Div 1 Updated", 2, 800, &maxElo, "cat2", "blue")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	d, _ := uc.GetById(ctx, "id1")
+	if d.Name != "Div 1 Updated" {
+		t.Errorf("expected Div 1 Updated, got %s", d.Name)
+	}
+	if d.Category != "cat2" || d.Color != "blue" {
+		t.Errorf("expected updated fields")
+	}
+}
+
+func TestDivisionUseCase_Save_Update_InvalidElo(t *testing.T) {
+	repo := newMockRepo()
+	uc := division.NewDivisionUseCase(repo)
+	ctx := context.Background()
+
+	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "", "")
+
+	invalidMaxElo := int16(900)
+	err := uc.Save(ctx, "id1", "Div 1", 1, 1000, &invalidMaxElo, "", "")
+	if err != domain.ErrInvalidEloRange {
+		t.Fatalf("expected ErrInvalidEloRange, got %v", err)
+	}
+}
+
+func TestDivisionUseCase_Save_Fallback(t *testing.T) {
+	repo := newMockRepo()
+	uc := division.NewDivisionUseCase(repo)
+	ctx := context.Background()
+
+	err := uc.Save(ctx, "not-exist", "Div 1", 1, 1000, nil, "", "")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	d, err := uc.GetById(ctx, "not-exist")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if d.Name != "Div 1" {
+		t.Errorf("expected Div 1, got %s", d.Name)
+	}
+}

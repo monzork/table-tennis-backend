@@ -53,6 +53,57 @@ func TestPlayerHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("Create Player - Invalid Body", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/players", strings.NewReader("{invalid json}"))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 400 {
+			t.Errorf("expected 400 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Create Player - Usecase Error", func(t *testing.T) {
+		data := url.Values{}
+		// empty body triggers use case validation error
+		req := httptest.NewRequest("POST", "/players", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 400 {
+			t.Errorf("expected 400 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Create Player - With Tournament", func(t *testing.T) {
+		data := url.Values{}
+		data.Set("firstName", "John")
+		data.Set("lastName", "Doe")
+		data.Set("birthdate", "1990-01-01")
+		data.Set("gender", "M")
+		data.Set("country", "USA")
+		data.Set("tournamentId", "invalid-tournament-id")
+
+		req := httptest.NewRequest("POST", "/players", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, _ := app.Test(req)
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+	})
+
 	t.Run("Update Player", func(t *testing.T) {
 		// Fetch the player created in the previous step
 		var pm bunRepo.PlayerModel
@@ -77,6 +128,61 @@ func TestPlayerHandler(t *testing.T) {
 			t.Fatalf("test request failed: %v", err)
 		}
 
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Update Player - Invalid Body", func(t *testing.T) {
+		req := httptest.NewRequest("PUT", "/players/some-id", strings.NewReader("{invalid json}"))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 400 {
+			t.Errorf("expected 400 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Update Player - Usecase Error", func(t *testing.T) {
+		data := url.Values{}
+		req := httptest.NewRequest("PUT", "/players/invalid-id", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 400 {
+			t.Errorf("expected 400 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Update Player - With Tournament", func(t *testing.T) {
+		var pm bunRepo.PlayerModel
+		if err := db.NewSelect().Model(&pm).Where("first_name = ?", "John Updated").Scan(context.Background()); err != nil {
+			t.Fatalf("failed to find seeded player: %v", err)
+		}
+
+		data := url.Values{}
+		data.Set("firstName", "John Updated")
+		data.Set("lastName", "Doe")
+		data.Set("birthdate", "1990-01-01")
+		data.Set("gender", "M")
+		data.Set("country", "USA")
+		data.Set("tournamentId", "invalid-tournament-id")
+
+		req := httptest.NewRequest("PUT", "/players/"+pm.ID.String(), strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, _ := app.Test(req)
 		if resp.StatusCode != 200 {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
 		}
@@ -139,6 +245,59 @@ func TestPlayerHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("Import Players - No File", func(t *testing.T) {
+		var body bytes.Buffer
+		writer := multipart.NewWriter(&body)
+		writer.Close()
+
+		req := httptest.NewRequest("POST", "/players/import", &body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 400 {
+			t.Errorf("expected 400 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Import Players - Usecase Error", func(t *testing.T) {
+		var body bytes.Buffer
+		writer := multipart.NewWriter(&body)
+		part, _ := writer.CreateFormFile("file", "players.xlsx")
+		part.Write([]byte("invalid binary content"))
+		writer.Close()
+
+		req := httptest.NewRequest("POST", "/players/import", &body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, _ := app.Test(req)
+		if resp.StatusCode != 400 {
+			t.Errorf("expected 400, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Import Players - Validation Errors", func(t *testing.T) {
+		var body bytes.Buffer
+		writer := multipart.NewWriter(&body)
+		part, _ := writer.CreateFormFile("file", "players.csv")
+		part.Write([]byte("first_name,last_name\ninvalid_no_other_fields"))
+		writer.Close()
+
+		req := httptest.NewRequest("POST", "/players/import", &body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, _ := app.Test(req)
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200, got %v", resp.StatusCode)
+		}
+	})
+
 	t.Run("Search Player Case Insensitive", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/players/search?q=alice", nil)
 		req.Header.Set("Cookie", sessionCookie)
@@ -162,6 +321,122 @@ func TestPlayerHandler(t *testing.T) {
 
 		if respUpper.StatusCode != 200 {
 			t.Errorf("expected 200 OK, got %v", respUpper.StatusCode)
+		}
+	})
+
+	t.Run("Show Edit Form", func(t *testing.T) {
+		var pm bunRepo.PlayerModel
+		err := db.NewSelect().Model(&pm).Where("first_name = ?", "Alice").Scan(context.Background())
+		if err != nil {
+			t.Fatalf("failed to find imported player: %v", err)
+		}
+
+		req := httptest.NewRequest("GET", fmt.Sprintf("/players/%s/edit", pm.ID.String()), nil)
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Show Edit Form - Not Found", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/players/does-not-exist/edit", nil)
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 404 {
+			t.Errorf("expected 404, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Delete Player - Not Found", func(t *testing.T) {
+		req := httptest.NewRequest("DELETE", "/players/does-not-exist", bytes.NewReader([]byte{}))
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 400 {
+			t.Errorf("expected 400, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Search Selection Cards - eventCategory men/women", func(t *testing.T) {
+		reqMen := httptest.NewRequest("GET", "/players/search/cards?eventCategory=men", nil)
+		reqMen.Header.Set("Cookie", sessionCookie)
+		respMen, err := app.Test(reqMen)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if respMen.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", respMen.StatusCode)
+		}
+
+		reqWomen := httptest.NewRequest("GET", "/players/search/cards?eventCategory=women", nil)
+		reqWomen.Header.Set("Cookie", sessionCookie)
+		respWomen, err := app.Test(reqWomen)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if respWomen.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", respWomen.StatusCode)
+		}
+	})
+
+	t.Run("Search Selection Cards - preserve existing selection", func(t *testing.T) {
+		var pm bunRepo.PlayerModel
+		err := db.NewSelect().Model(&pm).Where("first_name = ?", "Alice").Scan(context.Background())
+		if err != nil {
+			t.Fatalf("failed to find seeded player: %v", err)
+		}
+
+		req := httptest.NewRequest("GET", fmt.Sprintf("/players/search/cards?participant_ids[]=%s", pm.ID.String()), nil)
+		req.Header.Set("Cookie", sessionCookie)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("ImportTemplate CSV", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/players/import/template?format=csv", nil)
+		req.Header.Set("Cookie", sessionCookie)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+		if ct := resp.Header.Get("Content-Type"); ct != "text/csv" {
+			t.Errorf("expected Content-Type text/csv, got %v", ct)
+		}
+	})
+
+	t.Run("ImportTemplate XLSX", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/players/import/template", nil)
+		req.Header.Set("Cookie", sessionCookie)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+		if ct := resp.Header.Get("Content-Type"); ct != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" {
+			t.Errorf("expected xlsx Content-Type, got %v", ct)
 		}
 	})
 }

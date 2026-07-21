@@ -19,6 +19,7 @@ import (
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/match"
+	"table-tennis-backend/internal/application/notification"
 	"table-tennis-backend/internal/application/player"
 	"table-tennis-backend/internal/application/tournament"
 	adminDomain "table-tennis-backend/internal/domain/admin"
@@ -162,11 +163,12 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	eventRepo := bunRepo.NewTournamentRepository(db, tournamentRepo)
 	exportEventPdfUC := event.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGen)
 	createEventUC := tournament.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
+	updateEventUC := tournament.NewUpdateEventUseCase(eventRepo)
 	getEventByIDUC := tournament.NewGetEventByIDUseCase(eventRepo)
 	getAllEventsUC := tournament.NewGetAllEventsUseCase(eventRepo)
 	deleteEventUC := tournament.NewDeleteEventUseCase(eventRepo)
 	getBoardUC := tournament.NewGetBoardDataUseCase(eventRepo, divisionRepo)
-	eventHandler := handler.NewTournamentHandler(createEventUC, nil, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC, getBoardUC)
+	eventHandler := handler.NewTournamentHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC, getBoardUC)
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
@@ -174,7 +176,9 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	updateScoreUC := match.NewUpdateMatchScoreUseCase(matchRepo, tournamentRepo)
 	teamMatchUC := match.NewTeamMatchOrchestratorUseCase(matchRepo)
 	startMatchUC := match.NewStartMatchUseCase(matchRepo, tournamentRepo, eventRepo, createMatchUC)
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, nil, teamMatchUC, startMatchUC)
+	pushSubRepo := bunRepo.NewPushSubscriptionRepository(db)
+	broadcastPushUC := notification.NewBroadcastPushNotificationUseCase(pushSubRepo, "test-pubkey", "test-privkey")
+	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, broadcastPushUC, teamMatchUC, startMatchUC)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
@@ -307,7 +311,10 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	app.Get("/register", publicHandler.ShowSignup)
 	app.Post("/register", publicHandler.Register)
 	app.Get("/events/register", publicHandler.ShowTournamentRegistration)
+	app.Get("/events/register/:id", publicHandler.ShowTournamentRegisterForm)
 	app.Post("/events/register", publicHandler.RegisterToTournament)
+	app.Get("/lang/:locale", publicHandler.SetLang)
+	app.Get("/sitemap.xml", publicHandler.Sitemap)
 
 	// Public Score Entry & Match Starting Endpoints
 	app.Get("/public/matches/score/form", matchHandler.ShowPublicScoreForm)
@@ -315,6 +322,15 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	app.Post("/public/matches/score/update", matchHandler.UpdatePublicScore)
 	app.Post("/public/matches/start", matchHandler.Start)
 	app.Post("/public/matches/:id/start", matchHandler.Start)
+	app.Get("/public/score/:matchId", matchHandler.ShowMatchScorePage)
+	app.Get("/public/score/table/:tableNumber/event/:eventId", matchHandler.ShowTableScorePage)
+	app.Get("/public/score/table/:tableNumber/tournament/:tournamentId", matchHandler.ShowTableScorePage)
+	app.Post("/public/score/:matchId/verify", matchHandler.ValidateMatchPIN)
+
+	// Public tournament endpoints
+	app.Get("/tournaments/:id/public", eventHandler.PublicDetail)
+	app.Get("/tournaments/:id/tv", eventHandler.PublicTVDashboard)
+	app.Get("/tournaments/:id/board-columns", eventHandler.BoardColumns)
 
 	// Auth endpoints
 	app.Get("/admin/login", authHandler.ShowLogin)
@@ -330,6 +346,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Get("/tournaments/division-select", adminHandler.DivisionSelect)
 	admin.Get("/tournaments/:id", eventHandler.Detail)
 	admin.Get("/divisions", adminHandler.Divisions)
+	admin.Get("/new-player-field", adminHandler.NewPlayerField)
+	admin.Get("/close-modal", adminHandler.CloseModal)
 
 	api := app.Group("/")
 	api.Use(authMiddleware)
@@ -339,16 +357,28 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	api.Put("/players/:id", playerHandler.Update)
 	api.Delete("/players/:id", playerHandler.Delete)
 	api.Post("/players/import", playerHandler.Import)
+	api.Get("/players/:id/edit", playerHandler.ShowEditForm)
+	app.Get("/players/import/template", playerHandler.ImportTemplate)
 	api.Post("/events", tournamentHandler.Create)
 	api.Post("/tournaments", eventHandler.Create)
 	api.Delete("/tournaments/:id", eventHandler.Delete)
 	api.Post("/tournaments/bulk-delete", eventHandler.DeleteBulk)
+	api.Put("/tournaments/:id", eventHandler.Update)
+	api.Get("/tournaments/:id/pdf", eventHandler.ExportEventPDF)
+	admin.Get("/tournaments/:id/board", eventHandler.AdminBoard)
+	admin.Get("/tournaments/:id/health", eventHandler.TournamentHealth)
+	admin.Get("/tournaments/:id/health/metrics", eventHandler.TournamentHealthMetrics)
+	admin.Get("/tournaments/:id/edit", eventHandler.ShowEditForm)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)
 	api.Post("/matches/:id/start", matchHandler.Start)
 	api.Put("/matches/:id/score", matchHandler.UpdateScore)
+	api.Get("/matches/:id/score", matchHandler.ShowScoreForm)
+	api.Post("/matches/:id/reset", matchHandler.Reset)
 	api.Post("/divisions", divisionHandler.CreateOrUpdate)
 	api.Delete("/divisions/:id", divisionHandler.Delete)
+	api.Get("/divisions/edit", divisionHandler.ShowEditForm)
+	api.Get("/divisions/:id/edit", divisionHandler.ShowEditForm)
 
 	admin.Get("/events/:id", tournamentHandler.Detail)
 	api.Put("/events/:id", tournamentHandler.Update)
@@ -359,6 +389,25 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Post("/events/:id/move-player", tournamentHandler.MovePlayer)
 	admin.Post("/events/:id/regenerate-seeds", tournamentHandler.RegenerateGroupSeeds)
 	admin.Post("/events/:id/groups", tournamentHandler.AddGroup)
+	admin.Get("/events/:id/edit", tournamentHandler.ShowEditForm)
+	admin.Post("/events/:id/officials", tournamentHandler.AddOfficial)
+	admin.Delete("/events/:id/officials/:playerId", tournamentHandler.RemoveOfficial)
+	admin.Delete("/events/:id/participants/:playerId", tournamentHandler.RemoveParticipant)
+	admin.Post("/events/:id/divisions/:divId/knockout/seeds", tournamentHandler.SaveKnockoutSeeds)
+	admin.Post("/events/:id/divisions/:divId/start-knockout", tournamentHandler.StartKnockout)
+	admin.Post("/events/:id/participants/elo-before", tournamentHandler.UpdateParticipantEloBefore)
+	api.Post("/events/:id/teams", tournamentHandler.CreateTeam)
+	
+	api.Delete("/events/:id/teams/:teamId", tournamentHandler.DeleteTeam)
+	api.Post("/events/:id/teams/:teamId/players", tournamentHandler.AssignPlayerToTeam)
+	api.Delete("/events/:id/teams/:teamId/players/:playerId", tournamentHandler.RemovePlayerFromTeam)
+	app.Get("/public/events", tournamentHandler.PublicList)
+	app.Get("/public/events/:id", tournamentHandler.PublicDetail)
+	app.Get("/public/events/:id/tv", tournamentHandler.PublicTVDashboard)
+	app.Get("/events/:id/board", tournamentHandler.Board)
+	app.Get("/events/:id/board/columns", tournamentHandler.BoardColumns)
+	admin.Post("/events/:id/toggle-seeding-lock", tournamentHandler.ToggleSeedingLock)
+	admin.Post("/events/:id/recalculate-elo", tournamentHandler.RecalculateElo)
 
 	return app, db, store, nil
 }

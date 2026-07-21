@@ -5,8 +5,13 @@ import (
 	"time"
 
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/player"
 )
+
+type stubIDGen struct{}
+
+func (stubIDGen) Generate() string { return "generated-id" }
 
 func TestNewTournament_Valid(t *testing.T) {
 	start := time.Now()
@@ -49,6 +54,78 @@ func TestNewTournament_CategoryValidation(t *testing.T) {
 	_, err := event.NewTournament("t1", "Test Tourn", "singles", "elimination", "men", start, end, nil, 2, participants, false)
 	if err == nil {
 		t.Fatalf("expected error for gender mismatch, got nil")
+	}
+}
+
+func TestNewTournament_WomenCategoryValidation(t *testing.T) {
+	start := time.Now()
+	end := start.Add(24 * time.Hour)
+	participants := []*player.Player{
+		{ID: "p1", Gender: "M"}, // Male in a women's event
+	}
+
+	_, err := event.NewTournament("t1", "Test Tourn", "singles", "elimination", "women", start, end, nil, 2, participants, false)
+	if err == nil {
+		t.Fatalf("expected error for gender mismatch, got nil")
+	}
+}
+
+func TestNewTournament_DefaultsApplied(t *testing.T) {
+	start := time.Now()
+	end := start.Add(24 * time.Hour)
+
+	tourn, err := event.NewTournament("t1", "Test Tourn", "", "", "", start, end, nil, 2, nil, false)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if tourn.Type != "singles" {
+		t.Errorf("expected default type singles, got %s", tourn.Type)
+	}
+	if tourn.Format != "elimination" {
+		t.Errorf("expected default format elimination, got %s", tourn.Format)
+	}
+	if tourn.EventCategory != "open" {
+		t.Errorf("expected default category open, got %s", tourn.EventCategory)
+	}
+}
+
+func TestNewTournament_GroupsElimination_AssignsGroups(t *testing.T) {
+	idgen.Register(stubIDGen{})
+	start := time.Now()
+	end := start.Add(24 * time.Hour)
+	participants := []*player.Player{
+		{ID: "p1", SinglesElo: 1500},
+		{ID: "p2", SinglesElo: 1400},
+		{ID: "p3", SinglesElo: 1300},
+	}
+
+	tourn, err := event.NewTournament("t1", "Test Tourn", "singles", "groups_elimination", "open", start, end, nil, 2, participants, false)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(tourn.Groups) == 0 {
+		t.Errorf("expected groups to be assigned for groups_elimination format")
+	}
+}
+
+func TestNewTournament_RoundRobin_AssignsGroups(t *testing.T) {
+	idgen.Register(stubIDGen{})
+	start := time.Now()
+	end := start.Add(24 * time.Hour)
+	participants := []*player.Player{
+		{ID: "p1", SinglesElo: 1500},
+		{ID: "p2", SinglesElo: 1400},
+	}
+
+	tourn, err := event.NewTournament("t1", "Test Tourn", "singles", "round_robin", "open", start, end, nil, 2, participants, false)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(tourn.Groups) != 1 {
+		t.Fatalf("expected a single round robin group, got %d", len(tourn.Groups))
+	}
+	if len(tourn.Groups[0].Players) != 2 {
+		t.Errorf("expected 2 players in the round robin group, got %d", len(tourn.Groups[0].Players))
 	}
 }
 

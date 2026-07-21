@@ -21,7 +21,7 @@ func ErrorHandler(err error) error {
 
 	// Handle specific domain errors
 	if errors.Is(err, event.ErrInvalidDates) {
-		return ErrorHandler(err)
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	errMsg := err.Error()

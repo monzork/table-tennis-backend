@@ -698,39 +698,20 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 		}
 	}
 
-	// 2. Identify virtual matches that should be scheduled based on the format
-	vm := bracket.BuildBracket(t, divs, nil)
-	for _, dv := range vm.Divisions {
-		if vm.Format == "round_robin" {
-			for _, mv := range dv.RoundRobinMatches {
-				if mv.Player1 != nil && mv.Player2 != nil {
-					if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID, mv.Stage) {
-						groupName := findGroupName(mv.Player1.ID)
-						scheduled = append(scheduled, event.BoardCard{
-							MatchID:      "",
-							Status:       "scheduled",
-							Stage:        mv.Stage,
-							BestOf:       mv.BestOf,
-							PlayerAName:  mv.Player1.FirstNameWithSecond() + " " + mv.Player1.LastNameWithSecond(),
-							PlayerBName:  mv.Player2.FirstNameWithSecond() + " " + mv.Player2.LastNameWithSecond(),
-							P1Id:         mv.Player1.ID,
-							P2Id:         mv.Player2.ID,
-							TableNumber:  nil,
-							ScoreA:       0,
-							ScoreB:       0,
-							Pin:          "",
-							GroupName:    groupName,
-							DivisionName: dv.Name,
-							Category:     t.EventCategory,
-						})
-					}
-				}
-			}
-		} else if vm.Format == "groups_elimination" {
-			for _, g := range dv.Groups {
-				for _, mv := range g.Matches {
+	// 2. Identify virtual matches that should be scheduled based on the format.
+	// Skipped once the division is finished: BuildBracket projects knockout pairings
+	// from static seeding, not actual recorded winners, so after any upset its
+	// predicted later-round pairings no longer match what was really played —
+	// matchExists() then can't find them and they'd show up as phantom "scheduled"
+	// matches even though the division already has a champion.
+	if t.Status != "finished" {
+		vm := bracket.BuildBracket(t, divs, nil)
+		for _, dv := range vm.Divisions {
+			if vm.Format == "round_robin" {
+				for _, mv := range dv.RoundRobinMatches {
 					if mv.Player1 != nil && mv.Player2 != nil {
 						if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID, mv.Stage) {
+							groupName := findGroupName(mv.Player1.ID)
 							scheduled = append(scheduled, event.BoardCard{
 								MatchID:      "",
 								Status:       "scheduled",
@@ -744,15 +725,69 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 								ScoreA:       0,
 								ScoreB:       0,
 								Pin:          "",
-								GroupName:    g.Name,
+								GroupName:    groupName,
 								DivisionName: dv.Name,
 								Category:     t.EventCategory,
 							})
 						}
 					}
 				}
-			}
-			if dv.AllGroupsFinished {
+			} else if vm.Format == "groups_elimination" {
+				for _, g := range dv.Groups {
+					for _, mv := range g.Matches {
+						if mv.Player1 != nil && mv.Player2 != nil {
+							if !matchExists(t.Matches, mv.Player1.ID, mv.Player2.ID, mv.Stage) {
+								scheduled = append(scheduled, event.BoardCard{
+									MatchID:      "",
+									Status:       "scheduled",
+									Stage:        mv.Stage,
+									BestOf:       mv.BestOf,
+									PlayerAName:  mv.Player1.FirstNameWithSecond() + " " + mv.Player1.LastNameWithSecond(),
+									PlayerBName:  mv.Player2.FirstNameWithSecond() + " " + mv.Player2.LastNameWithSecond(),
+									P1Id:         mv.Player1.ID,
+									P2Id:         mv.Player2.ID,
+									TableNumber:  nil,
+									ScoreA:       0,
+									ScoreB:       0,
+									Pin:          "",
+									GroupName:    g.Name,
+									DivisionName: dv.Name,
+									Category:     t.EventCategory,
+								})
+							}
+						}
+					}
+				}
+				if dv.AllGroupsFinished {
+					for _, bracket := range dv.KnockoutBrackets {
+						for _, round := range bracket.Rounds {
+							for _, bmv := range round.Matches {
+								if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
+									if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID, bmv.Stage) {
+										scheduled = append(scheduled, event.BoardCard{
+											MatchID:      "",
+											Status:       "scheduled",
+											Stage:        bmv.Stage,
+											BestOf:       bmv.BestOf,
+											PlayerAName:  bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
+											PlayerBName:  bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
+											P1Id:         bmv.Player1.Player.ID,
+											P2Id:         bmv.Player2.Player.ID,
+											TableNumber:  nil,
+											ScoreA:       0,
+											ScoreB:       0,
+											Pin:          "",
+											GroupName:    "",
+											DivisionName: dv.Name,
+											Category:     t.EventCategory,
+										})
+									}
+								}
+							}
+						}
+					}
+				}
+			} else if vm.Format == "elimination" {
 				for _, bracket := range dv.KnockoutBrackets {
 					for _, round := range bracket.Rounds {
 						for _, bmv := range round.Matches {
@@ -776,34 +811,6 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 										Category:     t.EventCategory,
 									})
 								}
-							}
-						}
-					}
-				}
-			}
-		} else if vm.Format == "elimination" {
-			for _, bracket := range dv.KnockoutBrackets {
-				for _, round := range bracket.Rounds {
-					for _, bmv := range round.Matches {
-						if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {
-							if !matchExists(t.Matches, bmv.Player1.Player.ID, bmv.Player2.Player.ID, bmv.Stage) {
-								scheduled = append(scheduled, event.BoardCard{
-									MatchID:      "",
-									Status:       "scheduled",
-									Stage:        bmv.Stage,
-									BestOf:       bmv.BestOf,
-									PlayerAName:  bmv.Player1.Player.FirstNameWithSecond() + " " + bmv.Player1.Player.LastNameWithSecond(),
-									PlayerBName:  bmv.Player2.Player.FirstNameWithSecond() + " " + bmv.Player2.Player.LastNameWithSecond(),
-									P1Id:         bmv.Player1.Player.ID,
-									P2Id:         bmv.Player2.Player.ID,
-									TableNumber:  nil,
-									ScoreA:       0,
-									ScoreB:       0,
-									Pin:          "",
-									GroupName:    "",
-									DivisionName: dv.Name,
-									Category:     t.EventCategory,
-								})
 							}
 						}
 					}

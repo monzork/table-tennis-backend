@@ -11,3 +11,7 @@ cookies.txt
 *.test
 dist/
 !static/dist/
+
+# Code coverage artifacts
+*.out
+coverage.html

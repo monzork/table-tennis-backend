@@ -417,6 +417,9 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return ErrorHandler(err)
 	}
+	if body.TournamentID == "" {
+		body.TournamentID = c.FormValue("tournamentId")
+	}
 
 	if matchID == "" {
 		matchID = body.MatchID

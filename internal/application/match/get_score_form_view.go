@@ -115,23 +115,21 @@ func (uc *GetScoreFormViewUseCase) Execute(
 			// Signal to handler to use team-match form
 			isTeams = true
 
-			// Ensure parent match & sub-matches exist
+			// Ensure parent match & sub-matches exist. p1Id/p2Id are team IDs here;
+			// CreateMatchUseCase resolves team-based matches by team ID via its own
+			// teamPlayersMap, so it must receive the team IDs directly, not their players' IDs.
 			if !isValidID(matchID) && tourney != nil {
-				var teamAIDs, teamBIDs []string
+				var teamAExists, teamBExists bool
 				for _, team := range tourney.Teams {
 					if team.ID == p1Id {
-						for _, p := range team.Players {
-							teamAIDs = append(teamAIDs, p.ID)
-						}
+						teamAExists = true
 					}
 					if team.ID == p2Id {
-						for _, p := range team.Players {
-							teamBIDs = append(teamBIDs, p.ID)
-						}
+						teamBExists = true
 					}
 				}
-				if len(teamAIDs) > 0 && len(teamBIDs) > 0 {
-					if newMatch, err := uc.createMatchUC.Execute(ctx, tID, "teams", teamAIDs, teamBIDs, stage); err == nil && newMatch != nil {
+				if teamAExists && teamBExists {
+					if newMatch, err := uc.createMatchUC.Execute(ctx, tID, "teams", []string{p1Id}, []string{p2Id}, stage); err == nil && newMatch != nil {
 						matchID = newMatch.ID
 					}
 				}

@@ -73,3 +73,31 @@ func TestCalculateAndApplyEloUpset(t *testing.T) {
 		t.Errorf("expected B to have 976, got %d", pB.SinglesElo)
 	}
 }
+
+func TestCalculateAndApplyEloDoubles(t *testing.T) {
+	pA1 := &player.Player{DoublesElo: 1000}
+	pA2 := &player.Player{DoublesElo: 1000}
+	pB1 := &player.Player{DoublesElo: 800}
+	pB2 := &player.Player{DoublesElo: 800}
+
+	matchDomain.CalculateAndApplyElo("doubles", []*player.Player{pA1, pA2}, []*player.Player{pB1, pB2}, "A")
+
+	if pA1.DoublesElo != 1008 || pA2.DoublesElo != 1008 {
+		t.Errorf("expected A1/A2 to have 1008, got %d/%d", pA1.DoublesElo, pA2.DoublesElo)
+	}
+	if pB1.DoublesElo != 792 || pB2.DoublesElo != 792 {
+		t.Errorf("expected B1/B2 to have 792, got %d/%d", pB1.DoublesElo, pB2.DoublesElo)
+	}
+}
+
+func TestCalculateAndApplyEloEdgeCases(t *testing.T) {
+	pA := &player.Player{SinglesElo: 1000}
+	pB := &player.Player{SinglesElo: 1000}
+
+	// Empty teams
+	matchDomain.CalculateAndApplyElo("singles", []*player.Player{}, []*player.Player{pB}, "A")
+	matchDomain.CalculateAndApplyElo("singles", []*player.Player{pA}, []*player.Player{}, "A")
+
+	// Invalid winner team
+	matchDomain.CalculateAndApplyElo("singles", []*player.Player{pA}, []*player.Player{pB}, "C")
+}

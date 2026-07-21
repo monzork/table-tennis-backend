@@ -263,6 +263,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			Matches:          []event.Match{},
 			Teams:            teams,
 			TeamFormat:       m.TeamFormat,
+			Metrics:          m.Metrics,
 		})
 	}
 

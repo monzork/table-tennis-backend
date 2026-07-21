@@ -174,4 +174,24 @@ func TestMovePlayerUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("domain move error propagates when seeding locked", func(t *testing.T) {
+		lockedTourney := &tournamentDomain.Event{
+			ID:                  uuid.New().String(),
+			Status:              "scheduled",
+			Format:              "groups_elimination",
+			Participants:        []*player.Player{p},
+			Groups:              []tournamentDomain.Group{g1, g2},
+			ManualSeedingLocked: true,
+		}
+		repo := &mockMovePlayerRepository{t: lockedTourney}
+		uc := NewMovePlayerUseCase(repo)
+
+		err := uc.Execute(context.Background(), lockedTourney.ID, pID, g2ID, 0)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if repo.updCalls != 0 {
+			t.Errorf("expected UpdateGroups not to be called, got %d calls", repo.updCalls)
+		}
+	})
 }

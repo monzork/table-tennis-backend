@@ -398,7 +398,7 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 	}
 
 	tables := buildEventTables(e, inProgress)
-	return c.Render("public/partials/board-columns", merge(tMap(lang), fiber.Map{
+	return c.Render("admin/partials/tournament-board-columns", merge(tMap(lang), fiber.Map{
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
