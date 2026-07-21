@@ -314,6 +314,59 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 				losersPassCount = mainPassCount
 			}
 
+			if t.Status == "finished" || t.Status == "in_progress" {
+				inferPassCount := func(tier int) int {
+					seenPlayers := make(map[string]bool)
+					prefix := ""
+					if tier > 0 {
+						prefix = fmt.Sprintf("tier%d_", tier)
+					}
+					for k := range t.Matches {
+						m := &t.Matches[k]
+						if m.DivisionID != divID || m.Stage == "group" || m.Stage == "loser_bracket" {
+							continue
+						}
+						if tier == 0 && strings.HasPrefix(m.Stage, "tier") {
+							continue
+						}
+						if tier > 0 && !strings.HasPrefix(m.Stage, prefix) {
+							continue
+						}
+						for _, p := range m.TeamA {
+							seenPlayers[p.ID] = true
+						}
+						for _, p := range m.TeamB {
+							seenPlayers[p.ID] = true
+						}
+					}
+					if len(seenPlayers) == 0 {
+						return 0
+					}
+					maxInferred := 0
+					for _, g := range dv.Groups {
+						count := 0
+						for _, s := range g.Standings {
+							if s.Player != nil && seenPlayers[s.Player.ID] {
+								count++
+							}
+						}
+						if count > maxInferred {
+							maxInferred = count
+						}
+					}
+					return maxInferred
+				}
+
+				if infMain := inferPassCount(0); infMain > 0 {
+					mainPassCount = infMain
+				}
+				if bracketsCount > 1 {
+					if infLoser := inferPassCount(1); infLoser > 0 {
+						losersPassCount = infLoser
+					}
+				}
+			}
+
 			// Pre-collect any knockout groups created by manual draw
 			var knockoutGroups []*event.Group
 			for i := range t.Groups {
