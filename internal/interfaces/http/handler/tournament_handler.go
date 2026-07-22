@@ -508,30 +508,22 @@ func buildEventTables(e *eventDomain.Tournament, inProgress []event.BoardCard) [
 	return tables
 }
 
-func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
-	id := c.Params("id")
-	e, err := h.getByID.Execute(c.Context(), id)
-	if err != nil {
-		return ErrorHandler(err)
-	}
-	divs, _ := h.divisionUC.GetAll(c.Context())
+type DivPriority struct {
+	ID         string
+	Name       string
+	Priorities string
+}
 
-	type DivPriority struct {
-		ID         string
-		Name       string
-		Priorities string
-	}
+func buildDivPriorities(divs []*divisionDomain.Division, t *eventDomain.Tournament) []DivPriority {
 	var divPriorities []DivPriority
 	for _, d := range divs {
 		var pStr string
-		if e.TablePriorities != nil {
-			if p, ok := e.TablePriorities[d.ID]; ok {
-				var pStrs []string
-				for _, num := range p {
-					pStrs = append(pStrs, strconv.Itoa(num))
-				}
-				pStr = strings.Join(pStrs, ",")
+		if p := t.TablePriorityFor(d.ID); len(p) > 0 {
+			var pStrs []string
+			for _, num := range p {
+				pStrs = append(pStrs, strconv.Itoa(num))
 			}
+			pStr = strings.Join(pStrs, ",")
 		}
 		divPriorities = append(divPriorities, DivPriority{
 			ID:         d.ID,
@@ -539,6 +531,17 @@ func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
 			Priorities: pStr,
 		})
 	}
+	return divPriorities
+}
+
+func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
+	id := c.Params("id")
+	e, err := h.getByID.Execute(c.Context(), id)
+	if err != nil {
+		return ErrorHandler(err)
+	}
+	divs, _ := h.divisionUC.GetAll(c.Context())
+	divPriorities := buildDivPriorities(divs, e)
 
 	return c.Render("admin/partials/tournament-edit-form", fiber.Map{
 		"Tournament":    e,
@@ -584,30 +587,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Trigger", "tournament-updated")
 		divs, _ := h.divisionUC.GetAll(c.Context())
-
-		type DivPriority struct {
-			ID         string
-			Name       string
-			Priorities string
-		}
-		var divPriorities []DivPriority
-		for _, d := range divs {
-			var pStr string
-			if e.TablePriorities != nil {
-				if p, ok := e.TablePriorities[d.ID]; ok {
-					var pStrs []string
-					for _, num := range p {
-						pStrs = append(pStrs, strconv.Itoa(num))
-					}
-					pStr = strings.Join(pStrs, ",")
-				}
-			}
-			divPriorities = append(divPriorities, DivPriority{
-				ID:         d.ID,
-				Name:       d.Name,
-				Priorities: pStr,
-			})
-		}
+		divPriorities := buildDivPriorities(divs, e)
 
 		return c.Render("admin/partials/tournament-edit-form", fiber.Map{
 			"Tournament":    e,

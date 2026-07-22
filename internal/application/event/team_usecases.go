@@ -7,10 +7,10 @@ import (
 )
 
 type CreateTeamUseCase struct {
-	repo tournamentDomain.Repository
+	repo tournamentDomain.TeamRepository
 }
 
-func NewCreateTeamUseCase(repo tournamentDomain.Repository) *CreateTeamUseCase {
+func NewCreateTeamUseCase(repo tournamentDomain.TeamRepository) *CreateTeamUseCase {
 	return &CreateTeamUseCase{repo: repo}
 }
 
@@ -28,10 +28,10 @@ func (uc *CreateTeamUseCase) Execute(ctx context.Context, tournamentIDStr string
 }
 
 type DeleteTeamUseCase struct {
-	repo tournamentDomain.Repository
+	repo tournamentDomain.TeamRepository
 }
 
-func NewDeleteTeamUseCase(repo tournamentDomain.Repository) *DeleteTeamUseCase {
+func NewDeleteTeamUseCase(repo tournamentDomain.TeamRepository) *DeleteTeamUseCase {
 	return &DeleteTeamUseCase{repo: repo}
 }
 
@@ -40,10 +40,10 @@ func (uc *DeleteTeamUseCase) Execute(ctx context.Context, idStr string) error {
 }
 
 type AssignPlayerToTeamUseCase struct {
-	repo tournamentDomain.Repository
+	repo tournamentDomain.TeamRepository
 }
 
-func NewAssignPlayerToTeamUseCase(repo tournamentDomain.Repository) *AssignPlayerToTeamUseCase {
+func NewAssignPlayerToTeamUseCase(repo tournamentDomain.TeamRepository) *AssignPlayerToTeamUseCase {
 	return &AssignPlayerToTeamUseCase{repo: repo}
 }
 
@@ -52,10 +52,10 @@ func (uc *AssignPlayerToTeamUseCase) Execute(ctx context.Context, teamIDStr stri
 }
 
 type RemovePlayerFromTeamUseCase struct {
-	repo tournamentDomain.Repository
+	repo tournamentDomain.TeamRepository
 }
 
-func NewRemovePlayerFromTeamUseCase(repo tournamentDomain.Repository) *RemovePlayerFromTeamUseCase {
+func NewRemovePlayerFromTeamUseCase(repo tournamentDomain.TeamRepository) *RemovePlayerFromTeamUseCase {
 	return &RemovePlayerFromTeamUseCase{repo: repo}
 }
 

@@ -108,47 +108,37 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, tou
 		}
 	}
 
-	var subMatches []bun.MatchModel
-	_ = uc.matchRepo.DB().NewSelect().Model(&subMatches).Where("team_match_id = ?", parentUUID).Order("round_number ASC").Scan(ctx)
-
-	playerNames := make(map[string]string)
-	var playerModels []bun.PlayerModel
-	_ = uc.matchRepo.DB().NewSelect().Model(&playerModels).Scan(ctx)
-	for _, pm := range playerModels {
-		playerNames[pm.ID.String()] = pm.FullName()
+	subMatches, err := uc.matchRepo.GetSubMatches(ctx, matchID)
+	if err != nil {
+		return nil, err
 	}
 
 	var squadAP1, squadAP2, squadAP3 string
 	var squadBP1, squadBP2, squadBP3 string
 	for _, sm := range subMatches {
+		a1, b1 := teamPlayerID(sm.TeamA, 0), teamPlayerID(sm.TeamB, 0)
 		if teamFormat == "olympic" {
 			switch sm.RoundNumber {
 			case 3:
-				squadAP1 = sm.TeamAPlayer1ID.String()
-				squadBP1 = sm.TeamBPlayer1ID.String()
+				squadAP1, squadBP1 = a1, b1
 			case 4:
-				squadAP2 = sm.TeamAPlayer1ID.String()
-				squadBP2 = sm.TeamBPlayer1ID.String()
+				squadAP2, squadBP2 = a1, b1
 			case 2:
-				squadAP3 = sm.TeamAPlayer1ID.String()
-				squadBP3 = sm.TeamBPlayer1ID.String()
+				squadAP3, squadBP3 = a1, b1
 			}
 		} else {
 			switch sm.RoundNumber {
 			case 1:
-				squadAP1 = sm.TeamAPlayer1ID.String()
-				squadBP1 = sm.TeamBPlayer1ID.String()
+				squadAP1, squadBP1 = a1, b1
 			case 2:
-				squadAP2 = sm.TeamAPlayer1ID.String()
-				squadBP2 = sm.TeamBPlayer1ID.String()
+				squadAP2, squadBP2 = a1, b1
 			case 3:
-				squadAP3 = sm.TeamAPlayer1ID.String()
-				squadBP3 = sm.TeamBPlayer1ID.String()
+				squadAP3, squadBP3 = a1, b1
 			}
 		}
 	}
 
-	if squadAP1 != "" && squadAP1 != "00000000-0000-0000-0000-000000000000" && teamB != nil {
+	if squadAP1 != "" && teamB != nil {
 		isSwapped := false
 		for _, p := range teamB.Players {
 			if p.ID == squadAP1 {
@@ -161,7 +151,7 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, tou
 		}
 	}
 
-	if squadAP1 == "00000000-0000-0000-0000-000000000000" && teamA != nil && len(teamA.Players) > 0 {
+	if squadAP1 == "" && teamA != nil && len(teamA.Players) > 0 {
 		squadAP1 = teamA.Players[0].ID
 		if len(teamA.Players) > 1 {
 			squadAP2 = teamA.Players[1].ID
@@ -170,7 +160,7 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, tou
 			squadAP3 = teamA.Players[2].ID
 		}
 	}
-	if squadBP1 == "00000000-0000-0000-0000-000000000000" && teamB != nil && len(teamB.Players) > 0 {
+	if squadBP1 == "" && teamB != nil && len(teamB.Players) > 0 {
 		squadBP1 = teamB.Players[0].ID
 		if len(teamB.Players) > 1 {
 			squadBP2 = teamB.Players[1].ID
@@ -182,65 +172,42 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, tou
 
 	var subMatchVMs []SubMatchVM
 	for _, sm := range subMatches {
-		teamAP2Str := ""
-		teamBP2Str := ""
-		if sm.TeamAPlayer2ID != nil {
-			teamAP2Str = sm.TeamAPlayer2ID.String()
-		}
-		if sm.TeamBPlayer2ID != nil {
-			teamBP2Str = sm.TeamBPlayer2ID.String()
-		}
+		teamAP1Str, teamAP2Str := teamPlayerID(sm.TeamA, 0), teamPlayerID(sm.TeamA, 1)
+		teamBP1Str, teamBP2Str := teamPlayerID(sm.TeamB, 0), teamPlayerID(sm.TeamB, 1)
 
 		var pAName, pBName string
 		if sm.MatchType == "doubles" {
-			pAName = playerNames[sm.TeamAPlayer1ID.String()]
+			pAName = teamPlayerName(sm.TeamA, 0)
 			if teamAP2Str != "" {
-				pAName += " & " + playerNames[teamAP2Str]
+				pAName += " & " + teamPlayerName(sm.TeamA, 1)
 			}
-			pBName = playerNames[sm.TeamBPlayer1ID.String()]
+			pBName = teamPlayerName(sm.TeamB, 0)
 			if teamBP2Str != "" {
-				pBName += " & " + playerNames[teamBP2Str]
+				pBName += " & " + teamPlayerName(sm.TeamB, 1)
 			}
 		} else {
-			pAName = playerNames[sm.TeamAPlayer1ID.String()]
-			pBName = playerNames[sm.TeamBPlayer1ID.String()]
-		}
-
-		var setModels []bun.MatchSetModel
-		_ = uc.matchRepo.DB().NewSelect().Model(&setModels).Where("match_id = ?", sm.ID).Scan(ctx)
-
-		winsA, winsB := 0, 0
-		for _, set := range setModels {
-			if set.ScoreA > set.ScoreB {
-				winsA++
-			} else if set.ScoreB > set.ScoreA {
-				winsB++
-			}
-		}
-
-		wt := ""
-		if sm.WinnerTeam != nil {
-			wt = *sm.WinnerTeam
+			pAName = teamPlayerName(sm.TeamA, 0)
+			pBName = teamPlayerName(sm.TeamB, 0)
 		}
 
 		alignA, alignB := getSubMatchAlignments(sm.RoundNumber, teamFormat)
 
 		subMatchVMs = append(subMatchVMs, SubMatchVM{
-			ID:             sm.ID.String(),
+			ID:             sm.ID,
 			MatchType:      sm.MatchType,
 			RoundNumber:    sm.RoundNumber,
-			TeamAPlayer1ID: sm.TeamAPlayer1ID.String(),
+			TeamAPlayer1ID: teamAP1Str,
 			TeamAPlayer2ID: teamAP2Str,
-			TeamBPlayer1ID: sm.TeamBPlayer1ID.String(),
+			TeamBPlayer1ID: teamBP1Str,
 			TeamBPlayer2ID: teamBP2Str,
 			PlayerAName:    pAName,
 			PlayerBName:    pBName,
 			AlignmentA:     alignA,
 			AlignmentB:     alignB,
-			ScoreA:         winsA,
-			ScoreB:         winsB,
+			ScoreA:         sm.ScoreA(),
+			ScoreB:         sm.ScoreB(),
 			Status:         sm.Status,
-			WinnerTeam:     wt,
+			WinnerTeam:     sm.WinnerTeam,
 		})
 	}
 
@@ -269,6 +236,20 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, tou
 		RefereeID:    refereeIDStr,
 		TableNumber:  parent.TableNumber,
 	}, nil
+}
+
+func teamPlayerID(team []*player.Player, idx int) string {
+	if idx >= len(team) {
+		return ""
+	}
+	return team[idx].ID
+}
+
+func teamPlayerName(team []*player.Player, idx int) string {
+	if idx >= len(team) {
+		return ""
+	}
+	return team[idx].FullName()
 }
 
 func getSubMatchAlignments(roundNumber int, teamFormat string) (string, string) {

@@ -344,3 +344,24 @@ func TestPlayerRepository_Save_InvalidID(t *testing.T) {
 		t.Fatal("expected error for invalid UUID, got nil")
 	}
 }
+
+func TestPlayerRepository_GetAllSinglesAndDoubles_QueryError(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // pre-cancelled context forces the underlying query to fail
+
+	if _, err := repo.GetAllSingles(ctx); err == nil {
+		t.Fatal("expected error from GetAllSingles with a cancelled context")
+	}
+	if _, err := repo.GetAllDoubles(ctx); err == nil {
+		t.Fatal("expected error from GetAllDoubles with a cancelled context")
+	}
+	if _, err := repo.GetSinglesByGender(ctx, "M"); err == nil {
+		t.Fatal("expected error from GetSinglesByGender with a cancelled context")
+	}
+	if _, err := repo.GetDoublesByGender(ctx, "F"); err == nil {
+		t.Fatal("expected error from GetDoublesByGender with a cancelled context")
+	}
+}

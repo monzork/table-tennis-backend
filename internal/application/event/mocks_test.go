@@ -246,6 +246,12 @@ func (m *mockMatchRepo) IsTableOccupiedByOtherMatch(ctx context.Context, matchID
 func (m *mockMatchRepo) UpdateMetadata(ctx context.Context, matchID string, refereeID *string, tableNumber *int) error {
 	return nil
 }
+func (m *mockMatchRepo) ResetMatch(ctx context.Context, matchID string) error {
+	return nil
+}
+func (m *mockMatchRepo) GetInProgressMatchOnTable(ctx context.Context, tableNumber int, tournamentID, eventID string) (*tournamentDomain.Match, error) {
+	return nil, nil
+}
 func (m *mockMatchRepo) HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error) {
 	return m.hasActivity, m.hasActivityErr
 }

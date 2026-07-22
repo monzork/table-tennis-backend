@@ -57,3 +57,12 @@ func NewEvent(id string, name string, divisionIDs []string, skipElo bool, start,
 		Events:      []*event.Event{},
 	}, nil
 }
+
+// TablePriorityFor returns the preferred table assignment order for a division,
+// or nil if the tournament has no configured priority for it.
+func (t *Tournament) TablePriorityFor(divisionID string) []int {
+	if t.TablePriorities == nil {
+		return nil
+	}
+	return t.TablePriorities[divisionID]
+}

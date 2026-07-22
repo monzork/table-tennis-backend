@@ -92,3 +92,33 @@ func TestNewEvent_InvalidEventDates(t *testing.T) {
 		t.Fatalf("expected ErrInvalidEventDates, got %v", err)
 	}
 }
+
+func TestTablePriorityFor(t *testing.T) {
+	t.Run("nil map returns nil", func(t *testing.T) {
+		tr := &tournament.Tournament{}
+		if got := tr.TablePriorityFor("div-1"); got != nil {
+			t.Errorf("expected nil, got %v", got)
+		}
+	})
+
+	t.Run("missing division returns nil", func(t *testing.T) {
+		tr := &tournament.Tournament{TablePriorities: map[string][]int{"div-1": {3, 1, 2}}}
+		if got := tr.TablePriorityFor("div-2"); got != nil {
+			t.Errorf("expected nil for unconfigured division, got %v", got)
+		}
+	})
+
+	t.Run("configured division returns its priority order", func(t *testing.T) {
+		tr := &tournament.Tournament{TablePriorities: map[string][]int{"div-1": {3, 1, 2}}}
+		got := tr.TablePriorityFor("div-1")
+		want := []int{3, 1, 2}
+		if len(got) != len(want) {
+			t.Fatalf("expected %v, got %v", want, got)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Errorf("expected %v, got %v", want, got)
+			}
+		}
+	})
+}

@@ -112,6 +112,28 @@ func TestTournamentRepository_GetByIDDeep(t *testing.T) {
 	}
 }
 
+func TestTournamentRepository_GetByIDDeep_InvalidID(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	repo := bunRepo.NewTournamentRepository(db, eventRepo)
+	ctx := context.Background()
+
+	if _, err := repo.GetByIDDeep(ctx, "not-a-uuid"); err == nil {
+		t.Fatal("expected error for invalid UUID, got nil")
+	}
+}
+
+func TestTournamentRepository_GetByIDDeep_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	repo := bunRepo.NewTournamentRepository(db, eventRepo)
+	ctx := context.Background()
+
+	if _, err := repo.GetByIDDeep(ctx, uuid.NewString()); err == nil {
+		t.Fatal("expected error for missing tournament, got nil")
+	}
+}
+
 func TestTournamentRepository_Update(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)

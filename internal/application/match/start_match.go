@@ -89,18 +89,14 @@ func (uc *StartMatchUseCase) Execute(ctx context.Context, cmd event.StartMatchCo
 		assignedTable := availableTables[0]
 
 		priorityFound := false
-		if m.DivisionID != "" {
+		if m.DivisionID != "" && t.EventID != nil {
 			// Fetch the parent grand tournament to get table priorities
-			if t.EventID != nil {
-				if grandTourney, err := uc.tournamentRepo.GetByIDDeep(ctx, *t.EventID); err == nil && grandTourney.TablePriorities != nil {
-					if priorities, ok := grandTourney.TablePriorities[m.DivisionID]; ok {
-						for _, pTable := range priorities {
-							if !occupiedMap[pTable] {
-								assignedTable = pTable
-								priorityFound = true
-								break
-							}
-						}
+			if grandTourney, err := uc.tournamentRepo.GetByIDDeep(ctx, *t.EventID); err == nil {
+				for _, pTable := range grandTourney.TablePriorityFor(m.DivisionID) {
+					if !occupiedMap[pTable] {
+						assignedTable = pTable
+						priorityFound = true
+						break
 					}
 				}
 			}

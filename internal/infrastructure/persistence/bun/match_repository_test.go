@@ -377,6 +377,121 @@ func TestMatchRepository_IsTableOccupiedByOtherMatch(t *testing.T) {
 	}
 }
 
+func TestMatchRepository_ResetMatch(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	m := f.newMatch(t, "group")
+	table := 3
+	m.Status = "finished"
+	m.WinnerTeam = "A"
+	m.TableNumber = &table
+	m.Sets = []event.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}, {Number: 2, ScoreA: 11, ScoreB: 7}}
+	if err := f.matchRepo.Save(ctx, m); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	if err := f.matchRepo.ResetMatch(ctx, m.ID); err != nil {
+		t.Fatalf("ResetMatch: %v", err)
+	}
+
+	got, err := f.matchRepo.GetByID(ctx, m.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.Status != "scheduled" {
+		t.Errorf("expected status scheduled, got %q", got.Status)
+	}
+	if got.WinnerTeam != "" {
+		t.Errorf("expected winner cleared, got %q", got.WinnerTeam)
+	}
+	if got.TableNumber != nil {
+		t.Errorf("expected table number cleared, got %v", *got.TableNumber)
+	}
+	if len(got.Sets) != 0 {
+		t.Errorf("expected sets cleared, got %d", len(got.Sets))
+	}
+
+	if err := f.matchRepo.ResetMatch(ctx, "not-a-uuid"); err == nil {
+		t.Fatal("expected error for an invalid match ID")
+	}
+}
+
+func TestMatchRepository_GetInProgressMatchOnTable(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	table := 9
+	m := f.newMatch(t, "group")
+	m.Status = "in_progress"
+	m.TableNumber = &table
+	if err := f.matchRepo.Save(ctx, m); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	got, err := f.matchRepo.GetInProgressMatchOnTable(ctx, table, f.tournament.ID, "")
+	if err != nil {
+		t.Fatalf("GetInProgressMatchOnTable: %v", err)
+	}
+	if got.ID != m.ID {
+		t.Fatalf("expected to find match %s, got %s", m.ID, got.ID)
+	}
+
+	_, err = f.matchRepo.GetInProgressMatchOnTable(ctx, 999, f.tournament.ID, "")
+	if err == nil {
+		t.Fatal("expected error for a table with no in-progress match")
+	}
+
+	if _, err := f.matchRepo.GetInProgressMatchOnTable(ctx, table, "not-a-uuid", ""); err == nil {
+		t.Fatal("expected error for an invalid tournamentID")
+	}
+	if _, err := f.matchRepo.GetInProgressMatchOnTable(ctx, table, "", "not-a-uuid"); err == nil {
+		t.Fatal("expected error for an invalid eventID")
+	}
+}
+
+func TestMatchRepository_GetInProgressMatchOnTable_ScopedByEventContainer(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	playerRepo := bunRepo.NewPlayerRepository(db)
+	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
+	tournamentRepo := bunRepo.NewTournamentRepository(db, eventRepo)
+	ctx := context.Background()
+
+	tr := newTestTournament(t, "Container Tournament")
+	sub := newTestEvent(t, "Sub Event")
+	attachEvent(tr, sub)
+	if err := tournamentRepo.Save(ctx, tr); err != nil {
+		t.Fatalf("Save tournament: %v", err)
+	}
+
+	p1 := savePlayer(t, playerRepo, "Cont", "One", "M")
+	p2 := savePlayer(t, playerRepo, "Cont", "Two", "M")
+
+	table := 5
+	m := &event.Match{
+		ID:           uuid.NewString(),
+		TournamentID: sub.ID,
+		MatchType:    "singles",
+		TeamA:        []*player.Player{p1},
+		TeamB:        []*player.Player{p2},
+		Status:       "in_progress",
+		Stage:        "group",
+		TableNumber:  &table,
+	}
+	if err := matchRepo.Save(ctx, m); err != nil {
+		t.Fatalf("Save match: %v", err)
+	}
+
+	got, err := matchRepo.GetInProgressMatchOnTable(ctx, table, "", tr.ID)
+	if err != nil {
+		t.Fatalf("GetInProgressMatchOnTable via container: %v", err)
+	}
+	if got.ID != m.ID {
+		t.Fatalf("expected to find match %s via container tournament, got %s", m.ID, got.ID)
+	}
+}
+
 func TestMatchRepository_UpdateMetadata(t *testing.T) {
 	f := newMatchTestFixture(t)
 	ctx := context.Background()
@@ -634,6 +749,16 @@ func TestMatchRepository_GetSets_And_GetModelByID(t *testing.T) {
 	}
 	if model.ID.String() != m.ID {
 		t.Fatalf("unexpected model: %+v", model)
+	}
+
+	if _, err := f.matchRepo.GetModelByID(ctx, uuid.New()); err == nil {
+		t.Fatal("expected error for a non-existent match ID")
+	}
+
+	cancelledCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := f.matchRepo.GetSets(cancelledCtx, m.ID); err == nil {
+		t.Fatal("expected error from GetSets with a cancelled context")
 	}
 }
 

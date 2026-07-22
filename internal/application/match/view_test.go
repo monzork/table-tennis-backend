@@ -23,8 +23,8 @@ var viewTestDBCounter int64
 
 // setupViewTestDB spins up an in-memory sqlite-backed bun.DB, mirroring the pattern
 // used in internal/infrastructure/persistence/bun/testutil_test.go. GetScoreFormViewUseCase
-// and GetTeamMatchFormViewUseCase are hard-wired to the concrete bun repositories (including
-// raw uc.matchRepo.DB() queries), so a real DB-backed test is the only way to exercise them.
+// and GetTeamMatchFormViewUseCase are hard-wired to the concrete bun repositories, so a real
+// DB-backed test is the only way to exercise them.
 func setupViewTestDB(t *testing.T) *bun.DB {
 	t.Helper()
 
@@ -425,5 +425,34 @@ func TestGetTeamMatchFormViewUseCase_CorbillonFormat(t *testing.T) {
 	}
 	if len(view.SubMatches) != 5 {
 		t.Fatalf("expected 5 sub-match view models, got %d", len(view.SubMatches))
+	}
+}
+
+func TestTeamPlayerHelpers(t *testing.T) {
+	p1 := &playerDomain.Player{ID: "p1", FirstName: "Ann", LastName: "Lee"}
+	p2 := &playerDomain.Player{ID: "p2", FirstName: "Bea", LastName: "Kim"}
+	team := []*playerDomain.Player{p1, p2}
+
+	if got := match.TeamPlayerIDForTest(team, 0); got != "p1" {
+		t.Errorf("expected p1, got %q", got)
+	}
+	if got := match.TeamPlayerIDForTest(team, 1); got != "p2" {
+		t.Errorf("expected p2, got %q", got)
+	}
+	if got := match.TeamPlayerIDForTest(team, 2); got != "" {
+		t.Errorf("expected empty string for out-of-range index, got %q", got)
+	}
+	if got := match.TeamPlayerIDForTest(nil, 0); got != "" {
+		t.Errorf("expected empty string for empty team, got %q", got)
+	}
+
+	if got := match.TeamPlayerNameForTest(team, 0); got != p1.FullName() {
+		t.Errorf("expected %q, got %q", p1.FullName(), got)
+	}
+	if got := match.TeamPlayerNameForTest(team, 1); got != p2.FullName() {
+		t.Errorf("expected %q, got %q", p2.FullName(), got)
+	}
+	if got := match.TeamPlayerNameForTest(nil, 0); got != "" {
+		t.Errorf("expected empty string for empty team, got %q", got)
 	}
 }

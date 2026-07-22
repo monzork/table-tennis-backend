@@ -647,7 +647,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 			if d.MinElo == 0 && d.MaxElo == nil {
 				continue
 			}
-			if (d.Category == "both" || d.Category == t.Type) && elo >= d.MinElo && (d.MaxElo == nil || elo <= *d.MaxElo) {
+			if (d.Category == "both" || d.Category == t.Type) && d.ContainsElo(elo) {
 				return d.Name
 			}
 		}

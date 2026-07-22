@@ -446,7 +446,8 @@ type ParticipantSnapshot struct {
 
 var ErrTableOccupied = errors.New("table occupied by another in-progress match")
 
-type Repository interface {
+// EventRepository is the core CRUD interface for the Event aggregate root.
+type EventRepository interface {
 	Save(ctx context.Context, t *Event) error
 	GetByID(ctx context.Context, id string) (*Event, error)
 	GetAll(ctx context.Context) ([]*Event, error)
@@ -454,21 +455,44 @@ type Repository interface {
 	UpdateEventIDBulk(ctx context.Context, tournamentIDs []string, eventID string) error
 	UpdateGroups(ctx context.Context, t *Event) error
 	Delete(ctx context.Context, id string) error
+	GetEventNumTables(ctx context.Context, eventID string) (int, error)
+}
+
+// ParticipantRepository manages player participation and Elo snapshots within an event.
+type ParticipantRepository interface {
 	UpdateParticipantElo(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error
 	UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error
 	UpdateParticipantEloBefore(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error
 	AddParticipant(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error
 	RemoveParticipant(ctx context.Context, tournamentID string, playerID string) error
+	GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]ParticipantSnapshot, error)
+	GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error)
+}
+
+// TeamRepository manages teams and their player rosters (doubles/team-format events).
+type TeamRepository interface {
 	SaveTeam(ctx context.Context, team *Team) error
 	DeleteTeam(ctx context.Context, id string) error
 	AddPlayerToTeam(ctx context.Context, teamID string, playerID string) error
 	RemovePlayerFromTeam(ctx context.Context, teamID string, playerID string) error
-	GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]ParticipantSnapshot, error)
-	GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error)
+}
+
+// OfficialRepository manages referees/officials assigned to an event.
+type OfficialRepository interface {
 	AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error
 	RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error
 	GetOfficials(ctx context.Context, tournamentID string) ([]ParticipantSnapshot, error)
-	GetEventNumTables(ctx context.Context, eventID string) (int, error)
+	GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error)
+}
+
+// Repository is the full Event aggregate repository. Prefer depending on the narrower
+// EventRepository/ParticipantRepository/TeamRepository/OfficialRepository interfaces where a
+// use case only needs one slice of this capability.
+type Repository interface {
+	EventRepository
+	ParticipantRepository
+	TeamRepository
+	OfficialRepository
 }
 
 type MatchRepository interface {
@@ -479,11 +503,13 @@ type MatchRepository interface {
 	GetByID(ctx context.Context, id string) (*Match, error)
 	GetSubMatches(ctx context.Context, parentMatchID string) ([]*Match, error)
 	GetMatchByParticipants(ctx context.Context, tournamentID, p1ID, p2ID, stage string) (*Match, error)
+	GetInProgressMatchOnTable(ctx context.Context, tableNumber int, tournamentID, eventID string) (*Match, error)
 	UpdateScore(ctx context.Context, id string, sets []MatchSet, stageRule StageRule) error
 	GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error)
 	GetOccupiedTablesByTournament(ctx context.Context, tournamentID string) ([]int, error)
 	IsTableOccupiedByOtherMatch(ctx context.Context, matchID string, tableNumber int) (bool, error)
 	UpdateMetadata(ctx context.Context, matchID string, refereeID *string, tableNumber *int) error
+	ResetMatch(ctx context.Context, matchID string) error
 	HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error)
 	DeleteByTournament(ctx context.Context, tournamentID string) error
 	FinishMatch(ctx context.Context, cmd FinishMatchCommand) error

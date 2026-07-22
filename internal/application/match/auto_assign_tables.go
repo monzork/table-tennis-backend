@@ -62,13 +62,11 @@ func (uc *AutoAssignTablesUseCase) Execute(ctx context.Context, tournamentID str
 		assignedTable := 0
 
 		// Check division priority
-		if m.DivisionID != "" && t.TablePriorities != nil {
-			if priorities, ok := t.TablePriorities[m.DivisionID]; ok {
-				for _, pTable := range priorities {
-					if availableTables[pTable] {
-						assignedTable = pTable
-						break
-					}
+		if m.DivisionID != "" {
+			for _, pTable := range t.TablePriorityFor(m.DivisionID) {
+				if availableTables[pTable] {
+					assignedTable = pTable
+					break
 				}
 			}
 		}

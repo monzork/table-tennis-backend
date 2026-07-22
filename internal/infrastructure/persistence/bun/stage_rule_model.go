@@ -48,17 +48,6 @@ func stageRuleToDomain(m StageRuleModel) event.StageRule {
 	}
 }
 
-// loadStageRules fetches all stage rules for a event (shared helper).
-func loadStageRules(ctx context.Context, db *bun.DB, tournamentID uuid.UUID) []event.StageRule {
-	var models []StageRuleModel
-	_ = db.NewSelect().Model(&models).Where("event_id = ?", tournamentID.String()).Scan(ctx)
-	rules := make([]event.StageRule, len(models))
-	for i, m := range models {
-		rules[i] = stageRuleToDomain(m)
-	}
-	return rules
-}
-
 // saveStageRules inserts all stage rules inside a transaction.
 func saveStageRules(ctx context.Context, tx bun.IDB, rules []event.StageRule) error {
 	if len(rules) == 0 {

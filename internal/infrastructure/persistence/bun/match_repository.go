@@ -776,6 +776,37 @@ func (r *MatchRepository) GetByID(ctx context.Context, matchID string) (*event.M
 	return res[0], nil
 }
 
+// GetInProgressMatchOnTable finds the match currently in progress on a table, scoped to
+// either a single event (tournamentID) or every event under a tournament container (eventID).
+func (r *MatchRepository) GetInProgressMatchOnTable(ctx context.Context, tableNumber int, tournamentID, eventID string) (*event.Match, error) {
+	var model MatchModel
+	q := ExtractDB(ctx, r.db).NewSelect().Model(&model).
+		Where("status = 'in_progress' AND table_number = ?", tableNumber)
+
+	if tournamentID != "" {
+		tUUID, err := uuid.Parse(tournamentID)
+		if err != nil {
+			return nil, err
+		}
+		q = q.Where("event_id = ?", tUUID)
+	} else if eventID != "" {
+		eUUID, err := uuid.Parse(eventID)
+		if err != nil {
+			return nil, err
+		}
+		q = q.Where("event_id IN (SELECT id FROM events WHERE tournament_id = ?)", eUUID)
+	}
+
+	if err := q.Limit(1).Scan(ctx); err != nil {
+		return nil, err
+	}
+	res, err := r.mapModelsToEntities(ctx, []MatchModel{model})
+	if err != nil || len(res) == 0 {
+		return nil, err
+	}
+	return res[0], nil
+}
+
 func (r *MatchRepository) GetMatchByParticipants(ctx context.Context, tournamentID, p1ID, p2ID, stage string) (*event.Match, error) {
 	tUUID, err := uuid.Parse(tournamentID)
 	if err != nil {
@@ -961,6 +992,30 @@ func (r *MatchRepository) UpdateMetadata(ctx context.Context, matchID string, re
 		Exec(ctx)
 
 	return err
+}
+
+// ResetMatch reverts a match back to "scheduled", clearing its sets, winner, and table
+// assignment, atomically.
+func (r *MatchRepository) ResetMatch(ctx context.Context, matchID string) error {
+	mUUID, err := uuid.Parse(matchID)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+
+	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
+		if _, err := tx.NewDelete().TableExpr("match_sets").Where("match_id = ?", mUUID).Exec(ctx); err != nil {
+			return err
+		}
+		_, err := tx.NewUpdate().Model((*MatchModel)(nil)).
+			Set("status = 'scheduled'").
+			Set("winner_team = NULL").
+			Set("table_number = NULL").
+			Set("updated_at = ?", now).
+			Where("id = ?", mUUID).
+			Exec(ctx)
+		return err
+	})
 }
 
 // FindOrCreateMatch looks for an existing match between p1 and p2 in a tournament/stage,
