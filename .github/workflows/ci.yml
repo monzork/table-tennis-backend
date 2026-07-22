@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# Never let two deploys race: a newer push to master cancels an in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Minimum total statement coverage over ./internal/... required to deploy.
+  COVERAGE_THRESHOLD: "90"
+
+jobs:
+  test:
+    name: Build & coverage gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files are not gofmt'd:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test with coverage
+        run: go test ./internal/... -covermode=atomic -coverprofile=coverage.out
+
+      - name: Enforce coverage threshold
+        run: |
+          go tool cover -func=coverage.out > coverage.txt
+          total=$(awk '/^total:/ {print $3}' coverage.txt | tr -d '%')
+
+          echo "### Coverage: ${total}% (threshold ${COVERAGE_THRESHOLD}%)" >> "$GITHUB_STEP_SUMMARY"
+          echo '<details><summary>Per-function breakdown</summary>' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat coverage.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo '</details>' >> "$GITHUB_STEP_SUMMARY"
+
+          if awk -v t="$total" -v m="$COVERAGE_THRESHOLD" 'BEGIN { exit (t+0 >= m+0) ? 0 : 1 }'; then
+            echo "✅ Coverage ${total}% meets the ${COVERAGE_THRESHOLD}% threshold."
+          else
+            echo "::error::Coverage ${total}% is below the required ${COVERAGE_THRESHOLD}%. Deploy blocked."
+            exit 1
+          fi
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            coverage.out
+            coverage.txt
+          retention-days: 14
+
+  # Render watches the `production` branch, not `master`. Promoting is just a
+  # fast-forward push, so the coverage gate above is the only thing standing
+  # between master and a deploy - and it needs no Render API key or deploy hook.
+  deploy:
+    name: Promote to production
+    needs: test
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history: pushing from a shallow clone is unreliable
+
+      - name: Fast-forward production to the tested commit
+        run: |
+          if git push origin "${GITHUB_SHA}:refs/heads/production"; then
+            echo "🚀 Promoted \`${GITHUB_SHA::7}\` to production; Render will auto-deploy." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::Could not fast-forward production to ${GITHUB_SHA}. It has probably been pushed to directly and diverged from master; reconcile it by hand (git push origin master:production --force-with-lease) and re-run."
+            exit 1
+          fi

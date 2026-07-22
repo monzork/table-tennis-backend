@@ -110,3 +110,46 @@ internal/
 go test ./...
 go vet ./...
 ```
+
+### Coverage gate
+
+CI (`.github/workflows/ci.yml`) requires **≥ 90% statement coverage over `./internal/...`** before
+anything ships. Reproduce the gate locally:
+
+```bash
+go test ./internal/... -covermode=atomic -coverprofile=coverage.out
+go tool cover -func=coverage.out | tail -1     # total must be ≥ 90.0%
+go tool cover -html=coverage.out               # find the gaps
+```
+
+`cmd/server` (wiring, `main.go`) and the one-off `cmd/migrate_*.go` scripts are excluded from the
+threshold on purpose — they're composition roots, not logic.
+
+## Deployment
+
+Render deploys from the **`production`** branch, never from `master`. CI fast-forwards `production`
+to a `master` commit only after the coverage gate passes, so a coverage regression can't reach the
+service. This needs no Render deploy hook or API key — promotion is an ordinary `git push` from the
+workflow using the built-in `GITHUB_TOKEN`.
+
+```
+push to master ──► test job (build + vet + coverage ≥ 90%)
+                        │ pass                    │ fail
+                        ▼                         ▼
+              fast-forward production      nothing promoted,
+                        │                  production untouched
+                        ▼
+              Render auto-deploys
+```
+
+One-time setup:
+
+1. Create the branch from a known-good commit: `git push origin master:production`.
+2. Render dashboard → service → *Settings* → set the tracked **Branch** to `production`
+   (the `branch:` key in `render.yaml` only applies to Blueprint-managed services).
+3. Leave **Auto-Deploy** on — it's now watching a branch only CI can advance.
+
+Never push to `production` by hand. If it diverges from `master` the promotion step fails loudly;
+reconcile with `git push origin master:production --force-with-lease`.
+
+To change the bar, edit `COVERAGE_THRESHOLD` at the top of the workflow.

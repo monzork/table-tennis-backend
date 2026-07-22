@@ -14,4 +14,5 @@ dist/
 
 # Code coverage artifacts
 *.out
+coverage.txt
 coverage.html

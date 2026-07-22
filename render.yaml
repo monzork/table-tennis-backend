@@ -4,6 +4,9 @@ services:
     env: docker
     plan: free # Can be 'free' because we use external Postgres
     region: ohio
+    # Deploys track `production`, which CI fast-forwards only after the coverage
+    # gate passes on master. Pointing this back at master would bypass the gate.
+    branch: production
     dockerContext: .
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
