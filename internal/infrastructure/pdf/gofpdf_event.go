@@ -14,7 +14,7 @@ import (
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
 
-	"github.com/jung-kurt/gofpdf"
+	"github.com/go-pdf/fpdf"
 )
 
 type GoFpdfGenerator struct{}
@@ -24,7 +24,7 @@ func NewGoFpdfGenerator() *GoFpdfGenerator {
 }
 
 func (g *GoFpdfGenerator) GenerateTournamentReport(t *event.Event, divs []*division.Division) ([]byte, error) {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.SetMargins(15, 52, 15)
 	pdf.SetAutoPageBreak(true, 15)
 
@@ -443,7 +443,7 @@ func getSubMatchAlignments(roundNumber int, teamFormat string) (string, string) 
 	return "", ""
 }
 
-func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *event.Event, divs []*division.Division, tr func(string) string) {
+func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.Division, tr func(string) string) {
 	pdf.AddPage()
 
 	// Event Title Block
@@ -1057,7 +1057,7 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *event.Event, divs []*divisio
 		}
 
 		for _, br := range brackets {
-			pdf.AddPageFormat("L", gofpdf.SizeType{Wd: 210, Ht: 297})
+			pdf.AddPageFormat("L", fpdf.SizeType{Wd: 210, Ht: 297})
 			pdf.SetMargins(15, 52, 15)
 
 			pdf.SetFont("Arial", "B", 12)
@@ -1224,6 +1224,13 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *event.Event, divs []*divisio
 								pdf.SetTextColor(30, 80, 220) // blue
 								pdf.Text(lineX1+1, currentMidY-1, tr(matchDetails))
 
+								if mForDetails.Match.Status == "finished" {
+									scoreStr := fmt.Sprintf("(%d-%d)", mForDetails.Match.ScoreA(), mForDetails.Match.ScoreB())
+									pdf.SetFont("Arial", "B", 6)
+									pdf.SetTextColor(0, 0, 0)
+									pdf.Text(lineX1+1, currentMidY+3, tr(scoreStr))
+								}
+
 								pdf.SetTextColor(0, 0, 0)
 
 								if j%2 == 0 && j+1 < numMatches {
@@ -1244,7 +1251,7 @@ func BuildTournamentPdfContent(pdf *gofpdf.Fpdf, t *event.Event, divs []*divisio
 
 	// 5. EVENT METRICS
 	if t.Status == "finished" && t.Metrics != nil {
-		pdf.AddPageFormat("P", gofpdf.SizeType{Wd: 210, Ht: 297})
+		pdf.AddPageFormat("P", fpdf.SizeType{Wd: 210, Ht: 297})
 		pdf.SetMargins(15, 52, 15)
 
 		writeHeader("ESTADÍSTICAS DEL TORNEO")

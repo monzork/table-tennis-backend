@@ -9,13 +9,13 @@ import (
 	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/tournament"
 
-	"github.com/jung-kurt/gofpdf"
+	"github.com/go-pdf/fpdf"
 )
 
 func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*division.Division) ([]byte, error) {
 	tournamentsList := e.Events
 
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.SetMargins(15, 52, 15)
 	pdf.SetAutoPageBreak(true, 15)
 
