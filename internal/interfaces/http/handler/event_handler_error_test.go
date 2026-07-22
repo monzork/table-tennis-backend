@@ -56,7 +56,7 @@ func TestEventHandlerErrorBranches(t *testing.T) {
 		{"Update_Invalid", "PUT", fmt.Sprintf("/tournaments/%s", tournamentID), "groupPassCount=invalid", sessionCookie, 400},
 		{"StartKnockout_Invalid", "POST", fmt.Sprintf("/admin/events/%s/divisions/mock/start-knockout", tournamentID), "some=invalid", sessionCookie, 500},
 		{"ToggleSeedingLock_Invalid", "POST", fmt.Sprintf("/admin/events/%s/toggle-seeding-lock", tournamentID), "locked=invalid", sessionCookie, 400},
-		
+
 		// Missing IDs or invalid states
 		{"SaveKnockoutSeeds_MissingDiv", "POST", fmt.Sprintf("/admin/events/%s/divisions//knockout/seeds", tournamentID), "playerIds=abc", sessionCookie, 404},
 	}

@@ -397,7 +397,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Post("/events/:id/divisions/:divId/start-knockout", tournamentHandler.StartKnockout)
 	admin.Post("/events/:id/participants/elo-before", tournamentHandler.UpdateParticipantEloBefore)
 	api.Post("/events/:id/teams", tournamentHandler.CreateTeam)
-	
+
 	api.Delete("/events/:id/teams/:teamId", tournamentHandler.DeleteTeam)
 	api.Post("/events/:id/teams/:teamId/players", tournamentHandler.AssignPlayerToTeam)
 	api.Delete("/events/:id/teams/:teamId/players/:playerId", tournamentHandler.RemovePlayerFromTeam)

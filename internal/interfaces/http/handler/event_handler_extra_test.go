@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	playerDomain "table-tennis-backend/internal/domain/player"
@@ -103,7 +103,7 @@ func TestEventHandlerExtraEndpoints(t *testing.T) {
 			if err != nil {
 				t.Fatalf("test request failed: %v", err)
 			}
-			
+
 			// For endpoints that might fail due to missing relations, we accept 400 or 500
 			// but we ensure the route is hit and doesn't return 404
 			if resp.StatusCode == 404 {

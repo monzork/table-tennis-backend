@@ -10,7 +10,7 @@ import (
 func TestMatchExists(t *testing.T) {
 	m1 := tournamentDomain.Match{TeamMatchID: nil, TeamA: nil, TeamB: nil} // empty match should not panic
 	matches := []tournamentDomain.Match{m1}
-	
+
 	exists := matchExists(matches, "p1", "p2", "stage")
 	if exists {
 		t.Errorf("expected matchExists to be false")

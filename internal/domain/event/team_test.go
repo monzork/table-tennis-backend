@@ -22,7 +22,7 @@ func TestNewTeam(t *testing.T) {
 
 func TestTeam_AverageElo(t *testing.T) {
 	team, _ := NewTeam("1", "t1", "Team A")
-	
+
 	if team.AverageElo("singles") != 1000 {
 		t.Errorf("Expected 1000 for empty team, got %v", team.AverageElo("singles"))
 	}

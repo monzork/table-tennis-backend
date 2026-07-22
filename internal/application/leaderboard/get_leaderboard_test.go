@@ -10,11 +10,11 @@ import (
 )
 
 type mockPlayerRepo struct {
-	singles        []*player.Player
-	doubles        []*player.Player
-	singlesGender  map[string][]*player.Player
-	doublesGender  map[string][]*player.Player
-	errToReturn    error
+	singles       []*player.Player
+	doubles       []*player.Player
+	singlesGender map[string][]*player.Player
+	doublesGender map[string][]*player.Player
+	errToReturn   error
 }
 
 func newMockPlayerRepo() *mockPlayerRepo {

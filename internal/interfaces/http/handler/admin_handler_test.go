@@ -75,7 +75,7 @@ func TestAdminHandler(t *testing.T) {
 			"/admin/close-modal",
 			"/admin/tournaments/division-select",
 		}
-		
+
 		for _, ep := range adminEndpoints {
 			t.Run("Access "+ep, func(t *testing.T) {
 				req := httptest.NewRequest("GET", ep, nil)

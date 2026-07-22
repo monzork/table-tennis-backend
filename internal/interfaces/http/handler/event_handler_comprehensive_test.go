@@ -26,7 +26,7 @@ func TestEventHandlerDirectly(t *testing.T) {
 	}
 
 	sessionCookie := getSessionCookie(app)
-	
+
 	p1, _ := playerDomain.NewPlayer(uuid.New().String(), "Test", "P1", time.Now(), "M", "", "", "")
 	p2, _ := playerDomain.NewPlayer(uuid.New().String(), "Test", "P2", time.Now(), "M", "", "", "")
 	playerRepo := bunRepo.NewPlayerRepository(db)
@@ -76,7 +76,7 @@ func TestEventHandlerDirectly(t *testing.T) {
 		{"PublicList trigger error", "GET", "/public/events", ""},
 		{"Board with Bad ID", "GET", "/events/bad-id/board", ""},
 		{"BoardColumns with Bad ID", "GET", "/events/bad-id/board/columns", ""},
-        
+
 		{"DELETE team", "DELETE", "/events/" + validID + "/teams/" + teamID.String(), ""},
 		{"POST create team", "POST", "/events/" + validID + "/teams", "name=SuccessTeam"},
 		{"POST assign player", "POST", "/events/" + validID + "/teams/" + teamID.String() + "/players", "playerId=" + p1.ID},
@@ -112,17 +112,17 @@ func TestEventHandlerDirectly(t *testing.T) {
 				t.Fatalf("request failed: %v", err)
 			}
 			_ = resp
-            
-            req2 := httptest.NewRequest(tt.method, tt.route, strings.NewReader(tt.body))
-            if tt.body != "" {
+
+			req2 := httptest.NewRequest(tt.method, tt.route, strings.NewReader(tt.body))
+			if tt.body != "" {
 				req2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			}
-            req2.Header.Set("Cookie", sessionCookie)
-            app.Test(req2)
+			req2.Header.Set("Cookie", sessionCookie)
+			app.Test(req2)
 		})
 	}
-    
-    bodyParserEndpoints := []string{
+
+	bodyParserEndpoints := []string{
 		"/admin/events/bad-id/divisions/bad-div/knockout/seeds",
 		"/admin/events/bad-id/groups",
 		"/events/bad-id/teams/bad-team/players",
@@ -130,8 +130,8 @@ func TestEventHandlerDirectly(t *testing.T) {
 		"/admin/events/bad-id/officials",
 		"/events/bad-id/teams",
 		"/admin/events/bad-id/move-player",
-		"/events/bad-id", 
-		"/events", 
+		"/events/bad-id",
+		"/events",
 	}
 
 	for _, ep := range bodyParserEndpoints {
@@ -193,9 +193,9 @@ func TestEventHandlerDirectly(t *testing.T) {
 		}
 
 		evRoundRobin := &tournamentDomain.Event{
-			ID:     "e2",
-			Format: "round_robin",
-			Type:   "singles",
+			ID:           "e2",
+			Format:       "round_robin",
+			Type:         "singles",
 			Participants: []*playerDomain.Player{p1, p2},
 			Matches: []tournamentDomain.Match{
 				{
@@ -209,9 +209,9 @@ func TestEventHandlerDirectly(t *testing.T) {
 		}
 
 		evElimination := &tournamentDomain.Event{
-			ID:     "e3",
-			Format: "elimination",
-			Type:   "singles",
+			ID:           "e3",
+			Format:       "elimination",
+			Type:         "singles",
 			Participants: []*playerDomain.Player{p1, p2},
 		}
 

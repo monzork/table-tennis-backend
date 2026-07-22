@@ -3,13 +3,13 @@ package handler_test
 import (
 	"sync"
 	"testing"
-    "time"
+	"time"
 
 	"table-tennis-backend/internal/interfaces/http/handler"
 
+	"github.com/fasthttp/websocket"
 	"github.com/gofiber/fiber/v2"
 	fiberws "github.com/gofiber/websocket/v2"
-	"github.com/fasthttp/websocket"
 )
 
 func TestBracketHub_RegisterAndUnregister(t *testing.T) {
@@ -82,22 +82,22 @@ func TestWsBracketHandler(t *testing.T) {
 
 	// Broadcast should now hit this connection
 	handler.GlobalBracketHub.Broadcast("test-tID", map[string]string{"msg": "hello"})
-	
+
 	// Read the message
 	conn.SetReadDeadline(time.Now().Add(time.Second))
 	_, msg, err := conn.ReadMessage()
 	if err != nil {
 		t.Fatalf("Failed to read message: %v", err)
 	}
-	
+
 	if string(msg) != `{"msg":"hello"}` {
 		t.Errorf("Unexpected message: %s", string(msg))
 	}
-	
+
 	// Close connection to trigger unregister
 	conn.Close()
 	time.Sleep(50 * time.Millisecond)
-    
-    // Stop the app
-    app.Shutdown()
+
+	// Stop the app
+	app.Shutdown()
 }

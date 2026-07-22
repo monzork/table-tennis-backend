@@ -247,7 +247,7 @@ func TestMatchHandler(t *testing.T) {
 		data := url.Values{}
 		data.Set("action", "update_squads")
 		data.Set("squad_a_p1", p1.ID)
-		
+
 		req := httptest.NewRequest("PUT", fmt.Sprintf("/matches/%s/score", m.ID), strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Cookie", sessionCookie)
@@ -267,7 +267,7 @@ func TestMatchHandler(t *testing.T) {
 		data.Set("squad_b_p1", p2.ID)
 		data.Set("squad_b_p2", p2.ID)
 		data.Set("squad_b_p3", p2.ID)
-		
+
 		req := httptest.NewRequest("PUT", fmt.Sprintf("/matches/%s/score", m.ID), strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Cookie", sessionCookie)
@@ -290,7 +290,7 @@ func TestMatchHandler(t *testing.T) {
 		data.Set("squad_b_p1", p2.ID)
 		data.Set("squad_b_p2", p2.ID)
 		data.Set("squad_b_p3", p2.ID)
-		
+
 		req := httptest.NewRequest("PUT", fmt.Sprintf("/matches/%s/score", tm.ID), strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Cookie", sessionCookie)
@@ -400,7 +400,7 @@ func TestMatchHandler(t *testing.T) {
 		// Hit occupied table error in UpdateScore
 		doReq("PUT", "/matches/"+m.ID+"/score", "tournamentId="+tourney.ID+"&scores[]=11-9&tableNumber=99", "application/x-www-form-urlencoded")
 		doReq("PUT", "/matches/"+mSub.ID+"/score", "tournamentId="+tourney.ID+"&scores[]=11-9&tableNumber=99", "application/x-www-form-urlencoded")
-		
+
 		// Hit occupied table error in Start
 		doReq("POST", "/matches/"+mSub.ID+"/start", "tableNumber=99", "application/x-www-form-urlencoded")
 
@@ -409,7 +409,7 @@ func TestMatchHandler(t *testing.T) {
 
 		// Update Public Score with PIN
 		doReq("POST", "/public/matches/score/update", "matchId="+m.ID+"&tournamentId="+tourney.ID+"&pin=1234&scores[]=11-9", "application/x-www-form-urlencoded")
-		
+
 		// Start with event tournament ID but different stage
 		doReq("POST", "/matches/nil/start", "tournamentId="+tourney.ID+"&p1Id="+p1.ID+"&p2Id="+p2.ID+"&stage=final", "application/x-www-form-urlencoded")
 

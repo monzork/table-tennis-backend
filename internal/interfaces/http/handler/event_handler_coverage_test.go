@@ -183,7 +183,7 @@ func TestEventHandlerCoverage(t *testing.T) {
 			t.Errorf("expected a response, got %d", resp.StatusCode)
 		}
 	})
-	
+
 	t.Run("Delete Event with HX-Request", func(t *testing.T) {
 		delID := uuid.New().String()
 		tourneyDel, _ := tournamentDomain.NewTournament(delID, "Delete Event", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{}, false)

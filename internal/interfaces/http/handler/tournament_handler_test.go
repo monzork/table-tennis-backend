@@ -254,7 +254,7 @@ func TestEventHandler(t *testing.T) {
 		reqCreate.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		reqCreate.Header.Set("Cookie", sessionCookie)
 		app.Test(reqCreate)
-		
+
 		var parentModels []bunRepo.TournamentModel
 		db.NewSelect().Model(&parentModels).Where("name = ?", "Temp Cup").Scan(ctx)
 		tempID := parentModels[0].ID.String()
@@ -276,7 +276,7 @@ func TestEventHandler(t *testing.T) {
 		data.Add("divisionIds[]", "div-champ")
 		data.Add("participantIdsSinglesMen[]", p1.ID)
 		data.Add("existingTournamentIds[]", eventID)
-		
+
 		req := httptest.NewRequest("POST", "/tournaments", strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Cookie", sessionCookie)
@@ -287,7 +287,7 @@ func TestEventHandler(t *testing.T) {
 		data := url.Values{}
 		data.Set("name", "Updated HX")
 		data.Add("priority_div-champ", "1,2")
-		
+
 		req := httptest.NewRequest("PUT", fmt.Sprintf("/tournaments/%s", eventID), strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Cookie", sessionCookie)
@@ -303,7 +303,7 @@ func TestEventHandler(t *testing.T) {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Cookie", sessionCookie)
 		app.Test(req)
-		
+
 		var t2Models []bunRepo.EventModel
 		_ = db.NewSelect().Model(&t2Models).Where("name = ?", "Temp HX Delete").Scan(ctx)
 		t2ID := uuid.New().String()
@@ -317,7 +317,7 @@ func TestEventHandler(t *testing.T) {
 		reqDel.Header.Set("HX-Request", "true")
 		reqDel.Header.Set("HX-Current-URL", fmt.Sprintf("/admin/tournaments/%s", t2ID))
 		app.Test(reqDel)
-		
+
 		// Delete with HX but no URL match
 		reqDel2 := httptest.NewRequest("DELETE", fmt.Sprintf("/tournaments/%s", "non-existent"), nil)
 		reqDel2.Header.Set("Cookie", sessionCookie)
@@ -332,7 +332,7 @@ func TestEventHandler(t *testing.T) {
 		req.Header.Set("Cookie", sessionCookie)
 		req.Header.Set("HX-Request", "true")
 		app.Test(req)
-		
+
 		// Invalid JSON
 		req2 := httptest.NewRequest("POST", "/tournaments/bulk-delete", strings.NewReader(`{invalid`))
 		req2.Header.Set("Content-Type", "application/json")
@@ -344,20 +344,20 @@ func TestEventHandler(t *testing.T) {
 		// Fetch a child tournament to add match
 		var tModel bunRepo.EventModel
 		_ = db.NewSelect().Model(&tModel).Where("tournament_id = ?", eventID).Limit(1).Scan(ctx)
-		
+
 		matchID := uuid.New().String()
 		now := time.Now()
 		// insert match into db
 		matchUUID, _ := uuid.Parse(matchID)
 		_, _ = db.NewInsert().Model(&bunRepo.MatchModel{
-			ID: matchUUID,
-			TournamentID: tModel.ID,
+			ID:             matchUUID,
+			TournamentID:   tModel.ID,
 			TeamAPlayer1ID: uuid.MustParse(p1.ID),
 			TeamBPlayer1ID: uuid.MustParse(p2.ID),
-			Status: "in_progress",
-			Stage: "groups",
-			TableNumber: func() *int { i := 1; return &i }(),
-			CreatedAt: now,
+			Status:         "in_progress",
+			Stage:          "groups",
+			TableNumber:    func() *int { i := 1; return &i }(),
+			CreatedAt:      now,
 		}).Exec(ctx)
 
 		// Also add a scheduled and a finished match so the AdminBoard "scheduled" and
@@ -487,7 +487,7 @@ func TestEventHandler(t *testing.T) {
 			t.Errorf("expected redirect or 200 OK, got %v", resp.StatusCode)
 		}
 	})
-	
+
 	t.Run("Delete Tournament", func(t *testing.T) {
 		req := httptest.NewRequest("DELETE", fmt.Sprintf("/tournaments/%s", eventID), bytes.NewReader([]byte{}))
 		req.Header.Set("Cookie", sessionCookie)

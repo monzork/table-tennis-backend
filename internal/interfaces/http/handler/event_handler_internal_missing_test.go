@@ -69,7 +69,7 @@ func TestGetOccupiedTables(t *testing.T) {
 			{ID: "m3", Status: "finished", TableNumber: intPtr(3)},
 		},
 	}
-	
+
 	// mock use case or just rely on the existing matches array if getOccupiedTables uses it
 	_ = h
 }

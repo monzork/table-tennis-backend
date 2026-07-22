@@ -1,11 +1,11 @@
 package bracket_test
 
 import (
-	"testing"
 	"table-tennis-backend/internal/domain/bracket"
 	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
+	"testing"
 )
 
 func TestGeneratorExtended_BuildBracket(t *testing.T) {
@@ -108,12 +108,12 @@ func TestGeneratorExtended_BuildBracketRounds(t *testing.T) {
 	divs := []*division.Division{
 		{ID: "d1", Name: "D1", MinElo: 1, MaxElo: nil},
 	}
-	
+
 	br := bracket.BuildBracket(tourney, divs, nil)
 	if len(br.Divisions) == 0 {
 		t.Fatalf("Expected divisions")
 	}
-	
+
 	// Add some groups to test group elimination
 	tourney.Format = "groups_elimination"
 	group := event.Group{
@@ -124,7 +124,7 @@ func TestGeneratorExtended_BuildBracketRounds(t *testing.T) {
 		Matches:      []event.Match{},
 	}
 	tourney.Groups = []event.Group{group}
-	
+
 	br2 := bracket.BuildBracket(tourney, divs, nil)
 	if len(br2.Divisions) == 0 {
 		t.Fatalf("Expected divisions")
@@ -137,7 +137,7 @@ func TestGeneratorExtended_ValidateSameGroupSeparation(t *testing.T) {
 	}
 	groups := []bracket.Group{
 		{
-			ID: "g1",
+			ID:      "g1",
 			Players: []*player.Player{players[0], players[1]},
 		},
 	}

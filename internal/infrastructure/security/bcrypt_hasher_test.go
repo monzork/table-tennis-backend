@@ -38,7 +38,7 @@ func TestBcryptHasher_HashAndCompare(t *testing.T) {
 
 func TestBcryptHasher_Hash_Error(t *testing.T) {
 	hasher := security.NewBcryptHasher()
-	
+
 	// bcrypt has a maximum password length of 72 bytes.
 	// Providing a longer password will return an error.
 	longPassword := ""

@@ -11,8 +11,8 @@ import (
 )
 
 type mockPushSubRepo struct {
-	subs           []*domain.PushSubscription
-	getAllErr      error
+	subs            []*domain.PushSubscription
+	getAllErr       error
 	deletedEndpoint string
 }
 
@@ -139,11 +139,11 @@ func TestBroadcastPushNotification_SuccessAndExpired(t *testing.T) {
 		Body:  "Test Body",
 		URL:   "/",
 	})
-	
+
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	
+
 	if repo.deletedEndpoint != ts.URL+"/push/expired" {
 		t.Errorf("expected deleted endpoint %s, got %s", ts.URL+"/push/expired", repo.deletedEndpoint)
 	}

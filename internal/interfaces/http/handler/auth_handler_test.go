@@ -130,7 +130,7 @@ func TestAuthHandler(t *testing.T) {
 		// Then try to access login page
 		req := httptest.NewRequest("GET", "/admin/login", nil)
 		req.Header.Set("Cookie", sessionCookie)
-		
+
 		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("test request failed: %v", err)
