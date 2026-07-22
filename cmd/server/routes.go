@@ -38,17 +38,6 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 
 	// Public Events List
 	app.Get("/events", c.EventHandler.PublicList)
-	// Public Event Self-Registration (must be before /events/:id)
-	/* signupLimiter := limiter.New(limiter.Config{
-		Max:        5,
-		Expiration: 1 * time.Minute,
-		KeyGenerator: func(ctx *fiber.Ctx) string {
-			return ctx.IP()
-		},
-	}) */
-	// Disabled: self-registration
-	// app.Get("/events/register", c.PublicHandler.ShowTournamentRegistration)
-	// app.Post("/events/register", signupLimiter, c.PublicHandler.RegisterToTournament)
 
 	// Public Detail Views
 	app.Get("/events/:id", c.EventHandler.PublicDetail)
@@ -56,10 +45,6 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	app.Get("/tournaments/:id", c.TournamentHandler.PublicDetail)
 	app.Get("/tournaments/:id/tv", c.TournamentHandler.PublicTVDashboard)
 
-	// User Registration
-	// Disabled: self-registration
-	// app.Get("/register", c.PublicHandler.ShowSignup)
-	// app.Post("/register", signupLimiter, c.PublicHandler.Register)
 	app.Get("/players/department-input", c.PublicHandler.DepartmentInput)
 
 	// Language Switcher
