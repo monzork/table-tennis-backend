@@ -94,6 +94,60 @@ type MatchSlot struct {
 	Player *player.Player
 }
 
+// player1IsTeamA reports whether Player1 corresponds to the underlying match's
+// TeamA side. Player1/Player2 are assigned by bracket seed position, which does
+// not necessarily match TeamA/TeamB in the stored match record, so score and
+// winner display must resolve through this rather than assuming Player1==TeamA.
+func (bm BracketMatch) player1IsTeamA() bool {
+	if bm.Match == nil || bm.Player1 == nil || bm.Player1.Player == nil || len(bm.Match.TeamA) == 0 {
+		return true
+	}
+	return bm.Match.TeamA[0].ID == bm.Player1.Player.ID
+}
+
+// Player1Score and Player2Score return the correct score for each displayed
+// slot, regardless of which side (TeamA/TeamB) that slot actually is.
+func (bm BracketMatch) Player1Score() int {
+	if bm.Match == nil {
+		return 0
+	}
+	if bm.player1IsTeamA() {
+		return bm.Match.ScoreA()
+	}
+	return bm.Match.ScoreB()
+}
+
+func (bm BracketMatch) Player2Score() int {
+	if bm.Match == nil {
+		return 0
+	}
+	if bm.player1IsTeamA() {
+		return bm.Match.ScoreB()
+	}
+	return bm.Match.ScoreA()
+}
+
+// Player1Won and Player2Won report whether the displayed slot is the winner.
+func (bm BracketMatch) Player1Won() bool {
+	if bm.Match == nil {
+		return false
+	}
+	if bm.player1IsTeamA() {
+		return bm.Match.WinnerTeam == "A"
+	}
+	return bm.Match.WinnerTeam == "B"
+}
+
+func (bm BracketMatch) Player2Won() bool {
+	if bm.Match == nil {
+		return false
+	}
+	if bm.player1IsTeamA() {
+		return bm.Match.WinnerTeam == "B"
+	}
+	return bm.Match.WinnerTeam == "A"
+}
+
 func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]string) *Bracket {
 	vm := &Bracket{
 		Event:     t,

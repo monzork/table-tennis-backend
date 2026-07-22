@@ -135,3 +135,94 @@ func createFinishedMatch(id string, p1, p2 *player.Player, winner string) event.
 		},
 	}
 }
+
+// TestBracketMatch_ScoreAndWinnerFollowPlayerSlotNotTeamAssumption reproduces a real
+// production bug: Player1/Player2 are assigned by bracket seed position, which does not
+// necessarily line up with which player is TeamA vs TeamB in the underlying match record.
+// Jorge (TeamB, won 3 sets to 2) ends up seeded into the Player1 slot here — the display
+// must still show him with score 3 and as the winner, not TeamA's score/status.
+func TestBracketMatch_ScoreAndWinnerFollowPlayerSlotNotTeamAssumption(t *testing.T) {
+	orlando := &player.Player{ID: "orlando", FirstName: "Orlando", LastName: "Montiel"}
+	jorge := &player.Player{ID: "jorge", FirstName: "Jorge", LastName: "Bermúdez"}
+
+	m := &event.Match{
+		ID:         "m1",
+		TeamA:      []*player.Player{orlando},
+		TeamB:      []*player.Player{jorge},
+		Status:     "finished",
+		WinnerTeam: "B", // Jorge (TeamB) won
+		Sets: []event.MatchSet{
+			{ScoreA: 9, ScoreB: 11},
+			{ScoreA: 11, ScoreB: 7},
+			{ScoreA: 11, ScoreB: 5},
+			{ScoreA: 10, ScoreB: 12},
+			{ScoreA: 6, ScoreB: 11},
+		}, // Orlando (A) wins 2 sets, Jorge (B) wins 3 sets
+	}
+
+	// Player1 is Jorge (seeded there), Player2 is Orlando — the "wrong side" relative to TeamA/TeamB.
+	bm := bracket.BracketMatch{
+		Player1: &bracket.MatchSlot{Seed: 1, Player: jorge},
+		Player2: &bracket.MatchSlot{Seed: 5, Player: orlando},
+		Match:   m,
+	}
+
+	if got := bm.Player1Score(); got != 3 {
+		t.Errorf("expected Player1 (Jorge, TeamB) score 3, got %d", got)
+	}
+	if got := bm.Player2Score(); got != 2 {
+		t.Errorf("expected Player2 (Orlando, TeamA) score 2, got %d", got)
+	}
+	if !bm.Player1Won() {
+		t.Error("expected Player1 (Jorge) to be flagged as the winner")
+	}
+	if bm.Player2Won() {
+		t.Error("expected Player2 (Orlando) to NOT be flagged as the winner")
+	}
+}
+
+func TestBracketMatch_ScoreAndWinner_Player1IsTeamA(t *testing.T) {
+	p1 := &player.Player{ID: "a", FirstName: "A"}
+	p2 := &player.Player{ID: "b", FirstName: "B"}
+
+	m := &event.Match{
+		ID:         "m2",
+		TeamA:      []*player.Player{p1},
+		TeamB:      []*player.Player{p2},
+		Status:     "finished",
+		WinnerTeam: "A",
+		Sets: []event.MatchSet{
+			{ScoreA: 11, ScoreB: 5},
+			{ScoreA: 11, ScoreB: 5},
+			{ScoreA: 11, ScoreB: 5},
+		},
+	}
+
+	bm := bracket.BracketMatch{
+		Player1: &bracket.MatchSlot{Seed: 1, Player: p1},
+		Player2: &bracket.MatchSlot{Seed: 2, Player: p2},
+		Match:   m,
+	}
+
+	if got := bm.Player1Score(); got != 3 {
+		t.Errorf("expected Player1 score 3, got %d", got)
+	}
+	if got := bm.Player2Score(); got != 0 {
+		t.Errorf("expected Player2 score 0, got %d", got)
+	}
+	if !bm.Player1Won() || bm.Player2Won() {
+		t.Errorf("expected Player1 to win, got Player1Won=%v Player2Won=%v", bm.Player1Won(), bm.Player2Won())
+	}
+}
+
+func TestBracketMatch_ScoreAndWinner_NoMatch(t *testing.T) {
+	bm := bracket.BracketMatch{
+		Player1: &bracket.MatchSlot{Seed: 1, Player: &player.Player{ID: "a"}},
+	}
+	if bm.Player1Score() != 0 || bm.Player2Score() != 0 {
+		t.Error("expected zero scores when Match is nil")
+	}
+	if bm.Player1Won() || bm.Player2Won() {
+		t.Error("expected no winner when Match is nil")
+	}
+}

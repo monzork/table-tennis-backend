@@ -323,12 +323,12 @@
                    {{range $mi, $matchView := .Matches}}
                    <div class="bracket-match flex flex-col w-52 mr-8" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
                       {{/* Player 1 */}}
-                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                      <div class="proj-player-slot {{if .Player1Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                         {{if .Player1}}
                           <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
-                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FullName}}{{else}}TBD{{end}}</span>
                           {{if .Match}}
-                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          <span class="proj-score {{if .Player1Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player1Score}}</span>
                           {{end}}
                         {{else}}
                           <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -337,12 +337,12 @@
                       {{if not (eq $round.Name "Champion")}}
                         <div class="h-px bg-white/5 mx-2 my-0.5"></div>
                         {{/* Player 2 */}}
-                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        <div class="proj-player-slot {{if .Player2Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                           {{if .Player2}}
                             <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
-                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FullName}}{{else}}TBD{{end}}</span>
                             {{if .Match}}
-                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            <span class="proj-score {{if .Player2Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player2Score}}</span>
                             {{end}}
                           {{else}}
                             <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -416,12 +416,12 @@
                    {{range $mi, $matchView := .Matches}}
                    <div class="bracket-match flex flex-col w-52 mx-4" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
                       {{/* Player 1 */}}
-                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                      <div class="proj-player-slot {{if .Player1Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                         {{if .Player1}}
                           <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
-                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FullName}}{{else}}TBD{{end}}</span>
                           {{if .Match}}
-                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          <span class="proj-score {{if .Player1Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player1Score}}</span>
                           {{end}}
                         {{else}}
                           <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -430,12 +430,12 @@
                       {{if not (eq $round.Name "Champion")}}
                         <div class="h-px bg-white/5 mx-2 my-0.5"></div>
                         {{/* Player 2 */}}
-                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        <div class="proj-player-slot {{if .Player2Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                           {{if .Player2}}
                             <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
-                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FullName}}{{else}}TBD{{end}}</span>
                             {{if .Match}}
-                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            <span class="proj-score {{if .Player2Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player2Score}}</span>
                             {{end}}
                           {{else}}
                             <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -509,12 +509,12 @@
                    {{range $mi, $matchView := .Matches}}
                    <div class="bracket-match flex flex-col w-52 ml-8" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
                       {{/* Player 1 */}}
-                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                      <div class="proj-player-slot {{if .Player1Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                         {{if .Player1}}
                           <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
-                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FullName}}{{else}}TBD{{end}}</span>
                           {{if .Match}}
-                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          <span class="proj-score {{if .Player1Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player1Score}}</span>
                           {{end}}
                         {{else}}
                           <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -523,12 +523,12 @@
                       {{if not (eq $round.Name "Champion")}}
                         <div class="h-px bg-white/5 mx-2 my-0.5"></div>
                         {{/* Player 2 */}}
-                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        <div class="proj-player-slot {{if .Player2Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                           {{if .Player2}}
                             <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
-                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FullName}}{{else}}TBD{{end}}</span>
                             {{if .Match}}
-                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            <span class="proj-score {{if .Player2Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player2Score}}</span>
                             {{end}}
                           {{else}}
                             <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -698,12 +698,12 @@
                    {{range $mi, $matchView := .Matches}}
                    <div class="bracket-match flex flex-col w-52 mr-8" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
                       {{/* Player 1 */}}
-                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                      <div class="proj-player-slot {{if .Player1Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                         {{if .Player1}}
                           <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
-                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FullName}}{{else}}TBD{{end}}</span>
                           {{if .Match}}
-                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          <span class="proj-score {{if .Player1Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player1Score}}</span>
                           {{end}}
                         {{else}}
                           <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -712,12 +712,12 @@
                       {{if not (eq $round.Name "Champion")}}
                         <div class="h-px bg-white/5 mx-2 my-0.5"></div>
                         {{/* Player 2 */}}
-                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        <div class="proj-player-slot {{if .Player2Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                           {{if .Player2}}
                             <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
-                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FullName}}{{else}}TBD{{end}}</span>
                             {{if .Match}}
-                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            <span class="proj-score {{if .Player2Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player2Score}}</span>
                             {{end}}
                           {{else}}
                             <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -791,12 +791,12 @@
                    {{range $mi, $matchView := .Matches}}
                    <div class="bracket-match flex flex-col w-52 mx-4" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
                       {{/* Player 1 */}}
-                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                      <div class="proj-player-slot {{if .Player1Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                         {{if .Player1}}
                           <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
-                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FullName}}{{else}}TBD{{end}}</span>
                           {{if .Match}}
-                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          <span class="proj-score {{if .Player1Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player1Score}}</span>
                           {{end}}
                         {{else}}
                           <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -805,12 +805,12 @@
                       {{if not (eq $round.Name "Champion")}}
                         <div class="h-px bg-white/5 mx-2 my-0.5"></div>
                         {{/* Player 2 */}}
-                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        <div class="proj-player-slot {{if .Player2Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                           {{if .Player2}}
                             <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
-                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FullName}}{{else}}TBD{{end}}</span>
                             {{if .Match}}
-                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            <span class="proj-score {{if .Player2Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player2Score}}</span>
                             {{end}}
                           {{else}}
                             <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -884,12 +884,12 @@
                    {{range $mi, $matchView := .Matches}}
                    <div class="bracket-match flex flex-col w-52 ml-8" style="margin-top: {{if eq $mi 0}}0{{else}}40px{{end}}">
                       {{/* Player 1 */}}
-                      <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "A")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                      <div class="proj-player-slot {{if .Player1Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player1}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                         {{if .Player1}}
                           <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player1.Seed}}#{{.Player1.Seed}}{{else}}-{{end}}</span>
-                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                          <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player1.Player}}{{.Player1.Player.FullName}}{{else}}TBD{{end}}</span>
                           {{if .Match}}
-                          <span class="proj-score {{if eq .Match.WinnerTeam "A"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreA}}</span>
+                          <span class="proj-score {{if .Player1Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player1Score}}</span>
                           {{end}}
                         {{else}}
                           <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
@@ -898,12 +898,12 @@
                       {{if not (eq $round.Name "Champion")}}
                         <div class="h-px bg-white/5 mx-2 my-0.5"></div>
                         {{/* Player 2 */}}
-                        <div class="proj-player-slot {{if and .Match (eq .Match.WinnerTeam "B")}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
+                        <div class="proj-player-slot {{if .Player2Won}}proj-winner-slot{{end}} flex items-center gap-2 px-3 py-2 rounded-lg border text-base transition-all {{if .Player2}}bg-white/5 border-white/10 hover:border-white/20{{else}}bg-black/20 border-white/5 border-dashed{{end}}">
                           {{if .Player2}}
                             <span class="proj-elo text-[10px] text-gray-500 font-mono w-4 text-right">{{if .Player2.Seed}}#{{.Player2.Seed}}{{else}}-{{end}}</span>
-                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FirstNameWithSecond}}{{else}}TBD{{end}}</span>
+                            <span class="proj-player-name font-semibold truncate text-white/90" style="max-width:110px">{{if .Player2.Player}}{{.Player2.Player.FullName}}{{else}}TBD{{end}}</span>
                             {{if .Match}}
-                            <span class="proj-score {{if eq .Match.WinnerTeam "B"}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Match.ScoreB}}</span>
+                            <span class="proj-score {{if .Player2Won}}proj-winner-score{{end}} ml-auto font-black text-white tabular-nums text-lg italic tracking-tighter">{{.Player2Score}}</span>
                             {{end}}
                           {{else}}
                             <span class="proj-elo text-[10px] text-gray-600 font-mono w-4 text-right">—</span><span class="text-gray-600 italic text-xs">{{t $.T "bracket.tbd"}}</span>
