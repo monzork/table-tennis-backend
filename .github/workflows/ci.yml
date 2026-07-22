@@ -25,7 +25,22 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false # handled below, to get a restore-keys fallback
+
+      # Compilation, not test execution, dominates this job: a cold build cache
+      # costs ~16s, a warm one ~2.5s (the tests themselves are ~1.2s). setup-go's
+      # built-in cache keys exactly on go.sum, so one dependency bump discards
+      # everything and pays full price. The restore-keys fallback degrades
+      # gracefully instead - a stale cache still covers most dependency builds.
+      - name: Cache Go build and module caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-${{ runner.os }}-
 
       - name: Verify formatting
         run: |
