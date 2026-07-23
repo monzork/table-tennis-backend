@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/tournament"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,7 +21,10 @@ func ErrorHandler(err error) error {
 	}
 
 	// Handle specific domain errors
-	if errors.Is(err, event.ErrInvalidDates) {
+	if errors.Is(err, event.ErrInvalidDates) ||
+		errors.Is(err, tournament.ErrInvalidDivisionIDs) ||
+		errors.Is(err, tournament.ErrInvalidEventName) ||
+		errors.Is(err, tournament.ErrInvalidEventDates) {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 

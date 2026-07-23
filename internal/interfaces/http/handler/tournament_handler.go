@@ -55,7 +55,8 @@ func NewTournamentHandler(
 
 func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	name := c.FormValue("name")
-	skipElo := c.FormValue("skipElo") == "on"
+	skipEloVal := c.FormValue("skipElo")
+	skipElo := skipEloVal == "on" || skipEloVal == "true"
 	var divisionIDs []string
 	for _, rawId := range c.Request().PostArgs().PeekMulti("divisionIds[]") {
 		divisionIDs = append(divisionIDs, string(rawId))

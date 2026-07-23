@@ -124,6 +124,41 @@ func TestEventHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("Create Tournament With SkipElo Checkbox Value 'true'", func(t *testing.T) {
+		// The admin/tournaments.html create form renders the skipElo checkbox with
+		// value="true" (not the browser-default "on"), and omits any divisionId
+		// when skip-Elo is checked. Regression test for a bug where the handler
+		// only recognized "on", silently treated the request as non-skip-Elo, and
+		// then failed validation (no division ID) with an opaque 500.
+		data := url.Values{}
+		data.Set("name", "No Elo Cup")
+		data.Set("skipElo", "true")
+		data.Set("startDate", "2026-06-01")
+		data.Set("endDate", "2026-06-10")
+
+		req := httptest.NewRequest("POST", "/tournaments", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+
+		var parentModels []bunRepo.TournamentModel
+		_ = db.NewSelect().Model(&parentModels).Where("name = ?", "No Elo Cup").Scan(ctx)
+		if len(parentModels) == 0 {
+			t.Fatalf("expected 1 parent tournament in 'tournaments' table, got %d", len(parentModels))
+		}
+		if !parentModels[0].SkipElo {
+			t.Errorf("expected tournament skip_elo to be true")
+		}
+	})
+
 	t.Run("Get Tournament Detail", func(t *testing.T) {
 		req := httptest.NewRequest("GET", fmt.Sprintf("/admin/tournaments/%s", eventID), nil)
 		req.Header.Set("Cookie", sessionCookie)
