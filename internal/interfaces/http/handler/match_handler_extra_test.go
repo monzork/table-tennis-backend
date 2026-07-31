@@ -147,7 +147,7 @@ func TestMatchHandlerExtra(t *testing.T) {
 	})
 
 	t.Run("ShowTableScorePage No Match", func(t *testing.T) {
-		req := httptest.NewRequest("GET", fmt.Sprintf("/public/score/table/1/tournament/%s", tourney.ID), nil)
+		req := httptest.NewRequest("GET", fmt.Sprintf("/public/score/table/1/event/%s", tourney.ID), nil)
 		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("test request failed: %v", err)
@@ -166,7 +166,19 @@ func TestMatchHandlerExtra(t *testing.T) {
 		mModel.TableNumber = &tblNum
 		matchRepo.DB().NewUpdate().Model(mModel).WherePK().Exec(ctx)
 
-		req := httptest.NewRequest("GET", fmt.Sprintf("/public/score/table/999/tournament/%s", tourney.ID), nil)
+		req := httptest.NewRequest("GET", fmt.Sprintf("/public/score/table/999/event/%s", tourney.ID), nil)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("ShowTableScorePage With Match Via Tournament", func(t *testing.T) {
+		// Same in_progress match on table 999, looked up via the parent tournament ID.
+		req := httptest.NewRequest("GET", fmt.Sprintf("/public/score/table/999/tournament/%s", *tourney.TournamentID), nil)
 		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("test request failed: %v", err)
