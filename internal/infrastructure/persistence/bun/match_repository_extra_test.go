@@ -28,7 +28,7 @@ func TestMatchRepository_TeamMatch_UpdateScore_AggregatesAndAdvances(t *testing.
 
 	parent := &event.Match{
 		ID:            uuid.NewString(),
-		TournamentID:  f.tournament.ID,
+		EventID:       f.tournament.ID,
 		MatchType:     "teams",
 		TeamA:         []*player.Player{f.players[0]},
 		TeamB:         []*player.Player{f.players[1]},
@@ -48,7 +48,7 @@ func TestMatchRepository_TeamMatch_UpdateScore_AggregatesAndAdvances(t *testing.
 
 	cmd := event.CreateSubMatchesCommand{
 		ParentMatchID: parent.ID,
-		TournamentID:  f.tournament.ID,
+		EventID:       f.tournament.ID,
 		Stage:         "final",
 		TeamFormat:    "olympic",
 		TeamAPlayers:  []string{f.players[0].ID, f.players[1].ID},
@@ -130,13 +130,13 @@ func TestMatchRepository_TeamMatch_FinishMatch_AggregatesAndAdvances(t *testing.
 	}
 
 	parent := &event.Match{
-		ID:           uuid.NewString(),
-		TournamentID: f.tournament.ID,
-		MatchType:    "teams",
-		TeamA:        []*player.Player{f.players[0]},
-		TeamB:        []*player.Player{f.players[1]},
-		Status:       "in_progress",
-		Stage:        "final",
+		ID:        uuid.NewString(),
+		EventID:   f.tournament.ID,
+		MatchType: "teams",
+		TeamA:     []*player.Player{f.players[0]},
+		TeamB:     []*player.Player{f.players[1]},
+		Status:    "in_progress",
+		Stage:     "final",
 	}
 	if err := f.matchRepo.Save(ctx, parent); err != nil {
 		t.Fatalf("Save parent: %v", err)
@@ -147,7 +147,7 @@ func TestMatchRepository_TeamMatch_FinishMatch_AggregatesAndAdvances(t *testing.
 
 	cmd := event.CreateSubMatchesCommand{
 		ParentMatchID: parent.ID,
-		TournamentID:  f.tournament.ID,
+		EventID:       f.tournament.ID,
 		Stage:         "final",
 		TeamFormat:    "olympic",
 		TeamAPlayers:  []string{f.players[0].ID, f.players[1].ID},
@@ -217,7 +217,7 @@ func TestMatchRepository_FinishMatch_AdvancesNextMatch_SlotA(t *testing.T) {
 	}
 }
 
-func TestMatchRepository_GetOccupiedTablesByEvent(t *testing.T) {
+func TestMatchRepository_GetOccupiedTablesByTournament(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)
 	playerRepo := bunRepo.NewPlayerRepository(db)
@@ -237,30 +237,30 @@ func TestMatchRepository_GetOccupiedTablesByEvent(t *testing.T) {
 
 	table := 9
 	m := &event.Match{
-		ID:           uuid.NewString(),
-		TournamentID: sub.ID,
-		MatchType:    "singles",
-		TeamA:        []*player.Player{p1},
-		TeamB:        []*player.Player{p2},
-		Status:       "in_progress",
-		Stage:        "group",
-		TableNumber:  &table,
+		ID:          uuid.NewString(),
+		EventID:     sub.ID,
+		MatchType:   "singles",
+		TeamA:       []*player.Player{p1},
+		TeamB:       []*player.Player{p2},
+		Status:      "in_progress",
+		Stage:       "group",
+		TableNumber: &table,
 	}
 	if err := matchRepo.Save(ctx, m); err != nil {
 		t.Fatalf("Save match: %v", err)
 	}
 
-	occupied, err := matchRepo.GetOccupiedTablesByEvent(ctx, tr.ID)
+	occupied, err := matchRepo.GetOccupiedTablesByTournament(ctx, tr.ID)
 	if err != nil {
-		t.Fatalf("GetOccupiedTablesByEvent: %v", err)
+		t.Fatalf("GetOccupiedTablesByTournament: %v", err)
 	}
 	if len(occupied) != 1 || occupied[0] != 9 {
 		t.Fatalf("expected table 9 occupied via parent tournament id, got %+v", occupied)
 	}
 
-	none, err := matchRepo.GetOccupiedTablesByEvent(ctx, uuid.NewString())
+	none, err := matchRepo.GetOccupiedTablesByTournament(ctx, uuid.NewString())
 	if err != nil {
-		t.Fatalf("GetOccupiedTablesByEvent (unrelated tournament): %v", err)
+		t.Fatalf("GetOccupiedTablesByTournament (unrelated tournament): %v", err)
 	}
 	if len(none) != 0 {
 		t.Fatalf("expected 0 occupied tables for unrelated tournament, got %+v", none)

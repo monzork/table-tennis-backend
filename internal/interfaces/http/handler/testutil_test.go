@@ -74,7 +74,6 @@ func SetupTestDB() (*bun.DB, error) {
 		(*bunRepo.TeamPlayerModel)(nil),
 		(*bunRepo.EventOfficialModel)(nil),
 		(*bunRepo.PushSubscriptionModel)(nil),
-		(*bunRepo.DivisionRuleModel)(nil),
 	}
 
 	ctx := context.Background()
@@ -120,9 +119,9 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 
 	tournamentRepo := bunRepo.NewEventRepository(db)
-	createTournamentUC := event.NewCreateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
-	getTournamentByIDUC := event.NewGetTournamentByIDUseCase(tournamentRepo, divisionRepo)
-	updateTournamentUC := event.NewUpdateTournamentUseCase(tournamentRepo, playerRepo, divisionRepo)
+	createTournamentUC := event.NewCreateTournamentUseCase(tournamentRepo, playerRepo)
+	getTournamentByIDUC := event.NewGetTournamentByIDUseCase(tournamentRepo)
+	updateTournamentUC := event.NewUpdateTournamentUseCase(tournamentRepo, playerRepo)
 	deleteTournamentUC := event.NewDeleteTournamentUseCase(tournamentRepo)
 	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
 	finishTournamentUC := event.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
@@ -135,7 +134,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	assignPlayerToTeamUC := event.NewAssignPlayerToTeamUseCase(tournamentRepo)
 	removePlayerFromTeamUC := event.NewRemovePlayerFromTeamUseCase(tournamentRepo)
 	getTournamentsUC = event.NewGetTournamentsUseCase(tournamentRepo)
-	regenerateSeedsUC := event.NewRegenerateGroupSeedsUseCase(tournamentRepo, matchRepo, divisionRepo)
+	regenerateSeedsUC := event.NewRegenerateGroupSeedsUseCase(tournamentRepo, matchRepo)
 	updateParticipantEloUC := event.NewUpdateParticipantEloBeforeUseCase(tournamentRepo, regenerateSeedsUC)
 	getOccupiedTablesUC := event.NewGetOccupiedTablesUseCase(matchRepo)
 	removeParticipantUC := event.NewRemoveParticipantUseCase(tournamentRepo)

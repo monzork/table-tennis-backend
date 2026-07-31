@@ -39,7 +39,7 @@ func NewGetPublicEventDetailViewUseCase(getByID *GetTournamentByIDUseCase, leade
 }
 
 // Execute performs the complex orchestration and view-model construction.
-func (uc *GetPublicEventDetailViewUseCase) Execute(ctx context.Context, tournamentID string, statusFilter, playerSearch string, canonicalURL string, buildBoardCards func(*tournamentDomain.Event, []*divisionDomain.Division) ([]BoardCard, []BoardCard, []BoardCard), tmap map[string]string) (*PublicEventDetailView, error) {
+func (uc *GetPublicEventDetailViewUseCase) Execute(ctx context.Context, eventID string, statusFilter, playerSearch string, canonicalURL string, buildBoardCards func(*tournamentDomain.Event, []*divisionDomain.Division) ([]BoardCard, []BoardCard, []BoardCard), tmap map[string]string) (*PublicEventDetailView, error) {
 	type result struct {
 		event     *tournamentDomain.Event
 		err       error
@@ -52,7 +52,7 @@ func (uc *GetPublicEventDetailViewUseCase) Execute(ctx context.Context, tourname
 
 	go func() {
 		defer wg.Done()
-		res.event, res.err = uc.getByID.Execute(ctx, tournamentID)
+		res.event, res.err = uc.getByID.Execute(ctx, eventID)
 	}()
 	go func() {
 		defer wg.Done()
@@ -126,7 +126,7 @@ func (uc *GetPublicEventDetailViewUseCase) Execute(ctx context.Context, tourname
 			if len(teamA) > 0 && len(teamB) > 0 {
 				allMatches = append(allMatches, tournamentDomain.Match{
 					ID:            "",
-					TournamentID:  t.ID,
+					EventID:       t.ID,
 					MatchType:     t.Type,
 					TeamA:         teamA,
 					TeamB:         teamB,

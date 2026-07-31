@@ -12,21 +12,20 @@ import (
 type EventModel struct {
 	bun.BaseModel `bun:"table:events"`
 
-	ID                   uuid.UUID                       `bun:"id,pk,type:uuid"`
-	Name                 string                          `bun:"name,notnull"`
-	Type                 string                          `bun:"type,notnull,default:'singles'"`
-	Format               string                          `bun:"format,notnull,default:'elimination'"`
-	Status               string                          `bun:"status,notnull,default:'in_progress'"`
-	EventCategory        string                          `bun:"tournament_category,notnull,default:'open'"`
-	StartDate            time.Time                       `bun:"start_date,notnull"`
-	EndDate              time.Time                       `bun:"end_date,notnull"`
-	GroupPassCount       int                             `bun:"group_pass_count,notnull,default:2"`
-	LosersGroupPassCount int                             `bun:"losers_group_pass_count,notnull,default:0"`
-	RegistrationOpen     bool                            `bun:"registration_open,notnull,default:false"`
-	EventID              *uuid.UUID                      `bun:"tournament_id,type:uuid"`
-	SkipElo              bool                            `bun:"skip_elo,notnull,default:false"`
-	TeamFormat           string                          `bun:"team_format,nullzero"`
-	DivisionConfigs      map[string]event.DivisionConfig `bun:"division_configs,type:jsonb"`
+	ID                   uuid.UUID  `bun:"id,pk,type:uuid"`
+	Name                 string     `bun:"name,notnull"`
+	Type                 string     `bun:"type,notnull,default:'singles'"`
+	Format               string     `bun:"format,notnull,default:'elimination'"`
+	Status               string     `bun:"status,notnull,default:'in_progress'"`
+	EventCategory        string     `bun:"event_category,notnull,default:'open'"`
+	StartDate            time.Time  `bun:"start_date,notnull"`
+	EndDate              time.Time  `bun:"end_date,notnull"`
+	GroupPassCount       int        `bun:"group_pass_count,notnull,default:2"`
+	LosersGroupPassCount int        `bun:"losers_group_pass_count,notnull,default:0"`
+	RegistrationOpen     bool       `bun:"registration_open,notnull,default:false"`
+	TournamentID         *uuid.UUID `bun:"tournament_id,type:uuid"`
+	SkipElo              bool       `bun:"skip_elo,notnull,default:false"`
+	TeamFormat           string     `bun:"team_format,nullzero"`
 
 	WinnerName            string                   `bun:"winner_name,nullzero"`
 	NumTables             int                      `bun:"num_tables,notnull,default:0"`
@@ -37,21 +36,20 @@ type EventModel struct {
 	CreatedAt             time.Time                `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt             *time.Time               `bun:"updated_at,nullzero"`
 
-	Participants  []EventParticipantModel `bun:"rel:has-many,join:id=event_id"`
-	Groups        []GroupModel            `bun:"rel:has-many,join:id=event_id"`
-	Teams         []TeamModel             `bun:"rel:has-many,join:id=event_id"`
-	Matches       []MatchModel            `bun:"rel:has-many,join:id=event_id"`
-	StageRules    []StageRuleModel        `bun:"rel:has-many,join:id=event_id"`
-	DivisionRules []DivisionRuleModel     `bun:"rel:has-many,join:id=event_id"`
+	Participants []EventParticipantModel `bun:"rel:has-many,join:id=event_id"`
+	Groups       []GroupModel            `bun:"rel:has-many,join:id=event_id"`
+	Teams        []TeamModel             `bun:"rel:has-many,join:id=event_id"`
+	Matches      []MatchModel            `bun:"rel:has-many,join:id=event_id"`
+	StageRules   []StageRuleModel        `bun:"rel:has-many,join:id=event_id"`
 }
 
 // join table — no back-refs to avoid circular resolution at RegisterModel time
 type EventParticipantModel struct {
 	bun.BaseModel `bun:"table:event_participants"`
 
-	TournamentID uuid.UUID `bun:"event_id,pk,type:uuid"`
-	PlayerID     uuid.UUID `bun:"player_id,pk,type:uuid"`
-	Pin          string    `bun:"pin,notnull,default:'0000'"`
+	EventID  uuid.UUID `bun:"event_id,pk,type:uuid"`
+	PlayerID uuid.UUID `bun:"player_id,pk,type:uuid"`
+	Pin      string    `bun:"pin,notnull,default:'0000'"`
 
 	EloBeforeSingles *int16 `bun:"elo_before_singles"`
 	EloBeforeDoubles *int16 `bun:"elo_before_doubles"`
@@ -64,17 +62,17 @@ type EventParticipantModel struct {
 type EventOfficialModel struct {
 	bun.BaseModel `bun:"table:event_officials"`
 
-	TournamentID uuid.UUID `bun:"event_id,pk,type:uuid"`
-	PlayerID     uuid.UUID `bun:"player_id,pk,type:uuid"`
-	Pin          string    `bun:"pin,notnull"`
+	EventID  uuid.UUID `bun:"event_id,pk,type:uuid"`
+	PlayerID uuid.UUID `bun:"player_id,pk,type:uuid"`
+	Pin      string    `bun:"pin,notnull"`
 }
 
 type GroupModel struct {
 	bun.BaseModel `bun:"table:groups"`
 
-	ID           uuid.UUID `bun:"id,pk,type:uuid"`
-	TournamentID uuid.UUID `bun:"event_id,type:uuid"`
-	Name         string    `bun:"name,notnull"`
+	ID      uuid.UUID `bun:"id,pk,type:uuid"`
+	EventID uuid.UUID `bun:"event_id,type:uuid"`
+	Name    string    `bun:"name,notnull"`
 
 	Participants []GroupParticipantModel `bun:"rel:has-many,join:id=group_id"`
 }
@@ -106,9 +104,9 @@ type RuleModel struct {
 type TeamModel struct {
 	bun.BaseModel `bun:"table:teams"`
 
-	ID           uuid.UUID `bun:"id,pk,type:uuid"`
-	TournamentID uuid.UUID `bun:"event_id,type:uuid"`
-	Name         string    `bun:"name,notnull"`
+	ID      uuid.UUID `bun:"id,pk,type:uuid"`
+	EventID uuid.UUID `bun:"event_id,type:uuid"`
+	Name    string    `bun:"name,notnull"`
 
 	TeamPlayers []TeamPlayerModel `bun:"rel:has-many,join:id=team_id"`
 }

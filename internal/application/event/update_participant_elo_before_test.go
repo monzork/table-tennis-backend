@@ -15,8 +15,7 @@ func TestUpdateParticipantEloBeforeUseCase_Execute(t *testing.T) {
 		p1 := &playerDomain.Player{ID: "p1", FirstName: "A", LastName: "A"}
 		repo.events["t1"] = &tournamentDomain.Event{ID: "t1", Format: "round_robin", SkipElo: true, Participants: []*playerDomain.Player{p1}}
 		matchRepo := &mockMatchRepo{}
-		divRepo := &mockDivisionRepo{}
-		regen := NewRegenerateGroupSeedsUseCase(repo, matchRepo, divRepo)
+		regen := NewRegenerateGroupSeedsUseCase(repo, matchRepo)
 		uc := NewUpdateParticipantEloBeforeUseCase(repo, regen)
 
 		err := uc.Execute(context.Background(), "t1", "p1", 1200, 1100)
@@ -32,8 +31,7 @@ func TestUpdateParticipantEloBeforeUseCase_Execute(t *testing.T) {
 		repo := newMockRepo()
 		repo.updateEloBeforeErr = errors.New("db error")
 		matchRepo := &mockMatchRepo{}
-		divRepo := &mockDivisionRepo{}
-		regen := NewRegenerateGroupSeedsUseCase(repo, matchRepo, divRepo)
+		regen := NewRegenerateGroupSeedsUseCase(repo, matchRepo)
 		uc := NewUpdateParticipantEloBeforeUseCase(repo, regen)
 
 		err := uc.Execute(context.Background(), "t1", "p1", 1200, 1100)
@@ -46,8 +44,7 @@ func TestUpdateParticipantEloBeforeUseCase_Execute(t *testing.T) {
 		repo := newMockRepo()
 		repo.getErr = errors.New("not found")
 		matchRepo := &mockMatchRepo{}
-		divRepo := &mockDivisionRepo{}
-		regen := NewRegenerateGroupSeedsUseCase(repo, matchRepo, divRepo)
+		regen := NewRegenerateGroupSeedsUseCase(repo, matchRepo)
 		uc := NewUpdateParticipantEloBeforeUseCase(repo, regen)
 
 		err := uc.Execute(context.Background(), "t1", "p1", 1200, 1100)

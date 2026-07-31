@@ -31,7 +31,7 @@ func (uc *StartMatchUseCase) Execute(ctx context.Context, cmd event.StartMatchCo
 		return nil, errors.New("Match not found")
 	}
 
-	t, err := uc.eventRepo.GetByID(ctx, m.TournamentID)
+	t, err := uc.eventRepo.GetByID(ctx, m.EventID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,9 +47,9 @@ func (uc *StartMatchUseCase) Execute(ctx context.Context, cmd event.StartMatchCo
 
 	// Auto-assign table logic if missing
 	if m.TableNumber == nil {
-		var eventNumTables int
-		if t.EventID != nil {
-			eventNumTables, _ = uc.eventRepo.GetEventNumTables(ctx, *t.EventID)
+		var tournamentNumTables int
+		if t.TournamentID != nil {
+			tournamentNumTables, _ = uc.eventRepo.GetTournamentNumTables(ctx, *t.TournamentID)
 		}
 
 		totalTables := cmd.TotalTables
@@ -59,15 +59,15 @@ func (uc *StartMatchUseCase) Execute(ctx context.Context, cmd event.StartMatchCo
 		if t.NumTables > 0 {
 			totalTables = t.NumTables
 		}
-		if eventNumTables > 0 {
-			totalTables = eventNumTables
+		if tournamentNumTables > 0 {
+			totalTables = tournamentNumTables
 		}
 
 		var occupiedList []int
-		if t.EventID != nil {
-			occupiedList, _ = uc.matchRepo.GetOccupiedTablesByEvent(ctx, *t.EventID)
+		if t.TournamentID != nil {
+			occupiedList, _ = uc.matchRepo.GetOccupiedTablesByTournament(ctx, *t.TournamentID)
 		} else {
-			occupiedList, _ = uc.matchRepo.GetOccupiedTablesByTournament(ctx, t.ID)
+			occupiedList, _ = uc.matchRepo.GetOccupiedTablesByEvent(ctx, t.ID)
 		}
 
 		occupiedMap := make(map[int]bool)
@@ -89,9 +89,9 @@ func (uc *StartMatchUseCase) Execute(ctx context.Context, cmd event.StartMatchCo
 		assignedTable := availableTables[0]
 
 		priorityFound := false
-		if m.DivisionID != "" && t.EventID != nil {
+		if m.DivisionID != "" && t.TournamentID != nil {
 			// Fetch the parent grand tournament to get table priorities
-			if grandTourney, err := uc.tournamentRepo.GetByIDDeep(ctx, *t.EventID); err == nil {
+			if grandTourney, err := uc.tournamentRepo.GetByIDDeep(ctx, *t.TournamentID); err == nil {
 				for _, pTable := range grandTourney.TablePriorityFor(m.DivisionID) {
 					if !occupiedMap[pTable] {
 						assignedTable = pTable

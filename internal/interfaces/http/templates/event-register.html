@@ -21,7 +21,7 @@
     <div class="grid gap-6 md:grid-cols-2 mb-10">
         {{range .Events}}
         <div class="event-card glass rounded-3xl p-8 border border-white/10 hover:border-white/30 transition-all duration-300 cursor-pointer group relative overflow-hidden
-            {{if and $.TournamentID (eq $.TournamentID .ID)}}ring-2 ring-white/60{{end}}"
+            {{if and $.EventID (eq $.EventID .ID)}}ring-2 ring-white/60{{end}}"
              onclick="selectTournament('{{.ID}}', '{{.Name}}')">
             <!-- Glow decoration -->
             <div class="absolute -top-8 -right-8 w-32 h-32 bg-white/3 rounded-full blur-2xl group-hover:bg-white/8 transition-all duration-500"></div>
@@ -63,7 +63,7 @@
     </div>
 
     <!-- Registration Form (shown after selecting a event) -->
-    <div id="reg-form-wrapper" class="{{if not .TournamentID}}hidden{{end}}">
+    <div id="reg-form-wrapper" class="{{if not .EventID}}hidden{{end}}">
         <div class="glass p-10 rounded-3xl shadow-2xl relative overflow-hidden border border-white/10">
             <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
             <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
@@ -81,7 +81,7 @@
                     <!-- Honeypot -->
                     <input type="text" name="website" class="hidden" tabindex="-1" autocomplete="off">
                     <!-- Hidden event ID -->
-                    <input type="hidden" name="tournamentId" id="form-tourney-id" value="{{.TournamentID}}">
+                    <input type="hidden" name="tournamentId" id="form-tourney-id" value="{{.EventID}}">
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div class="space-y-2">

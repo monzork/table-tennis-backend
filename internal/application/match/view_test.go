@@ -59,7 +59,6 @@ func setupViewTestDB(t *testing.T) *bun.DB {
 		(*bunRepo.TeamPlayerModel)(nil),
 		(*bunRepo.EventOfficialModel)(nil),
 		(*bunRepo.PushSubscriptionModel)(nil),
-		(*bunRepo.DivisionRuleModel)(nil),
 	}
 	ctx := context.Background()
 	for _, model := range models {
@@ -115,7 +114,7 @@ func (f *viewFixture) saveEvent(t *testing.T, name, typ, format string, particip
 	t.Helper()
 	start := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)
-	e, err := eventDomain.NewTournament(uuid.NewString(), name, typ, format, "open", start, end, nil, 4, participants, false)
+	e, err := eventDomain.NewEvent(uuid.NewString(), name, typ, format, "open", start, end, nil, 4, participants, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
@@ -156,13 +155,13 @@ func TestGetScoreFormViewUseCase_ExistingMatchWithSets(t *testing.T) {
 	e := f.saveEvent(t, "Singles Open 2", "singles", "elimination", []*playerDomain.Player{p1, p2})
 
 	m := &eventDomain.Match{
-		ID:           uuid.NewString(),
-		TournamentID: e.ID,
-		MatchType:    "singles",
-		TeamA:        []*playerDomain.Player{p1},
-		TeamB:        []*playerDomain.Player{p2},
-		Status:       "in_progress",
-		Stage:        "group",
+		ID:        uuid.NewString(),
+		EventID:   e.ID,
+		MatchType: "singles",
+		TeamA:     []*playerDomain.Player{p1},
+		TeamB:     []*playerDomain.Player{p2},
+		Status:    "in_progress",
+		Stage:     "group",
 	}
 	if err := f.matchRepo.Save(context.Background(), m); err != nil {
 		t.Fatalf("Save match: %v", err)
@@ -203,13 +202,13 @@ func TestGetScoreFormViewUseCase_Doubles(t *testing.T) {
 	e := f.saveEvent(t, "Doubles Open", "doubles", "elimination", []*playerDomain.Player{p1, p2, p3, p4})
 
 	m := &eventDomain.Match{
-		ID:           uuid.NewString(),
-		TournamentID: e.ID,
-		MatchType:    "doubles",
-		TeamA:        []*playerDomain.Player{p1, p2},
-		TeamB:        []*playerDomain.Player{p3, p4},
-		Status:       "scheduled",
-		Stage:        "group",
+		ID:        uuid.NewString(),
+		EventID:   e.ID,
+		MatchType: "doubles",
+		TeamA:     []*playerDomain.Player{p1, p2},
+		TeamB:     []*playerDomain.Player{p3, p4},
+		Status:    "scheduled",
+		Stage:     "group",
 	}
 	if err := f.matchRepo.Save(context.Background(), m); err != nil {
 		t.Fatalf("Save match: %v", err)
@@ -318,20 +317,20 @@ func TestGetTeamMatchFormViewUseCase(t *testing.T) {
 	}
 
 	parent := &eventDomain.Match{
-		ID:           uuid.NewString(),
-		TournamentID: e.ID,
-		MatchType:    "teams",
-		TeamA:        []*playerDomain.Player{p1},
-		TeamB:        []*playerDomain.Player{p3},
-		Status:       "scheduled",
-		Stage:        "final",
+		ID:        uuid.NewString(),
+		EventID:   e.ID,
+		MatchType: "teams",
+		TeamA:     []*playerDomain.Player{p1},
+		TeamB:     []*playerDomain.Player{p3},
+		Status:    "scheduled",
+		Stage:     "final",
 	}
 	if err := f.matchRepo.Save(ctx, parent); err != nil {
 		t.Fatalf("Save parent: %v", err)
 	}
 	cmd := eventDomain.CreateSubMatchesCommand{
 		ParentMatchID: parent.ID,
-		TournamentID:  e.ID,
+		EventID:       e.ID,
 		Stage:         "final",
 		TeamFormat:    "olympic",
 		TeamAPlayers:  []string{p1.ID, p2.ID},
@@ -365,7 +364,7 @@ func TestGetTeamMatchFormViewUseCase_CorbillonFormat(t *testing.T) {
 	p2 := f.savePlayer(t, "C2", "R2", "F")
 	p3 := f.savePlayer(t, "C3", "R3", "F")
 	p4 := f.savePlayer(t, "C4", "R4", "F")
-	e, err := eventDomain.NewTournament(uuid.NewString(), "Corbillon Cup", "teams", "elimination", "open",
+	e, err := eventDomain.NewEvent(uuid.NewString(), "Corbillon Cup", "teams", "elimination", "open",
 		time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 3, 2, 0, 0, 0, 0, time.UTC),
 		nil, 4, []*playerDomain.Player{p1, p2, p3, p4}, false)
 	if err != nil {
@@ -393,20 +392,20 @@ func TestGetTeamMatchFormViewUseCase_CorbillonFormat(t *testing.T) {
 	}
 
 	parent := &eventDomain.Match{
-		ID:           uuid.NewString(),
-		TournamentID: e.ID,
-		MatchType:    "teams",
-		TeamA:        []*playerDomain.Player{p1},
-		TeamB:        []*playerDomain.Player{p3},
-		Status:       "scheduled",
-		Stage:        "final",
+		ID:        uuid.NewString(),
+		EventID:   e.ID,
+		MatchType: "teams",
+		TeamA:     []*playerDomain.Player{p1},
+		TeamB:     []*playerDomain.Player{p3},
+		Status:    "scheduled",
+		Stage:     "final",
 	}
 	if err := f.matchRepo.Save(ctx, parent); err != nil {
 		t.Fatalf("Save parent: %v", err)
 	}
 	cmd := eventDomain.CreateSubMatchesCommand{
 		ParentMatchID: parent.ID,
-		TournamentID:  e.ID,
+		EventID:       e.ID,
 		Stage:         "final",
 		TeamFormat:    "corbillon",
 		TeamAPlayers:  []string{p1.ID, p2.ID},

@@ -20,12 +20,12 @@ func (uc *GetOccupiedTablesUseCase) Execute(ctx context.Context, t *event.Event)
 	var occupiedList []int
 	var err error
 	if t != nil {
-		if t.EventID != nil {
-			eventUUID := *t.EventID
-			occupiedList, err = uc.matchRepo.GetOccupiedTablesByEvent(ctx, eventUUID)
+		if t.TournamentID != nil {
+			tournamentUUID := *t.TournamentID
+			occupiedList, err = uc.matchRepo.GetOccupiedTablesByTournament(ctx, tournamentUUID)
 		} else {
-			tourneyUUID := t.ID
-			occupiedList, err = uc.matchRepo.GetOccupiedTablesByTournament(ctx, tourneyUUID)
+			eventUUID := t.ID
+			occupiedList, err = uc.matchRepo.GetOccupiedTablesByEvent(ctx, eventUUID)
 		}
 	}
 	return occupiedList, err

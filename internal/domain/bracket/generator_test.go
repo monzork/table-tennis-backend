@@ -34,11 +34,11 @@ func TestBracketGenerator_LosersGroupPassCount(t *testing.T) {
 	}
 
 	group1 := event.Group{
-		ID:           "g1",
-		TournamentID: "t1",
-		Name:         "Open - Group A",
-		Players:      []*player.Player{players[0], players[1], players[2], players[3]},
-		Matches:      []event.Match{},
+		ID:      "g1",
+		EventID: "t1",
+		Name:    "Open - Group A",
+		Players: []*player.Player{players[0], players[1], players[2], players[3]},
+		Matches: []event.Match{},
 	}
 
 	group1.Matches = append(group1.Matches, createFinishedMatch("m1", players[0], players[1], "A"))
@@ -49,11 +49,11 @@ func TestBracketGenerator_LosersGroupPassCount(t *testing.T) {
 	group1.Matches = append(group1.Matches, createFinishedMatch("m6", players[2], players[3], "A"))
 
 	group2 := event.Group{
-		ID:           "g2",
-		TournamentID: "t1",
-		Name:         "Open - Group B",
-		Players:      []*player.Player{players[4], players[5], players[6], players[7]},
-		Matches:      []event.Match{},
+		ID:      "g2",
+		EventID: "t1",
+		Name:    "Open - Group B",
+		Players: []*player.Player{players[4], players[5], players[6], players[7]},
+		Matches: []event.Match{},
 	}
 	group2.Matches = append(group2.Matches, createFinishedMatch("m7", players[4], players[5], "A"))
 	group2.Matches = append(group2.Matches, createFinishedMatch("m8", players[4], players[6], "A"))
@@ -93,9 +93,7 @@ func TestBracketGenerator_LosersGroupPassCount(t *testing.T) {
 		t.Errorf("Tier 2 should have 1 match in round 1, got %d", len(tier2.Rounds[0].Matches))
 	}
 
-	tourney.DivisionConfigs = map[string]event.DivisionConfig{
-		"div1": {LosersGroupPassCount: 2},
-	}
+	tourney.LosersGroupPassCount = 2
 
 	br = bracket.BuildBracket(tourney, divs, map[string]string{})
 	views = br.Divisions
@@ -104,10 +102,6 @@ func TestBracketGenerator_LosersGroupPassCount(t *testing.T) {
 
 	if len(tier2.Rounds[0].Matches) != 2 {
 		t.Errorf("With override, Tier 2 should have 2 matches in round 1, got %d (Rounds len: %d, tierAdvancing len: %d)", len(tier2.Rounds[0].Matches), len(tier2.Rounds), len(tier2.Advancing))
-		t.Logf("Event DivisionConfigs: %v", tourney.DivisionConfigs)
-		t.Logf("GetLosersGroupPassCount('div1'): %d", tourney.GetLosersGroupPassCount("div1"))
-		t.Logf("Actual divID in view: %s", divView.ID)
-		t.Logf("Actual tier2 pass count used: %d", tourney.GetLosersGroupPassCount(divView.ID))
 	}
 }
 

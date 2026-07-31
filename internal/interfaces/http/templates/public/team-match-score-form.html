@@ -7,7 +7,7 @@
     hx-on::after-request="const btn = this.querySelector('button[type=\'submit\']'); if(btn) { btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed'); }"
     class="space-y-4 mb-6 border-b border-white/10 pb-6">
     <input type="hidden" name="action" value="update_squads">
-    <input type="hidden" name="tournamentId" value="{{.TournamentID}}">
+    <input type="hidden" name="tournamentId" value="{{.EventID}}">
     <input type="hidden" name="matchId" value="{{.MatchID}}">
     <input type="hidden" name="p1Id" value="{{if .TeamA}}{{.TeamA.ID}}{{end}}">
     <input type="hidden" name="p2Id" value="{{if .TeamB}}{{.TeamB.ID}}{{end}}">
@@ -144,7 +144,7 @@
 
         <div class="ml-4">
             {{if or (not $.Finished) (eq .Status "finished")}}
-            <button hx-get="/public/matches/score/form?tournamentId={{$.TournamentID}}&matchId={{.ID}}&stage={{$.Stage}}&bestOf={{$.BestOf}}&p1Id={{.TeamAPlayer1ID}}&p2Id={{.TeamBPlayer1ID}}"
+            <button hx-get="/public/matches/score/form?tournamentId={{$.EventID}}&matchId={{.ID}}&stage={{$.Stage}}&bestOf={{$.BestOf}}&p1Id={{.TeamAPlayer1ID}}&p2Id={{.TeamBPlayer1ID}}"
                 hx-target="#public-score-modal-content"
                 class="bg-white hover:bg-gray-200 text-black font-extrabold text-[10px] uppercase tracking-widest px-3 py-2 rounded-xl transition-colors">
                 Score

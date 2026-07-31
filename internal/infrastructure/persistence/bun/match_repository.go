@@ -18,7 +18,7 @@ type MatchModel struct {
 	bun.BaseModel `bun:"table:matches"`
 
 	ID             uuid.UUID  `bun:"id,pk,type:uuid"`
-	TournamentID   uuid.UUID  `bun:"event_id,notnull"`
+	EventID        uuid.UUID  `bun:"event_id,notnull"`
 	MatchType      string     `bun:"match_type,notnull,default:'singles'"`
 	TeamAPlayer1ID uuid.UUID  `bun:"team_a_player_1_id,notnull"`
 	TeamAPlayer2ID *uuid.UUID `bun:"team_a_player_2_id"`
@@ -90,7 +90,7 @@ func (r *MatchRepository) Save(ctx context.Context, m *event.Match) error {
 	if err != nil {
 		return err
 	}
-	tID, err := uuid.Parse(m.TournamentID)
+	tID, err := uuid.Parse(m.EventID)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (r *MatchRepository) Save(ctx context.Context, m *event.Match) error {
 
 	model := &MatchModel{
 		ID:             mID,
-		TournamentID:   tID,
+		EventID:        tID,
 		MatchType:      m.MatchType,
 		TeamAPlayer1ID: pA1,
 		TeamBPlayer1ID: pB1,
@@ -362,8 +362,8 @@ func containsMatch(matches []MatchModel, id uuid.UUID) bool {
 	return false
 }
 
-func (r *MatchRepository) CountUnfinishedMatches(ctx context.Context, tournamentID string) (int, error) {
-	tID, err := uuid.Parse(tournamentID)
+func (r *MatchRepository) CountUnfinishedMatches(ctx context.Context, eventID string) (int, error) {
+	tID, err := uuid.Parse(eventID)
 	if err != nil {
 		return 0, err
 	}
@@ -375,8 +375,8 @@ func (r *MatchRepository) CountUnfinishedMatches(ctx context.Context, tournament
 		Count(ctx)
 }
 
-func (r *MatchRepository) CountFinishedMatches(ctx context.Context, tournamentID string) (int, error) {
-	tID, err := uuid.Parse(tournamentID)
+func (r *MatchRepository) CountFinishedMatches(ctx context.Context, eventID string) (int, error) {
+	tID, err := uuid.Parse(eventID)
 	if err != nil {
 		return 0, err
 	}
@@ -390,8 +390,8 @@ func (r *MatchRepository) CountFinishedMatches(ctx context.Context, tournamentID
 
 // HasStartedOrFinishedMatches reports whether any match for the event has
 // already been played or is being played, i.e. it's unsafe to wipe and regenerate.
-func (r *MatchRepository) HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error) {
-	tID, err := uuid.Parse(tournamentID)
+func (r *MatchRepository) HasStartedOrFinishedMatches(ctx context.Context, eventID string) (bool, error) {
+	tID, err := uuid.Parse(eventID)
 	if err != nil {
 		return false, err
 	}
@@ -406,10 +406,10 @@ func (r *MatchRepository) HasStartedOrFinishedMatches(ctx context.Context, tourn
 	return count > 0, nil
 }
 
-// DeleteByTournament removes all matches (and their sets) for a event.
+// DeleteByEvent removes all matches (and their sets) for an event.
 // Callers must ensure no match has been started/finished first.
-func (r *MatchRepository) DeleteByTournament(ctx context.Context, tournamentID string) error {
-	tID, err := uuid.Parse(tournamentID)
+func (r *MatchRepository) DeleteByEvent(ctx context.Context, eventID string) error {
+	tID, err := uuid.Parse(eventID)
 	if err != nil {
 		return err
 	}
@@ -542,34 +542,36 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*event.Match, error) {
 		}
 
 		matches = append(matches, &event.Match{
-			ID:           m.ID.String(),
-			TournamentID: m.TournamentID.String(),
-			MatchType:    m.MatchType,
-			TeamA:        teamA,
-			TeamB:        teamB,
-			Status:       m.Status,
-			WinnerTeam:   wt,
-			Sets:         setsByMatch[m.ID.String()],
-			TeamMatchID:  teamMatchIDPtr,
-			Stage:        m.Stage,
-			DivisionID:   m.DivisionID,
-			UpdatedAt:    m.UpdatedAt,
-			RefereeID:    refereeIDPtr,
-			TableNumber:  m.TableNumber,
-			Pin:          m.Pin,
+			ID:          m.ID.String(),
+			EventID:     m.EventID.String(),
+			MatchType:   m.MatchType,
+			TeamA:       teamA,
+			TeamB:       teamB,
+			Status:      m.Status,
+			WinnerTeam:  wt,
+			Sets:        setsByMatch[m.ID.String()],
+			TeamMatchID: teamMatchIDPtr,
+			Stage:       m.Stage,
+			DivisionID:  m.DivisionID,
+			UpdatedAt:   m.UpdatedAt,
+			RefereeID:   refereeIDPtr,
+			TableNumber: m.TableNumber,
+			Pin:         m.Pin,
 		})
 	}
 	return matches, nil
 }
 
-func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error) {
-	var tids []uuid.UUID
+// GetOccupiedTablesByTournament finds tables occupied by any in-progress match across
+// every event under the given parent tournament (shared physical tables across categories).
+func (r *MatchRepository) GetOccupiedTablesByTournament(ctx context.Context, tournamentID string) ([]int, error) {
+	var eids []uuid.UUID
 	err := ExtractDB(ctx, r.db).NewSelect().
 		Model((*EventModel)(nil)).
 		Column("id").
-		Where("tournament_id = ?", eventID).
-		Scan(ctx, &tids)
-	if err != nil || len(tids) == 0 {
+		Where("tournament_id = ?", tournamentID).
+		Scan(ctx, &eids)
+	if err != nil || len(eids) == 0 {
 		return nil, err
 	}
 
@@ -577,7 +579,7 @@ func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID 
 	err = ExtractDB(ctx, r.db).NewSelect().
 		Model(&activeMatches).
 		Where("status = 'in_progress' AND table_number IS NOT NULL").
-		Where("event_id IN (?)", bun.List(tids)).
+		Where("event_id IN (?)", bun.List(eids)).
 		Scan(ctx)
 	if err != nil {
 		return nil, err
@@ -592,12 +594,13 @@ func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID 
 	return occupied, nil
 }
 
-func (r *MatchRepository) GetOccupiedTablesByTournament(ctx context.Context, tournamentID string) ([]int, error) {
+// GetOccupiedTablesByEvent finds tables occupied by any in-progress match within a single event.
+func (r *MatchRepository) GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error) {
 	var activeMatches []MatchModel
 	err := ExtractDB(ctx, r.db).NewSelect().
 		Model(&activeMatches).
 		Where("status = 'in_progress' AND table_number IS NOT NULL").
-		Where("event_id = ?", tournamentID).
+		Where("event_id = ?", eventID).
 		Scan(ctx)
 	if err != nil {
 		return nil, err
@@ -716,7 +719,7 @@ func (r *MatchRepository) mapModelsToEntities(ctx context.Context, models []Matc
 
 		results = append(results, &event.Match{
 			ID:            m.ID.String(),
-			TournamentID:  m.TournamentID.String(),
+			EventID:       m.EventID.String(),
 			MatchType:     m.MatchType,
 			TeamA:         teamA,
 			TeamB:         teamB,
@@ -777,24 +780,24 @@ func (r *MatchRepository) GetByID(ctx context.Context, matchID string) (*event.M
 }
 
 // GetInProgressMatchOnTable finds the match currently in progress on a table, scoped to
-// either a single event (tournamentID) or every event under a tournament container (eventID).
-func (r *MatchRepository) GetInProgressMatchOnTable(ctx context.Context, tableNumber int, tournamentID, eventID string) (*event.Match, error) {
+// either a single event (eventID) or every event under a tournament container (tournamentID).
+func (r *MatchRepository) GetInProgressMatchOnTable(ctx context.Context, tableNumber int, eventID, tournamentID string) (*event.Match, error) {
 	var model MatchModel
 	q := ExtractDB(ctx, r.db).NewSelect().Model(&model).
 		Where("status = 'in_progress' AND table_number = ?", tableNumber)
 
-	if tournamentID != "" {
-		tUUID, err := uuid.Parse(tournamentID)
-		if err != nil {
-			return nil, err
-		}
-		q = q.Where("event_id = ?", tUUID)
-	} else if eventID != "" {
+	if eventID != "" {
 		eUUID, err := uuid.Parse(eventID)
 		if err != nil {
 			return nil, err
 		}
-		q = q.Where("event_id IN (SELECT id FROM events WHERE tournament_id = ?)", eUUID)
+		q = q.Where("event_id = ?", eUUID)
+	} else if tournamentID != "" {
+		tUUID, err := uuid.Parse(tournamentID)
+		if err != nil {
+			return nil, err
+		}
+		q = q.Where("event_id IN (SELECT id FROM events WHERE tournament_id = ?)", tUUID)
 	}
 
 	if err := q.Limit(1).Scan(ctx); err != nil {
@@ -807,8 +810,8 @@ func (r *MatchRepository) GetInProgressMatchOnTable(ctx context.Context, tableNu
 	return res[0], nil
 }
 
-func (r *MatchRepository) GetMatchByParticipants(ctx context.Context, tournamentID, p1ID, p2ID, stage string) (*event.Match, error) {
-	tUUID, err := uuid.Parse(tournamentID)
+func (r *MatchRepository) GetMatchByParticipants(ctx context.Context, eventID, p1ID, p2ID, stage string) (*event.Match, error) {
+	tUUID, err := uuid.Parse(eventID)
 	if err != nil {
 		return nil, err
 	}
@@ -1020,8 +1023,8 @@ func (r *MatchRepository) ResetMatch(ctx context.Context, matchID string) error 
 
 // FindOrCreateMatch looks for an existing match between p1 and p2 in a tournament/stage,
 // and creates one if it doesn't exist. Returns the match ID.
-func (r *MatchRepository) FindOrCreateMatch(ctx context.Context, tournamentID, p1ID, p2ID, stage, matchType string) (string, error) {
-	tUUID, err := uuid.Parse(tournamentID)
+func (r *MatchRepository) FindOrCreateMatch(ctx context.Context, eventID, p1ID, p2ID, stage, matchType string) (string, error) {
+	tUUID, err := uuid.Parse(eventID)
 	if err != nil {
 		return "", err
 	}
@@ -1051,7 +1054,7 @@ func (r *MatchRepository) FindOrCreateMatch(ctx context.Context, tournamentID, p
 	pin := r.GenerateUniquePin(ctx)
 	model := &MatchModel{
 		ID:             newID,
-		TournamentID:   tUUID,
+		EventID:        tUUID,
 		MatchType:      matchType,
 		TeamAPlayer1ID: p1UUID,
 		TeamBPlayer1ID: p2UUID,
@@ -1071,7 +1074,7 @@ func (r *MatchRepository) CreateSubMatches(ctx context.Context, cmd event.Create
 	if err != nil {
 		return err
 	}
-	tUUID, err := uuid.Parse(cmd.TournamentID)
+	tUUID, err := uuid.Parse(cmd.EventID)
 	if err != nil {
 		return err
 	}
@@ -1107,7 +1110,7 @@ func (r *MatchRepository) CreateSubMatches(ctx context.Context, cmd event.Create
 		pin := r.GenerateUniquePin(ctx)
 		models[order-1] = MatchModel{
 			ID:             uuid.New(),
-			TournamentID:   tUUID,
+			EventID:        tUUID,
 			MatchType:      matchType,
 			TeamAPlayer1ID: p1A,
 			TeamBPlayer1ID: p1B,

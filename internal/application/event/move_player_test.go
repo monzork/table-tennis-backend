@@ -101,7 +101,7 @@ func (m *mockMovePlayerRepository) GetOfficials(ctx context.Context, tournamentI
 	return nil, nil
 }
 
-func (m *mockMovePlayerRepository) GetEventNumTables(ctx context.Context, eventID string) (int, error) {
+func (m *mockMovePlayerRepository) GetTournamentNumTables(ctx context.Context, eventID string) (int, error) {
 	return 0, nil
 }
 

@@ -84,19 +84,9 @@ func TestGetOccupiedTablesUseCase_Execute(t *testing.T) {
 		}
 	})
 
-	t.Run("event with EventID uses GetOccupiedTablesByEvent", func(t *testing.T) {
-		eid := "e1"
-		res, err := uc.Execute(context.Background(), &tournamentDomain.Event{ID: "t1", EventID: &eid})
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		if len(res) != 2 {
-			t.Fatalf("expected 2 tables, got %v", res)
-		}
-	})
-
-	t.Run("event without EventID uses GetOccupiedTablesByTournament", func(t *testing.T) {
-		res, err := uc.Execute(context.Background(), &tournamentDomain.Event{ID: "t1"})
+	t.Run("event with TournamentID uses GetOccupiedTablesByTournament", func(t *testing.T) {
+		tid := "e1"
+		res, err := uc.Execute(context.Background(), &tournamentDomain.Event{ID: "t1", TournamentID: &tid})
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -105,10 +95,21 @@ func TestGetOccupiedTablesUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("event without TournamentID uses GetOccupiedTablesByEvent", func(t *testing.T) {
+		res, err := uc.Execute(context.Background(), &tournamentDomain.Event{ID: "t1"})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if len(res) != 2 {
+			t.Fatalf("expected 2 tables, got %v", res)
+		}
+	})
+
 	t.Run("error propagation", func(t *testing.T) {
 		errRepo := &mockMatchRepo{occupiedByTournErr: errors.New("boom")}
 		uc := NewGetOccupiedTablesUseCase(errRepo)
-		_, err := uc.Execute(context.Background(), &tournamentDomain.Event{ID: "t1"})
+		tid := "e1"
+		_, err := uc.Execute(context.Background(), &tournamentDomain.Event{ID: "t1", TournamentID: &tid})
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}

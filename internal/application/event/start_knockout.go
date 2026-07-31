@@ -25,8 +25,8 @@ func NewStartKnockoutStageUseCase(repo event.Repository, matchRepo event.MatchRe
 	}
 }
 
-func (uc *StartKnockoutStageUseCase) Execute(ctx context.Context, tournamentID, divID string) error {
-	t, err := uc.repo.GetByID(ctx, tournamentID)
+func (uc *StartKnockoutStageUseCase) Execute(ctx context.Context, eventID, divID string) error {
+	t, err := uc.repo.GetByID(ctx, eventID)
 	if err != nil {
 		return err
 	}
@@ -57,13 +57,13 @@ func (uc *StartKnockoutStageUseCase) Execute(ctx context.Context, tournamentID, 
 						if mv.Player1 != nil && mv.Player2 != nil && mv.Player1.Player != nil && mv.Player2.Player != nil {
 							if mv.Match == nil {
 								firstRoundMatches = append(firstRoundMatches, event.Match{
-									TournamentID: tournamentID,
-									DivisionID:   divID,
-									Stage:        mv.Stage,
-									RoundNumber:  1,
-									MatchType:    t.Type,
-									TeamA:        []*player.Player{mv.Player1.Player},
-									TeamB:        []*player.Player{mv.Player2.Player},
+									EventID:     eventID,
+									DivisionID:  divID,
+									Stage:       mv.Stage,
+									RoundNumber: 1,
+									MatchType:   t.Type,
+									TeamA:       []*player.Player{mv.Player1.Player},
+									TeamB:       []*player.Player{mv.Player2.Player},
 								})
 							}
 						}

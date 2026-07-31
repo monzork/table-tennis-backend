@@ -20,7 +20,7 @@ func TestGetEditFormViewUseCase_Execute(t *testing.T) {
 		playerRepo := newMockPlayerRepo()
 		playerRepo.players["p1"] = &playerDomain.Player{ID: "p1", FirstName: "A", LastName: "B"}
 
-		getByID := NewGetTournamentByIDUseCase(repo, divRepo)
+		getByID := NewGetTournamentByIDUseCase(repo)
 		leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 		divisionUC := division.NewDivisionUseCase(divRepo)
 		uc := NewGetEditFormViewUseCase(getByID, leaderboardUC, divisionUC)
@@ -43,7 +43,7 @@ func TestGetEditFormViewUseCase_Execute(t *testing.T) {
 		divRepo := &mockDivisionRepo{}
 		playerRepo := newMockPlayerRepo()
 
-		getByID := NewGetTournamentByIDUseCase(repo, divRepo)
+		getByID := NewGetTournamentByIDUseCase(repo)
 		leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 		divisionUC := division.NewDivisionUseCase(divRepo)
 		uc := NewGetEditFormViewUseCase(getByID, leaderboardUC, divisionUC)

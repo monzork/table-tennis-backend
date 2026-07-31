@@ -12,8 +12,8 @@ import (
 
 func TestPlayerEnrolledEvent_EventName(t *testing.T) {
 	evt := tournaments.PlayerEnrolledEvent{
-		TournamentID: "tourn-1",
-		PlayerID:     "player-1",
+		EventID:  "tourn-1",
+		PlayerID: "player-1",
 	}
 
 	if evt.EventName() != tournaments.PlayerEnrolledEventName {
@@ -36,8 +36,8 @@ func TestInMemoryDispatcher_Dispatch(t *testing.T) {
 	dispatcher.Subscribe(tournaments.PlayerEnrolledEventName, handler)
 
 	evt := tournaments.PlayerEnrolledEvent{
-		TournamentID: "t-100",
-		PlayerID:     "p-200",
+		EventID:  "t-100",
+		PlayerID: "p-200",
 	}
 
 	err := dispatcher.Dispatch(context.Background(), evt)
@@ -101,8 +101,8 @@ func TestInMemoryDispatcher_DispatchAsync(t *testing.T) {
 	dispatcher.Subscribe(tournaments.PlayerEnrolledEventName, handler)
 
 	evt := tournaments.PlayerEnrolledEvent{
-		TournamentID: "t-300",
-		PlayerID:     "p-400",
+		EventID:  "t-300",
+		PlayerID: "p-400",
 	}
 
 	dispatcher.DispatchAsync(context.Background(), evt)
@@ -129,8 +129,8 @@ func TestInMemoryDispatcher_NoHandlers(t *testing.T) {
 	dispatcher := tournaments.NewInMemoryDispatcher()
 
 	evt := tournaments.PlayerEnrolledEvent{
-		TournamentID: "t-1",
-		PlayerID:     "p-1",
+		EventID:  "t-1",
+		PlayerID: "p-1",
 	}
 
 	err := dispatcher.Dispatch(context.Background(), evt)

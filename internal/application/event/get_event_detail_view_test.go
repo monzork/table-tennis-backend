@@ -14,7 +14,7 @@ import (
 
 func TestGetEventDetailViewUseCase_Execute(t *testing.T) {
 	newUC := func(repo *mockRepo, divRepo *mockDivisionRepo, playerRepo *mockPlayerRepo) *GetEventDetailViewUseCase {
-		getByID := NewGetTournamentByIDUseCase(repo, divRepo)
+		getByID := NewGetTournamentByIDUseCase(repo)
 		leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 		divisionUC := division.NewDivisionUseCase(divRepo)
 		return NewGetEventDetailViewUseCase(getByID, leaderboardUC, divisionUC)

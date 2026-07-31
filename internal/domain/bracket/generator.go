@@ -322,12 +322,12 @@ func findGroupByPlayers(t *event.Event, players []*player.Player) *event.Group {
 	return nil
 }
 
-func getBestOfForStage(t *event.Event, stage string, divID string) int {
-	return t.GetEffectiveStageRule(stage, divID).BestOf
+func getBestOfForStage(t *event.Event, stage string, _ string) int {
+	return t.GetEffectiveStageRule(stage).BestOf
 }
 
 func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, maxElo *int16, unclassified bool, players []*player.Player) Division {
-	divFormat := t.GetDivisionFormat(divID)
+	divFormat := t.Format
 	dv := Division{
 		ID:             divID,
 		Name:           name,
@@ -359,11 +359,11 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 				bracketsCount = 1
 			}
 
-			mainPassCount := t.GetGroupPassCount(divID)
+			mainPassCount := t.GroupPassCount
 			if mainPassCount == 0 {
 				mainPassCount = 2
 			}
-			losersPassCount := t.GetLosersGroupPassCount(divID)
+			losersPassCount := t.LosersGroupPassCount
 			if losersPassCount == 0 {
 				losersPassCount = mainPassCount
 			}

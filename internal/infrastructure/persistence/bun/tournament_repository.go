@@ -69,7 +69,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		return nil, err
 	}
 
-	tourneys, _ := r.tournamentRepo.GetByEventID(ctx, id, false)
+	tourneys, _ := r.tournamentRepo.GetByTournamentID(ctx, id, false)
 
 	return &tournament.Tournament{
 		ID:          model.ID.String(),
@@ -95,7 +95,7 @@ func (r *TournamentRepository) GetByIDDeep(ctx context.Context, idStr string) (*
 		return nil, err
 	}
 
-	tourneys, _ := r.tournamentRepo.GetByEventID(ctx, id, true)
+	tourneys, _ := r.tournamentRepo.GetByTournamentID(ctx, id, true)
 
 	return &tournament.Tournament{
 		ID:          model.ID.String(),
@@ -197,11 +197,11 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 	// Index everything
 	partsByTournament := make(map[uuid.UUID][]EventParticipantModel)
 	for _, pt := range allPartModels {
-		partsByTournament[pt.TournamentID] = append(partsByTournament[pt.TournamentID], pt)
+		partsByTournament[pt.EventID] = append(partsByTournament[pt.EventID], pt)
 	}
 	teamsByTournament := make(map[uuid.UUID][]TeamModel)
 	for _, tm := range allTeamModels {
-		teamsByTournament[tm.TournamentID] = append(teamsByTournament[tm.TournamentID], tm)
+		teamsByTournament[tm.EventID] = append(teamsByTournament[tm.EventID], tm)
 	}
 	tpByTeam := make(map[uuid.UUID][]TeamPlayerModel)
 	for _, tp := range allTPModels {
@@ -227,22 +227,22 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 				}
 			}
 			teams = append(teams, &event.Team{
-				ID:           tm.ID.String(),
-				TournamentID: tm.TournamentID.String(),
-				Name:         tm.Name,
-				Players:      teamPlayers,
+				ID:      tm.ID.String(),
+				EventID: tm.EventID.String(),
+				Name:    tm.Name,
+				Players: teamPlayers,
 			})
 		}
 
 		eidStr := ""
-		if m.EventID != nil {
-			eidStr = m.EventID.String()
+		if m.TournamentID != nil {
+			eidStr = m.TournamentID.String()
 		}
 
-		var eventIDPtr *string
-		if m.EventID != nil {
-			s := m.EventID.String()
-			eventIDPtr = &s
+		var tournamentIDPtr *string
+		if m.TournamentID != nil {
+			s := m.TournamentID.String()
+			tournamentIDPtr = &s
 		}
 
 		tournamentsByEvent[eidStr] = append(tournamentsByEvent[eidStr], &event.Event{
@@ -256,7 +256,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			EndDate:          m.EndDate,
 			GroupPassCount:   m.GroupPassCount,
 			RegistrationOpen: m.RegistrationOpen,
-			EventID:          eventIDPtr,
+			TournamentID:     tournamentIDPtr,
 			SkipElo:          m.SkipElo,
 			Participants:     participantPlayers,
 			Rules:            []event.Rule{},

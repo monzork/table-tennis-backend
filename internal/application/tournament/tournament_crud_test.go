@@ -135,7 +135,7 @@ func TestUpdateEventUseCase_Execute(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now()
-	e, _ := eventDomain.NewEvent("e1", "Event 1", nil, true, now, now)
+	e, _ := eventDomain.NewTournament("e1", "Event 1", nil, true, now, now)
 	eventRepo.Save(ctx, e)
 
 	_, err := uc.Execute(ctx, "e1", "Updated Name", "2026-10-10", "2026-10-12", 5, map[string][]int{"t": {1}})
@@ -174,7 +174,7 @@ func TestGetEventByIDUseCase_Execute(t *testing.T) {
 	uc := tournament.NewGetEventByIDUseCase(eventRepo)
 	ctx := context.Background()
 
-	e, _ := eventDomain.NewEvent("e1", "Event 1", nil, true, time.Now(), time.Now())
+	e, _ := eventDomain.NewTournament("e1", "Event 1", nil, true, time.Now(), time.Now())
 	eventRepo.Save(ctx, e)
 
 	res, err := uc.Execute(ctx, "e1")

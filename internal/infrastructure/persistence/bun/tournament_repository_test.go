@@ -17,7 +17,7 @@ func newTestTournament(t *testing.T, name string) *tournament.Tournament {
 	t.Helper()
 	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(48 * time.Hour)
-	tr, err := tournament.NewEvent(uuid.NewString(), name, []string{"div-1"}, false, start, end)
+	tr, err := tournament.NewTournament(uuid.NewString(), name, []string{"div-1"}, false, start, end)
 	if err != nil {
 		t.Fatalf("NewEvent: %v", err)
 	}
@@ -28,7 +28,7 @@ func newTestEvent(t *testing.T, name string) *event.Event {
 	t.Helper()
 	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)
-	e, err := event.NewTournament(uuid.NewString(), name, "singles", "elimination", "open", start, end, nil, 2, nil, false)
+	e, err := event.NewEvent(uuid.NewString(), name, "singles", "elimination", "open", start, end, nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
@@ -37,10 +37,10 @@ func newTestEvent(t *testing.T, name string) *event.Event {
 
 // attachEvent mirrors what the application layer does before persisting a
 // Tournament: it stamps the parent tournament's ID onto each nested Event's
-// EventID field (the FK column is literally named tournament_id).
+// TournamentID field (the FK column is literally named tournament_id).
 func attachEvent(tr *tournament.Tournament, e *event.Event) {
 	id := tr.ID
-	e.EventID = &id
+	e.TournamentID = &id
 	tr.Events = append(tr.Events, e)
 }
 

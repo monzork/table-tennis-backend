@@ -19,8 +19,7 @@ func TestGetTournamentByIDUseCase_Execute(t *testing.T) {
 			Format: "round_robin",
 			Groups: []tournamentDomain.Group{{ID: "g1", Name: "Group A"}},
 		}
-		divRepo := &mockDivisionRepo{}
-		uc := NewGetTournamentByIDUseCase(repo, divRepo)
+		uc := NewGetTournamentByIDUseCase(repo)
 
 		got, err := uc.Execute(context.Background(), "t1")
 		if err != nil {
@@ -42,8 +41,7 @@ func TestGetTournamentByIDUseCase_Execute(t *testing.T) {
 			SkipElo:      true,
 			Participants: []*playerDomain.Player{{ID: "p1", FirstName: "A", LastName: "B"}},
 		}
-		divRepo := &mockDivisionRepo{}
-		uc := NewGetTournamentByIDUseCase(repo, divRepo)
+		uc := NewGetTournamentByIDUseCase(repo)
 
 		got, err := uc.Execute(context.Background(), "t1")
 		if err != nil {
@@ -70,8 +68,7 @@ func TestGetTournamentByIDUseCase_Execute(t *testing.T) {
 			},
 			Groups: []tournamentDomain.Group{{ID: "g1", Name: "Group A", Players: nil}},
 		}
-		divRepo := &mockDivisionRepo{}
-		uc := NewGetTournamentByIDUseCase(repo, divRepo)
+		uc := NewGetTournamentByIDUseCase(repo)
 
 		got, err := uc.Execute(context.Background(), "t1")
 		if err != nil {
@@ -89,7 +86,7 @@ func TestGetTournamentByIDUseCase_Execute(t *testing.T) {
 	t.Run("get error propagates", func(t *testing.T) {
 		repo := newMockRepo()
 		repo.getErr = errors.New("db error")
-		uc := NewGetTournamentByIDUseCase(repo, &mockDivisionRepo{})
+		uc := NewGetTournamentByIDUseCase(repo)
 
 		_, err := uc.Execute(context.Background(), "missing")
 		if err == nil {
@@ -100,7 +97,7 @@ func TestGetTournamentByIDUseCase_Execute(t *testing.T) {
 	t.Run("GetSnapshots delegates to repo", func(t *testing.T) {
 		repo := newMockRepo()
 		repo.snapshots = []tournamentDomain.ParticipantSnapshot{{PlayerID: "p1"}}
-		uc := NewGetTournamentByIDUseCase(repo, &mockDivisionRepo{})
+		uc := NewGetTournamentByIDUseCase(repo)
 
 		snaps, err := uc.GetSnapshots(context.Background(), "t1")
 		if err != nil || len(snaps) != 1 {
@@ -111,7 +108,7 @@ func TestGetTournamentByIDUseCase_Execute(t *testing.T) {
 	t.Run("GetOfficials delegates to repo", func(t *testing.T) {
 		repo := newMockRepo()
 		repo.officials = []tournamentDomain.ParticipantSnapshot{{PlayerID: "p1"}}
-		uc := NewGetTournamentByIDUseCase(repo, &mockDivisionRepo{})
+		uc := NewGetTournamentByIDUseCase(repo)
 
 		offs, err := uc.GetOfficials(context.Background(), "t1")
 		if err != nil || len(offs) != 1 {
@@ -122,7 +119,7 @@ func TestGetTournamentByIDUseCase_Execute(t *testing.T) {
 	t.Run("AddOfficial generates unique pin avoiding existing", func(t *testing.T) {
 		repo := newMockRepo()
 		repo.officials = []tournamentDomain.ParticipantSnapshot{{PlayerID: "p1", Pin: "1234"}}
-		uc := NewGetTournamentByIDUseCase(repo, &mockDivisionRepo{})
+		uc := NewGetTournamentByIDUseCase(repo)
 
 		err := uc.AddOfficial(context.Background(), "t1", "p2")
 		if err != nil {
@@ -133,7 +130,7 @@ func TestGetTournamentByIDUseCase_Execute(t *testing.T) {
 	t.Run("AddOfficial propagates GetOfficials error", func(t *testing.T) {
 		repo := newMockRepo()
 		repo.officialsErr = errors.New("boom")
-		uc := NewGetTournamentByIDUseCase(repo, &mockDivisionRepo{})
+		uc := NewGetTournamentByIDUseCase(repo)
 
 		if err := uc.AddOfficial(context.Background(), "t1", "p2"); err == nil {
 			t.Fatal("expected error, got nil")
@@ -142,7 +139,7 @@ func TestGetTournamentByIDUseCase_Execute(t *testing.T) {
 
 	t.Run("RemoveOfficial delegates to repo", func(t *testing.T) {
 		repo := newMockRepo()
-		uc := NewGetTournamentByIDUseCase(repo, &mockDivisionRepo{})
+		uc := NewGetTournamentByIDUseCase(repo)
 		if err := uc.RemoveOfficial(context.Background(), "t1", "p1"); err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -156,12 +153,11 @@ func TestGetTournamentByIDUseCase_Execute(t *testing.T) {
 // ─── UpdateTournamentUseCase ────────────────────────────────────────────────
 
 func TestUpdateTournamentUseCase_Execute(t *testing.T) {
-	newUC := func() (*UpdateTournamentUseCase, *mockRepo, *mockPlayerRepo, *mockDivisionRepo) {
+	newUC := func() (*UpdateTournamentUseCase, *mockRepo, *mockPlayerRepo) {
 		repo := newMockRepo()
 		playerRepo := newMockPlayerRepo()
-		divRepo := &mockDivisionRepo{}
-		uc := NewUpdateTournamentUseCase(repo, playerRepo, divRepo)
-		return uc, repo, playerRepo, divRepo
+		uc := NewUpdateTournamentUseCase(repo, playerRepo)
+		return uc, repo, playerRepo
 	}
 
 	baseCmd := func() UpdateEventCommand {
@@ -177,7 +173,7 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 	}
 
 	t.Run("invalid start date", func(t *testing.T) {
-		uc, _, _, _ := newUC()
+		uc, _, _ := newUC()
 		cmd := baseCmd()
 		cmd.StartDate = "bad"
 		_, err := uc.Execute(context.Background(), cmd)
@@ -187,7 +183,7 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("invalid end date", func(t *testing.T) {
-		uc, _, _, _ := newUC()
+		uc, _, _ := newUC()
 		cmd := baseCmd()
 		cmd.EndDate = "bad"
 		_, err := uc.Execute(context.Background(), cmd)
@@ -197,7 +193,7 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("fallback path for non-existent event still succeeds", func(t *testing.T) {
-		uc, repo, _, _ := newUC()
+		uc, repo, _ := newUC()
 		cmd := baseCmd()
 		got, err := uc.Execute(context.Background(), cmd)
 		if err != nil {
@@ -212,7 +208,7 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("preserves groups when nothing changed and manual lock is off", func(t *testing.T) {
-		uc, repo, _, _ := newUC()
+		uc, repo, _ := newUC()
 		existingGroups := []tournamentDomain.Group{{ID: "g1", Name: "Group A"}}
 		repo.events["t1"] = &tournamentDomain.Event{
 			ID:            "t1",
@@ -233,7 +229,7 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("regenerates groups when format changed", func(t *testing.T) {
-		uc, repo, _, _ := newUC()
+		uc, repo, _ := newUC()
 		repo.events["t1"] = &tournamentDomain.Event{
 			ID:            "t1",
 			Format:        "elimination",
@@ -258,7 +254,7 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("preserves groups when manual seeding locked even if participants changed", func(t *testing.T) {
-		uc, repo, playerRepo, _ := newUC()
+		uc, repo, playerRepo := newUC()
 		existingGroups := []tournamentDomain.Group{{ID: "g1", Name: "Locked Group"}}
 		repo.events["t1"] = &tournamentDomain.Event{
 			ID:                  "t1",
@@ -282,7 +278,7 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("new player creation error propagates", func(t *testing.T) {
-		uc, _, _, _ := newUC()
+		uc, _, _ := newUC()
 		cmd := baseCmd()
 		cmd.NewPlayers = []NewPlayerData{{FirstName: "", LastName: ""}}
 		_, err := uc.Execute(context.Background(), cmd)
@@ -292,7 +288,7 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("player save error propagates", func(t *testing.T) {
-		uc, _, playerRepo, _ := newUC()
+		uc, _, playerRepo := newUC()
 		playerRepo.saveErr = errors.New("db error")
 		cmd := baseCmd()
 		cmd.NewPlayers = []NewPlayerData{{FirstName: "Bob", LastName: "B"}}
@@ -303,7 +299,7 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("update error propagates", func(t *testing.T) {
-		uc, repo, _, _ := newUC()
+		uc, repo, _ := newUC()
 		repo.updateErr = errors.New("db error")
 		cmd := baseCmd()
 		_, err := uc.Execute(context.Background(), cmd)
@@ -313,7 +309,7 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("applies stage rule overrides", func(t *testing.T) {
-		uc, repo, _, _ := newUC()
+		uc, repo, _ := newUC()
 		cmd := baseCmd()
 		cmd.StageRuleOverrides = []StageRuleOverride{
 			{Stage: "final", BestOf: 7, PointsToWin: 11, PointsMargin: 2},

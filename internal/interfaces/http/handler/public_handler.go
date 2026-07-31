@@ -211,7 +211,7 @@ func (h *PublicHandler) ShowTournamentRegisterForm(c *fiber.Ctx) error {
 		"Title":              i18n.T(lang, "tourney_reg.title"),
 		"Events":             events,
 		"SelectedTournament": target,
-		"TournamentID":       tid,
+		"EventID":            tid,
 	}), "layouts/public")
 }
 
@@ -219,7 +219,7 @@ func (h *PublicHandler) ShowTournamentRegisterForm(c *fiber.Ctx) error {
 func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 	lang := getLang(c)
 	var body struct {
-		TournamentID   string `form:"tournamentId"`
+		EventID        string `form:"tournamentId"`
 		FirstName      string `form:"firstName"`
 		SecondName     string `form:"secondName"`
 		LastName       string `form:"lastName"`
@@ -246,7 +246,7 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 
 	t, playerName, err := h.selfRegisterUC.Execute(
 		c.Context(),
-		body.TournamentID,
+		body.EventID,
 		body.FirstName,
 		body.SecondName,
 		body.LastName,
@@ -263,10 +263,10 @@ func (h *PublicHandler) RegisterToTournament(c *fiber.Ctx) error {
 		// Re-render with error
 		events, _ := h.selfRegisterUC.GetOpenTournaments(c.Context())
 		return c.Render("event-register", merge(tMap(lang), fiber.Map{
-			"Title":        i18n.T(lang, "tourney_reg.title"),
-			"Events":       events,
-			"TournamentID": body.TournamentID,
-			"Error":        err.Error(),
+			"Title":   i18n.T(lang, "tourney_reg.title"),
+			"Events":  events,
+			"EventID": body.EventID,
+			"Error":   err.Error(),
 		}), "layouts/public")
 	}
 

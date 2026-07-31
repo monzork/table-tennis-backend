@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"table-tennis-backend/internal/application/event"
-	tournamentDomain "table-tennis-backend/internal/domain/event"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -71,89 +70,11 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 		}
 	}
 
-	var divisionRules []tournamentDomain.DivisionRule
-	divisionStages := []string{"group", "r32", "r16", "quarterfinal", "semifinal", "final"}
-	divisionIDs := c.Request().PostArgs().PeekMulti("division_rule[division_id][]")
-	for _, divIDBytes := range divisionIDs {
-		divID := string(divIDBytes)
-		if divID == "" {
-			continue
-		}
-		for _, stage := range divisionStages {
-			boStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][best_of]"))
-			ptStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][points_to_win]"))
-			pmStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][points_margin]"))
-			if boStr != "" {
-				bo := 5
-				pt := 11
-				pm := 2
-				fmt.Sscanf(boStr, "%d", &bo)
-				fmt.Sscanf(ptStr, "%d", &pt)
-				fmt.Sscanf(pmStr, "%d", &pm)
-				divisionRules = append(divisionRules, tournamentDomain.DivisionRule{
-					DivisionID:   divID,
-					Stage:        stage,
-					BestOf:       bo,
-					PointsToWin:  pt,
-					PointsMargin: pm,
-				})
-			}
-		}
-	}
-
 	skipElo := c.FormValue("skipElo") == "on"
 	hasThirdPlaceMatch := c.FormValue("hasThirdPlaceMatch") == "on"
-	var eventID *string
+	var tournamentID *string
 	if eIDStr := c.FormValue("eventId"); eIDStr != "" {
-		eventID = &eIDStr
-	}
-
-	divisionConfigs := make(map[string]tournamentDomain.DivisionConfig)
-	for _, divIDBytes := range divisionIDs {
-		divID := string(divIDBytes)
-		if divID == "" {
-			continue
-		}
-
-		cfg := tournamentDomain.DivisionConfig{}
-		hasCfg := false
-
-		dfStr := string(c.Request().PostArgs().Peek("division_formats[" + divID + "]"))
-		if dfStr != "" {
-			cfg.Format = dfStr
-			hasCfg = true
-		}
-		dgpcStr := string(c.Request().PostArgs().Peek("division_group_pass_counts[" + divID + "]"))
-		if dgpcStr != "" {
-			dgpc := 0
-			fmt.Sscanf(dgpcStr, "%d", &dgpc)
-			if dgpc > 0 {
-				cfg.GroupPassCount = dgpc
-				hasCfg = true
-			}
-		}
-		dlgpcStr := string(c.Request().PostArgs().Peek("division_losers_group_pass_counts[" + divID + "]"))
-		if dlgpcStr != "" {
-			dlgpc := 0
-			fmt.Sscanf(dlgpcStr, "%d", &dlgpc)
-			if dlgpc > 0 {
-				cfg.LosersGroupPassCount = dlgpc
-				hasCfg = true
-			}
-		}
-		dgcStr := string(c.Request().PostArgs().Peek("division_group_counts[" + divID + "]"))
-		if dgcStr != "" {
-			dgc := 0
-			fmt.Sscanf(dgcStr, "%d", &dgc)
-			if dgc > 0 {
-				cfg.GroupCount = dgc
-				hasCfg = true
-			}
-		}
-
-		if hasCfg {
-			divisionConfigs[divID] = cfg
-		}
+		tournamentID = &eIDStr
 	}
 
 	return event.CreateEventCommand{
@@ -168,14 +89,12 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 		GroupPassCount:       body.GroupPassCount,
 		LosersGroupPassCount: body.LosersGroupPassCount,
 		StageRuleOverrides:   stageRules,
-		DivisionRules:        divisionRules,
 		SkipElo:              skipElo,
-		EventID:              eventID,
+		TournamentID:         tournamentID,
 		TeamFormat:           body.TeamFormat,
 		NumTables:            body.NumTables,
 		HasThirdPlaceMatch:   hasThirdPlaceMatch,
 
-		DivisionConfigs:       divisionConfigs,
 		KnockoutBracketsCount: body.KnockoutBracketsCount,
 	}, nil
 }
@@ -245,89 +164,11 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		}
 	}
 
-	var divisionRules []tournamentDomain.DivisionRule
-	divisionStages := []string{"group", "r32", "r16", "quarterfinal", "semifinal", "final"}
-	divisionIDs := c.Request().PostArgs().PeekMulti("division_rule[division_id][]")
-	for _, divIDBytes := range divisionIDs {
-		divID := string(divIDBytes)
-		if divID == "" {
-			continue
-		}
-		for _, stage := range divisionStages {
-			boStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][best_of]"))
-			ptStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][points_to_win]"))
-			pmStr := string(c.Request().PostArgs().Peek("division_rule[" + divID + "][" + stage + "][points_margin]"))
-			if boStr != "" {
-				bo := 5
-				pt := 11
-				pm := 2
-				fmt.Sscanf(boStr, "%d", &bo)
-				fmt.Sscanf(ptStr, "%d", &pt)
-				fmt.Sscanf(pmStr, "%d", &pm)
-				divisionRules = append(divisionRules, tournamentDomain.DivisionRule{
-					DivisionID:   divID,
-					Stage:        stage,
-					BestOf:       bo,
-					PointsToWin:  pt,
-					PointsMargin: pm,
-				})
-			}
-		}
-	}
-
 	skipElo := c.FormValue("skipElo") == "on"
 	hasThirdPlaceMatch := c.FormValue("hasThirdPlaceMatch") == "on"
-	var eventID *string
+	var tournamentID *string
 	if eIDStr := c.FormValue("eventId"); eIDStr != "" {
-		eventID = &eIDStr
-	}
-
-	divisionConfigs := make(map[string]tournamentDomain.DivisionConfig)
-	for _, divIDBytes := range divisionIDs {
-		divID := string(divIDBytes)
-		if divID == "" {
-			continue
-		}
-
-		cfg := tournamentDomain.DivisionConfig{}
-		hasCfg := false
-
-		dfStr := string(c.Request().PostArgs().Peek("division_formats[" + divID + "]"))
-		if dfStr != "" {
-			cfg.Format = dfStr
-			hasCfg = true
-		}
-		dgpcStr := string(c.Request().PostArgs().Peek("division_group_pass_counts[" + divID + "]"))
-		if dgpcStr != "" {
-			dgpc := 0
-			fmt.Sscanf(dgpcStr, "%d", &dgpc)
-			if dgpc > 0 {
-				cfg.GroupPassCount = dgpc
-				hasCfg = true
-			}
-		}
-		dlgpcStr := string(c.Request().PostArgs().Peek("division_losers_group_pass_counts[" + divID + "]"))
-		if dlgpcStr != "" {
-			dlgpc := 0
-			fmt.Sscanf(dlgpcStr, "%d", &dlgpc)
-			if dlgpc > 0 {
-				cfg.LosersGroupPassCount = dlgpc
-				hasCfg = true
-			}
-		}
-		dgcStr := string(c.Request().PostArgs().Peek("division_group_counts[" + divID + "]"))
-		if dgcStr != "" {
-			dgc := 0
-			fmt.Sscanf(dgcStr, "%d", &dgc)
-			if dgc > 0 {
-				cfg.GroupCount = dgc
-				hasCfg = true
-			}
-		}
-
-		if hasCfg {
-			divisionConfigs[divID] = cfg
-		}
+		tournamentID = &eIDStr
 	}
 
 	return event.UpdateEventCommand{
@@ -344,14 +185,12 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		GroupPassCount:       body.GroupPassCount,
 		LosersGroupPassCount: body.LosersGroupPassCount,
 		StageRuleOverrides:   stageRules,
-		DivisionRules:        divisionRules,
 		SkipElo:              skipElo,
-		EventID:              eventID,
+		TournamentID:         tournamentID,
 		TeamFormat:           body.TeamFormat,
 		NumTables:            body.NumTables,
 		HasThirdPlaceMatch:   hasThirdPlaceMatch,
 
-		DivisionConfigs:       divisionConfigs,
 		KnockoutBracketsCount: body.KnockoutBracketsCount,
 	}, nil
 }

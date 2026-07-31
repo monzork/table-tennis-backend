@@ -19,7 +19,7 @@ type BoardCard struct {
 	DivisionName       string
 	P1InMatch          bool
 	P2InMatch          bool
-	TournamentID       string
+	EventID            string
 	TournamentName     string
 	QueuePosition      int
 	RoundNumber        int

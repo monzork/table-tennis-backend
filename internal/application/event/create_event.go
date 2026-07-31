@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	divisionDomain "table-tennis-backend/internal/domain/division"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
@@ -10,13 +9,12 @@ import (
 )
 
 type CreateTournamentUseCase struct {
-	repo         tournamentDomain.Repository
-	playerRepo   playerDomain.Repository
-	divisionRepo divisionDomain.Repository
+	repo       tournamentDomain.Repository
+	playerRepo playerDomain.Repository
 }
 
-func NewCreateTournamentUseCase(repo tournamentDomain.Repository, playerRepo playerDomain.Repository, divisionRepo divisionDomain.Repository) *CreateTournamentUseCase {
-	return &CreateTournamentUseCase{repo: repo, playerRepo: playerRepo, divisionRepo: divisionRepo}
+func NewCreateTournamentUseCase(repo tournamentDomain.Repository, playerRepo playerDomain.Repository) *CreateTournamentUseCase {
+	return &CreateTournamentUseCase{repo: repo, playerRepo: playerRepo}
 }
 
 type NewPlayerData struct {
@@ -37,14 +35,12 @@ type CreateEventCommand struct {
 	GroupPassCount       int
 	LosersGroupPassCount int
 	StageRuleOverrides   []StageRuleOverride
-	DivisionRules        []tournamentDomain.DivisionRule
 	SkipElo              bool
-	EventID              *string
+	TournamentID         *string
 	TeamFormat           string
 	NumTables            int
 	HasThirdPlaceMatch   bool
 
-	DivisionConfigs       map[string]tournamentDomain.DivisionConfig
 	KnockoutBracketsCount int
 }
 
@@ -102,39 +98,20 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 		}
 	}
 
-	t, err := tournamentDomain.NewTournament(idgen.Generate(), cmd.Name, cmd.Type, cmd.Format, cmd.Category, start, end, []tournamentDomain.Rule{}, cmd.GroupPassCount, filteredParticipants, cmd.HasThirdPlaceMatch)
+	t, err := tournamentDomain.NewEvent(idgen.Generate(), cmd.Name, cmd.Type, cmd.Format, cmd.Category, start, end, []tournamentDomain.Rule{}, cmd.GroupPassCount, filteredParticipants, cmd.HasThirdPlaceMatch)
 	if err != nil {
 		return nil, err
 	}
 	t.SkipElo = cmd.SkipElo
 
 	t.LosersGroupPassCount = cmd.LosersGroupPassCount
-	t.DivisionConfigs = cmd.DivisionConfigs
 
 	t.TeamFormat = cmd.TeamFormat
 	t.NumTables = cmd.NumTables
 	t.KnockoutBracketsCount = cmd.KnockoutBracketsCount
 
-	// Fetch divisions list to seed groups per-division
-	var divsList []tournamentDomain.DivisionSeeding
-	if !cmd.SkipElo {
-		divs, err := uc.divisionRepo.GetAll(ctx)
-		if err == nil {
-			for _, d := range divs {
-				if d.Category == "both" || d.Category == cmd.Type {
-					divsList = append(divsList, tournamentDomain.DivisionSeeding{
-						ID:     d.ID,
-						Name:   d.Name,
-						MinElo: d.MinElo,
-						MaxElo: d.MaxElo,
-					})
-				}
-			}
-		}
-	}
-
 	if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" || t.Format == "single_division_multiple_brackets" {
-		if err := (&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(t); err != nil {
+		if err := (&tournamentDomain.OpenBracketSnakeSeeder{}).AssignGroups(t); err != nil {
 			return nil, err
 		}
 	}
@@ -149,9 +126,6 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 			}
 		}
 	}
-
-	// Apply division-specific rules
-	t.DivisionRules = cmd.DivisionRules
 
 	if err := uc.repo.Save(ctx, t); err != nil {
 		return nil, err
@@ -172,16 +146,15 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 		}
 
 		pairName := pairSuffix + " " + cmd.Name
-		pairT, err := tournamentDomain.NewTournament(idgen.Generate(), pairName, cmd.Type, cmd.Format, pairCategory, start, end, []tournamentDomain.Rule{}, cmd.GroupPassCount, pairParticipants, cmd.HasThirdPlaceMatch)
+		pairT, err := tournamentDomain.NewEvent(idgen.Generate(), pairName, cmd.Type, cmd.Format, pairCategory, start, end, []tournamentDomain.Rule{}, cmd.GroupPassCount, pairParticipants, cmd.HasThirdPlaceMatch)
 		if err == nil {
 			pairT.SkipElo = cmd.SkipElo
-			pairT.EventID = cmd.EventID
+			pairT.TournamentID = cmd.TournamentID
 
 			pairT.LosersGroupPassCount = cmd.LosersGroupPassCount
-			pairT.DivisionConfigs = cmd.DivisionConfigs
 			pairT.KnockoutBracketsCount = cmd.KnockoutBracketsCount
 			if pairT.Format == "groups_elimination" || pairT.Format == "round_robin" || pairT.Format == "elimination" {
-				(&tournamentDomain.DivisionSeeder{Divisions: divsList}).AssignGroups(pairT)
+				(&tournamentDomain.OpenBracketSnakeSeeder{}).AssignGroups(pairT)
 			}
 			uc.repo.Save(ctx, pairT)
 		}

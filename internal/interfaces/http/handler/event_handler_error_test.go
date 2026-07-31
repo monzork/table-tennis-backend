@@ -30,7 +30,7 @@ func TestEventHandlerErrorBranches(t *testing.T) {
 	p1, _ := playerDomain.NewPlayer(uuid.New().String(), "Test", "Player1", time.Now(), "M", "", "", "")
 	playerRepo.Save(ctx, p1)
 
-	tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Test Event", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
+	tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Test Event", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
 	tournamentRepo.Save(ctx, tourney)
 	tournamentID := tourney.ID
 

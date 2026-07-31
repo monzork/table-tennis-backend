@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS events (
     type TEXT NOT NULL DEFAULT 'singles',
     format TEXT NOT NULL DEFAULT 'elimination',
     status TEXT NOT NULL DEFAULT 'in_progress',
-    tournament_category TEXT NOT NULL DEFAULT 'open',
+    event_category TEXT NOT NULL DEFAULT 'open',
     start_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
     group_pass_count INTEGER NOT NULL DEFAULT 2,

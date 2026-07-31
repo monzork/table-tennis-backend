@@ -23,8 +23,8 @@ func ErrorHandler(err error) error {
 	// Handle specific domain errors
 	if errors.Is(err, event.ErrInvalidDates) ||
 		errors.Is(err, tournament.ErrInvalidDivisionIDs) ||
-		errors.Is(err, tournament.ErrInvalidEventName) ||
-		errors.Is(err, tournament.ErrInvalidEventDates) {
+		errors.Is(err, tournament.ErrInvalidTournamentName) ||
+		errors.Is(err, tournament.ErrInvalidTournamentDates) {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 

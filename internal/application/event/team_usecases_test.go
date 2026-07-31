@@ -62,7 +62,7 @@ func TestCreateTeamUseCase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if team.Name != "Squad A" || team.TournamentID != "tournament-1" {
+	if team.Name != "Squad A" || team.EventID != "tournament-1" {
 		t.Errorf("unexpected team: %+v", team)
 	}
 	if repo.savedTeam == nil || repo.savedTeam.ID != team.ID {

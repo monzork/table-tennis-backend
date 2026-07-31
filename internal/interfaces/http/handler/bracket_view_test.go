@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestBuildBracket_GroupPassCount(t *testing.T) {
+func TestBuildBracket_GroupPassCount_AppliesUniformlyAcrossDivisions(t *testing.T) {
 	tmap := make(map[string]string)
 
 	div1 := &division.Division{
@@ -38,14 +38,11 @@ func TestBuildBracket_GroupPassCount(t *testing.T) {
 	players := []*player.Player{p1, p2, p3, p4, p5, p6}
 
 	trn := &event.Event{
-		ID:           "t1",
-		Format:       "groups_elimination",
-		Type:         "singles",
-		Participants: players,
-		DivisionConfigs: map[string]event.DivisionConfig{
-			"div1": {GroupPassCount: 2},
-			"div2": {GroupPassCount: 3},
-		},
+		ID:             "t1",
+		Format:         "groups_elimination",
+		Type:           "singles",
+		Participants:   players,
+		GroupPassCount: 2,
 		Groups: []event.Group{
 			{
 				ID:      "g1",
@@ -122,15 +119,15 @@ func TestBuildBracket_GroupPassCount(t *testing.T) {
 	if len(div2View.KnockoutBrackets) == 0 {
 		t.Fatalf("expected KnockoutBrackets for div2")
 	}
-	if len(div2View.KnockoutBrackets[0].Advancing) != 3 {
-		t.Errorf("expected 3 advancing in div2, got %d", len(div2View.KnockoutBrackets[0].Advancing))
+	if len(div2View.KnockoutBrackets[0].Advancing) != 2 {
+		t.Errorf("expected 2 advancing in div2, got %d", len(div2View.KnockoutBrackets[0].Advancing))
 	} else {
 		found := map[string]bool{}
 		for _, p := range div2View.KnockoutBrackets[0].Advancing {
 			found[p.ID] = true
 		}
-		if !found["p4"] || !found["p5"] || !found["p6"] {
-			t.Errorf("div2 advancing incorrect, expected p4, p5, p6, got: %v", div2View.KnockoutBrackets[0].Advancing)
+		if !found["p4"] || !found["p5"] {
+			t.Errorf("div2 advancing incorrect, expected p4, p5, got: %v", div2View.KnockoutBrackets[0].Advancing)
 		}
 	}
 
@@ -145,8 +142,8 @@ func TestBuildBracket_GroupPassCount(t *testing.T) {
 	if len(div2View.KnockoutBrackets[0].Rounds) == 0 {
 		t.Errorf("expected Rounds for div2 bracket")
 	} else {
-		if len(div2View.KnockoutBrackets[0].Rounds[0].Matches) != 2 {
-			t.Errorf("expected 2 matches in div2 first round, got %d", len(div2View.KnockoutBrackets[0].Rounds[0].Matches))
+		if len(div2View.KnockoutBrackets[0].Rounds[0].Matches) != 1 {
+			t.Errorf("expected 1 match in div2 first round, got %d", len(div2View.KnockoutBrackets[0].Rounds[0].Matches))
 		}
 	}
 }

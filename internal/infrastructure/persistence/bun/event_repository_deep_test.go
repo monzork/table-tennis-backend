@@ -15,7 +15,7 @@ import (
 // TestEventRepository_GetByID_And_GetByEventID_Deep_TeamsWithGroupsAndMatches
 // exercises the team/doubles-specific branches (team-based group participants,
 // parent team matches with sub-match win aggregation) in both GetByID and the
-// deep variant of GetByEventID, which are otherwise hard to reach through the
+// deep variant of GetByTournamentID, which are otherwise hard to reach through the
 // simpler singles-event tests.
 func TestEventRepository_GetByID_And_GetByEventID_Deep_TeamsWithGroupsAndMatches(t *testing.T) {
 	db := setupTestDB(t)
@@ -29,11 +29,11 @@ func TestEventRepository_GetByID_And_GetByEventID_Deep_TeamsWithGroupsAndMatches
 
 	// A doubles event so isTeamType branches are exercised.
 	start := time.Now()
-	e, err := event.NewTournament(uuid.NewString(), "Deep Doubles", "doubles", "elimination", "open", start, start.Add(time.Hour), nil, 2, nil, false)
+	e, err := event.NewEvent(uuid.NewString(), "Deep Doubles", "doubles", "elimination", "open", start, start.Add(time.Hour), nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
-	e.EventID = &tIDStr
+	e.TournamentID = &tIDStr
 	if err := eventRepo.Save(ctx, e); err != nil {
 		t.Fatalf("Save event: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestEventRepository_GetByID_And_GetByEventID_Deep_TeamsWithGroupsAndMatches
 	teamAPlaceholder := &player.Player{ID: teamA.ID, FirstName: teamA.Name}
 	teamBPlaceholder := &player.Player{ID: teamB.ID, FirstName: teamB.Name}
 	e.Groups = []event.Group{
-		{ID: uuid.NewString(), TournamentID: e.ID, Name: "Group A", Players: []*player.Player{teamAPlaceholder, teamBPlaceholder}},
+		{ID: uuid.NewString(), EventID: e.ID, Name: "Group A", Players: []*player.Player{teamAPlaceholder, teamBPlaceholder}},
 	}
 	if err := eventRepo.UpdateGroups(ctx, e); err != nil {
 		t.Fatalf("UpdateGroups: %v", err)
@@ -81,13 +81,13 @@ func TestEventRepository_GetByID_And_GetByEventID_Deep_TeamsWithGroupsAndMatches
 
 	// Parent team match, represented with one member per team as the nominal player.
 	parentMatch := &event.Match{
-		ID:           uuid.NewString(),
-		TournamentID: e.ID,
-		MatchType:    "teams",
-		TeamA:        []*player.Player{pA1},
-		TeamB:        []*player.Player{pB1},
-		Status:       "in_progress",
-		Stage:        "final",
+		ID:        uuid.NewString(),
+		EventID:   e.ID,
+		MatchType: "teams",
+		TeamA:     []*player.Player{pA1},
+		TeamB:     []*player.Player{pB1},
+		Status:    "in_progress",
+		Stage:     "final",
 	}
 	if err := matchRepo.Save(ctx, parentMatch); err != nil {
 		t.Fatalf("Save parent match: %v", err)
@@ -96,7 +96,7 @@ func TestEventRepository_GetByID_And_GetByEventID_Deep_TeamsWithGroupsAndMatches
 	// Sub-matches under the parent team match.
 	cmd := event.CreateSubMatchesCommand{
 		ParentMatchID: parentMatch.ID,
-		TournamentID:  e.ID,
+		EventID:       e.ID,
 		Stage:         "final",
 		TeamFormat:    "olympic",
 		TeamAPlayers:  []string{pA1.ID, pA2.ID},
@@ -141,10 +141,10 @@ func TestEventRepository_GetByID_And_GetByEventID_Deep_TeamsWithGroupsAndMatches
 		t.Fatal("expected to find the parent team match in GetByID results")
 	}
 
-	// --- GetByEventID with deep=true (tournament-level aggregate view) ---
-	deepEvents, err := eventRepo.GetByEventID(ctx, tournamentID, true)
+	// --- GetByTournamentID with deep=true (tournament-level aggregate view) ---
+	deepEvents, err := eventRepo.GetByTournamentID(ctx, tournamentID, true)
 	if err != nil {
-		t.Fatalf("GetByEventID (deep): %v", err)
+		t.Fatalf("GetByTournamentID (deep): %v", err)
 	}
 	if len(deepEvents) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(deepEvents))
@@ -160,10 +160,10 @@ func TestEventRepository_GetByID_And_GetByEventID_Deep_TeamsWithGroupsAndMatches
 		t.Fatalf("expected matches to be populated in deep view")
 	}
 
-	// --- GetByEventID with deep=false should skip match loading ---
-	liteEvents, err := eventRepo.GetByEventID(ctx, tournamentID, false)
+	// --- GetByTournamentID with deep=false should skip match loading ---
+	liteEvents, err := eventRepo.GetByTournamentID(ctx, tournamentID, false)
 	if err != nil {
-		t.Fatalf("GetByEventID (lite): %v", err)
+		t.Fatalf("GetByTournamentID (lite): %v", err)
 	}
 	if len(liteEvents) != 1 || len(liteEvents[0].Matches) != 0 {
 		t.Fatalf("expected 0 matches when deep=false, got %+v", liteEvents[0].Matches)

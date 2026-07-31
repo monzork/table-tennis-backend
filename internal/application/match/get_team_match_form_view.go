@@ -30,7 +30,7 @@ type SubMatchVM struct {
 
 type TeamMatchFormView struct {
 	MatchID      string
-	TournamentID string
+	EventID      string
 	Stage        string
 	BestOf       int
 	TeamA        *event.Team
@@ -61,10 +61,10 @@ func NewGetTeamMatchFormViewUseCase(matchRepo *bun.MatchRepository, tournamentRe
 	}
 }
 
-func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, tournamentID, stage string) (*TeamMatchFormView, error) {
+func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eventID, stage string) (*TeamMatchFormView, error) {
 	parentUUID, _ := uuid.Parse(matchID)
 
-	t, err := uc.tournamentRepo.GetByID(ctx, tournamentID)
+	t, err := uc.tournamentRepo.GetByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, tou
 
 	bestOf := 5
 	if t != nil {
-		bestOf = t.GetEffectiveStageRule(stage, parent.DivisionID).BestOf
+		bestOf = t.GetEffectiveStageRule(stage).BestOf
 	}
 
 	teamFormat := t.TeamFormat
@@ -218,7 +218,7 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, tou
 
 	return &TeamMatchFormView{
 		MatchID:      matchID,
-		TournamentID: tournamentID,
+		EventID:      eventID,
 		Stage:        stage,
 		BestOf:       bestOf,
 		TeamA:        teamA,

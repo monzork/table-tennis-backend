@@ -62,7 +62,7 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 		NationalID     string `json:"nationalID" form:"nationalID"`
 		SinglesElo     int16  `json:"singlesElo" form:"singlesElo"`
 		DoublesElo     int16  `json:"doublesElo" form:"doublesElo"`
-		TournamentID   string `json:"tournamentId" form:"tournamentId"`
+		EventID        string `json:"tournamentId" form:"tournamentId"`
 	}
 
 	if err := c.BodyParser(&body); err != nil {
@@ -75,9 +75,9 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
 	}
 
-	if body.TournamentID != "" {
-		if err := h.enrollPlayerUC.Execute(c.Context(), body.TournamentID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
-			slog.Warn("failed to enroll newly created player into event", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
+	if body.EventID != "" {
+		if err := h.enrollPlayerUC.Execute(c.Context(), body.EventID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
+			slog.Warn("failed to enroll newly created player into event", "playerID", player.ID, "eventID", body.EventID, "err", err)
 		}
 	}
 
@@ -99,7 +99,7 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 		NationalID     string `json:"nationalID" form:"nationalID"`
 		SinglesElo     int16  `json:"singlesElo" form:"singlesElo"`
 		DoublesElo     int16  `json:"doublesElo" form:"doublesElo"`
-		TournamentID   string `json:"tournamentId" form:"tournamentId"`
+		EventID        string `json:"tournamentId" form:"tournamentId"`
 	}
 
 	if err := c.BodyParser(&body); err != nil {
@@ -111,9 +111,9 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
 	}
 
-	if body.TournamentID != "" {
-		if err := h.enrollPlayerUC.Execute(c.Context(), body.TournamentID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
-			slog.Warn("failed to enroll updated player into event", "playerID", player.ID, "tournamentID", body.TournamentID, "err", err)
+	if body.EventID != "" {
+		if err := h.enrollPlayerUC.Execute(c.Context(), body.EventID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
+			slog.Warn("failed to enroll updated player into event", "playerID", player.ID, "eventID", body.EventID, "err", err)
 		}
 	}
 

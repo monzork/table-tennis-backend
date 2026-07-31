@@ -27,13 +27,13 @@ func TestEventRepository_InvalidIDErrorPaths(t *testing.T) {
 		}},
 		{"Save invalid nested event-of-tournament id", func() error {
 			bad := "bad-id"
-			return eventRepo.Save(ctx, &event.Event{ID: uuid.NewString(), EventID: &bad})
+			return eventRepo.Save(ctx, &event.Event{ID: uuid.NewString(), TournamentID: &bad})
 		}},
 		{"SaveTeam invalid tournament id", func() error {
-			return eventRepo.SaveTeam(ctx, &event.Team{ID: uuid.NewString(), TournamentID: "bad-id"})
+			return eventRepo.SaveTeam(ctx, &event.Team{ID: uuid.NewString(), EventID: "bad-id"})
 		}},
 		{"SaveTeam invalid team id", func() error {
-			return eventRepo.SaveTeam(ctx, &event.Team{ID: "bad-id", TournamentID: uuid.NewString()})
+			return eventRepo.SaveTeam(ctx, &event.Team{ID: "bad-id", EventID: uuid.NewString()})
 		}},
 		{"DeleteTeam invalid id", func() error {
 			return eventRepo.DeleteTeam(ctx, "bad-id")

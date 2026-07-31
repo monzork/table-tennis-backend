@@ -73,16 +73,7 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 		return fmt.Errorf("cannot update score of a finished event")
 	}
 
-	// Get effective stage rule (division rules will be applied if match has division info)
-	var divisionID string
-	for i := range t.Matches {
-		if t.Matches[i].ID == matchIDStr {
-			divisionID = t.Matches[i].DivisionID
-			break
-		}
-	}
-
-	stageRule := t.GetEffectiveStageRule(stage, divisionID)
+	stageRule := t.GetEffectiveStageRule(stage)
 
 	return uc.matchRepo.UpdateScore(ctx, matchIDStr, sets, stageRule)
 }

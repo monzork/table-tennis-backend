@@ -12,7 +12,7 @@ func TestNewEvent_Success(t *testing.T) {
 	end := start.Add(48 * time.Hour)
 	divIDs := []string{"div1", "div2"}
 
-	tr, err := tournament.NewEvent("t-1", "Summer Open", divIDs, false, start, end)
+	tr, err := tournament.NewTournament("t-1", "Summer Open", divIDs, false, start, end)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -47,7 +47,7 @@ func TestNewEvent_SkipEloTrueWithNoDivisions(t *testing.T) {
 	start := time.Now()
 	end := start.Add(24 * time.Hour)
 
-	tr, err := tournament.NewEvent("t-2", "Casual Event", nil, true, start, end)
+	tr, err := tournament.NewTournament("t-2", "Casual Event", nil, true, start, end)
 	if err != nil {
 		t.Fatalf("expected no error when SkipElo is true and divisionIDs is empty, got %v", err)
 	}
@@ -61,9 +61,9 @@ func TestNewEvent_InvalidName(t *testing.T) {
 	start := time.Now()
 	end := start.Add(24 * time.Hour)
 
-	_, err := tournament.NewEvent("t-1", "", []string{"div1"}, false, start, end)
-	if err != tournament.ErrInvalidEventName {
-		t.Fatalf("expected ErrInvalidEventName, got %v", err)
+	_, err := tournament.NewTournament("t-1", "", []string{"div1"}, false, start, end)
+	if err != tournament.ErrInvalidTournamentName {
+		t.Fatalf("expected ErrInvalidTournamentName, got %v", err)
 	}
 }
 
@@ -72,12 +72,12 @@ func TestNewEvent_InvalidDivisionIDs(t *testing.T) {
 	end := start.Add(24 * time.Hour)
 
 	// skipElo is false, divisionIDs is empty -> should fail
-	_, err := tournament.NewEvent("t-1", "Test Tourn", []string{}, false, start, end)
+	_, err := tournament.NewTournament("t-1", "Test Tourn", []string{}, false, start, end)
 	if err != tournament.ErrInvalidDivisionIDs {
 		t.Fatalf("expected ErrInvalidDivisionIDs, got %v", err)
 	}
 
-	_, err = tournament.NewEvent("t-1", "Test Tourn", nil, false, start, end)
+	_, err = tournament.NewTournament("t-1", "Test Tourn", nil, false, start, end)
 	if err != tournament.ErrInvalidDivisionIDs {
 		t.Fatalf("expected ErrInvalidDivisionIDs, got %v", err)
 	}
@@ -87,9 +87,9 @@ func TestNewEvent_InvalidEventDates(t *testing.T) {
 	start := time.Now()
 	end := start.Add(-1 * time.Hour) // end date before start date
 
-	_, err := tournament.NewEvent("t-1", "Test Tourn", []string{"div1"}, false, start, end)
-	if err != tournament.ErrInvalidEventDates {
-		t.Fatalf("expected ErrInvalidEventDates, got %v", err)
+	_, err := tournament.NewTournament("t-1", "Test Tourn", []string{"div1"}, false, start, end)
+	if err != tournament.ErrInvalidTournamentDates {
+		t.Fatalf("expected ErrInvalidTournamentDates, got %v", err)
 	}
 }
 

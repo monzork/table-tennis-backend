@@ -42,7 +42,7 @@ func (uc *TeamMatchOrchestratorUseCase) EnsureTeamSubMatches(ctx context.Context
 
 	return uc.matchRepo.CreateSubMatches(ctx, event.CreateSubMatchesCommand{
 		ParentMatchID: matchID,
-		TournamentID:  teamA.TournamentID,
+		EventID:       teamA.EventID,
 		Stage:         stage,
 		TeamFormat:    teamFormat,
 		TeamAPlayers:  teamAIDs,

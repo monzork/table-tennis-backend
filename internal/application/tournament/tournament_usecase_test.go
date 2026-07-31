@@ -115,10 +115,10 @@ func (m *mockSubTourneyRepo) Update(ctx context.Context, t *subTourneyDomain.Eve
 	return nil
 }
 
-func (m *mockSubTourneyRepo) UpdateEventIDBulk(ctx context.Context, tournamentIDs []string, eventID string) error {
-	for _, id := range tournamentIDs {
+func (m *mockSubTourneyRepo) UpdateEventIDBulk(ctx context.Context, eventIDs []string, tournamentID string) error {
+	for _, id := range eventIDs {
 		if t, ok := m.subTourneys[id]; ok {
-			t.EventID = &eventID
+			t.TournamentID = &tournamentID
 		}
 	}
 	return nil
@@ -168,7 +168,7 @@ func (m *mockSubTourneyRepo) RemoveOfficial(ctx context.Context, tournamentID st
 func (m *mockSubTourneyRepo) GetOfficials(ctx context.Context, tournamentID string) ([]subTourneyDomain.ParticipantSnapshot, error) {
 	return nil, nil
 }
-func (m *mockSubTourneyRepo) GetEventNumTables(ctx context.Context, eventID string) (int, error) {
+func (m *mockSubTourneyRepo) GetTournamentNumTables(ctx context.Context, eventID string) (int, error) {
 	return 4, nil
 }
 
@@ -327,8 +327,8 @@ func TestTournamentCRUDUseCases(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now()
-	t1, _ := tournamentDomain.NewEvent("t1", "Tourney 1", []string{"d1"}, false, now, now.Add(24*time.Hour))
-	t2, _ := tournamentDomain.NewEvent("t2", "Tourney 2", []string{"d1"}, false, now, now.Add(24*time.Hour))
+	t1, _ := tournamentDomain.NewTournament("t1", "Tourney 1", []string{"d1"}, false, now, now.Add(24*time.Hour))
+	t2, _ := tournamentDomain.NewTournament("t2", "Tourney 2", []string{"d1"}, false, now, now.Add(24*time.Hour))
 	_ = eventRepo.Save(ctx, t1)
 	_ = eventRepo.Save(ctx, t2)
 
@@ -389,7 +389,7 @@ func TestGetBoardDataUseCase(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now()
-	t1, _ := tournamentDomain.NewEvent("t1", "Grand Event", []string{"d1"}, false, now, now.Add(24*time.Hour))
+	t1, _ := tournamentDomain.NewTournament("t1", "Grand Event", []string{"d1"}, false, now, now.Add(24*time.Hour))
 	_ = eventRepo.Save(ctx, t1)
 
 	uc := tournament.NewGetBoardDataUseCase(eventRepo, divisionRepo)

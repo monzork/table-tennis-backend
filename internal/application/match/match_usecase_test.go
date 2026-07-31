@@ -114,7 +114,7 @@ func (m *mockMatchRepo) GetInProgressMatchOnTable(ctx context.Context, tableNumb
 func (m *mockMatchRepo) HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error) {
 	return false, nil
 }
-func (m *mockMatchRepo) DeleteByTournament(ctx context.Context, tournamentID string) error {
+func (m *mockMatchRepo) DeleteByEvent(ctx context.Context, tournamentID string) error {
 	return nil
 }
 func (m *mockMatchRepo) FinishMatch(ctx context.Context, cmd eventDomain.FinishMatchCommand) error {
@@ -201,7 +201,7 @@ func (m *mockEventRepo) RemoveOfficial(ctx context.Context, tournamentID string,
 func (m *mockEventRepo) GetOfficials(ctx context.Context, tournamentID string) ([]eventDomain.ParticipantSnapshot, error) {
 	return nil, nil
 }
-func (m *mockEventRepo) GetEventNumTables(ctx context.Context, eventID string) (int, error) {
+func (m *mockEventRepo) GetTournamentNumTables(ctx context.Context, eventID string) (int, error) {
 	return 4, nil
 }
 
@@ -332,7 +332,7 @@ func TestCreateMatchUseCase(t *testing.T) {
 	divisionRepo := newMockDivisionRepo()
 
 	now := time.Now()
-	e, _ := eventDomain.NewTournament("e1", "Singles Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+	e, _ := eventDomain.NewEvent("e1", "Singles Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 	_ = eventRepo.Save(context.Background(), e)
 
 	p1, _ := playerDomain.NewPlayer("p1", "Player", "One", now, "M", "USA", "", "1")
@@ -348,7 +348,7 @@ func TestCreateMatchUseCase(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if m.TournamentID != "e1" || m.Stage != "quarter_final" {
+		if m.EventID != "e1" || m.Stage != "quarter_final" {
 			t.Errorf("unexpected match fields: %+v", m)
 		}
 		if len(m.TeamA) != 1 || m.TeamA[0].ID != "p1" {
@@ -378,12 +378,11 @@ func TestCreateMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("doubles with valid teams", func(t *testing.T) {
-		eTeams, _ := eventDomain.NewTournament("e_teams", "Teams Event", "doubles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+		eTeams, _ := eventDomain.NewEvent("e_teams", "Teams Event", "doubles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		eTeams.Teams = []*eventDomain.Team{
 			{ID: "t1", Players: []*playerDomain.Player{p1}},
 			{ID: "t2", Players: []*playerDomain.Player{p2}},
 		}
-		eTeams.DivisionRules = []eventDomain.DivisionRule{{}}
 		_ = eventRepo.Save(ctx, eTeams)
 
 		maxElo := int16(1500)
@@ -407,7 +406,7 @@ func TestCreateMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("team B not found in event", func(t *testing.T) {
-		eTeams2, _ := eventDomain.NewTournament("e_teams2", "Teams Event", "doubles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+		eTeams2, _ := eventDomain.NewEvent("e_teams2", "Teams Event", "doubles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		eTeams2.Teams = []*eventDomain.Team{
 			{ID: "t1", Players: []*playerDomain.Player{p1}},
 		}
@@ -429,8 +428,7 @@ func TestCreateMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("determinePlayerDivision GetAll error yields empty division", func(t *testing.T) {
-		eDivErr, _ := eventDomain.NewTournament("e_div_err", "Div Err Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
-		eDivErr.DivisionRules = []eventDomain.DivisionRule{{}}
+		eDivErr, _ := eventDomain.NewEvent("e_div_err", "Div Err Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		_ = eventRepo.Save(ctx, eDivErr)
 
 		errDivRepo := newMockDivisionRepo()
@@ -447,8 +445,7 @@ func TestCreateMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("determinePlayerDivision no matching range yields empty division", func(t *testing.T) {
-		eNoMatch, _ := eventDomain.NewTournament("e_no_match", "No Match Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
-		eNoMatch.DivisionRules = []eventDomain.DivisionRule{{}}
+		eNoMatch, _ := eventDomain.NewEvent("e_no_match", "No Match Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		_ = eventRepo.Save(ctx, eNoMatch)
 
 		maxElo := int16(500)
@@ -514,7 +511,7 @@ func TestStartMatchUseCase(t *testing.T) {
 	divisionRepo := newMockDivisionRepo()
 
 	now := time.Now()
-	e, _ := eventDomain.NewTournament("e1", "Event 1", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+	e, _ := eventDomain.NewEvent("e1", "Event 1", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 	_ = eventRepo.Save(context.Background(), e)
 
 	p1, _ := playerDomain.NewPlayer("p1", "Alice", "Smith", now, "F", "USA", "", "1")
@@ -525,11 +522,11 @@ func TestStartMatchUseCase(t *testing.T) {
 	ctx := context.Background()
 
 	m := &eventDomain.Match{
-		ID:           "m1",
-		TournamentID: "e1",
-		TeamA:        []*playerDomain.Player{p1},
-		TeamB:        []*playerDomain.Player{p2},
-		Status:       "scheduled",
+		ID:      "m1",
+		EventID: "e1",
+		TeamA:   []*playerDomain.Player{p1},
+		TeamB:   []*playerDomain.Player{p2},
+		Status:  "scheduled",
 	}
 	_ = matchRepo.Save(ctx, m)
 
@@ -573,7 +570,7 @@ func TestStartMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("event not found", func(t *testing.T) {
-		m2 := &eventDomain.Match{ID: "m2", TournamentID: "invalid_event"}
+		m2 := &eventDomain.Match{ID: "m2", EventID: "invalid_event"}
 		_ = matchRepo.Save(ctx, m2)
 		cmd := eventDomain.StartMatchCommand{MatchID: "m2"}
 		_, err := uc.Execute(ctx, cmd)
@@ -583,7 +580,7 @@ func TestStartMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("no tables available", func(t *testing.T) {
-		m3 := &eventDomain.Match{ID: "m3", TournamentID: "e1"}
+		m3 := &eventDomain.Match{ID: "m3", EventID: "e1"}
 		_ = matchRepo.Save(ctx, m3)
 
 		// Occupy all tables (assuming totalTables defaults to 4 or 2 based on e1.NumTables)
@@ -601,12 +598,12 @@ func TestStartMatchUseCase(t *testing.T) {
 
 	t.Run("auto-assign priority table", func(t *testing.T) {
 		eventID := "g1"
-		eWithGrand := &eventDomain.Event{ID: "e_grand", NumTables: 4, EventID: &eventID}
+		eWithGrand := &eventDomain.Event{ID: "e_grand", NumTables: 4, TournamentID: &eventID}
 		_ = eventRepo.Save(ctx, eWithGrand)
-		mGrand := &eventDomain.Match{ID: "m_grand", TournamentID: "e_grand", DivisionID: "div1"}
+		mGrand := &eventDomain.Match{ID: "m_grand", EventID: "e_grand", DivisionID: "div1"}
 		_ = matchRepo.Save(ctx, mGrand)
 
-		g, _ := grandDomain.NewEvent("g1", "Grand", nil, true, now, now)
+		g, _ := grandDomain.NewTournament("g1", "Grand", nil, true, now, now)
 		g.TablePriorities = map[string][]int{"div1": {3, 4}}
 		_ = grandRepo.Save(ctx, g)
 
@@ -627,7 +624,7 @@ func TestStartMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("high priority assignment", func(t *testing.T) {
-		mHigh := &eventDomain.Match{ID: "m_high", TournamentID: "e1"}
+		mHigh := &eventDomain.Match{ID: "m_high", EventID: "e1"}
 		_ = matchRepo.Save(ctx, mHigh)
 
 		matchRepo.occupiedTables[1] = false
@@ -644,7 +641,7 @@ func TestStartMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("high priority falls back to table 2 when table 1 occupied", func(t *testing.T) {
-		mHigh2 := &eventDomain.Match{ID: "m_high2", TournamentID: "e1"}
+		mHigh2 := &eventDomain.Match{ID: "m_high2", EventID: "e1"}
 		_ = matchRepo.Save(ctx, mHigh2)
 
 		matchRepo.occupiedTables[1] = true
@@ -663,7 +660,7 @@ func TestStartMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("high priority falls back to first available when 1 and 2 occupied", func(t *testing.T) {
-		mHigh3 := &eventDomain.Match{ID: "m_high3", TournamentID: "e1"}
+		mHigh3 := &eventDomain.Match{ID: "m_high3", EventID: "e1"}
 		_ = matchRepo.Save(ctx, mHigh3)
 
 		matchRepo.occupiedTables[1] = true
@@ -682,7 +679,7 @@ func TestStartMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("normal priority picks highest table >= 3", func(t *testing.T) {
-		mNorm := &eventDomain.Match{ID: "m_norm", TournamentID: "e1"}
+		mNorm := &eventDomain.Match{ID: "m_norm", EventID: "e1"}
 		_ = matchRepo.Save(ctx, mNorm)
 
 		matchRepo.occupiedTables[1] = true
@@ -701,7 +698,7 @@ func TestStartMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("normal priority falls back to table 2 when no table >= 3 available", func(t *testing.T) {
-		mNorm2 := &eventDomain.Match{ID: "m_norm2", TournamentID: "e1"}
+		mNorm2 := &eventDomain.Match{ID: "m_norm2", EventID: "e1"}
 		_ = matchRepo.Save(ctx, mNorm2)
 
 		matchRepo.occupiedTables[1] = true
@@ -720,7 +717,7 @@ func TestStartMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("normal priority falls back to table 1 when table 2 occupied", func(t *testing.T) {
-		mNorm3 := &eventDomain.Match{ID: "m_norm3", TournamentID: "e1"}
+		mNorm3 := &eventDomain.Match{ID: "m_norm3", EventID: "e1"}
 		_ = matchRepo.Save(ctx, mNorm3)
 
 		matchRepo.occupiedTables[1] = false
@@ -740,7 +737,7 @@ func TestStartMatchUseCase(t *testing.T) {
 
 	t.Run("matchRepo Save error is propagated", func(t *testing.T) {
 		failRepo := newMockMatchRepo()
-		mFail := &eventDomain.Match{ID: "m_fail", TournamentID: "e1"}
+		mFail := &eventDomain.Match{ID: "m_fail", EventID: "e1"}
 		_ = failRepo.Save(ctx, mFail)
 		failRepo.saveErr = errors.New("save failed")
 
@@ -759,10 +756,10 @@ func TestUpdateMatchScoreUseCase(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now()
-	e, _ := eventDomain.NewTournament("e1", "Event 1", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+	e, _ := eventDomain.NewEvent("e1", "Event 1", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 	_ = eventRepo.Save(ctx, e)
 
-	m := &eventDomain.Match{ID: "m1", TournamentID: "e1"}
+	m := &eventDomain.Match{ID: "m1", EventID: "e1"}
 	_ = matchRepo.Save(ctx, m)
 
 	uc := match.NewUpdateMatchScoreUseCase(matchRepo, eventRepo)
@@ -853,20 +850,20 @@ func TestAutoAssignTablesUseCase(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now()
-	g, _ := grandDomain.NewEvent("g1", "Grand Tourney", []string{"d1"}, true, now, now.Add(24*time.Hour))
+	g, _ := grandDomain.NewTournament("g1", "Grand Tourney", []string{"d1"}, true, now, now.Add(24*time.Hour))
 	g.NumTables = 4
 
 	p1, _ := playerDomain.NewPlayer("p1", "A", "B", now, "M", "USA", "", "1")
 	p2, _ := playerDomain.NewPlayer("p2", "C", "D", now, "M", "USA", "", "2")
 
-	subE, _ := eventDomain.NewTournament("e1", "Sub Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+	subE, _ := eventDomain.NewEvent("e1", "Sub Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 	subE.Matches = []eventDomain.Match{
 		{
-			ID:           "m1",
-			TournamentID: "e1",
-			Status:       "scheduled",
-			TeamA:        []*playerDomain.Player{p1},
-			TeamB:        []*playerDomain.Player{p2},
+			ID:      "m1",
+			EventID: "e1",
+			Status:  "scheduled",
+			TeamA:   []*playerDomain.Player{p1},
+			TeamB:   []*playerDomain.Player{p2},
 		},
 	}
 	g.Events = []*eventDomain.Event{subE}
@@ -895,9 +892,9 @@ func TestAutoAssignTablesUseCase(t *testing.T) {
 	})
 
 	t.Run("no scheduled matches returns nil", func(t *testing.T) {
-		gEmpty, _ := grandDomain.NewEvent("g_empty", "Empty", []string{"d1"}, true, now, now.Add(24*time.Hour))
+		gEmpty, _ := grandDomain.NewTournament("g_empty", "Empty", []string{"d1"}, true, now, now.Add(24*time.Hour))
 		gEmpty.NumTables = 4
-		subEmpty, _ := eventDomain.NewTournament("e_empty", "Empty Sub", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+		subEmpty, _ := eventDomain.NewEvent("e_empty", "Empty Sub", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		gEmpty.Events = []*eventDomain.Event{subEmpty}
 		_ = grandRepo.Save(ctx, gEmpty)
 
@@ -911,25 +908,25 @@ func TestAutoAssignTablesUseCase(t *testing.T) {
 	})
 
 	t.Run("no available tables returns nil", func(t *testing.T) {
-		gFull, _ := grandDomain.NewEvent("g_full", "Full", []string{"d1"}, true, now, now.Add(24*time.Hour))
+		gFull, _ := grandDomain.NewTournament("g_full", "Full", []string{"d1"}, true, now, now.Add(24*time.Hour))
 		gFull.NumTables = 1
-		subFull, _ := eventDomain.NewTournament("e_full", "Full Sub", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+		subFull, _ := eventDomain.NewEvent("e_full", "Full Sub", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		occupiedTbl := 1
 		subFull.Matches = []eventDomain.Match{
 			{
-				ID:           "m_occupied",
-				TournamentID: "e_full",
-				Status:       "in_progress",
-				TableNumber:  &occupiedTbl,
-				TeamA:        []*playerDomain.Player{p1},
-				TeamB:        []*playerDomain.Player{p2},
+				ID:          "m_occupied",
+				EventID:     "e_full",
+				Status:      "in_progress",
+				TableNumber: &occupiedTbl,
+				TeamA:       []*playerDomain.Player{p1},
+				TeamB:       []*playerDomain.Player{p2},
 			},
 			{
-				ID:           "m_waiting",
-				TournamentID: "e_full",
-				Status:       "scheduled",
-				TeamA:        []*playerDomain.Player{p1},
-				TeamB:        []*playerDomain.Player{p2},
+				ID:      "m_waiting",
+				EventID: "e_full",
+				Status:  "scheduled",
+				TeamA:   []*playerDomain.Player{p1},
+				TeamB:   []*playerDomain.Player{p2},
 			},
 		}
 		gFull.Events = []*eventDomain.Event{subFull}
@@ -945,18 +942,18 @@ func TestAutoAssignTablesUseCase(t *testing.T) {
 	})
 
 	t.Run("division priority assigns preferred table", func(t *testing.T) {
-		gPrio, _ := grandDomain.NewEvent("g_prio", "Prio", []string{"d1"}, true, now, now.Add(24*time.Hour))
+		gPrio, _ := grandDomain.NewTournament("g_prio", "Prio", []string{"d1"}, true, now, now.Add(24*time.Hour))
 		gPrio.NumTables = 4
 		gPrio.TablePriorities = map[string][]int{"divP": {2}}
-		subPrio, _ := eventDomain.NewTournament("e_prio", "Prio Sub", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+		subPrio, _ := eventDomain.NewEvent("e_prio", "Prio Sub", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		subPrio.Matches = []eventDomain.Match{
 			{
-				ID:           "m_prio",
-				TournamentID: "e_prio",
-				DivisionID:   "divP",
-				Status:       "scheduled",
-				TeamA:        []*playerDomain.Player{p1},
-				TeamB:        []*playerDomain.Player{p2},
+				ID:         "m_prio",
+				EventID:    "e_prio",
+				DivisionID: "divP",
+				Status:     "scheduled",
+				TeamA:      []*playerDomain.Player{p1},
+				TeamB:      []*playerDomain.Player{p2},
 			},
 		}
 		gPrio.Events = []*eventDomain.Event{subPrio}
@@ -972,12 +969,12 @@ func TestAutoAssignTablesUseCase(t *testing.T) {
 	})
 
 	t.Run("more scheduled matches than tables stops early", func(t *testing.T) {
-		gLimited, _ := grandDomain.NewEvent("g_limited", "Limited", []string{"d1"}, true, now, now.Add(24*time.Hour))
+		gLimited, _ := grandDomain.NewTournament("g_limited", "Limited", []string{"d1"}, true, now, now.Add(24*time.Hour))
 		gLimited.NumTables = 1
-		subLimited, _ := eventDomain.NewTournament("e_limited", "Limited Sub", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+		subLimited, _ := eventDomain.NewEvent("e_limited", "Limited Sub", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		subLimited.Matches = []eventDomain.Match{
-			{ID: "m_a", TournamentID: "e_limited", Status: "scheduled", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}},
-			{ID: "m_b", TournamentID: "e_limited", Status: "scheduled", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}},
+			{ID: "m_a", EventID: "e_limited", Status: "scheduled", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}},
+			{ID: "m_b", EventID: "e_limited", Status: "scheduled", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}},
 		}
 		gLimited.Events = []*eventDomain.Event{subLimited}
 		_ = grandRepo.Save(ctx, gLimited)
@@ -996,8 +993,8 @@ func TestGetMatchesUseCase(t *testing.T) {
 	matchRepo := newMockMatchRepo()
 	ctx := context.Background()
 
-	m1 := &eventDomain.Match{ID: "m1", TournamentID: "e1", MatchType: "singles", Status: "finished", WinnerTeam: "A"}
-	m2 := &eventDomain.Match{ID: "m2", TournamentID: "e1", MatchType: "singles", Status: "scheduled"}
+	m1 := &eventDomain.Match{ID: "m1", EventID: "e1", MatchType: "singles", Status: "finished", WinnerTeam: "A"}
+	m2 := &eventDomain.Match{ID: "m2", EventID: "e1", MatchType: "singles", Status: "scheduled"}
 	_ = matchRepo.Save(ctx, m1)
 	_ = matchRepo.Save(ctx, m2)
 

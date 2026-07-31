@@ -184,7 +184,7 @@ func (m *mockRepo) GetOfficials(ctx context.Context, tournamentID string) ([]tou
 	return m.officials, nil
 }
 
-func (m *mockRepo) GetEventNumTables(ctx context.Context, eventID string) (int, error) {
+func (m *mockRepo) GetTournamentNumTables(ctx context.Context, eventID string) (int, error) {
 	return m.numTables, m.numTablesErr
 }
 
@@ -255,7 +255,7 @@ func (m *mockMatchRepo) GetInProgressMatchOnTable(ctx context.Context, tableNumb
 func (m *mockMatchRepo) HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error) {
 	return m.hasActivity, m.hasActivityErr
 }
-func (m *mockMatchRepo) DeleteByTournament(ctx context.Context, tournamentID string) error {
+func (m *mockMatchRepo) DeleteByEvent(ctx context.Context, tournamentID string) error {
 	return m.deleteByTournErr
 }
 func (m *mockMatchRepo) FinishMatch(ctx context.Context, cmd tournamentDomain.FinishMatchCommand) error {

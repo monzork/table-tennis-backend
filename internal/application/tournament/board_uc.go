@@ -37,7 +37,7 @@ func (uc *GetBoardDataUseCase) Execute(ctx context.Context, idStr string) (*even
 
 	type activePool struct {
 		id             string
-		tournamentID   string
+		eventID        string
 		divisionName   string
 		tournamentName string
 		pool           []event.BoardCard
@@ -57,15 +57,15 @@ func (uc *GetBoardDataUseCase) Execute(ctx context.Context, idStr string) (*even
 
 		for idx := range s {
 			s[idx].TournamentName = t.Name
-			s[idx].TournamentID = t.ID
+			s[idx].EventID = t.ID
 		}
 		for idx := range i {
 			i[idx].TournamentName = t.Name
-			i[idx].TournamentID = t.ID
+			i[idx].EventID = t.ID
 		}
 		for idx := range f {
 			f[idx].TournamentName = t.Name
-			f[idx].TournamentID = t.ID
+			f[idx].EventID = t.ID
 		}
 
 		scheduledByDiv := make(map[string][]event.BoardCard)
@@ -97,7 +97,7 @@ func (uc *GetBoardDataUseCase) Execute(ctx context.Context, idStr string) (*even
 
 			activePools = append(activePools, activePool{
 				id:             poolKey,
-				tournamentID:   t.ID,
+				eventID:        t.ID,
 				divisionName:   divName,
 				tournamentName: t.Name,
 				pool:           pool,

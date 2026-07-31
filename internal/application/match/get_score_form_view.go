@@ -21,7 +21,7 @@ type SetVM struct {
 // When IsTeams is true, the caller should redirect to the team match form instead.
 type ScoreFormView struct {
 	MatchID        string
-	TournamentID   string
+	EventID        string
 	Stage          string
 	BestOf         int
 	PlayerA        string
@@ -152,10 +152,10 @@ func (uc *GetScoreFormViewUseCase) Execute(
 			}
 
 			return &ScoreFormView{
-				IsTeams:      true,
-				MatchID:      matchID,
-				TournamentID: tID,
-				Stage:        stage,
+				IsTeams: true,
+				MatchID: matchID,
+				EventID: tID,
+				Stage:   stage,
 			}, nil
 		}
 	}
@@ -331,7 +331,7 @@ func (uc *GetScoreFormViewUseCase) Execute(
 
 	return &ScoreFormView{
 		MatchID:        matchID,
-		TournamentID:   tID,
+		EventID:        tID,
 		Stage:          stage,
 		BestOf:         bestOf,
 		PlayerA:        playerAName,

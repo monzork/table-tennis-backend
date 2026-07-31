@@ -48,16 +48,16 @@ func TestMatchHandlerExtra(t *testing.T) {
 	playerRepo.Save(ctx, p3)
 	playerRepo.Save(ctx, p4)
 
-	tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Test Tourney", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2}, false)
-	tourney.EventID = new(string)
-	*tourney.EventID = uuid.New().String()
+	tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Test Tourney", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2}, false)
+	tourney.TournamentID = new(string)
+	*tourney.TournamentID = uuid.New().String()
 	tournamentRepo.Save(ctx, tourney)
 
 	// Another tourney for teams
-	tourneyTeams, _ := tournamentDomain.NewTournament(uuid.New().String(), "Teams Tourney", "teams", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2, p3, p4}, false)
+	tourneyTeams, _ := tournamentDomain.NewEvent(uuid.New().String(), "Teams Tourney", "teams", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2, p3, p4}, false)
 	tournamentRepo.Save(ctx, tourneyTeams)
 
-	m := &tournamentDomain.Match{ID: uuid.New().String(), TournamentID: tourney.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled"}
+	m := &tournamentDomain.Match{ID: uuid.New().String(), EventID: tourney.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled"}
 	matchRepo.Save(ctx, m)
 
 	t.Run("Create Match", func(t *testing.T) {
@@ -192,9 +192,9 @@ func TestMatchHandlerExtra(t *testing.T) {
 
 	t.Run("ValidateMatchPIN Valid", func(t *testing.T) {
 		officialModel := &bunRepo.EventOfficialModel{
-			TournamentID: uuid.MustParse(tourney.ID),
-			PlayerID:     uuid.MustParse(p1.ID),
-			Pin:          "1234",
+			EventID:  uuid.MustParse(tourney.ID),
+			PlayerID: uuid.MustParse(p1.ID),
+			Pin:      "1234",
 		}
 		matchRepo.DB().NewInsert().Model(officialModel).Exec(ctx)
 
@@ -213,7 +213,7 @@ func TestMatchHandlerExtra(t *testing.T) {
 	})
 
 	t.Run("Team Form Render", func(t *testing.T) {
-		teamMatch := &tournamentDomain.Match{ID: uuid.New().String(), TournamentID: tourneyTeams.ID, MatchType: "teams", TeamA: []*playerDomain.Player{p1, p3}, TeamB: []*playerDomain.Player{p2, p4}, Status: "scheduled"}
+		teamMatch := &tournamentDomain.Match{ID: uuid.New().String(), EventID: tourneyTeams.ID, MatchType: "teams", TeamA: []*playerDomain.Player{p1, p3}, TeamB: []*playerDomain.Player{p2, p4}, Status: "scheduled"}
 		matchRepo.Save(ctx, teamMatch)
 
 		// Admin form

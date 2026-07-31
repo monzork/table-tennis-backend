@@ -57,7 +57,6 @@ func setupTestDB(t *testing.T) *bun.DB {
 		(*bunRepo.TeamPlayerModel)(nil),
 		(*bunRepo.EventOfficialModel)(nil),
 		(*bunRepo.PushSubscriptionModel)(nil),
-		(*bunRepo.DivisionRuleModel)(nil),
 	}
 
 	ctx := context.Background()

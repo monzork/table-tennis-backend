@@ -45,7 +45,7 @@ func TestGetBoardDataUseCase_Execute(t *testing.T) {
 	}
 	m1.UpdatedAt = &now
 
-	t1, _ := tournamentDomain.NewTournament("t1", "Tourney 1", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 1, []*playerDomain.Player{p1, p2}, false)
+	t1, _ := tournamentDomain.NewEvent("t1", "Tourney 1", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 1, []*playerDomain.Player{p1, p2}, false)
 	t1.Matches = []tournamentDomain.Match{m1}
 
 	e.Events = append(e.Events, t1)
@@ -92,7 +92,7 @@ func TestGetBoardDataUseCase_Tables(t *testing.T) {
 
 	p1 := &playerDomain.Player{ID: "p1", SinglesElo: 1000, Gender: "M"}
 
-	t1, _ := tournamentDomain.NewTournament("t1", "Tourney 1", "singles", "single_elimination", "men", time.Now(), time.Now(), nil, 1, []*playerDomain.Player{p1}, false)
+	t1, _ := tournamentDomain.NewEvent("t1", "Tourney 1", "singles", "single_elimination", "men", time.Now(), time.Now(), nil, 1, []*playerDomain.Player{p1}, false)
 	e.Events = append(e.Events, t1)
 	eventRepo.events["e2"] = e
 
@@ -138,7 +138,7 @@ func TestGetBoardDataUseCase_Simulation(t *testing.T) {
 
 	players := []*playerDomain.Player{p1, p2, p3, p4, p5}
 
-	t1, _ := tournamentDomain.NewTournament("t1", "RR Tourney", "singles", "round_robin", "men", now, now.Add(24*time.Hour), nil, 1, players, false)
+	t1, _ := tournamentDomain.NewEvent("t1", "RR Tourney", "singles", "round_robin", "men", now, now.Add(24*time.Hour), nil, 1, players, false)
 
 	// A finished match feeds the lastActivity map.
 	finishedUpdatedAt := now

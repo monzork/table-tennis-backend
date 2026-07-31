@@ -13,7 +13,7 @@ func TestCreateTournamentUseCase_Execute(t *testing.T) {
 		repo := newMockRepo()
 		playerRepo := newMockPlayerRepo()
 		divRepo := &mockDivisionRepo{}
-		uc := NewCreateTournamentUseCase(repo, playerRepo, divRepo)
+		uc := NewCreateTournamentUseCase(repo, playerRepo)
 		return uc, repo, playerRepo, divRepo
 	}
 

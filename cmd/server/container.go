@@ -57,9 +57,9 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	divisionRepo := bun.NewDivisionRepository(bun.DB)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 
-	createTournamentUC := event.NewCreateTournamentUseCase(eventRepo, playerRepo, divisionRepo)
-	getTournamentByIDUC := event.NewGetTournamentByIDUseCase(eventRepo, divisionRepo)
-	updateTournamentUC := event.NewUpdateTournamentUseCase(eventRepo, playerRepo, divisionRepo)
+	createTournamentUC := event.NewCreateTournamentUseCase(eventRepo, playerRepo)
+	getTournamentByIDUC := event.NewGetTournamentByIDUseCase(eventRepo)
+	updateTournamentUC := event.NewUpdateTournamentUseCase(eventRepo, playerRepo)
 	deleteTournamentUC := event.NewDeleteTournamentUseCase(eventRepo)
 	matchRepo := bun.NewMatchRepository(bun.DB, playerRepo)
 	finishTournamentUC := event.NewFinishTournamentUseCase(eventRepo, matchRepo, playerRepo)
@@ -72,10 +72,10 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	deleteTeamUC := event.NewDeleteTeamUseCase(eventRepo)
 	assignPlayerToTeamUC := event.NewAssignPlayerToTeamUseCase(eventRepo)
 	removePlayerFromTeamUC := event.NewRemovePlayerFromTeamUseCase(eventRepo)
-	regenerateSeedsUC := event.NewRegenerateGroupSeedsUseCase(eventRepo, matchRepo, divisionRepo)
+	regenerateSeedsUC := event.NewRegenerateGroupSeedsUseCase(eventRepo, matchRepo)
 	dispatcher.Subscribe(tournaments.PlayerEnrolledEventName, func(ctx context.Context, e tournaments.Tournament) error {
 		if pe, ok := e.(tournaments.PlayerEnrolledEvent); ok {
-			_ = regenerateSeedsUC.Execute(ctx, pe.TournamentID)
+			_ = regenerateSeedsUC.Execute(ctx, pe.EventID)
 		}
 		return nil
 	})

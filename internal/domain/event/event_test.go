@@ -21,7 +21,7 @@ func TestNewTournament_Valid(t *testing.T) {
 		{ID: "p2", Gender: "M"},
 	}
 
-	tourn, err := event.NewTournament("t1", "Test Tourn", "singles", "elimination", "men", start, end, nil, 2, participants, false)
+	tourn, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "men", start, end, nil, 2, participants, false)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -38,7 +38,7 @@ func TestNewTournament_InvalidDates(t *testing.T) {
 	start := time.Now()
 	end := start.Add(-24 * time.Hour) // Ends before starts
 
-	_, err := event.NewTournament("t1", "Test Tourn", "singles", "elimination", "open", start, end, nil, 2, nil, false)
+	_, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "open", start, end, nil, 2, nil, false)
 	if err != event.ErrInvalidDates {
 		t.Fatalf("expected ErrInvalidDates, got %v", err)
 	}
@@ -51,7 +51,7 @@ func TestNewTournament_CategoryValidation(t *testing.T) {
 		{ID: "p1", Gender: "F"}, // Female in a men's event
 	}
 
-	_, err := event.NewTournament("t1", "Test Tourn", "singles", "elimination", "men", start, end, nil, 2, participants, false)
+	_, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "men", start, end, nil, 2, participants, false)
 	if err == nil {
 		t.Fatalf("expected error for gender mismatch, got nil")
 	}
@@ -64,7 +64,7 @@ func TestNewTournament_WomenCategoryValidation(t *testing.T) {
 		{ID: "p1", Gender: "M"}, // Male in a women's event
 	}
 
-	_, err := event.NewTournament("t1", "Test Tourn", "singles", "elimination", "women", start, end, nil, 2, participants, false)
+	_, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "women", start, end, nil, 2, participants, false)
 	if err == nil {
 		t.Fatalf("expected error for gender mismatch, got nil")
 	}
@@ -74,7 +74,7 @@ func TestNewTournament_DefaultsApplied(t *testing.T) {
 	start := time.Now()
 	end := start.Add(24 * time.Hour)
 
-	tourn, err := event.NewTournament("t1", "Test Tourn", "", "", "", start, end, nil, 2, nil, false)
+	tourn, err := event.NewEvent("t1", "Test Tourn", "", "", "", start, end, nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -99,7 +99,7 @@ func TestNewTournament_GroupsElimination_AssignsGroups(t *testing.T) {
 		{ID: "p3", SinglesElo: 1300},
 	}
 
-	tourn, err := event.NewTournament("t1", "Test Tourn", "singles", "groups_elimination", "open", start, end, nil, 2, participants, false)
+	tourn, err := event.NewEvent("t1", "Test Tourn", "singles", "groups_elimination", "open", start, end, nil, 2, participants, false)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -117,7 +117,7 @@ func TestNewTournament_RoundRobin_AssignsGroups(t *testing.T) {
 		{ID: "p2", SinglesElo: 1400},
 	}
 
-	tourn, err := event.NewTournament("t1", "Test Tourn", "singles", "round_robin", "open", start, end, nil, 2, participants, false)
+	tourn, err := event.NewEvent("t1", "Test Tourn", "singles", "round_robin", "open", start, end, nil, 2, participants, false)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -134,20 +134,16 @@ func TestTournament_GetEffectiveStageRule(t *testing.T) {
 		StageRules: []event.StageRule{
 			{Stage: "final", BestOf: 7, PointsToWin: 11, PointsMargin: 2},
 		},
-		DivisionRules: []event.DivisionRule{
-			{DivisionID: "div1", Stage: "final", BestOf: 5, PointsToWin: 11, PointsMargin: 2},
-		},
 	}
 
-	// Should prioritize division rule
-	rule := tourn.GetEffectiveStageRule("final", "div1")
-	if rule.BestOf != 5 {
-		t.Errorf("expected division rule bestOf 5, got %d", rule.BestOf)
+	rule := tourn.GetEffectiveStageRule("final")
+	if rule.BestOf != 7 {
+		t.Errorf("expected stage rule bestOf 7, got %d", rule.BestOf)
 	}
 
-	// Should fallback to stage rule
-	rule2 := tourn.GetEffectiveStageRule("final", "div2")
-	if rule2.BestOf != 7 {
-		t.Errorf("expected stage rule bestOf 7, got %d", rule2.BestOf)
+	// Should fallback to default WTT rule when stage isn't configured
+	rule2 := tourn.GetEffectiveStageRule("semifinal")
+	if rule2.BestOf != 5 {
+		t.Errorf("expected default bestOf 5, got %d", rule2.BestOf)
 	}
 }

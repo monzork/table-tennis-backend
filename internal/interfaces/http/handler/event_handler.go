@@ -664,7 +664,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 			MatchID:     m.ID,
 			Status:      m.Status,
 			Stage:       m.Stage,
-			BestOf:      t.GetEffectiveStageRule(m.Stage, m.DivisionID).BestOf,
+			BestOf:      t.GetEffectiveStageRule(m.Stage).BestOf,
 			PlayerAName: nameOf(m.TeamA),
 			PlayerBName: nameOf(m.TeamB),
 			P1Id:        idOf(m.TeamA),

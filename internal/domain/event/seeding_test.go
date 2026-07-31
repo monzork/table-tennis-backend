@@ -15,7 +15,7 @@ func TestOpenBracketSnakeSeeder_AssignGroups(t *testing.T) {
 	seeder := &OpenBracketSnakeSeeder{}
 
 	// Format not matching
-	ev := &Event{Format: "elimination"}
+	ev := &Event{Format: "unsupported"}
 	if err := seeder.AssignGroups(ev); err != nil {
 		t.Errorf("Expected no error")
 	}
@@ -48,189 +48,23 @@ func TestOpenBracketSnakeSeeder_AssignGroups(t *testing.T) {
 	if len(ev.Groups) != 1 {
 		t.Fatalf("Expected 1 group, got %d", len(ev.Groups))
 	}
-}
 
-func TestDivisionSeeder_AssignGroups(t *testing.T) {
-	idgen.Register(dummyGen{})
-	seeder := &DivisionSeeder{
-		Divisions: []DivisionSeeding{
-			{ID: "d1", Name: "Div 1", MinElo: 1400, MaxElo: nil},
-		},
-	}
-
-	ev := &Event{Format: "elimination"}
+	// Elimination: single bracket-draw group
+	ev.Format = "elimination"
 	if err := seeder.AssignGroups(ev); err != nil {
 		t.Errorf("Expected no error")
 	}
+	if len(ev.Groups) != 1 || ev.Groups[0].Name != "Bracket Draw" {
+		t.Fatalf("Expected 1 Bracket Draw group, got %+v", ev.Groups)
+	}
 
-	ev.Format = "groups_elimination"
-	p1 := &player.Player{ID: "1", FirstName: "A", SinglesElo: 1500}
-	p2 := &player.Player{ID: "2", FirstName: "B", SinglesElo: 1000}
-	ev.Participants = []*player.Player{p1, p2}
-
+	// single_division_multiple_brackets: numbered groups via n/4 heuristic
+	ev.Format = "single_division_multiple_brackets"
 	if err := seeder.AssignGroups(ev); err != nil {
 		t.Errorf("Expected no error")
 	}
-
-	if len(ev.Groups) != 2 {
-		t.Fatalf("Expected 2 groups (Div 1 and Unclassified), got %d", len(ev.Groups))
-	}
-}
-
-func TestDivisionSeeder_AssignGroups_UnsupportedFormat(t *testing.T) {
-	seeder := &DivisionSeeder{}
-	ev := &Event{Format: "elimination", Groups: []Group{{ID: "stale"}}}
-	// "elimination" is a supported format for DivisionSeeder, so use a truly
-	// unsupported one to hit the early-return branch that resets Groups.
-	ev.Format = "unsupported"
-	if err := seeder.AssignGroups(ev); err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if len(ev.Groups) != 0 {
-		t.Errorf("Expected Groups reset to empty, got %d", len(ev.Groups))
-	}
-}
-
-func TestDivisionSeeder_AssignGroups_SkipEloOpenBracket(t *testing.T) {
-	idgen.Register(dummyGen{})
-	seeder := &DivisionSeeder{
-		Divisions: []DivisionSeeding{{ID: "d1", Name: "Div 1", MinElo: 0, MaxElo: nil}},
-	}
-	p1 := &player.Player{ID: "1", SinglesElo: 1500}
-	p2 := &player.Player{ID: "2", SinglesElo: 1000}
-	ev := &Event{
-		Format:       "groups_elimination",
-		SkipElo:      true,
-		Participants: []*player.Player{p1, p2},
-	}
-	if err := seeder.AssignGroups(ev); err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
 	if len(ev.Groups) != 1 {
-		t.Fatalf("Expected 1 open-bracket group, got %d", len(ev.Groups))
-	}
-}
-
-func TestDivisionSeeder_AssignGroups_SingleDivisionMultipleBrackets(t *testing.T) {
-	idgen.Register(dummyGen{})
-	seeder := &DivisionSeeder{
-		Divisions: []DivisionSeeding{{ID: "d1", Name: "Div 1", MinElo: 0, MaxElo: nil}},
-	}
-	p1 := &player.Player{ID: "1", SinglesElo: 1500}
-	ev := &Event{
-		Format:       "single_division_multiple_brackets",
-		Participants: []*player.Player{p1},
-	}
-	if err := seeder.AssignGroups(ev); err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if len(ev.Groups) != 1 {
-		t.Fatalf("Expected 1 group, got %d", len(ev.Groups))
-	}
-}
-
-func TestDivisionSeeder_AssignGroups_MaxEloBound(t *testing.T) {
-	idgen.Register(dummyGen{})
-	maxElo := int16(1450)
-	seeder := &DivisionSeeder{
-		Divisions: []DivisionSeeding{
-			{ID: "d1", Name: "Div 1", MinElo: 1400, MaxElo: &maxElo},
-		},
-	}
-	p1 := &player.Player{ID: "1", SinglesElo: 1500} // above max, goes unclassified
-	p2 := &player.Player{ID: "2", SinglesElo: 1420} // within bounds
-	ev := &Event{
-		Format:       "groups_elimination",
-		Participants: []*player.Player{p1, p2},
-	}
-	if err := seeder.AssignGroups(ev); err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if len(ev.Groups) != 2 {
-		t.Fatalf("Expected 2 groups (Div 1 and Unclassified), got %d", len(ev.Groups))
-	}
-}
-
-func TestDivisionSeeder_AssignGroups_DivisionFormatOverrides(t *testing.T) {
-	idgen.Register(dummyGen{})
-	seeder := &DivisionSeeder{
-		Divisions: []DivisionSeeding{
-			{ID: "d1", Name: "Round Robin Div", MinElo: 1000, MaxElo: nil},
-		},
-	}
-	p1 := &player.Player{ID: "1", SinglesElo: 1500}
-	p2 := &player.Player{ID: "2", SinglesElo: 1400}
-	ev := &Event{
-		Format:       "groups_elimination",
-		Participants: []*player.Player{p1, p2},
-		DivisionConfigs: map[string]DivisionConfig{
-			"d1": {Format: "round_robin"},
-		},
-	}
-	if err := seeder.AssignGroups(ev); err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if len(ev.Groups) != 1 {
-		t.Fatalf("Expected 1 round-robin group for division, got %d", len(ev.Groups))
-	}
-
-	// Now try elimination format override
-	ev.Groups = nil
-	ev.DivisionConfigs["d1"] = DivisionConfig{Format: "elimination"}
-	if err := seeder.AssignGroups(ev); err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if len(ev.Groups) != 1 {
-		t.Fatalf("Expected 1 bracket-draw group for division, got %d", len(ev.Groups))
-	}
-}
-
-func TestDivisionSeeder_AssignGroups_ExplicitGroupCount(t *testing.T) {
-	idgen.Register(dummyGen{})
-	seeder := &DivisionSeeder{
-		Divisions: []DivisionSeeding{
-			{ID: "d1", Name: "Div 1", MinElo: 0, MaxElo: nil},
-		},
-	}
-	players := []*player.Player{}
-	for i := 0; i < 8; i++ {
-		players = append(players, &player.Player{ID: string(rune('a' + i)), SinglesElo: int16(1500 - i*10)})
-	}
-	ev := &Event{
-		Format:       "groups_elimination",
-		Participants: players,
-		DivisionConfigs: map[string]DivisionConfig{
-			"d1": {GroupCount: 2},
-		},
-	}
-	if err := seeder.AssignGroups(ev); err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if len(ev.Groups) != 2 {
-		t.Fatalf("Expected explicit group count of 2, got %d", len(ev.Groups))
-	}
-}
-
-func TestDivisionSeeder_AssignGroups_TeamsAndDoublesElo(t *testing.T) {
-	idgen.Register(dummyGen{})
-	seeder := &DivisionSeeder{
-		Divisions: []DivisionSeeding{{ID: "d1", Name: "Div 1", MinElo: 0, MaxElo: nil}},
-	}
-	team1, _ := NewTeam("t1", "tourn1", "Team One")
-	team1.Players = []*player.Player{{DoublesElo: 1500}}
-	team2, _ := NewTeam("t2", "tourn1", "Team Two")
-	team2.Players = []*player.Player{{DoublesElo: 1400}}
-
-	ev := &Event{
-		Format: "groups_elimination",
-		Type:   "doubles",
-		Teams:  []*Team{team1, team2},
-	}
-	if err := seeder.AssignGroups(ev); err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if len(ev.Groups) != 1 {
-		t.Fatalf("Expected 1 group, got %d", len(ev.Groups))
+		t.Fatalf("Expected 1 group for 4 participants, got %d", len(ev.Groups))
 	}
 }
 

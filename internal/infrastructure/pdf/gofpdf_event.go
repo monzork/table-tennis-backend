@@ -1344,7 +1344,7 @@ func isGroupFinished(t *event.Event, g *event.Group) bool {
 }
 
 func getITTFKnockoutSeeds(t *event.Event, divID, divName string, players []*player.Player, divRRGroups []*event.Group) []*player.Player {
-	passCount := t.GetGroupPassCount(divID)
+	passCount := t.GroupPassCount
 	if passCount == 0 {
 		passCount = 2
 	}

@@ -257,7 +257,7 @@ func TestPublicHandler_ShowTournamentRegisterForm(t *testing.T) {
 	ctx := context.Background()
 	tournamentRepo := bunRepo.NewEventRepository(db)
 
-	tourney, err := tournamentDomain.NewTournament(uuid.New().String(), "Open Championship 2", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, nil, false)
+	tourney, err := tournamentDomain.NewEvent(uuid.New().String(), "Open Championship 2", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, nil, false)
 	if err != nil {
 		t.Fatalf("failed to create event: %v", err)
 	}

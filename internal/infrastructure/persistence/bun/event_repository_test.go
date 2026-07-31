@@ -16,7 +16,7 @@ func newBareEvent(t *testing.T, name string, participants []*player.Player) *eve
 	t.Helper()
 	start := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)
-	e, err := event.NewTournament(uuid.NewString(), name, "singles", "elimination", "open", start, end, nil, 2, participants, false)
+	e, err := event.NewEvent(uuid.NewString(), name, "singles", "elimination", "open", start, end, nil, 2, participants, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
@@ -212,7 +212,7 @@ func TestEventRepository_UpdateGroups(t *testing.T) {
 	}
 
 	e.Groups = []event.Group{
-		{ID: uuid.NewString(), TournamentID: e.ID, Name: "Group A", Players: []*player.Player{p1}},
+		{ID: uuid.NewString(), EventID: e.ID, Name: "Group A", Players: []*player.Player{p1}},
 	}
 	if err := eventRepo.UpdateGroups(ctx, e); err != nil {
 		t.Fatalf("UpdateGroups: %v", err)
@@ -267,7 +267,7 @@ func TestEventRepository_Delete_InvalidID(t *testing.T) {
 	}
 }
 
-func TestEventRepository_GetByEventID(t *testing.T) {
+func TestEventRepository_GetByTournamentID(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)
 	ctx := context.Background()
@@ -276,9 +276,9 @@ func TestEventRepository_GetByEventID(t *testing.T) {
 	tIDStr := tournamentID.String()
 
 	e1 := newBareEvent(t, "Sub Event 1", nil)
-	e1.EventID = &tIDStr
+	e1.TournamentID = &tIDStr
 	e2 := newBareEvent(t, "Sub Event 2", nil)
-	e2.EventID = &tIDStr
+	e2.TournamentID = &tIDStr
 
 	if err := eventRepo.Save(ctx, e1); err != nil {
 		t.Fatalf("Save e1: %v", err)
@@ -287,25 +287,25 @@ func TestEventRepository_GetByEventID(t *testing.T) {
 		t.Fatalf("Save e2: %v", err)
 	}
 
-	got, err := eventRepo.GetByEventID(ctx, tournamentID, false)
+	got, err := eventRepo.GetByTournamentID(ctx, tournamentID, false)
 	if err != nil {
-		t.Fatalf("GetByEventID: %v", err)
+		t.Fatalf("GetByTournamentID: %v", err)
 	}
 	if len(got) != 2 {
 		t.Fatalf("expected 2 sub-events, got %d", len(got))
 	}
 
-	deep, err := eventRepo.GetByEventID(ctx, tournamentID, true)
+	deep, err := eventRepo.GetByTournamentID(ctx, tournamentID, true)
 	if err != nil {
-		t.Fatalf("GetByEventID (deep): %v", err)
+		t.Fatalf("GetByTournamentID (deep): %v", err)
 	}
 	if len(deep) != 2 {
 		t.Fatalf("expected 2 sub-events (deep), got %d", len(deep))
 	}
 
-	none, err := eventRepo.GetByEventID(ctx, uuid.New(), false)
+	none, err := eventRepo.GetByTournamentID(ctx, uuid.New(), false)
 	if err != nil {
-		t.Fatalf("GetByEventID (none): %v", err)
+		t.Fatalf("GetByTournamentID (none): %v", err)
 	}
 	if len(none) != 0 {
 		t.Fatalf("expected 0 sub-events for unrelated tournament id, got %d", len(none))
@@ -318,7 +318,7 @@ func TestEventRepository_TeamLifecycle(t *testing.T) {
 	playerRepo := bunRepo.NewPlayerRepository(db)
 	ctx := context.Background()
 
-	e, err := event.NewTournament(uuid.NewString(), "Doubles Cup", "doubles", "elimination", "open", time.Now(), time.Now().Add(time.Hour), nil, 2, nil, false)
+	e, err := event.NewEvent(uuid.NewString(), "Doubles Cup", "doubles", "elimination", "open", time.Now(), time.Now().Add(time.Hour), nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
@@ -386,7 +386,7 @@ func TestEventRepository_AddPlayerToTeam_GenderRestrictions(t *testing.T) {
 	playerRepo := bunRepo.NewPlayerRepository(db)
 	ctx := context.Background()
 
-	e, err := event.NewTournament(uuid.NewString(), "Women's Doubles", "doubles", "elimination", "women", time.Now(), time.Now().Add(time.Hour), nil, 2, nil, false)
+	e, err := event.NewEvent(uuid.NewString(), "Women's Doubles", "doubles", "elimination", "women", time.Now(), time.Now().Add(time.Hour), nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
@@ -579,7 +579,7 @@ func TestEventRepository_OfficialLifecycle(t *testing.T) {
 	}
 }
 
-func TestEventRepository_GetEventNumTables(t *testing.T) {
+func TestEventRepository_GetTournamentNumTables(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)
 	tournamentRepo := bunRepo.NewTournamentRepository(db, eventRepo)
@@ -591,31 +591,31 @@ func TestEventRepository_GetEventNumTables(t *testing.T) {
 		t.Fatalf("Save tournament: %v", err)
 	}
 
-	n, err := eventRepo.GetEventNumTables(ctx, tr.ID)
+	n, err := eventRepo.GetTournamentNumTables(ctx, tr.ID)
 	if err != nil {
-		t.Fatalf("GetEventNumTables: %v", err)
+		t.Fatalf("GetTournamentNumTables: %v", err)
 	}
 	if n != 12 {
 		t.Fatalf("expected 12 tables, got %d", n)
 	}
 }
 
-func TestEventRepository_GetEventNumTables_InvalidID(t *testing.T) {
+func TestEventRepository_GetTournamentNumTables_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)
 	ctx := context.Background()
 
-	if _, err := eventRepo.GetEventNumTables(ctx, "bad-id"); err == nil {
+	if _, err := eventRepo.GetTournamentNumTables(ctx, "bad-id"); err == nil {
 		t.Fatal("expected error for invalid UUID, got nil")
 	}
 }
 
-func TestEventRepository_GetEventNumTables_NotFound(t *testing.T) {
+func TestEventRepository_GetTournamentNumTables_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)
 	ctx := context.Background()
 
-	if _, err := eventRepo.GetEventNumTables(ctx, uuid.NewString()); err == nil {
+	if _, err := eventRepo.GetTournamentNumTables(ctx, uuid.NewString()); err == nil {
 		t.Fatal("expected error for missing tournament, got nil")
 	}
 }
@@ -643,9 +643,9 @@ func TestEventRepository_UpdateEventIDBulk(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse tournamentID: %v", err)
 	}
-	got, err := eventRepo.GetByEventID(ctx, tUUID, false)
+	got, err := eventRepo.GetByTournamentID(ctx, tUUID, false)
 	if err != nil {
-		t.Fatalf("GetByEventID: %v", err)
+		t.Fatalf("GetByTournamentID: %v", err)
 	}
 	if len(got) != 2 {
 		t.Fatalf("expected 2 events linked to tournament, got %d", len(got))

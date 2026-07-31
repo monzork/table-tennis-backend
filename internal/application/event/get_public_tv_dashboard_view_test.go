@@ -13,7 +13,7 @@ import (
 
 func TestGetPublicTVDashboardViewUseCase_Execute(t *testing.T) {
 	newUC := func(repo *mockRepo, divRepo *mockDivisionRepo, playerRepo *mockPlayerRepo) *GetPublicTVDashboardViewUseCase {
-		getByID := NewGetTournamentByIDUseCase(repo, divRepo)
+		getByID := NewGetTournamentByIDUseCase(repo)
 		leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 		divisionUC := division.NewDivisionUseCase(divRepo)
 		return NewGetPublicTVDashboardViewUseCase(getByID, leaderboardUC, divisionUC)

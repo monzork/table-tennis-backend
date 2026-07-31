@@ -33,14 +33,14 @@ func TestEventHandlerDirectly(t *testing.T) {
 	playerRepo.Save(context.Background(), p1)
 	playerRepo.Save(context.Background(), p2)
 
-	tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Comp Test Event", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2}, false)
+	tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Comp Test Event", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2}, false)
 	tournamentRepo := bunRepo.NewEventRepository(db)
 	tournamentRepo.Save(context.Background(), tourney)
 	validID := tourney.ID
 
 	teamID := uuid.New()
 	tourneyUUID, _ := uuid.Parse(validID)
-	db.NewInsert().Model(&bunRepo.TeamModel{ID: teamID, Name: "Test Team", TournamentID: tourneyUUID}).Exec(context.Background())
+	db.NewInsert().Model(&bunRepo.TeamModel{ID: teamID, Name: "Test Team", EventID: tourneyUUID}).Exec(context.Background())
 
 	tests := []struct {
 		name   string

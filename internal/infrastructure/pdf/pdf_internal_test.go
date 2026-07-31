@@ -250,9 +250,7 @@ func TestGetITTFKnockoutSeeds_PassCountExceedsGroupSize(t *testing.T) {
 	groupB := &event.Group{ID: "gB", Name: "Group B", Players: []*player.Player{pB1, pB2}}
 
 	ev := &event.Event{
-		DivisionConfigs: map[string]event.DivisionConfig{
-			"div1": {GroupPassCount: 3},
-		},
+		GroupPassCount: 3,
 		Matches: []event.Match{
 			{Stage: "group", Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{pA1}, TeamB: []*player.Player{pA2}, Sets: win3},
 			{Stage: "group", Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{pB1}, TeamB: []*player.Player{pB2}, Sets: win3},

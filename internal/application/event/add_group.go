@@ -17,8 +17,8 @@ func NewAddGroupUseCase(repo event.Repository) *AddGroupUseCase {
 	return &AddGroupUseCase{repo: repo}
 }
 
-func (uc *AddGroupUseCase) Execute(ctx context.Context, tournamentID string, divisionName string) error {
-	t, err := uc.repo.GetByID(ctx, tournamentID)
+func (uc *AddGroupUseCase) Execute(ctx context.Context, eventID string, divisionName string) error {
+	t, err := uc.repo.GetByID(ctx, eventID)
 	if err != nil {
 		return err
 	}
@@ -40,10 +40,10 @@ func (uc *AddGroupUseCase) Execute(ctx context.Context, tournamentID string, div
 	newName := fmt.Sprintf("%s - Group %c", divisionName, newLetter)
 
 	newGroup := event.Group{
-		ID:           idgen.Generate(),
-		TournamentID: t.ID,
-		Name:         newName,
-		Players:      []*player.Player{},
+		ID:      idgen.Generate(),
+		EventID: t.ID,
+		Name:    newName,
+		Players: []*player.Player{},
 	}
 	t.Groups = append(t.Groups, newGroup)
 

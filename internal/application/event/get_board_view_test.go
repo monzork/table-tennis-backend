@@ -23,7 +23,7 @@ func TestGetBoardViewUseCase_Execute(t *testing.T) {
 		repo := newMockRepo()
 		repo.events["t1"] = &tournamentDomain.Event{ID: "t1", Groups: []tournamentDomain.Group{{ID: "g1"}}}
 		divRepo := &mockDivisionRepo{divisions: []*divisionDomain.Division{{ID: "d1", Name: "Open"}}}
-		getByID := NewGetTournamentByIDUseCase(repo, divRepo)
+		getByID := NewGetTournamentByIDUseCase(repo)
 		divisionUC := division.NewDivisionUseCase(divRepo)
 		uc := NewGetBoardViewUseCase(getByID, divisionUC)
 
@@ -43,7 +43,7 @@ func TestGetBoardViewUseCase_Execute(t *testing.T) {
 		repo := newMockRepo()
 		repo.getErr = errors.New("db error")
 		divRepo := &mockDivisionRepo{}
-		getByID := NewGetTournamentByIDUseCase(repo, divRepo)
+		getByID := NewGetTournamentByIDUseCase(repo)
 		divisionUC := division.NewDivisionUseCase(divRepo)
 		uc := NewGetBoardViewUseCase(getByID, divisionUC)
 
@@ -57,7 +57,7 @@ func TestGetBoardViewUseCase_Execute(t *testing.T) {
 		repo := newMockRepo()
 		repo.events["t1"] = &tournamentDomain.Event{ID: "t1"}
 		divRepo := &mockDivisionRepo{}
-		getByID := NewGetTournamentByIDUseCase(repo, divRepo)
+		getByID := NewGetTournamentByIDUseCase(repo)
 		divisionUC := division.NewDivisionUseCase(divRepo)
 		uc := NewGetBoardViewUseCase(getByID, divisionUC)
 

@@ -51,13 +51,13 @@ func newMatchTestFixture(t *testing.T) *matchTestFixture {
 func (f *matchTestFixture) newMatch(t *testing.T, stage string) *event.Match {
 	t.Helper()
 	return &event.Match{
-		ID:           uuid.NewString(),
-		TournamentID: f.tournament.ID,
-		MatchType:    "singles",
-		TeamA:        []*player.Player{f.players[0]},
-		TeamB:        []*player.Player{f.players[1]},
-		Status:       "scheduled",
-		Stage:        stage,
+		ID:        uuid.NewString(),
+		EventID:   f.tournament.ID,
+		MatchType: "singles",
+		TeamA:     []*player.Player{f.players[0]},
+		TeamB:     []*player.Player{f.players[1]},
+		Status:    "scheduled",
+		Stage:     stage,
 	}
 }
 
@@ -105,13 +105,13 @@ func TestMatchRepository_Save_DoublesTeams(t *testing.T) {
 	ctx := context.Background()
 
 	m := &event.Match{
-		ID:           uuid.NewString(),
-		TournamentID: f.tournament.ID,
-		MatchType:    "doubles",
-		TeamA:        []*player.Player{f.players[0], f.players[1]},
-		TeamB:        []*player.Player{f.players[2], f.players[3]},
-		Status:       "scheduled",
-		Stage:        "group",
+		ID:        uuid.NewString(),
+		EventID:   f.tournament.ID,
+		MatchType: "doubles",
+		TeamA:     []*player.Player{f.players[0], f.players[1]},
+		TeamB:     []*player.Player{f.players[2], f.players[3]},
+		Status:    "scheduled",
+		Stage:     "group",
 	}
 	if err := f.matchRepo.Save(ctx, m); err != nil {
 		t.Fatalf("Save: %v", err)
@@ -262,7 +262,7 @@ func TestMatchRepository_HasStartedOrFinishedMatches(t *testing.T) {
 	}
 }
 
-func TestMatchRepository_DeleteByTournament(t *testing.T) {
+func TestMatchRepository_DeleteByEvent(t *testing.T) {
 	f := newMatchTestFixture(t)
 	ctx := context.Background()
 
@@ -271,8 +271,8 @@ func TestMatchRepository_DeleteByTournament(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 
-	if err := f.matchRepo.DeleteByTournament(ctx, f.tournament.ID); err != nil {
-		t.Fatalf("DeleteByTournament: %v", err)
+	if err := f.matchRepo.DeleteByEvent(ctx, f.tournament.ID); err != nil {
+		t.Fatalf("DeleteByEvent: %v", err)
 	}
 
 	if _, err := f.matchRepo.GetByID(ctx, m.ID); err == nil {
@@ -322,24 +322,24 @@ func TestMatchRepository_GetOccupiedTables(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 
-	occupiedByTournament, err := f.matchRepo.GetOccupiedTablesByTournament(ctx, f.tournament.ID)
-	if err != nil {
-		t.Fatalf("GetOccupiedTablesByTournament: %v", err)
-	}
-	if len(occupiedByTournament) != 1 || occupiedByTournament[0] != 3 {
-		t.Fatalf("expected table 3 occupied, got %+v", occupiedByTournament)
-	}
-
 	occupiedByEvent, err := f.matchRepo.GetOccupiedTablesByEvent(ctx, f.tournament.ID)
 	if err != nil {
 		t.Fatalf("GetOccupiedTablesByEvent: %v", err)
 	}
-	if len(occupiedByEvent) != 0 {
-		// GetOccupiedTablesByEvent looks up events whose tournament_id == the given
-		// eventID, i.e. it expects a *parent* tournament id, not an event id
+	if len(occupiedByEvent) != 1 || occupiedByEvent[0] != 3 {
+		t.Fatalf("expected table 3 occupied, got %+v", occupiedByEvent)
+	}
+
+	occupiedByTournament, err := f.matchRepo.GetOccupiedTablesByTournament(ctx, f.tournament.ID)
+	if err != nil {
+		t.Fatalf("GetOccupiedTablesByTournament: %v", err)
+	}
+	if len(occupiedByTournament) != 0 {
+		// GetOccupiedTablesByTournament looks up events whose tournament_id == the given
+		// tournamentID, i.e. it expects a *parent* tournament id, not an event id
 		// directly. With no EventModel rows pointing at f.tournament.ID it
 		// should come back empty.
-		t.Fatalf("expected 0 occupied tables via GetOccupiedTablesByEvent (no parent link), got %+v", occupiedByEvent)
+		t.Fatalf("expected 0 occupied tables via GetOccupiedTablesByTournament (no parent link), got %+v", occupiedByTournament)
 	}
 }
 
@@ -470,14 +470,14 @@ func TestMatchRepository_GetInProgressMatchOnTable_ScopedByEventContainer(t *tes
 
 	table := 5
 	m := &event.Match{
-		ID:           uuid.NewString(),
-		TournamentID: sub.ID,
-		MatchType:    "singles",
-		TeamA:        []*player.Player{p1},
-		TeamB:        []*player.Player{p2},
-		Status:       "in_progress",
-		Stage:        "group",
-		TableNumber:  &table,
+		ID:          uuid.NewString(),
+		EventID:     sub.ID,
+		MatchType:   "singles",
+		TeamA:       []*player.Player{p1},
+		TeamB:       []*player.Player{p2},
+		Status:      "in_progress",
+		Stage:       "group",
+		TableNumber: &table,
 	}
 	if err := matchRepo.Save(ctx, m); err != nil {
 		t.Fatalf("Save match: %v", err)
@@ -591,13 +591,13 @@ func TestMatchRepository_GetSubMatches_And_CreateSubMatches(t *testing.T) {
 	ctx := context.Background()
 
 	parent := &event.Match{
-		ID:           uuid.NewString(),
-		TournamentID: f.tournament.ID,
-		MatchType:    "teams",
-		TeamA:        []*player.Player{f.players[0]},
-		TeamB:        []*player.Player{f.players[1]},
-		Status:       "scheduled",
-		Stage:        "final",
+		ID:        uuid.NewString(),
+		EventID:   f.tournament.ID,
+		MatchType: "teams",
+		TeamA:     []*player.Player{f.players[0]},
+		TeamB:     []*player.Player{f.players[1]},
+		Status:    "scheduled",
+		Stage:     "final",
 	}
 	if err := f.matchRepo.Save(ctx, parent); err != nil {
 		t.Fatalf("Save parent: %v", err)
@@ -605,7 +605,7 @@ func TestMatchRepository_GetSubMatches_And_CreateSubMatches(t *testing.T) {
 
 	cmd := event.CreateSubMatchesCommand{
 		ParentMatchID: parent.ID,
-		TournamentID:  f.tournament.ID,
+		EventID:       f.tournament.ID,
 		Stage:         "final",
 		TeamFormat:    "olympic",
 		TeamAPlayers:  []string{f.players[0].ID, f.players[1].ID},
@@ -642,7 +642,7 @@ func TestMatchRepository_CreateSubMatches_MissingPlayers(t *testing.T) {
 
 	cmd := event.CreateSubMatchesCommand{
 		ParentMatchID: uuid.NewString(),
-		TournamentID:  f.tournament.ID,
+		EventID:       f.tournament.ID,
 		Stage:         "final",
 	}
 	if err := f.matchRepo.CreateSubMatches(ctx, cmd); err == nil {
@@ -655,13 +655,13 @@ func TestMatchRepository_UpdateSubMatchSquads(t *testing.T) {
 	ctx := context.Background()
 
 	parent := &event.Match{
-		ID:           uuid.NewString(),
-		TournamentID: f.tournament.ID,
-		MatchType:    "teams",
-		TeamA:        []*player.Player{f.players[0]},
-		TeamB:        []*player.Player{f.players[1]},
-		Status:       "scheduled",
-		Stage:        "final",
+		ID:        uuid.NewString(),
+		EventID:   f.tournament.ID,
+		MatchType: "teams",
+		TeamA:     []*player.Player{f.players[0]},
+		TeamB:     []*player.Player{f.players[1]},
+		Status:    "scheduled",
+		Stage:     "final",
 	}
 	if err := f.matchRepo.Save(ctx, parent); err != nil {
 		t.Fatalf("Save parent: %v", err)
@@ -669,7 +669,7 @@ func TestMatchRepository_UpdateSubMatchSquads(t *testing.T) {
 
 	cmd := event.CreateSubMatchesCommand{
 		ParentMatchID: parent.ID,
-		TournamentID:  f.tournament.ID,
+		EventID:       f.tournament.ID,
 		Stage:         "final",
 		TeamFormat:    "olympic",
 		TeamAPlayers:  []string{f.players[0].ID, f.players[1].ID},

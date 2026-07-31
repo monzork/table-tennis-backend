@@ -12,7 +12,7 @@ type StageRuleModel struct {
 	bun.BaseModel `bun:"table:event_stage_rules,alias:sr"`
 
 	ID           string `bun:"id,pk"`
-	TournamentID string `bun:"event_id,notnull"`
+	EventID      string `bun:"event_id,notnull"`
 	Stage        string `bun:"stage,notnull"`
 	BestOf       int    `bun:"best_of,notnull"`
 	PointsToWin  int    `bun:"points_to_win,notnull"`
@@ -29,7 +29,7 @@ func stageRuleToModel(r event.StageRule) *StageRuleModel {
 	}
 	return &StageRuleModel{
 		ID:           id,
-		TournamentID: r.TournamentID,
+		EventID:      r.EventID,
 		Stage:        r.Stage,
 		BestOf:       r.BestOf,
 		PointsToWin:  r.PointsToWin,
@@ -40,7 +40,7 @@ func stageRuleToModel(r event.StageRule) *StageRuleModel {
 func stageRuleToDomain(m StageRuleModel) event.StageRule {
 	return event.StageRule{
 		ID:           m.ID,
-		TournamentID: m.TournamentID,
+		EventID:      m.EventID,
 		Stage:        m.Stage,
 		BestOf:       m.BestOf,
 		PointsToWin:  m.PointsToWin,
@@ -62,19 +62,19 @@ func saveStageRules(ctx context.Context, tx bun.IDB, rules []event.StageRule) er
 }
 
 // replaceStageRules deletes old rules and re-inserts new ones inside a transaction.
-func replaceStageRules(ctx context.Context, tx bun.IDB, tournamentID string, rules []event.StageRule) error {
+func replaceStageRules(ctx context.Context, tx bun.IDB, eventID string, rules []event.StageRule) error {
 	if _, err := tx.NewDelete().TableExpr("event_stage_rules").
-		Where("event_id = ?", tournamentID).Exec(ctx); err != nil {
+		Where("event_id = ?", eventID).Exec(ctx); err != nil {
 		return err
 	}
 	return saveStageRules(ctx, tx, rules)
 }
 
 // GetStageRule retrieves a specific stage rule for a event by stage name.
-func GetStageRule(ctx context.Context, db *bun.DB, tournamentID uuid.UUID, stage string) (*StageRuleModel, error) {
+func GetStageRule(ctx context.Context, db *bun.DB, eventID uuid.UUID, stage string) (*StageRuleModel, error) {
 	m := new(StageRuleModel)
 	err := db.NewSelect().Model(m).
-		Where("event_id = ?", tournamentID.String()).
+		Where("event_id = ?", eventID.String()).
 		Where("stage = ?", stage).
 		Scan(ctx)
 	if err != nil {

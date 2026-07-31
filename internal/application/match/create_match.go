@@ -30,8 +30,8 @@ func NewCreateMatchUseCase(
 	}
 }
 
-func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, matchType string, teamAPlayerIDs, teamBPlayerIDs []string, opts ...string) (*event.Match, error) {
-	t, err := uc.tournamentRepo.GetByID(ctx, tournamentID)
+func (uc *CreateMatchUseCase) Execute(ctx context.Context, eventID string, matchType string, teamAPlayerIDs, teamBPlayerIDs []string, opts ...string) (*event.Match, error) {
+	t, err := uc.tournamentRepo.GetByID(ctx, eventID)
 	if err != nil {
 		return nil, errors.New("event not found")
 	}
@@ -93,15 +93,15 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 	divisionID := uc.determinePlayerDivision(ctx, t, teamA, teamB, matchType)
 
 	m := &event.Match{
-		ID:           idgen.Generate(),
-		TournamentID: tournamentID,
-		MatchType:    matchType,
-		TeamA:        teamA,
-		TeamB:        teamB,
-		Status:       "in_progress",
-		Sets:         []event.MatchSet{},
-		Stage:        stage,
-		DivisionID:   divisionID,
+		ID:         idgen.Generate(),
+		EventID:    eventID,
+		MatchType:  matchType,
+		TeamA:      teamA,
+		TeamB:      teamB,
+		Status:     "in_progress",
+		Sets:       []event.MatchSet{},
+		Stage:      stage,
+		DivisionID: divisionID,
 	}
 
 	// Add match to event
@@ -117,7 +117,7 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, tournamentID string, 
 
 // determinePlayerDivision finds which division a match belongs to based on player Elo ratings.
 func (uc *CreateMatchUseCase) determinePlayerDivision(ctx context.Context, t *event.Event, teamA, teamB []*player.Player, matchType string) string {
-	if len(t.DivisionRules) == 0 || len(teamA) == 0 {
+	if t.SkipElo || len(teamA) == 0 {
 		return ""
 	}
 

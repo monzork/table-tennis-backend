@@ -121,7 +121,7 @@
           </button>
         </form>
         {{else}}
-        <form hx-post="/matches/nil/start?tournamentId={{.TournamentID}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}&stage={{.Stage}}"
+        <form hx-post="/matches/nil/start?tournamentId={{.EventID}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}&stage={{.Stage}}"
           hx-swap="none" class="flex gap-1.5 items-center w-full">
           <select name="tableNumber"
             class="text-[10px] font-bold uppercase tracking-wider bg-club-panel border border-white/10 rounded-lg px-2 py-2 text-white/90 focus:outline-none focus:border-blue-500/50 w-24">
@@ -142,13 +142,13 @@
         <div class="flex gap-1.5 w-full">
           <button
             class="flex-1 text-[10px] font-bold uppercase tracking-widest text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg py-2 transition-all"
-            onclick="openScoreModal('/admin/matches/score/form?tournamentId={{.TournamentID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
+            onclick="openScoreModal('/admin/matches/score/form?tournamentId={{.EventID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
             {{t $.T "board.score"}}
           </button>
           {{if .MatchID}}
           <button type="button" data-match-id="{{.MatchID}}" data-matchup="{{.PlayerAName}} vs {{.PlayerBName}}"
             data-table-number="{{if .TableNumber}}{{.TableNumber}}{{end}}"
-            onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup, this.dataset.tableNumber, '{{.TournamentID}}', '{{$e.ID}}')"
+            onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup, this.dataset.tableNumber, '{{.EventID}}', '{{$e.ID}}')"
             class="px-3 text-gray-400 hover:text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg transition-all flex items-center justify-center"
             title="Show QR Code">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,13 +228,13 @@
       <div class="flex gap-1.5 w-full">
         <button
           class="flex-1 text-[10px] font-bold uppercase tracking-widest text-yellow-400 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg py-2 transition-all"
-          onclick="openScoreModal('/admin/matches/score/form?tournamentId={{.TournamentID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
+          onclick="openScoreModal('/admin/matches/score/form?tournamentId={{.EventID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
           {{t $.T "board.edit_score"}}
         </button>
         {{if .MatchID}}
         <button type="button" data-match-id="{{.MatchID}}" data-matchup="{{.PlayerAName}} vs {{.PlayerBName}}"
           data-table-number="{{if .TableNumber}}{{.TableNumber}}{{end}}"
-          onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup, this.dataset.tableNumber, '{{.TournamentID}}', '{{$e.ID}}')"
+          onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup, this.dataset.tableNumber, '{{.EventID}}', '{{$e.ID}}')"
           class="px-3 text-yellow-500 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg transition-all flex items-center justify-center"
           title="Show QR Code">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -310,7 +310,7 @@
       </div>
       <button
         class="proj-hide w-full text-[9px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-400 border border-white/5 hover:border-white/10 rounded-lg py-1.5 transition-all mt-1"
-        onclick="openScoreModal('/admin/matches/score/form?tournamentId={{.TournamentID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
+        onclick="openScoreModal('/admin/matches/score/form?tournamentId={{.EventID}}&matchId={{.MatchID}}&stage={{.Stage}}&bestOf={{.BestOf}}&p1Id={{.P1Id}}&p2Id={{.P2Id}}')">
         {{t $.T "board.edit"}}
       </button>
     </div>

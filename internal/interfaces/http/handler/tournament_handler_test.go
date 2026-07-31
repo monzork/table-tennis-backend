@@ -118,7 +118,7 @@ func TestEventHandler(t *testing.T) {
 			if !cm.SkipElo {
 				t.Errorf("expected child event %s skip_elo to be true", cm.Name)
 			}
-			if cm.EventID == nil || cm.EventID.String() != eventID {
+			if cm.TournamentID == nil || cm.TournamentID.String() != eventID {
 				t.Errorf("expected child event %s to reference parent tournament %s", cm.Name, eventID)
 			}
 		}
@@ -386,7 +386,7 @@ func TestEventHandler(t *testing.T) {
 		matchUUID, _ := uuid.Parse(matchID)
 		_, _ = db.NewInsert().Model(&bunRepo.MatchModel{
 			ID:             matchUUID,
-			TournamentID:   tModel.ID,
+			EventID:        tModel.ID,
 			TeamAPlayer1ID: uuid.MustParse(p1.ID),
 			TeamBPlayer1ID: uuid.MustParse(p2.ID),
 			Status:         "in_progress",
@@ -400,7 +400,7 @@ func TestEventHandler(t *testing.T) {
 		scheduledMatchID := uuid.New()
 		_, _ = db.NewInsert().Model(&bunRepo.MatchModel{
 			ID:             scheduledMatchID,
-			TournamentID:   tModel.ID,
+			EventID:        tModel.ID,
 			TeamAPlayer1ID: uuid.MustParse(p1.ID),
 			TeamBPlayer1ID: uuid.MustParse(p2.ID),
 			Status:         "scheduled",
@@ -412,7 +412,7 @@ func TestEventHandler(t *testing.T) {
 		finishedMatchID := uuid.New()
 		_, _ = db.NewInsert().Model(&bunRepo.MatchModel{
 			ID:             finishedMatchID,
-			TournamentID:   tModel.ID,
+			EventID:        tModel.ID,
 			TeamAPlayer1ID: uuid.MustParse(p1.ID),
 			TeamBPlayer1ID: uuid.MustParse(p2.ID),
 			Status:         "finished",

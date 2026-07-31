@@ -49,7 +49,7 @@ func TestEventHandlerExtraEndpoints(t *testing.T) {
 	playerRepo.Save(ctx, p2)
 
 	// Create a test tournament
-	tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Test Event", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2}, false)
+	tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Test Event", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2}, false)
 	tournamentRepo.Save(ctx, tourney)
 	tournamentID := tourney.ID
 

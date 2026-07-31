@@ -100,12 +100,6 @@ func TestTournamentHandler(t *testing.T) {
 		data.Set("groupPassCount", "2")
 		data.Add("participant_ids[]", p1.ID)
 
-		// division group counts, pass counts, and formats overrides
-		data.Add("division_rule[division_id][]", divID)
-		data.Set("division_formats["+divID+"]", "groups_elimination")
-		data.Set("division_group_pass_counts["+divID+"]", "3")
-		data.Set("division_group_counts["+divID+"]", "4")
-
 		req := httptest.NewRequest("PUT", fmt.Sprintf("/events/%s", createdTournamentID), strings.NewReader(data.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Cookie", sessionCookie)
@@ -128,16 +122,6 @@ func TestTournamentHandler(t *testing.T) {
 		if tm.Name != "Grand Slam Updated" {
 			t.Errorf("expected updated name 'Grand Slam Updated', got '%s'", tm.Name)
 		}
-		if tm.DivisionConfigs[divID].Format != "groups_elimination" {
-			t.Errorf("expected division formats override, got %v", tm.DivisionConfigs)
-		}
-		if tm.DivisionConfigs[divID].GroupPassCount != 3 {
-			t.Errorf("expected division group pass counts override, got %v", tm.DivisionConfigs)
-		}
-		if tm.DivisionConfigs[divID].GroupCount != 4 {
-			t.Errorf("expected division group counts override, got %v", tm.DivisionConfigs)
-		}
-
 		tourneyReloaded, err := tournamentRepo.GetByID(ctx, createdTournamentID)
 		if err != nil {
 			t.Fatalf("failed to load tourney: %v", err)
@@ -204,7 +188,7 @@ func TestTournamentHandler(t *testing.T) {
 	})
 
 	t.Run("Delete Event", func(t *testing.T) {
-		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Temp", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, nil, false)
+		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Temp", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, nil, false)
 		tournamentRepo.Save(ctx, tourney)
 
 		req := httptest.NewRequest("DELETE", fmt.Sprintf("/events/%s", tourney.ID), nil)
@@ -319,28 +303,11 @@ func TestTournamentHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("Regenerate Seeds with Group Count", func(t *testing.T) {
+	t.Run("Regenerate Seeds", func(t *testing.T) {
 		p1.UpdateSinglesElo(1500)
 		playerRepo.Save(ctx, p1)
 
-		divID := uuid.New().String()
-		maxElo := int16(1800)
-		divModel := &bunRepo.DivisionModel{
-			ID:           divID,
-			Name:         "Division 2",
-			DisplayOrder: 2,
-			MinElo:       1400,
-			MaxElo:       &maxElo,
-			Category:     "both",
-			Color:        "#ffffff",
-		}
-		_, err := db.NewInsert().Model(divModel).Exec(context.Background())
-		if err != nil {
-			t.Fatalf("failed to insert division: %v", err)
-		}
-
-		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Regen Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
-		tourney.DivisionConfigs = map[string]tournamentDomain.DivisionConfig{divID: {GroupCount: 5}} // override group count to 5
+		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Regen Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
 		tournamentRepo.Save(ctx, tourney)
 
 		req := httptest.NewRequest("POST", fmt.Sprintf("/admin/events/%s/regenerate-seeds", tourney.ID), nil)
@@ -358,13 +325,13 @@ func TestTournamentHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to reload tourney: %v", err)
 		}
-		if len(tourneyReloaded.Groups) != 5 {
-			t.Errorf("expected 5 groups after seed regeneration, got %d", len(tourneyReloaded.Groups))
+		if len(tourneyReloaded.Groups) != 1 {
+			t.Errorf("expected 1 group after seed regeneration, got %d", len(tourneyReloaded.Groups))
 		}
 	})
 
 	t.Run("Add Group to Event", func(t *testing.T) {
-		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Add Group Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
+		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Add Group Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
 		tourney.SkipElo = true
 		tournamentRepo.Save(ctx, tourney)
 
@@ -410,7 +377,7 @@ func TestTournamentHandler(t *testing.T) {
 	})
 
 	t.Run("Seeding Locked Operations Blocked", func(t *testing.T) {
-		tourney, _ := tournamentDomain.NewTournament(uuid.New().String(), "Locked Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
+		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Locked Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
 		tourney.ManualSeedingLocked = true
 		tournamentRepo.Save(ctx, tourney)
 

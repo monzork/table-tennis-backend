@@ -11,12 +11,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// TestEventRepository_SaveAndUpdate_WithGroupsTeamsAndDivisionRules exercises
-// the branches of saveTx/Update that persist Groups, Teams, and DivisionRules
-// together, and verifies that re-registering the same participant on Update
-// preserves their existing PIN and Elo-before/after snapshot rather than
-// generating a new one.
-func TestEventRepository_SaveAndUpdate_WithGroupsTeamsAndDivisionRules(t *testing.T) {
+// TestEventRepository_SaveAndUpdate_WithGroupsAndTeams exercises the branches
+// of saveTx/Update that persist Groups and Teams together, and verifies that
+// re-registering the same participant on Update preserves their existing PIN
+// and Elo-before/after snapshot rather than generating a new one.
+func TestEventRepository_SaveAndUpdate_WithGroupsAndTeams(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)
 	playerRepo := bunRepo.NewPlayerRepository(db)
@@ -27,7 +26,7 @@ func TestEventRepository_SaveAndUpdate_WithGroupsTeamsAndDivisionRules(t *testin
 
 	e := newBareEvent(t, "Full Save Event", []*player.Player{p1, p2})
 	e.Groups = []event.Group{
-		{ID: uuid.NewString(), TournamentID: e.ID, Name: "Group A", Players: []*player.Player{p1, p2}},
+		{ID: uuid.NewString(), EventID: e.ID, Name: "Group A", Players: []*player.Player{p1, p2}},
 	}
 	team, err := event.NewTeam(uuid.NewString(), e.ID, "Team One")
 	if err != nil {
@@ -35,11 +34,6 @@ func TestEventRepository_SaveAndUpdate_WithGroupsTeamsAndDivisionRules(t *testin
 	}
 	team.Players = []*player.Player{p1}
 	e.Teams = []*event.Team{team}
-	dr, err := event.NewDivisionRule(e.ID, "div-1", 5, 11, 2)
-	if err != nil {
-		t.Fatalf("NewDivisionRule: %v", err)
-	}
-	e.DivisionRules = []event.DivisionRule{*dr}
 
 	if err := eventRepo.Save(ctx, e); err != nil {
 		t.Fatalf("Save: %v", err)
@@ -55,9 +49,6 @@ func TestEventRepository_SaveAndUpdate_WithGroupsTeamsAndDivisionRules(t *testin
 	if len(got.Teams) != 1 || len(got.Teams[0].Players) != 1 {
 		t.Fatalf("expected 1 team with 1 player, got %+v", got.Teams)
 	}
-	if len(got.DivisionRules) != 1 || got.DivisionRules[0].DivisionID != "div-1" {
-		t.Fatalf("expected 1 division rule, got %+v", got.DivisionRules)
-	}
 
 	originalPIN, err := eventRepo.GetParticipantPIN(ctx, e.ID, p1.ID)
 	if err != nil {
@@ -67,11 +58,10 @@ func TestEventRepository_SaveAndUpdate_WithGroupsTeamsAndDivisionRules(t *testin
 		t.Fatalf("UpdateParticipantElo: %v", err)
 	}
 
-	// Update the event, re-registering the same 2 participants plus a new group/team,
-	// and a replaced set of division rules.
+	// Update the event, re-registering the same 2 participants plus a new group/team.
 	e.Name = "Renamed Full Save Event"
 	e.Groups = []event.Group{
-		{ID: uuid.NewString(), TournamentID: e.ID, Name: "Group B", Players: []*player.Player{p2}},
+		{ID: uuid.NewString(), EventID: e.ID, Name: "Group B", Players: []*player.Player{p2}},
 	}
 	team2, err := event.NewTeam(uuid.NewString(), e.ID, "Team Two")
 	if err != nil {
@@ -79,11 +69,6 @@ func TestEventRepository_SaveAndUpdate_WithGroupsTeamsAndDivisionRules(t *testin
 	}
 	team2.Players = []*player.Player{p2}
 	e.Teams = []*event.Team{team2}
-	dr2, err := event.NewDivisionRule(e.ID, "div-2", 3, 11, 2)
-	if err != nil {
-		t.Fatalf("NewDivisionRule2: %v", err)
-	}
-	e.DivisionRules = []event.DivisionRule{*dr2}
 
 	if err := eventRepo.Update(ctx, e); err != nil {
 		t.Fatalf("Update: %v", err)
@@ -101,9 +86,6 @@ func TestEventRepository_SaveAndUpdate_WithGroupsTeamsAndDivisionRules(t *testin
 	}
 	if len(got.Teams) != 1 || got.Teams[0].Name != "Team Two" {
 		t.Fatalf("expected teams replaced, got %+v", got.Teams)
-	}
-	if len(got.DivisionRules) != 1 || got.DivisionRules[0].DivisionID != "div-2" {
-		t.Fatalf("expected division rules replaced, got %+v", got.DivisionRules)
 	}
 
 	// The re-registered participant's PIN and prior Elo-after snapshot must be preserved.

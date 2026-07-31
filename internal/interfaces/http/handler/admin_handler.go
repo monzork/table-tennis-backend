@@ -139,7 +139,7 @@ func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 		var sa []any
 		// We use type assertion since it returns []*tournamentDomain.Event
 		for _, tourney := range t {
-			if tourney.EventID == nil || *tourney.EventID == "" {
+			if tourney.TournamentID == nil || *tourney.TournamentID == "" {
 				sa = append(sa, tourney)
 			}
 		}

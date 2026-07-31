@@ -18,15 +18,15 @@ func NewEnrollPlayerUseCase(repo tournamentDomain.Repository, dispatcher tournam
 	return &EnrollPlayerUseCase{repo: repo, dispatcher: dispatcher}
 }
 
-func (uc *EnrollPlayerUseCase) Execute(ctx context.Context, tournamentID, playerID string, singlesElo, doublesElo int16) error {
-	if err := uc.repo.AddParticipant(ctx, tournamentID, playerID, singlesElo, doublesElo); err != nil {
+func (uc *EnrollPlayerUseCase) Execute(ctx context.Context, eventID, playerID string, singlesElo, doublesElo int16) error {
+	if err := uc.repo.AddParticipant(ctx, eventID, playerID, singlesElo, doublesElo); err != nil {
 		return err
 	}
 
 	if uc.dispatcher != nil {
 		uc.dispatcher.DispatchAsync(ctx, tournaments.PlayerEnrolledEvent{
-			TournamentID: tournamentID,
-			PlayerID:     playerID,
+			EventID:  eventID,
+			PlayerID: playerID,
 		})
 	}
 

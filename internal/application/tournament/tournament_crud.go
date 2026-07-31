@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	divisionDomain "table-tennis-backend/internal/domain/division"
-	tournamentDomain "table-tennis-backend/internal/domain/event"
+	eventDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
 	playerDomain "table-tennis-backend/internal/domain/player"
-	eventDomain "table-tennis-backend/internal/domain/tournament"
+	tournamentDomain "table-tennis-backend/internal/domain/tournament"
 	"time"
 )
 
@@ -19,21 +19,21 @@ type CategoryConfig struct {
 }
 
 type CreateEventUseCase struct {
-	eventRepo      eventDomain.Repository
 	tournamentRepo tournamentDomain.Repository
+	eventRepo      eventDomain.Repository
 	playerRepo     playerDomain.Repository
 	divisionRepo   divisionDomain.Repository
 }
 
 func NewCreateEventUseCase(
-	eventRepo eventDomain.Repository,
 	tournamentRepo tournamentDomain.Repository,
+	eventRepo eventDomain.Repository,
 	playerRepo playerDomain.Repository,
 	divisionRepo divisionDomain.Repository,
 ) *CreateEventUseCase {
 	return &CreateEventUseCase{
-		eventRepo:      eventRepo,
 		tournamentRepo: tournamentRepo,
+		eventRepo:      eventRepo,
 		playerRepo:     playerRepo,
 		divisionRepo:   divisionRepo,
 	}
@@ -47,7 +47,7 @@ func (uc *CreateEventUseCase) Execute(
 	startDateStr, endDateStr string,
 	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen CategoryConfig,
 	existingTournamentIDs []string,
-) (*eventDomain.Tournament, error) {
+) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startDateStr)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (uc *CreateEventUseCase) Execute(
 		return nil, err
 	}
 
-	e, err := eventDomain.NewEvent(idgen.Generate(), name, divisionIDs, skipElo, start, end)
+	e, err := tournamentDomain.NewTournament(idgen.Generate(), name, divisionIDs, skipElo, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -103,11 +103,11 @@ func (uc *CreateEventUseCase) Execute(
 
 	// Helper to create a event under this tournament
 	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player) error {
-		t, err := tournamentDomain.NewTournament(idgen.Generate(), tName, tType, tFormat, category, start, end, []tournamentDomain.Rule{}, groupPassCount, players, false)
+		t, err := eventDomain.NewEvent(idgen.Generate(), tName, tType, tFormat, category, start, end, []eventDomain.Rule{}, groupPassCount, players, false)
 		if err != nil {
 			return err
 		}
-		t.EventID = &e.ID
+		t.TournamentID = &e.ID
 		t.SkipElo = skipElo
 		t.NumTables = e.NumTables
 		e.Events = append(e.Events, t)
@@ -208,7 +208,7 @@ func (uc *CreateEventUseCase) Execute(
 	processCategory(teamsMen, "Men's Teams", "teams", "M", false)
 	processCategory(teamsWomen, "Women's Teams", "teams", "F", false)
 
-	if err := uc.eventRepo.Save(ctx, e); err != nil {
+	if err := uc.tournamentRepo.Save(ctx, e); err != nil {
 		return nil, err
 	}
 
@@ -219,65 +219,65 @@ func (uc *CreateEventUseCase) Execute(
 		}
 	}
 	if len(validTournamentIDs) > 0 {
-		_ = uc.tournamentRepo.UpdateEventIDBulk(ctx, validTournamentIDs, e.ID)
+		_ = uc.eventRepo.UpdateEventIDBulk(ctx, validTournamentIDs, e.ID)
 	}
 
 	// Reload the tournament with loaded events
-	return uc.eventRepo.GetByID(ctx, e.ID)
+	return uc.tournamentRepo.GetByID(ctx, e.ID)
 }
 
 type GetEventByIDUseCase struct {
-	eventRepo eventDomain.Repository
+	tournamentRepo tournamentDomain.Repository
 }
 
-func NewGetEventByIDUseCase(eventRepo eventDomain.Repository) *GetEventByIDUseCase {
-	return &GetEventByIDUseCase{eventRepo: eventRepo}
+func NewGetEventByIDUseCase(tournamentRepo tournamentDomain.Repository) *GetEventByIDUseCase {
+	return &GetEventByIDUseCase{tournamentRepo: tournamentRepo}
 }
 
-func (uc *GetEventByIDUseCase) Execute(ctx context.Context, idStr string) (*eventDomain.Tournament, error) {
-	return uc.eventRepo.GetByIDDeep(ctx, idStr)
+func (uc *GetEventByIDUseCase) Execute(ctx context.Context, idStr string) (*tournamentDomain.Tournament, error) {
+	return uc.tournamentRepo.GetByIDDeep(ctx, idStr)
 }
 
 type GetAllEventsUseCase struct {
-	eventRepo eventDomain.Repository
+	tournamentRepo tournamentDomain.Repository
 }
 
-func NewGetAllEventsUseCase(eventRepo eventDomain.Repository) *GetAllEventsUseCase {
-	return &GetAllEventsUseCase{eventRepo: eventRepo}
+func NewGetAllEventsUseCase(tournamentRepo tournamentDomain.Repository) *GetAllEventsUseCase {
+	return &GetAllEventsUseCase{tournamentRepo: tournamentRepo}
 }
 
-func (uc *GetAllEventsUseCase) Execute(ctx context.Context) ([]*eventDomain.Tournament, error) {
-	return uc.eventRepo.GetAll(ctx)
+func (uc *GetAllEventsUseCase) Execute(ctx context.Context) ([]*tournamentDomain.Tournament, error) {
+	return uc.tournamentRepo.GetAll(ctx)
 }
 
 type DeleteEventUseCase struct {
-	eventRepo eventDomain.Repository
+	tournamentRepo tournamentDomain.Repository
 }
 
-func NewDeleteEventUseCase(eventRepo eventDomain.Repository) *DeleteEventUseCase {
-	return &DeleteEventUseCase{eventRepo: eventRepo}
+func NewDeleteEventUseCase(tournamentRepo tournamentDomain.Repository) *DeleteEventUseCase {
+	return &DeleteEventUseCase{tournamentRepo: tournamentRepo}
 }
 
 func (uc *DeleteEventUseCase) Execute(ctx context.Context, idStr string) error {
-	return uc.eventRepo.Delete(ctx, idStr)
+	return uc.tournamentRepo.Delete(ctx, idStr)
 }
 
 func (uc *DeleteEventUseCase) ExecuteBulk(ctx context.Context, idStrs []string) error {
-	return uc.eventRepo.DeleteEvents(ctx, idStrs)
+	return uc.tournamentRepo.DeleteEvents(ctx, idStrs)
 }
 
 // ── Update ──────────────────────────────────────────────────────────────────
 
 type UpdateEventUseCase struct {
-	eventRepo eventDomain.Repository
+	tournamentRepo tournamentDomain.Repository
 }
 
-func NewUpdateEventUseCase(eventRepo eventDomain.Repository) *UpdateEventUseCase {
-	return &UpdateEventUseCase{eventRepo: eventRepo}
+func NewUpdateEventUseCase(tournamentRepo tournamentDomain.Repository) *UpdateEventUseCase {
+	return &UpdateEventUseCase{tournamentRepo: tournamentRepo}
 }
 
-func (uc *UpdateEventUseCase) Execute(ctx context.Context, idStr, name, startDateStr, endDateStr string, numTables int, tablePriorities map[string][]int) (*eventDomain.Tournament, error) {
-	e, err := uc.eventRepo.GetByID(ctx, idStr)
+func (uc *UpdateEventUseCase) Execute(ctx context.Context, idStr, name, startDateStr, endDateStr string, numTables int, tablePriorities map[string][]int) (*tournamentDomain.Tournament, error) {
+	e, err := uc.tournamentRepo.GetByID(ctx, idStr)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +300,7 @@ func (uc *UpdateEventUseCase) Execute(ctx context.Context, idStr, name, startDat
 	if tablePriorities != nil {
 		e.TablePriorities = tablePriorities
 	}
-	if err := uc.eventRepo.Update(ctx, e); err != nil {
+	if err := uc.tournamentRepo.Update(ctx, e); err != nil {
 		return nil, fmt.Errorf("failed to update tournament: %w", err)
 	}
 	return e, nil

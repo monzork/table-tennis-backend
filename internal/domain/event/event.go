@@ -19,7 +19,7 @@ type Rule struct {
 // StageRule defines how many sets and points are played at a given event stage.
 type StageRule struct {
 	ID           string
-	TournamentID string
+	EventID      string
 	Stage        string // "group","r32","r16","quarterfinal","semifinal","final"
 	BestOf       int    // e.g. 5 or 7
 	PointsToWin  int    // e.g. 11
@@ -27,22 +27,22 @@ type StageRule struct {
 }
 
 // DefaultStageRules returns WTT-standard rules for all 6 stages.
-func DefaultStageRules(tournamentID string) []StageRule {
+func DefaultStageRules(eventID string) []StageRule {
 	short := []string{"group", "r32", "r16"}
 	long := []string{"quarterfinal", "semifinal", "final", "3rd_place"}
 	rules := make([]StageRule, 0, 6)
 	for _, s := range short {
-		rules = append(rules, StageRule{ID: fmt.Sprintf("%s-%s", tournamentID, s), TournamentID: tournamentID, Stage: s, BestOf: 5, PointsToWin: 11, PointsMargin: 2})
+		rules = append(rules, StageRule{ID: fmt.Sprintf("%s-%s", eventID, s), EventID: eventID, Stage: s, BestOf: 5, PointsToWin: 11, PointsMargin: 2})
 	}
 	for _, s := range long {
-		rules = append(rules, StageRule{ID: fmt.Sprintf("%s-%s", tournamentID, s), TournamentID: tournamentID, Stage: s, BestOf: 7, PointsToWin: 11, PointsMargin: 2})
+		rules = append(rules, StageRule{ID: fmt.Sprintf("%s-%s", eventID, s), EventID: eventID, Stage: s, BestOf: 7, PointsToWin: 11, PointsMargin: 2})
 	}
 	return rules
 }
 
 type Match struct {
 	ID            string
-	TournamentID  string
+	EventID       string
 	MatchType     string // 'singles' or 'doubles'
 	TeamA         []*player.Player
 	TeamB         []*player.Player
@@ -108,11 +108,11 @@ func (m Match) ScoreB() int {
 }
 
 type Group struct {
-	ID           string
-	TournamentID string
-	Name         string
-	Players      []*player.Player
-	Matches      []Match
+	ID      string
+	EventID string
+	Name    string
+	Players []*player.Player
+	Matches []Match
 }
 
 type EloUpset struct {
@@ -153,21 +153,12 @@ type TournamentMetrics struct {
 	DivisionMetrics map[string]DivisionMetric `json:"divisionMetrics,omitempty"`
 }
 
-type DivisionConfig struct {
-	Format               string   `json:"format,omitempty"`
-	GroupPassCount       int      `json:"groupPassCount,omitempty"`
-	LosersGroupPassCount int      `json:"losersGroupPassCount,omitempty"`
-	GroupCount           int      `json:"groupCount,omitempty"`
-	ManualKnockoutSeeds  []string `json:"manualKnockoutSeeds,omitempty"`
-}
-
 type Event struct {
 	ID                    string
 	Name                  string
 	Type                  string // "singles", "doubles", "teams"
 	EventCategory         string // "men", "women", "mixed", "open"
 	Format                string // "elimination", "groups_elimination", "round_robin"
-	DivisionConfigs       map[string]DivisionConfig
 	Status                string // "in_progress", "finished"
 	WinnerName            string // Name of the winner (player or team)
 	Participants          []*player.Player
@@ -175,13 +166,12 @@ type Event struct {
 	EndDate               time.Time
 	Rules                 []Rule
 	StageRules            []StageRule
-	DivisionRules         []DivisionRule // Division-specific rules override stage rules
 	Matches               []Match
 	Groups                []Group
 	GroupPassCount        int
 	LosersGroupPassCount  int
 	RegistrationOpen      bool
-	EventID               *string
+	TournamentID          *string
 	SkipElo               bool
 	Teams                 []*Team
 	TeamFormat            string // "olympic", "swaythling", or ""
@@ -192,7 +182,7 @@ type Event struct {
 	KnockoutBracketsCount int
 }
 
-func NewTournament(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Event, error) {
+func NewEvent(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Event, error) {
 	if end.Before(start) {
 		return nil, ErrInvalidDates
 	}
@@ -230,7 +220,7 @@ func NewTournament(id string, name string, tournamentType string, format string,
 		Groups:                []Group{},
 		GroupPassCount:        groupPassCount,
 		RegistrationOpen:      false,
-		EventID:               nil,
+		TournamentID:          nil,
 		SkipElo:               false,
 		Teams:                 []*Team{},
 		NumTables:             0,
@@ -248,59 +238,9 @@ func NewTournament(id string, name string, tournamentType string, format string,
 	return t, nil
 }
 
-// GetDivisionFormat returns the specific format for a division if it exists, otherwise falls back to the global event format.
-func (t *Event) GetDivisionFormat(divisionID string) string {
-	if t.DivisionConfigs != nil {
-		if cfg, ok := t.DivisionConfigs[divisionID]; ok && cfg.Format != "" {
-			return cfg.Format
-		}
-	}
-	return t.Format
-}
-
-// GetGroupPassCount returns the specific group pass count for a division if it exists, otherwise falls back to the global event pass count.
-func (t *Event) GetGroupPassCount(divisionID string) int {
-	if t.DivisionConfigs != nil {
-		if cfg, ok := t.DivisionConfigs[divisionID]; ok && cfg.GroupPassCount > 0 {
-			return cfg.GroupPassCount
-		}
-	}
-	return t.GroupPassCount
-}
-
-// GetLosersGroupPassCount returns the specific losers group pass count for a division if it exists, otherwise falls back to the global event pass count.
-func (t *Event) GetLosersGroupPassCount(divisionID string) int {
-	if t.DivisionConfigs != nil {
-		if cfg, ok := t.DivisionConfigs[divisionID]; ok {
-			return cfg.LosersGroupPassCount
-		}
-	}
-	return t.LosersGroupPassCount
-}
-
-// GetGroupCount returns the specific group count for a division if it exists, otherwise returns 0 (which means it should be calculated dynamically).
-func (t *Event) GetGroupCount(divisionID string) int {
-	if t.DivisionConfigs != nil {
-		if cfg, ok := t.DivisionConfigs[divisionID]; ok && cfg.GroupCount > 0 {
-			return cfg.GroupCount
-		}
-	}
-	return 0
-}
-
-// GetEffectiveStageRule returns the stage rule to use for a match, considering division overrides.
-// Priority: Division Rules > Stage Rules > Default WTT Rules
-func (t *Event) GetEffectiveStageRule(stage string, divisionID string) StageRule {
-	// 1. Check division-specific rules first
-	if divisionID != "" && len(t.DivisionRules) > 0 {
-		for _, dr := range t.DivisionRules {
-			if dr.DivisionID == divisionID && dr.Stage == stage {
-				return dr.ToStageRule()
-			}
-		}
-	}
-
-	// 2. Check event stage rules
+// GetEffectiveStageRule returns the stage rule to use for a match.
+// Priority: Event Stage Rules > Default WTT Rules
+func (t *Event) GetEffectiveStageRule(stage string) StageRule {
 	for _, sr := range t.StageRules {
 		if sr.Stage == stage {
 			return sr
@@ -452,21 +392,21 @@ type EventRepository interface {
 	GetByID(ctx context.Context, id string) (*Event, error)
 	GetAll(ctx context.Context) ([]*Event, error)
 	Update(ctx context.Context, t *Event) error
-	UpdateEventIDBulk(ctx context.Context, tournamentIDs []string, eventID string) error
+	UpdateEventIDBulk(ctx context.Context, eventIDs []string, tournamentID string) error
 	UpdateGroups(ctx context.Context, t *Event) error
 	Delete(ctx context.Context, id string) error
-	GetEventNumTables(ctx context.Context, eventID string) (int, error)
+	GetTournamentNumTables(ctx context.Context, tournamentID string) (int, error)
 }
 
 // ParticipantRepository manages player participation and Elo snapshots within an event.
 type ParticipantRepository interface {
-	UpdateParticipantElo(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error
-	UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error
-	UpdateParticipantEloBefore(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error
-	AddParticipant(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error
-	RemoveParticipant(ctx context.Context, tournamentID string, playerID string) error
-	GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]ParticipantSnapshot, error)
-	GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error)
+	UpdateParticipantElo(ctx context.Context, eventID string, playerID string, singlesElo, doublesElo int16) error
+	UpdateParticipantsElo(ctx context.Context, eventID string, players []*player.Player) error
+	UpdateParticipantEloBefore(ctx context.Context, eventID string, playerID string, singlesElo, doublesElo int16) error
+	AddParticipant(ctx context.Context, eventID string, playerID string, singlesElo, doublesElo int16) error
+	RemoveParticipant(ctx context.Context, eventID string, playerID string) error
+	GetParticipantSnapshots(ctx context.Context, eventID string) ([]ParticipantSnapshot, error)
+	GetParticipantOrOfficialByPIN(ctx context.Context, eventID string, pin string) (string, error)
 }
 
 // TeamRepository manages teams and their player rosters (doubles/team-format events).
@@ -479,10 +419,10 @@ type TeamRepository interface {
 
 // OfficialRepository manages referees/officials assigned to an event.
 type OfficialRepository interface {
-	AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error
-	RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error
-	GetOfficials(ctx context.Context, tournamentID string) ([]ParticipantSnapshot, error)
-	GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error)
+	AddOfficial(ctx context.Context, eventID string, playerID string, pin string) error
+	RemoveOfficial(ctx context.Context, eventID string, playerID string) error
+	GetOfficials(ctx context.Context, eventID string) ([]ParticipantSnapshot, error)
+	GetParticipantOrOfficialByPIN(ctx context.Context, eventID string, pin string) (string, error)
 }
 
 // Repository is the full Event aggregate repository. Prefer depending on the narrower
@@ -497,23 +437,23 @@ type Repository interface {
 
 type MatchRepository interface {
 	Save(ctx context.Context, m *Match) error
-	CountUnfinishedMatches(ctx context.Context, tournamentID string) (int, error)
-	CountFinishedMatches(ctx context.Context, tournamentID string) (int, error)
+	CountUnfinishedMatches(ctx context.Context, eventID string) (int, error)
+	CountFinishedMatches(ctx context.Context, eventID string) (int, error)
 	GetAll(ctx context.Context) ([]*Match, error)
 	GetByID(ctx context.Context, id string) (*Match, error)
 	GetSubMatches(ctx context.Context, parentMatchID string) ([]*Match, error)
-	GetMatchByParticipants(ctx context.Context, tournamentID, p1ID, p2ID, stage string) (*Match, error)
-	GetInProgressMatchOnTable(ctx context.Context, tableNumber int, tournamentID, eventID string) (*Match, error)
+	GetMatchByParticipants(ctx context.Context, eventID, p1ID, p2ID, stage string) (*Match, error)
+	GetInProgressMatchOnTable(ctx context.Context, tableNumber int, eventID, tournamentID string) (*Match, error)
 	UpdateScore(ctx context.Context, id string, sets []MatchSet, stageRule StageRule) error
 	GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error)
 	GetOccupiedTablesByTournament(ctx context.Context, tournamentID string) ([]int, error)
 	IsTableOccupiedByOtherMatch(ctx context.Context, matchID string, tableNumber int) (bool, error)
 	UpdateMetadata(ctx context.Context, matchID string, refereeID *string, tableNumber *int) error
 	ResetMatch(ctx context.Context, matchID string) error
-	HasStartedOrFinishedMatches(ctx context.Context, tournamentID string) (bool, error)
-	DeleteByTournament(ctx context.Context, tournamentID string) error
+	HasStartedOrFinishedMatches(ctx context.Context, eventID string) (bool, error)
+	DeleteByEvent(ctx context.Context, eventID string) error
 	FinishMatch(ctx context.Context, cmd FinishMatchCommand) error
-	FindOrCreateMatch(ctx context.Context, tournamentID, p1ID, p2ID, stage, matchType string) (string, error)
+	FindOrCreateMatch(ctx context.Context, eventID, p1ID, p2ID, stage, matchType string) (string, error)
 	// Team match orchestration
 	CreateSubMatches(ctx context.Context, cmd CreateSubMatchesCommand) error
 	UpdateSubMatchSquads(ctx context.Context, cmd UpdateSubMatchSquadsCommand) error
@@ -528,7 +468,7 @@ type FinishMatchCommand struct {
 // StartMatchCommand carries all inputs needed to atomically start a match.
 type StartMatchCommand struct {
 	MatchID        string
-	TournamentID   string
+	EventID        string
 	TableNumber    *int // nil = auto-assign
 	TotalTables    int
 	IsHighPriority bool // true for 1st division, semi/final stages
@@ -545,7 +485,7 @@ type StartMatchResult struct {
 // CreateSubMatchesCommand carries all data needed to create sub-matches for a team match.
 type CreateSubMatchesCommand struct {
 	ParentMatchID string
-	TournamentID  string
+	EventID       string
 	Stage         string
 	TeamFormat    string   // "olympic" or "corbillon"
 	TeamAPlayers  []string // player IDs

@@ -59,13 +59,13 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 		return err
 	}
 
-	var eventIDPtr *uuid.UUID
-	if t.EventID != nil {
-		uid, err := uuid.Parse(*t.EventID)
+	var tournamentIDPtr *uuid.UUID
+	if t.TournamentID != nil {
+		uid, err := uuid.Parse(*t.TournamentID)
 		if err != nil {
 			return err
 		}
-		eventIDPtr = &uid
+		tournamentIDPtr = &uid
 	}
 
 	model := &EventModel{
@@ -74,7 +74,6 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 		Type:   t.Type,
 		Format: t.Format,
 
-		DivisionConfigs:       t.DivisionConfigs,
 		Status:                t.Status,
 		EventCategory:         t.EventCategory,
 		StartDate:             t.StartDate,
@@ -82,7 +81,7 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 		GroupPassCount:        t.GroupPassCount,
 		LosersGroupPassCount:  t.LosersGroupPassCount,
 		RegistrationOpen:      t.RegistrationOpen,
-		EventID:               eventIDPtr,
+		TournamentID:          tournamentIDPtr,
 		SkipElo:               t.SkipElo,
 		TeamFormat:            t.TeamFormat,
 		WinnerName:            t.WinnerName,
@@ -106,7 +105,7 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 				return err
 			}
 			partModels[i] = EventParticipantModel{
-				TournamentID:     tID,
+				EventID:          tID,
 				PlayerID:         pID,
 				Pin:              generateUniqueTournamentPIN(usedPINs),
 				EloBeforeSingles: &p.SinglesElo,
@@ -128,9 +127,9 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 				return err
 			}
 			groupModels[i] = GroupModel{
-				ID:           gID,
-				TournamentID: tID,
-				Name:         g.Name,
+				ID:      gID,
+				EventID: tID,
+				Name:    g.Name,
 			}
 			for _, p := range g.Players {
 				pID, err := uuid.Parse(p.ID)
@@ -158,11 +157,6 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 		return err
 	}
 
-	// Save division-specific rules
-	if err := SaveDivisionRules(ctx, tx, t.ID, t.DivisionRules); err != nil {
-		return err
-	}
-
 	// Save teams and team players in bulk
 	if len(t.Teams) > 0 {
 		teamModels := make([]TeamModel, len(t.Teams))
@@ -173,9 +167,9 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 				return err
 			}
 			teamModels[i] = TeamModel{
-				ID:           teamID,
-				TournamentID: tID,
-				Name:         team.Name,
+				ID:      teamID,
+				EventID: tID,
+				Name:    team.Name,
 			}
 			for _, p := range team.Players {
 				pID, err := uuid.Parse(p.ID)
@@ -209,8 +203,8 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 
 	// Batch-load participant counts per event
 	type countRow struct {
-		TournamentID uuid.UUID `bun:"event_id"`
-		Count        int       `bun:"count"`
+		EventID uuid.UUID `bun:"event_id"`
+		Count   int       `bun:"count"`
 	}
 	var counts []countRow
 	_ = ExtractDB(ctx, r.db).NewSelect().
@@ -221,7 +215,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 
 	countMap := make(map[uuid.UUID]int, len(counts))
 	for _, c := range counts {
-		countMap[c.TournamentID] = c.Count
+		countMap[c.EventID] = c.Count
 	}
 
 	events := make([]*event.Event, len(models))
@@ -233,10 +227,10 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 			participants[j] = &player.Player{}
 		}
 
-		var eventIDPtr *string
-		if m.EventID != nil {
-			s := m.EventID.String()
-			eventIDPtr = &s
+		var tournamentIDPtr *string
+		if m.TournamentID != nil {
+			s := m.TournamentID.String()
+			tournamentIDPtr = &s
 		}
 
 		events[i] = &event.Event{
@@ -245,7 +239,6 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 			Type:   m.Type,
 			Format: m.Format,
 
-			DivisionConfigs:       m.DivisionConfigs,
 			Status:                m.Status,
 			EventCategory:         m.EventCategory,
 			StartDate:             m.StartDate,
@@ -253,7 +246,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 			GroupPassCount:        m.GroupPassCount,
 			LosersGroupPassCount:  m.LosersGroupPassCount,
 			RegistrationOpen:      m.RegistrationOpen,
-			EventID:               eventIDPtr,
+			TournamentID:          tournamentIDPtr,
 			SkipElo:               m.SkipElo,
 			WinnerName:            m.WinnerName,
 			NumTables:             m.NumTables,
@@ -286,7 +279,6 @@ func (r *EventRepository) GetByIDLite(ctx context.Context, idStr string) (*event
 			return q.OrderExpr("name ASC")
 		}).
 		Relation("StageRules").
-		Relation("DivisionRules").
 		Where("id = ?", id).
 		Scan(ctx)
 
@@ -354,27 +346,22 @@ func (r *EventRepository) GetByIDLite(ctx context.Context, idStr string) (*event
 			}
 		}
 		teams = append(teams, &event.Team{
-			ID:           tm.ID.String(),
-			TournamentID: tm.TournamentID.String(),
-			Name:         tm.Name,
-			Players:      teamPlayers,
+			ID:      tm.ID.String(),
+			EventID: tm.EventID.String(),
+			Name:    tm.Name,
+			Players: teamPlayers,
 		})
 	}
 
-	var eventIDPtr *string
-	if model.EventID != nil {
-		s := model.EventID.String()
-		eventIDPtr = &s
+	var tournamentIDPtr *string
+	if model.TournamentID != nil {
+		s := model.TournamentID.String()
+		tournamentIDPtr = &s
 	}
 
 	sRules := make([]event.StageRule, len(model.StageRules))
 	for i, srm := range model.StageRules {
 		sRules[i] = stageRuleToDomain(srm)
-	}
-
-	dRules := make([]event.DivisionRule, len(model.DivisionRules))
-	for i, drm := range model.DivisionRules {
-		dRules[i] = drm.ToDomain()
 	}
 
 	return &event.Event{
@@ -384,21 +371,19 @@ func (r *EventRepository) GetByIDLite(ctx context.Context, idStr string) (*event
 		Type:   model.Type,
 		Format: model.Format,
 
-		DivisionConfigs:       model.DivisionConfigs,
 		EventCategory:         model.EventCategory,
 		StartDate:             model.StartDate,
 		EndDate:               model.EndDate,
 		GroupPassCount:        model.GroupPassCount,
 		LosersGroupPassCount:  model.LosersGroupPassCount,
 		RegistrationOpen:      model.RegistrationOpen,
-		EventID:               eventIDPtr,
+		TournamentID:          tournamentIDPtr,
 		SkipElo:               model.SkipElo,
 		WinnerName:            model.WinnerName,
 		Participants:          participantPlayers,
 		Groups:                nil,
 		Rules:                 []event.Rule{},
 		StageRules:            sRules,
-		DivisionRules:         dRules,
 		Matches:               nil,
 		Teams:                 teams,
 		TeamFormat:            model.TeamFormat,
@@ -435,7 +420,6 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 				Relation("TeamBPlayer2")
 		}).
 		Relation("StageRules").
-		Relation("DivisionRules").
 		Where("id = ?", id).
 		Scan(ctx)
 
@@ -554,10 +538,10 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 			}
 		}
 		t := &event.Team{
-			ID:           tm.ID.String(),
-			TournamentID: tm.TournamentID.String(),
-			Name:         tm.Name,
-			Players:      teamPlayers,
+			ID:      tm.ID.String(),
+			EventID: tm.EventID.String(),
+			Name:    tm.Name,
+			Players: teamPlayers,
 		}
 		teams = append(teams, t)
 		teamMapDomain[tm.ID] = t
@@ -699,22 +683,22 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 		}
 
 		m := event.Match{
-			ID:           mm.ID.String(),
-			TournamentID: mm.TournamentID.String(),
-			MatchType:    mm.MatchType,
-			Status:       mm.Status,
-			WinnerTeam:   wt,
-			TeamA:        []*player.Player{teamAPlayer},
-			TeamB:        []*player.Player{teamBPlayer},
-			Sets:         sets,
-			TeamMatchID:  teamMatchIDPtr,
-			Stage:        mm.Stage,
-			DivisionID:   mm.DivisionID,
-			UpdatedAt:    mm.UpdatedAt,
-			RefereeID:    refereeIDPtr,
-			TableNumber:  mm.TableNumber,
-			Pin:          mm.Pin,
-			RoundNumber:  mm.RoundNumber,
+			ID:          mm.ID.String(),
+			EventID:     mm.EventID.String(),
+			MatchType:   mm.MatchType,
+			Status:      mm.Status,
+			WinnerTeam:  wt,
+			TeamA:       []*player.Player{teamAPlayer},
+			TeamB:       []*player.Player{teamBPlayer},
+			Sets:        sets,
+			TeamMatchID: teamMatchIDPtr,
+			Stage:       mm.Stage,
+			DivisionID:  mm.DivisionID,
+			UpdatedAt:   mm.UpdatedAt,
+			RefereeID:   refereeIDPtr,
+			TableNumber: mm.TableNumber,
+			Pin:         mm.Pin,
+			RoundNumber: mm.RoundNumber,
 		}
 
 		// For parent team matches (MatchType=teams, no TeamMatchID), compute sub-match wins
@@ -739,20 +723,15 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 		matches = append(matches, m)
 	}
 
-	var eventIDPtr *string
-	if model.EventID != nil {
-		s := model.EventID.String()
-		eventIDPtr = &s
+	var tournamentIDPtr *string
+	if model.TournamentID != nil {
+		s := model.TournamentID.String()
+		tournamentIDPtr = &s
 	}
 
 	sRules := make([]event.StageRule, len(model.StageRules))
 	for i, srm := range model.StageRules {
 		sRules[i] = stageRuleToDomain(srm)
-	}
-
-	dRules := make([]event.DivisionRule, len(model.DivisionRules))
-	for i, drm := range model.DivisionRules {
-		dRules[i] = drm.ToDomain()
 	}
 
 	return &event.Event{
@@ -762,21 +741,19 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 		Type:   model.Type,
 		Format: model.Format,
 
-		DivisionConfigs:       model.DivisionConfigs,
 		EventCategory:         model.EventCategory,
 		StartDate:             model.StartDate,
 		EndDate:               model.EndDate,
 		GroupPassCount:        model.GroupPassCount,
 		LosersGroupPassCount:  model.LosersGroupPassCount,
 		RegistrationOpen:      model.RegistrationOpen,
-		EventID:               eventIDPtr,
+		TournamentID:          tournamentIDPtr,
 		SkipElo:               model.SkipElo,
 		WinnerName:            model.WinnerName,
 		Participants:          participantPlayers,
 		Groups:                groups,
 		Rules:                 []event.Rule{},
 		StageRules:            sRules,
-		DivisionRules:         dRules,
 		Matches:               matches,
 		Teams:                 teams,
 		TeamFormat:            model.TeamFormat,
@@ -794,13 +771,13 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 		return err
 	}
 
-	var eventIDPtr *uuid.UUID
-	if t.EventID != nil {
-		uid, err := uuid.Parse(*t.EventID)
+	var tournamentIDPtr *uuid.UUID
+	if t.TournamentID != nil {
+		uid, err := uuid.Parse(*t.TournamentID)
 		if err != nil {
 			return err
 		}
-		eventIDPtr = &uid
+		tournamentIDPtr = &uid
 	}
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
@@ -811,7 +788,6 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			Type:   t.Type,
 			Format: t.Format,
 
-			DivisionConfigs:       t.DivisionConfigs,
 			Status:                t.Status,
 			EventCategory:         t.EventCategory,
 			StartDate:             t.StartDate,
@@ -819,7 +795,7 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			GroupPassCount:        t.GroupPassCount,
 			LosersGroupPassCount:  t.LosersGroupPassCount,
 			RegistrationOpen:      t.RegistrationOpen,
-			EventID:               eventIDPtr,
+			TournamentID:          tournamentIDPtr,
 			SkipElo:               t.SkipElo,
 			TeamFormat:            t.TeamFormat,
 			WinnerName:            t.WinnerName,
@@ -830,7 +806,7 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			ManualSeedingLocked:   t.ManualSeedingLocked,
 		}
 
-		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "tournament_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked", "division_configs").Exec(ctx)
+		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked").Exec(ctx)
 		if err != nil {
 			return err
 		}
@@ -893,7 +869,7 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 				}
 
 				partModels[i] = EventParticipantModel{
-					TournamentID:     tID,
+					EventID:          tID,
 					PlayerID:         pID,
 					Pin:              pin,
 					EloBeforeSingles: eloBeforeS,
@@ -917,9 +893,9 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 					return err
 				}
 				teamModels[i] = TeamModel{
-					ID:           teamID,
-					TournamentID: tID,
-					Name:         team.Name,
+					ID:      teamID,
+					EventID: tID,
+					Name:    team.Name,
 				}
 				for _, p := range team.Players {
 					pID, err := uuid.Parse(p.ID)
@@ -952,9 +928,9 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 					return err
 				}
 				groupModels[i] = GroupModel{
-					ID:           gID,
-					TournamentID: tID,
-					Name:         g.Name,
+					ID:      gID,
+					EventID: tID,
+					Name:    g.Name,
 				}
 				for idx, p := range g.Players {
 					pID, err := uuid.Parse(p.ID)
@@ -985,13 +961,6 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			}
 		}
 
-		// Replace division rules if changed
-		if len(t.DivisionRules) > 0 {
-			if err := ReplaceDivisionRules(ctx, tx, t.ID, t.DivisionRules); err != nil {
-				return err
-			}
-		}
-
 		return nil
 	})
 }
@@ -1018,9 +987,9 @@ func (r *EventRepository) UpdateGroups(ctx context.Context, t *event.Event) erro
 					return err
 				}
 				groupModels[i] = GroupModel{
-					ID:           gID,
-					TournamentID: tID,
-					Name:         g.Name,
+					ID:      gID,
+					EventID: tID,
+					Name:    g.Name,
 				}
 				for idx, p := range g.Players {
 					pID, err := uuid.Parse(p.ID)
@@ -1067,13 +1036,12 @@ func (r *EventRepository) Delete(ctx context.Context, idStr string) error {
 	})
 }
 
-func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, deep bool) ([]*event.Event, error) {
+func (r *EventRepository) GetByTournamentID(ctx context.Context, tournamentID uuid.UUID, deep bool) ([]*event.Event, error) {
 	var models []EventModel
 	if err := ExtractDB(ctx, r.db).NewSelect().
 		Model(&models).
 		Relation("StageRules").
-		Relation("DivisionRules").
-		Where("tournament_id = ?", eventID).
+		Where("tournament_id = ?", tournamentID).
 		Order("start_date DESC").
 		Scan(ctx); err != nil {
 		return nil, err
@@ -1198,13 +1166,13 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 	// Index participants by event
 	partsByTournament := make(map[uuid.UUID][]EventParticipantModel)
 	for _, pt := range allPartModels {
-		partsByTournament[pt.TournamentID] = append(partsByTournament[pt.TournamentID], pt)
+		partsByTournament[pt.EventID] = append(partsByTournament[pt.EventID], pt)
 	}
 
 	// Index teams by event and team players by team
 	teamsByTournament := make(map[uuid.UUID][]TeamModel)
 	for _, tm := range allTeamModels {
-		teamsByTournament[tm.TournamentID] = append(teamsByTournament[tm.TournamentID], tm)
+		teamsByTournament[tm.EventID] = append(teamsByTournament[tm.EventID], tm)
 	}
 	tpByTeam := make(map[uuid.UUID][]TeamPlayerModel)
 	for _, tp := range allTPModels {
@@ -1249,7 +1217,7 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 			// In tournaments, some events might be team type and some singles
 			var tType string
 			for _, tm := range models {
-				if tm.ID == mm.TournamentID {
+				if tm.ID == mm.EventID {
 					tType = tm.Type
 					break
 				}
@@ -1304,22 +1272,22 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 			}
 
 			m := event.Match{
-				ID:           mm.ID.String(),
-				TournamentID: mm.TournamentID.String(),
-				MatchType:    mm.MatchType,
-				Status:       mm.Status,
-				WinnerTeam:   wt,
-				TeamA:        []*player.Player{teamAPlayer},
-				TeamB:        []*player.Player{teamBPlayer},
-				Sets:         sets,
-				TeamMatchID:  teamMatchIDPtr,
-				Stage:        mm.Stage,
-				DivisionID:   mm.DivisionID,
-				UpdatedAt:    mm.UpdatedAt,
-				RefereeID:    refereeIDPtr,
-				TableNumber:  mm.TableNumber,
-				Pin:          mm.Pin,
-				RoundNumber:  mm.RoundNumber,
+				ID:          mm.ID.String(),
+				EventID:     mm.EventID.String(),
+				MatchType:   mm.MatchType,
+				Status:      mm.Status,
+				WinnerTeam:  wt,
+				TeamA:       []*player.Player{teamAPlayer},
+				TeamB:       []*player.Player{teamBPlayer},
+				Sets:        sets,
+				TeamMatchID: teamMatchIDPtr,
+				Stage:       mm.Stage,
+				DivisionID:  mm.DivisionID,
+				UpdatedAt:   mm.UpdatedAt,
+				RefereeID:   refereeIDPtr,
+				TableNumber: mm.TableNumber,
+				Pin:         mm.Pin,
+				RoundNumber: mm.RoundNumber,
 			}
 
 			// Virtual set for parent team matches
@@ -1339,14 +1307,14 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 				}
 				m.Sets = []event.MatchSet{{Number: 1, ScoreA: subWinsA, ScoreB: subWinsB}}
 			}
-			matchesByTournament[mm.TournamentID] = append(matchesByTournament[mm.TournamentID], m)
+			matchesByTournament[mm.EventID] = append(matchesByTournament[mm.EventID], m)
 		}
 	}
 
 	// Index groups by event and group participants by group
 	groupsByTournament := make(map[uuid.UUID][]GroupModel)
 	for _, gm := range allGroupModels {
-		groupsByTournament[gm.TournamentID] = append(groupsByTournament[gm.TournamentID], gm)
+		groupsByTournament[gm.EventID] = append(groupsByTournament[gm.EventID], gm)
 	}
 	gpByGroup := make(map[uuid.UUID][]GroupParticipantModel)
 	for _, gp := range allGPModels {
@@ -1356,19 +1324,19 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 	snapshotSinglesElo := make(map[uuid.UUID]map[uuid.UUID]int16)
 	snapshotDoublesElo := make(map[uuid.UUID]map[uuid.UUID]int16)
 	for _, pt := range allPartModels {
-		if _, ok := snapshotSinglesElo[pt.TournamentID]; !ok {
-			snapshotSinglesElo[pt.TournamentID] = make(map[uuid.UUID]int16)
-			snapshotDoublesElo[pt.TournamentID] = make(map[uuid.UUID]int16)
+		if _, ok := snapshotSinglesElo[pt.EventID]; !ok {
+			snapshotSinglesElo[pt.EventID] = make(map[uuid.UUID]int16)
+			snapshotDoublesElo[pt.EventID] = make(map[uuid.UUID]int16)
 		}
 		if pt.EloBeforeSingles != nil {
-			snapshotSinglesElo[pt.TournamentID][pt.PlayerID] = *pt.EloBeforeSingles
+			snapshotSinglesElo[pt.EventID][pt.PlayerID] = *pt.EloBeforeSingles
 		} else if pm, ok := playerCache[pt.PlayerID]; ok {
-			snapshotSinglesElo[pt.TournamentID][pt.PlayerID] = pm.SinglesElo
+			snapshotSinglesElo[pt.EventID][pt.PlayerID] = pm.SinglesElo
 		}
 		if pt.EloBeforeDoubles != nil {
-			snapshotDoublesElo[pt.TournamentID][pt.PlayerID] = *pt.EloBeforeDoubles
+			snapshotDoublesElo[pt.EventID][pt.PlayerID] = *pt.EloBeforeDoubles
 		} else if pm, ok := playerCache[pt.PlayerID]; ok {
-			snapshotDoublesElo[pt.TournamentID][pt.PlayerID] = pm.DoublesElo
+			snapshotDoublesElo[pt.EventID][pt.PlayerID] = pm.DoublesElo
 		}
 	}
 
@@ -1413,10 +1381,10 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 				}
 			}
 			teams = append(teams, &event.Team{
-				ID:           tm.ID.String(),
-				TournamentID: tm.TournamentID.String(),
-				Name:         tm.Name,
-				Players:      teamPlayers,
+				ID:      tm.ID.String(),
+				EventID: tm.EventID.String(),
+				Name:    tm.Name,
+				Players: teamPlayers,
 			})
 		}
 
@@ -1494,10 +1462,10 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 			})
 		}
 
-		var eventIDPtr *string
-		if m.EventID != nil {
-			s := m.EventID.String()
-			eventIDPtr = &s
+		var tournamentIDPtr *string
+		if m.TournamentID != nil {
+			s := m.TournamentID.String()
+			tournamentIDPtr = &s
 		}
 
 		matches := matchesByTournament[m.ID]
@@ -1510,18 +1478,12 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 			sRules[idx] = stageRuleToDomain(srm)
 		}
 
-		dRules := make([]event.DivisionRule, len(m.DivisionRules))
-		for idx, drm := range m.DivisionRules {
-			dRules[idx] = drm.ToDomain()
-		}
-
 		events[i] = &event.Event{
 			ID:     m.ID.String(),
 			Name:   m.Name,
 			Type:   m.Type,
 			Format: m.Format,
 
-			DivisionConfigs:      m.DivisionConfigs,
 			Status:               m.Status,
 			EventCategory:        m.EventCategory,
 			StartDate:            m.StartDate,
@@ -1529,14 +1491,13 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 			GroupPassCount:       m.GroupPassCount,
 			LosersGroupPassCount: m.LosersGroupPassCount,
 			RegistrationOpen:     m.RegistrationOpen,
-			EventID:              eventIDPtr,
+			TournamentID:         tournamentIDPtr,
 			SkipElo:              m.SkipElo,
 			WinnerName:           m.WinnerName,
 			Participants:         participantPlayers,
 			Groups:               groups,
 			Rules:                []event.Rule{},
 			StageRules:           sRules,
-			DivisionRules:        dRules,
 			Matches:              matches,
 			Teams:                teams,
 			TeamFormat:           m.TeamFormat,
@@ -1549,7 +1510,7 @@ func (r *EventRepository) GetByEventID(ctx context.Context, eventID uuid.UUID, d
 }
 
 func (r *EventRepository) SaveTeam(ctx context.Context, team *event.Team) error {
-	tID, err := uuid.Parse(team.TournamentID)
+	tID, err := uuid.Parse(team.EventID)
 	if err != nil {
 		return err
 	}
@@ -1559,9 +1520,9 @@ func (r *EventRepository) SaveTeam(ctx context.Context, team *event.Team) error 
 	}
 
 	tmModel := &TeamModel{
-		ID:           teamID,
-		TournamentID: tID,
-		Name:         team.Name,
+		ID:      teamID,
+		EventID: tID,
+		Name:    team.Name,
 	}
 	_, err = ExtractDB(ctx, r.db).NewInsert().Model(tmModel).Exec(ctx)
 	return err
@@ -1591,7 +1552,7 @@ func (r *EventRepository) AddPlayerToTeam(ctx context.Context, teamIDStr string,
 		return err
 	}
 
-	t, err := r.GetByID(ctx, tm.TournamentID.String())
+	t, err := r.GetByID(ctx, tm.EventID.String())
 	if err != nil {
 		return err
 	}
@@ -1735,7 +1696,7 @@ func (r *EventRepository) AddParticipant(ctx context.Context, tournamentID strin
 		return err
 	}
 	model := &EventParticipantModel{
-		TournamentID:     tID,
+		EventID:          tID,
 		PlayerID:         pID,
 		Pin:              r.generateUniqueParticipantPIN(ctx, tID),
 		EloBeforeSingles: &singlesElo,
@@ -1787,21 +1748,21 @@ func (r *EventRepository) generateUniqueParticipantPIN(ctx context.Context, tour
 	}
 }
 
-func (r *EventRepository) GetEventNumTables(ctx context.Context, eventID string) (int, error) {
-	eID, err := uuid.Parse(eventID)
+func (r *EventRepository) GetTournamentNumTables(ctx context.Context, tournamentID string) (int, error) {
+	tID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return 0, err
 	}
-	var eventModel TournamentModel
+	var tournamentModel TournamentModel
 	err = ExtractDB(ctx, r.db).NewSelect().
-		Model(&eventModel).
+		Model(&tournamentModel).
 		Column("num_tables").
-		Where("id = ?", eID).
+		Where("id = ?", tID).
 		Scan(ctx)
 	if err != nil {
 		return 0, err
 	}
-	return eventModel.NumTables, nil
+	return tournamentModel.NumTables, nil
 }
 
 func (r *EventRepository) GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]event.ParticipantSnapshot, error) {
@@ -1911,9 +1872,9 @@ func (r *EventRepository) AddOfficial(ctx context.Context, tournamentID string, 
 		return err
 	}
 	official := &EventOfficialModel{
-		TournamentID: tID,
-		PlayerID:     pID,
-		Pin:          pin,
+		EventID:  tID,
+		PlayerID: pID,
+		Pin:      pin,
 	}
 	_, err = ExtractDB(ctx, r.db).NewInsert().Model(official).On("CONFLICT (event_id, player_id) DO UPDATE").Set("pin = EXCLUDED.pin").Exec(ctx)
 	return err
@@ -1951,13 +1912,13 @@ func (r *EventRepository) GetOfficials(ctx context.Context, tournamentID string)
 	return snapshots, nil
 }
 
-func (r *EventRepository) UpdateEventIDBulk(ctx context.Context, tournamentIDs []string, eventID string) error {
-	if len(tournamentIDs) == 0 {
+func (r *EventRepository) UpdateEventIDBulk(ctx context.Context, eventIDs []string, tournamentID string) error {
+	if len(eventIDs) == 0 {
 		return nil
 	}
 
 	var uuids []uuid.UUID
-	for _, idStr := range tournamentIDs {
+	for _, idStr := range eventIDs {
 		if u, err := uuid.Parse(idStr); err == nil {
 			uuids = append(uuids, u)
 		}
@@ -1966,14 +1927,14 @@ func (r *EventRepository) UpdateEventIDBulk(ctx context.Context, tournamentIDs [
 		return nil
 	}
 
-	eventUUID, err := uuid.Parse(eventID)
+	tournamentUUID, err := uuid.Parse(tournamentID)
 	if err != nil {
 		return err
 	}
 
 	_, err = ExtractDB(ctx, r.db).NewUpdate().
 		Model((*EventModel)(nil)).
-		Set("tournament_id = ?", eventUUID).
+		Set("tournament_id = ?", tournamentUUID).
 		Where("id IN (?)", bun.List(uuids)).
 		Exec(ctx)
 

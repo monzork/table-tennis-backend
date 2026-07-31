@@ -18,13 +18,13 @@ func TestMatchRepository_Save_InvalidIDVariants(t *testing.T) {
 
 	base := func() *event.Match {
 		return &event.Match{
-			ID:           uuid.NewString(),
-			TournamentID: f.tournament.ID,
-			MatchType:    "singles",
-			TeamA:        []*player.Player{f.players[0]},
-			TeamB:        []*player.Player{f.players[1]},
-			Status:       "scheduled",
-			Stage:        "group",
+			ID:        uuid.NewString(),
+			EventID:   f.tournament.ID,
+			MatchType: "singles",
+			TeamA:     []*player.Player{f.players[0]},
+			TeamB:     []*player.Player{f.players[1]},
+			Status:    "scheduled",
+			Stage:     "group",
 		}
 	}
 
@@ -38,7 +38,7 @@ func TestMatchRepository_Save_InvalidIDVariants(t *testing.T) {
 
 	t.Run("invalid tournament id", func(t *testing.T) {
 		m := base()
-		m.TournamentID = "bad-id"
+		m.EventID = "bad-id"
 		if err := f.matchRepo.Save(ctx, m); err == nil {
 			t.Fatal("expected error")
 		}
@@ -153,7 +153,7 @@ func TestMatchRepository_DeleteByTournament_InvalidID(t *testing.T) {
 	f := newMatchTestFixture(t)
 	ctx := context.Background()
 
-	if err := f.matchRepo.DeleteByTournament(ctx, "bad-id"); err == nil {
+	if err := f.matchRepo.DeleteByEvent(ctx, "bad-id"); err == nil {
 		t.Fatal("expected error for invalid UUID, got nil")
 	}
 }
@@ -218,7 +218,7 @@ func TestMatchRepository_CreateSubMatches_InvalidIDs(t *testing.T) {
 
 	cmd := event.CreateSubMatchesCommand{
 		ParentMatchID: "bad-id",
-		TournamentID:  f.tournament.ID,
+		EventID:       f.tournament.ID,
 		TeamAPlayers:  []string{f.players[0].ID},
 		TeamBPlayers:  []string{f.players[1].ID},
 	}
@@ -228,7 +228,7 @@ func TestMatchRepository_CreateSubMatches_InvalidIDs(t *testing.T) {
 
 	cmd2 := event.CreateSubMatchesCommand{
 		ParentMatchID: uuid.NewString(),
-		TournamentID:  "bad-id",
+		EventID:       "bad-id",
 		TeamAPlayers:  []string{f.players[0].ID},
 		TeamBPlayers:  []string{f.players[1].ID},
 	}

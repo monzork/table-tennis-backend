@@ -71,21 +71,6 @@ func TestGeneratorExtended_BuildBracket(t *testing.T) {
 	}
 }
 
-func TestGeneratorExtended_GetLosersGroupPassCount(t *testing.T) {
-	tourney := &event.Event{
-		DivisionConfigs: map[string]event.DivisionConfig{
-			"div1": {LosersGroupPassCount: 5},
-		},
-		LosersGroupPassCount: 3,
-	}
-	if count := tourney.GetLosersGroupPassCount("div1"); count != 5 {
-		t.Errorf("expected 5, got %d", count)
-	}
-	if count := tourney.GetLosersGroupPassCount("div2"); count != 3 {
-		t.Errorf("expected 3, got %d", count)
-	}
-}
-
 func TestGeneratorExtended_BuildBracketRounds(t *testing.T) {
 	players := []*player.Player{
 		{ID: "p1", SinglesElo: 1200},
@@ -117,11 +102,11 @@ func TestGeneratorExtended_BuildBracketRounds(t *testing.T) {
 	// Add some groups to test group elimination
 	tourney.Format = "groups_elimination"
 	group := event.Group{
-		ID:           "g1",
-		TournamentID: "t1",
-		Name:         "G1",
-		Players:      players,
-		Matches:      []event.Match{},
+		ID:      "g1",
+		EventID: "t1",
+		Name:    "G1",
+		Players: players,
+		Matches: []event.Match{},
 	}
 	tourney.Groups = []event.Group{group}
 

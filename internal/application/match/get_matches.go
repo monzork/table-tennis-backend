@@ -7,13 +7,13 @@ import (
 )
 
 type MatchView struct {
-	ID           string
-	TournamentID string
-	MatchType    string
-	TeamA        []*player.Player
-	TeamB        []*player.Player
-	Status       string
-	WinnerTeam   *string
+	ID         string
+	EventID    string
+	MatchType  string
+	TeamA      []*player.Player
+	TeamB      []*player.Player
+	Status     string
+	WinnerTeam *string
 }
 
 type GetMatchesUseCase struct {
@@ -41,13 +41,13 @@ func (uc *GetMatchesUseCase) GetAllViews(ctx context.Context) ([]*MatchView, err
 			winnerTeam = &w
 		}
 		views = append(views, &MatchView{
-			ID:           m.ID,
-			TournamentID: m.TournamentID,
-			MatchType:    m.MatchType,
-			TeamA:        m.TeamA,
-			TeamB:        m.TeamB,
-			Status:       m.Status,
-			WinnerTeam:   winnerTeam,
+			ID:         m.ID,
+			EventID:    m.EventID,
+			MatchType:  m.MatchType,
+			TeamA:      m.TeamA,
+			TeamB:      m.TeamB,
+			Status:     m.Status,
+			WinnerTeam: winnerTeam,
 		})
 	}
 	return views, nil
