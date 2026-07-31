@@ -6,7 +6,7 @@
         {{end}}
     </div>
     {{if .Event.SkipElo}}<input type="hidden" name="skipElo" value="on">{{end}}
-    {{if .Event.EventID}}<input type="hidden" name="eventId" value="{{.Event.EventID}}">{{end}}
+    {{if .Event.TournamentID}}<input type="hidden" name="eventId" value="{{.Event.TournamentID}}">{{end}}
     <div class="space-y-2">
         <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
         <input type="text" name="name" value="{{.Event.Name}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">

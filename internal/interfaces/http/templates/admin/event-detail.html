@@ -6,7 +6,7 @@
   .fade-up { animation: fadeInUp 0.4s ease forwards; }
 </style>
 
-<div class="space-y-10 text-white/90 animate-fade-in" data-tournament-id="{{if .Event.EventID}}{{.Event.EventID}}{{end}}">
+<div class="space-y-10 text-white/90 animate-fade-in" data-tournament-id="{{if .Event.TournamentID}}{{.Event.TournamentID}}{{end}}">
 
   {{/* ── Referee Alerts Container ── */}}
   <div id="referee-alerts-container" class="space-y-2"></div>

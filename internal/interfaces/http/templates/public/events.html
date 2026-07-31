@@ -22,8 +22,8 @@
                         
                         {{/* Event Name (Header of the mobile card) */}}
                         <td class="block sm:table-cell p-0 sm:p-6 font-semibold mb-3 sm:mb-0 text-xl sm:text-base border-b border-white/10 sm:border-0 pb-3 sm:pb-0">
-                            {{if .EventID}}
-                            <a href="/tournaments/{{.EventID}}" class="block text-[8px] sm:text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider mb-1">{{t $.T "tourneys.part_of"}}</a>
+                            {{if .TournamentID}}
+                            <a href="/tournaments/{{.TournamentID}}" class="block text-[8px] sm:text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider mb-1">{{t $.T "tourneys.part_of"}}</a>
                             {{end}}
                             {{.Name}}
                         </td>
