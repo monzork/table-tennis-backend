@@ -1389,7 +1389,7 @@ func (h *MatchHandler) ShowTableScorePage(c *fiber.Ctx) error {
 	}
 
 	// Query for an in_progress match on this table within the specific event or tournament
-	m, err := h.matchRepo.GetInProgressMatchOnTable(c.Context(), tableNumber, tournamentIDStr, eventIDStr)
+	m, err := h.matchRepo.GetInProgressMatchOnTable(c.Context(), tableNumber, eventIDStr, tournamentIDStr)
 
 	lang := getLang(c)
 	tMap := i18n.PrecomputedMaps[lang]
