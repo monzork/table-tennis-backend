@@ -31,11 +31,24 @@ func (uc *AutoAssignTablesUseCase) Execute(ctx context.Context, tournamentID str
 
 	// 1. Gather all occupied tables and scheduled matches across all events in the tournament
 	for _, e := range t.Events {
+		hasGroupStage := false
+		for i := range e.Matches {
+			if e.Matches[i].Stage == "group" {
+				hasGroupStage = true
+				break
+			}
+		}
+
 		for i := range e.Matches {
 			m := &e.Matches[i]
 			if m.Status == "in_progress" && m.TableNumber != nil {
 				occupiedTables[*m.TableNumber] = true
 			} else if m.Status == "scheduled" && m.TableNumber == nil && len(m.TeamA) > 0 && len(m.TeamB) > 0 {
+				// Once an event's group stage has started, stop auto-calling once it
+				// wraps up: knockout matches need a human to explicitly start them.
+				if hasGroupStage && m.Stage != "group" {
+					continue
+				}
 				scheduledMatches = append(scheduledMatches, m)
 			}
 		}

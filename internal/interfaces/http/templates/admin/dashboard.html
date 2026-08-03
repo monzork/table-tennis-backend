@@ -30,7 +30,7 @@
     </script>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Players Stat -->
         <div class="glass p-6 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col justify-between hover:border-white/10 transition-all duration-300">
             <div class="space-y-1">
@@ -38,15 +38,6 @@
                 <h3 class="text-4xl font-black text-white tracking-tighter">{{len .Players}}</h3>
             </div>
             <div class="absolute -right-2 -bottom-2 opacity-5 text-8xl font-black uppercase tracking-tighter select-none">ATH</div>
-        </div>
-
-        <!-- Events Stat -->
-        <div class="glass p-6 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col justify-between hover:border-white/10 transition-all duration-300">
-            <div class="space-y-1">
-                <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Events</span>
-                <h3 class="text-4xl font-black text-white tracking-tighter">{{len .Events}}</h3>
-            </div>
-            <div class="absolute -right-2 -bottom-2 opacity-5 text-8xl font-black uppercase tracking-tighter select-none">TRN</div>
         </div>
 
         <!-- Tournaments Stat -->
@@ -69,7 +60,7 @@
     </div>
 
     <!-- Quick Actions / Navigation Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Players Link -->
         <a href="/admin/players"
             class="glass p-6 rounded-2xl border border-white/5 hover:border-red-500/30 hover:-translate-y-1 transition-all group flex flex-col justify-between gap-4">
@@ -81,19 +72,6 @@
                 <p class="text-gray-400 text-xs">Manage athlete profiles, Elo scores, and global stats.</p>
             </div>
             <span class="text-[10px] uppercase tracking-widest text-red-500 font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Manage Players →</span>
-        </a>
-
-        <!-- Events Link -->
-        <a href="/admin/events"
-            class="glass p-6 rounded-2xl border border-white/5 hover:border-red-500/30 hover:-translate-y-1 transition-all group flex flex-col justify-between gap-4">
-            <div class="space-y-1.5">
-                <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 group-hover:text-white transition-colors">
-                    🏆
-                </div>
-                <h2 class="text-xl font-bold uppercase tracking-wide group-hover:text-white transition-colors">Events</h2>
-                <p class="text-gray-400 text-xs">Configure event structures, round robins, and brackets.</p>
-            </div>
-            <span class="text-[10px] uppercase tracking-widest text-red-500 font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Configure Tourneys →</span>
         </a>
 
         <!-- Tournaments Link -->

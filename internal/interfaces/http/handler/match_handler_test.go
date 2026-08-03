@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	divisionDomain "table-tennis-backend/internal/domain/division"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	parentDomain "table-tennis-backend/internal/domain/tournament"
@@ -445,8 +446,9 @@ func TestMatchHandler(t *testing.T) {
 		// This exercises the branches only reachable once a match genuinely transitions to
 		// "finished" through the real UpdateScore/UpdatePublicScore endpoints with a valid
 		// tournamentId: broadcasting the finished message, auto-assigning tables to the next
-		// scheduled match once EventID is set, detecting group-stage completion, and (for the
-		// public/referee flow) notifying admins.
+		// scheduled *group*-stage match once EventID is set (round16+ matches are left for a
+		// human to start manually once the group stage wraps up), detecting group-stage
+		// completion, and (for the public/referee flow) notifying admins.
 		parentID := uuid.New().String()
 		parentRepo := bunRepo.NewTournamentRepository(db, tournamentRepo)
 		now := time.Now()
@@ -455,7 +457,7 @@ func TestMatchHandler(t *testing.T) {
 			Name:      "Parent For AutoAssign",
 			StartDate: now,
 			EndDate:   now.Add(24 * time.Hour),
-			NumTables: 3,
+			NumTables: 6,
 		}); err != nil {
 			t.Fatalf("failed to save parent tournament: %v", err)
 		}
@@ -466,14 +468,25 @@ func TestMatchHandler(t *testing.T) {
 			return p
 		}
 
-		// Admin (UpdateScore) side: child event A with a group match to finish and a
-		// round16 match left scheduled with no table for auto-assign to pick up.
+		divRepo := bunRepo.NewDivisionRepository(db)
+		div := &divisionDomain.Division{ID: uuid.New().String(), Name: "Open Division", DisplayOrder: 1, MinElo: 0, Category: "both", Color: "#fff"}
+		if err := divRepo.Save(ctx, div); err != nil {
+			t.Fatalf("failed to save division: %v", err)
+		}
+
+		// Admin (UpdateScore) side: child event A with a group match to finish, a sibling
+		// group match auto-assign should pick up (announcing its division), and a round16
+		// match that must stay untouched until the group stage wraps up.
 		p5 := newPlayer("5A", "Player", "M")
 		p6 := newPlayer("6B", "Player", "M")
 		p7 := newPlayer("7C", "Player", "M")
 		p8 := newPlayer("8D", "Player", "M")
+		p13 := newPlayer("13I", "Player", "M")
+		p14 := newPlayer("14J", "Player", "M")
+		p17 := newPlayer("17M", "Player", "M")
+		p18 := newPlayer("18N", "Player", "M")
 
-		eventA, _ := tournamentDomain.NewEvent(uuid.New().String(), "Child A", "singles", "elimination", "open", now, now.Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p5, p6, p7, p8}, true)
+		eventA, _ := tournamentDomain.NewEvent(uuid.New().String(), "Child A", "singles", "elimination", "open", now, now.Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p5, p6, p7, p8, p13, p14, p17, p18}, true)
 		eventA.TournamentID = &parentID
 		if err := tournamentRepo.Save(ctx, eventA); err != nil {
 			t.Fatalf("failed to save child event A: %v", err)
@@ -483,6 +496,11 @@ func TestMatchHandler(t *testing.T) {
 		matchRepo.Save(ctx, matchToFinishA)
 		matchAutoAssignA := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventA.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p7}, TeamB: []*playerDomain.Player{p8}, Status: "scheduled", Stage: "round16"}
 		matchRepo.Save(ctx, matchAutoAssignA)
+		matchGroupSiblingA := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventA.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p13}, TeamB: []*playerDomain.Player{p14}, Status: "scheduled", Stage: "group", DivisionID: div.ID}
+		matchRepo.Save(ctx, matchGroupSiblingA)
+		// DivisionID points at a division that doesn't exist, exercising divisionName()'s not-found fallback.
+		matchGroupSiblingA2 := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventA.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p17}, TeamB: []*playerDomain.Player{p18}, Status: "scheduled", Stage: "group", DivisionID: uuid.New().String()}
+		matchRepo.Save(ctx, matchGroupSiblingA2)
 
 		reqA := httptest.NewRequest("PUT", "/matches/"+matchToFinishA.ID+"/score",
 			strings.NewReader("tournamentId="+eventA.ID+"&stage=group&scores[]=11-1&scores[]=11-2&scores[]=11-3"))
@@ -497,8 +515,18 @@ func TestMatchHandler(t *testing.T) {
 		}
 
 		mAutoAssignAModel, _ := matchRepo.GetModelByID(ctx, uuid.MustParse(matchAutoAssignA.ID))
-		if mAutoAssignAModel.TableNumber == nil {
-			t.Errorf("expected auto-assign to have given match a table after finishing sibling match")
+		if mAutoAssignAModel.TableNumber != nil {
+			t.Errorf("expected round16 match to be left for manual start once the group stage is over, got a table assigned")
+		}
+
+		mGroupSiblingAModel, _ := matchRepo.GetModelByID(ctx, uuid.MustParse(matchGroupSiblingA.ID))
+		if mGroupSiblingAModel.TableNumber == nil {
+			t.Errorf("expected auto-assign to have given the sibling group match a table")
+		}
+
+		mGroupSiblingA2Model, _ := matchRepo.GetModelByID(ctx, uuid.MustParse(matchGroupSiblingA2.ID))
+		if mGroupSiblingA2Model.TableNumber == nil {
+			t.Errorf("expected auto-assign to have given the sibling group match (unknown division) a table")
 		}
 
 		// Public (UpdatePublicScore) side: child event B, referee submission finishing the group
@@ -508,7 +536,10 @@ func TestMatchHandler(t *testing.T) {
 		p11 := newPlayer("11G", "Player", "F")
 		p12 := newPlayer("12H", "Player", "F")
 
-		eventB, _ := tournamentDomain.NewEvent(uuid.New().String(), "Child B", "singles", "elimination", "open", now, now.Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p9, p10, p11, p12}, true)
+		p15 := newPlayer("15K", "Player", "F")
+		p16 := newPlayer("16L", "Player", "F")
+
+		eventB, _ := tournamentDomain.NewEvent(uuid.New().String(), "Child B", "singles", "elimination", "open", now, now.Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p9, p10, p11, p12, p15, p16}, true)
 		eventB.TournamentID = &parentID
 		if err := tournamentRepo.Save(ctx, eventB); err != nil {
 			t.Fatalf("failed to save child event B: %v", err)
@@ -518,6 +549,9 @@ func TestMatchHandler(t *testing.T) {
 		matchRepo.Save(ctx, matchToFinishB)
 		matchAutoAssignB := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventB.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p11}, TeamB: []*playerDomain.Player{p12}, Status: "scheduled", Stage: "round16"}
 		matchRepo.Save(ctx, matchAutoAssignB)
+		// No DivisionID set, exercising the divisionName() empty-ID fallback.
+		matchGroupSiblingB := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventB.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p15}, TeamB: []*playerDomain.Player{p16}, Status: "scheduled", Stage: "group"}
+		matchRepo.Save(ctx, matchGroupSiblingB)
 
 		// The public endpoint only accepts the split scores[]_a / scores[]_b form fields
 		// (no fallback for the combined "A-B" format the admin JSON API supports).
@@ -535,8 +569,13 @@ func TestMatchHandler(t *testing.T) {
 		}
 
 		mAutoAssignBModel, _ := matchRepo.GetModelByID(ctx, uuid.MustParse(matchAutoAssignB.ID))
-		if mAutoAssignBModel.TableNumber == nil {
-			t.Errorf("expected auto-assign to have given match B a table after finishing sibling match")
+		if mAutoAssignBModel.TableNumber != nil {
+			t.Errorf("expected round16 match B to be left for manual start once the group stage is over, got a table assigned")
+		}
+
+		mGroupSiblingBModel, _ := matchRepo.GetModelByID(ctx, uuid.MustParse(matchGroupSiblingB.ID))
+		if mGroupSiblingBModel.TableNumber == nil {
+			t.Errorf("expected auto-assign to have given the sibling group match B a table")
 		}
 	})
 }

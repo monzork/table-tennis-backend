@@ -35,6 +35,7 @@ type MatchHandler struct {
 	startMatchUC        *match.StartMatchUseCase
 	scoreFormViewUC     *match.GetScoreFormViewUseCase
 	teamMatchFormViewUC *match.GetTeamMatchFormViewUseCase
+	divisionRepo        *bun.DivisionRepository
 }
 
 func NewMatchHandler(
@@ -49,6 +50,7 @@ func NewMatchHandler(
 	broadcastPushUC *notification.BroadcastPushNotificationUseCase,
 	teamMatchUC *match.TeamMatchOrchestratorUseCase,
 	startMatchUC *match.StartMatchUseCase,
+	divisionRepo *bun.DivisionRepository,
 ) *MatchHandler {
 	return &MatchHandler{
 		createUC:            createUC,
@@ -65,6 +67,33 @@ func NewMatchHandler(
 		startMatchUC:        startMatchUC,
 		scoreFormViewUC:     match.NewGetScoreFormViewUseCase(matchRepo, tournamentRepo, playerRepo, createUC, teamMatchUC),
 		teamMatchFormViewUC: match.NewGetTeamMatchFormViewUseCase(matchRepo, tournamentRepo),
+		divisionRepo:        divisionRepo,
+	}
+}
+
+// divisionName resolves a division ID to its display name, best-effort.
+func (h *MatchHandler) divisionName(ctx context.Context, divisionID string) string {
+	if divisionID == "" || h.divisionRepo == nil {
+		return ""
+	}
+	d, err := h.divisionRepo.GetById(ctx, divisionID)
+	if err != nil || d == nil {
+		return ""
+	}
+	return d.Name
+}
+
+// matchStartBroadcast builds the WS payload announcing a match has been called to a table.
+func (h *MatchHandler) matchStartBroadcast(ctx context.Context, m event.Match, p1, p2 string) map[string]string {
+	return map[string]string{
+		"event":        "start_match",
+		"tournamentId": m.EventID,
+		"matchId":      m.ID,
+		"tableNumber":  strconv.Itoa(*m.TableNumber),
+		"p1":           p1,
+		"p2":           p2,
+		"stage":        m.Stage,
+		"division":     h.divisionName(ctx, m.DivisionID),
 	}
 }
 
@@ -214,6 +243,21 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 
 	// Apply Elo via domain service
 	_ = h.finishUC.Execute(matched, body.WinnerTeam)
+
+	if t.TournamentID != nil {
+		if assigned, err := h.autoAssignTablesUC.Execute(c.Context(), *t.TournamentID); err == nil {
+			for _, m := range assigned {
+				p1, p2 := "TBD", "TBD"
+				if len(m.TeamA) > 0 {
+					p1 = m.TeamA[0].FirstName + " " + m.TeamA[0].LastName
+				}
+				if len(m.TeamB) > 0 {
+					p2 = m.TeamB[0].FirstName + " " + m.TeamB[0].LastName
+				}
+				h.broadcastToTournamentOrEvent(c, mModel.EventID.String(), h.matchStartBroadcast(c.Context(), m, p1, p2))
+			}
+		}
+	}
 
 	var nameA, nameB string
 	if len(matched.TeamA) > 0 {
@@ -595,14 +639,7 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 						if len(m.TeamB) > 0 {
 							p2 = m.TeamB[0].FirstName + " " + m.TeamB[0].LastName
 						}
-						h.broadcastToTournamentOrEvent(c, body.EventID, map[string]string{
-							"event":        "start_match",
-							"tournamentId": m.EventID,
-							"matchId":      m.ID,
-							"tableNumber":  strconv.Itoa(*m.TableNumber),
-							"p1":           p1,
-							"p2":           p2,
-						})
+						h.broadcastToTournamentOrEvent(c, body.EventID, h.matchStartBroadcast(c.Context(), m, p1, p2))
 					}
 				}
 			}
@@ -949,14 +986,7 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 						if len(am.TeamB) > 0 {
 							p2 = am.TeamB[0].FirstName + " " + am.TeamB[0].LastName
 						}
-						h.broadcastToTournamentOrEvent(c, body.EventID, map[string]string{
-							"event":        "start_match",
-							"tournamentId": am.EventID,
-							"matchId":      am.ID,
-							"tableNumber":  strconv.Itoa(*am.TableNumber),
-							"p1":           p1,
-							"p2":           p2,
-						})
+						h.broadcastToTournamentOrEvent(c, body.EventID, h.matchStartBroadcast(c.Context(), am, p1, p2))
 					}
 				}
 			}
@@ -1237,7 +1267,17 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 		if res.TableNumber > 0 {
 			tblNum = fmt.Sprintf("%d", res.TableNumber)
 		}
-		c.Append("HX-Trigger", fmt.Sprintf(`{"match-started": {"p1": %q, "p2": %q, "table": %q}}`, res.PlayerAName, res.PlayerBName, tblNum))
+		divisionID := ""
+		if t != nil {
+			for i := range t.Matches {
+				if t.Matches[i].ID == matchID {
+					divisionID = t.Matches[i].DivisionID
+					break
+				}
+			}
+		}
+		c.Append("HX-Trigger", fmt.Sprintf(`{"match-started": {"p1": %q, "p2": %q, "table": %q, "stage": %q, "division": %q}}`,
+			res.PlayerAName, res.PlayerBName, tblNum, stage, h.divisionName(c.Context(), divisionID)))
 	}
 
 	t, err = h.tournamentRepo.GetByID(c.Context(), tID)

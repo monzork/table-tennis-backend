@@ -167,7 +167,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	getAllEventsUC := tournament.NewGetAllEventsUseCase(eventRepo)
 	deleteEventUC := tournament.NewDeleteEventUseCase(eventRepo)
 	getBoardUC := tournament.NewGetBoardDataUseCase(eventRepo, divisionRepo)
-	eventHandler := handler.NewTournamentHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC, getBoardUC)
+	autoAssignTablesUC := match.NewAutoAssignTablesUseCase(matchRepo, eventRepo)
+	eventHandler := handler.NewTournamentHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC, getBoardUC, autoAssignTablesUC)
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
@@ -177,7 +178,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	startMatchUC := match.NewStartMatchUseCase(matchRepo, tournamentRepo, eventRepo, createMatchUC)
 	pushSubRepo := bunRepo.NewPushSubscriptionRepository(db)
 	broadcastPushUC := notification.NewBroadcastPushNotificationUseCase(pushSubRepo, "test-pubkey", "test-privkey")
-	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, broadcastPushUC, teamMatchUC, startMatchUC)
+	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, broadcastPushUC, teamMatchUC, startMatchUC, divisionRepo)
 
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
@@ -368,6 +369,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Get("/tournaments/:id/health", eventHandler.TournamentHealth)
 	admin.Get("/tournaments/:id/health/metrics", eventHandler.TournamentHealthMetrics)
 	admin.Get("/tournaments/:id/edit", eventHandler.ShowEditForm)
+	admin.Post("/tournaments/:id/start", eventHandler.Start)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)
 	api.Post("/matches/:id/start", matchHandler.Start)

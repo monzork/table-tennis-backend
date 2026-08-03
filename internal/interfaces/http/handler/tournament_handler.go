@@ -9,6 +9,7 @@ import (
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
+	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/application/tournament"
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	domainEvent "table-tennis-backend/internal/domain/event"
@@ -27,6 +28,7 @@ type TournamentHandler struct {
 	leaderboardUC *leaderboard.GetLeaderboardUseCase
 	exportPdfUC   *event.ExportEventPdfUseCase
 	getBoardUC    *tournament.GetBoardDataUseCase
+	autoAssignUC  *match.AutoAssignTablesUseCase
 }
 
 func NewTournamentHandler(
@@ -39,6 +41,7 @@ func NewTournamentHandler(
 	leaderboardUC *leaderboard.GetLeaderboardUseCase,
 	exportPdfUC *event.ExportEventPdfUseCase,
 	getBoardUC *tournament.GetBoardDataUseCase,
+	autoAssignUC *match.AutoAssignTablesUseCase,
 ) *TournamentHandler {
 	return &TournamentHandler{
 		createUC:      createUC,
@@ -50,7 +53,22 @@ func NewTournamentHandler(
 		leaderboardUC: leaderboardUC,
 		exportPdfUC:   exportPdfUC,
 		getBoardUC:    getBoardUC,
+		autoAssignUC:  autoAssignUC,
 	}
+}
+
+// Start calls the first batch of scheduled matches onto any free tables,
+// kicking off live play for the tournament.
+func (h *TournamentHandler) Start(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if _, err := h.autoAssignUC.Execute(c.Context(), id); err != nil {
+		return ErrorHandler(err)
+	}
+	if c.Get("HX-Request") != "" {
+		c.Set("HX-Refresh", "true")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.JSON(fiber.Map{"status": "started"})
 }
 
 func (h *TournamentHandler) Create(c *fiber.Ctx) error {
