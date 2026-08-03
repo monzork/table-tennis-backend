@@ -328,6 +328,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	app.Post("/public/score/:matchId/verify", matchHandler.ValidateMatchPIN)
 
 	// Public tournament endpoints
+	app.Get("/public/tournaments", eventHandler.PublicList)
 	app.Get("/tournaments/:id/public", eventHandler.PublicDetail)
 	app.Get("/tournaments/:id/tv", eventHandler.PublicTVDashboard)
 	app.Get("/tournaments/:id/board-columns", eventHandler.BoardColumns)
