@@ -36,12 +36,13 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 		return ctx.Redirect("/rankings/singles")
 	})
 
-	// Public Events List
-	app.Get("/events", c.EventHandler.PublicList)
+	// Public Tournaments List
+	app.Get("/tournaments", c.TournamentHandler.PublicList)
 
 	// Public Detail Views
-	app.Get("/events/:id", c.EventHandler.PublicDetail)
+	app.Get("/events/:id", c.EventHandler.PublicRedirectToTournament)
 	app.Get("/events/:id/tv", c.EventHandler.PublicTVDashboard)
+	app.Get("/categories/:id", c.EventHandler.PublicDetail)
 	app.Get("/tournaments/:id", c.TournamentHandler.PublicDetail)
 	app.Get("/tournaments/:id/tv", c.TournamentHandler.PublicTVDashboard)
 

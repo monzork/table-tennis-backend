@@ -6,7 +6,7 @@ var Translations = map[string]map[string]string{
 		// Nav
 		"nav.singles":         "Singles",
 		"nav.doubles":         "Doubles",
-		"nav.events":          "Events",
+		"nav.events":          "Tournaments",
 		"nav.register":        "Register",
 		"nav.dashboard":       "Dashboard",
 		"nav.players":         "Players",
@@ -109,16 +109,16 @@ var Translations = map[string]map[string]string{
 		"status.finished":    "Finished",
 
 		// Events List
-		"tourneys.title":        "Events",
+		"tourneys.title":        "Tournaments",
 		"tourneys.subtitle":     "Official Series & Leagues",
 		"tourneys.col_name":     "Name",
 		"tourneys.col_type":     "Type",
-		"tourneys.col_category": "Category",
+		"tourneys.col_category": "Categories",
 		"tourneys.col_dates":    "Dates",
 		"tourneys.col_bracket":  "Bracket",
 		"tourneys.part_of":      "← Part of Grand Tournament",
 		"tourneys.view_bracket": "View Bracket",
-		"tourneys.no_avail":     "No events available at the moment.",
+		"tourneys.no_avail":     "No tournaments available at the moment.",
 
 		// Event Board
 		"board.back":           "Back to Event",
@@ -260,7 +260,7 @@ var Translations = map[string]map[string]string{
 		// Footer
 
 		// Dynamic keys
-		"pub_detail.all_events":    "All Events",
+		"pub_detail.all_events":    "All Tournaments",
 		"pub_detail.connecting":    "Connecting…",
 		"pub_detail.players_count": "players",
 		"pub_detail.player_pool":   "Player Pool",
@@ -279,7 +279,7 @@ var Translations = map[string]map[string]string{
 		"nav.alerts_not_now":       "Not Now",
 		"nav.alerts_enable":        "Enable",
 		"nav.mob_rankings":         "Rankings",
-		"nav.mob_tournaments":      "Events",
+		"nav.mob_tournaments":      "Tournaments",
 		"nav.mob_alerts":           "Alerts",
 		"nav.alerts_iphone_title":  "Get Live Alerts on iPhone",
 		"nav.alerts_iphone_desc":   "Tap the <b>Share icon</b> (square with an up arrow) at the bottom of your screen and select <b>'Add to Home Screen'</b> to enable push notifications.",
@@ -290,7 +290,7 @@ var Translations = map[string]map[string]string{
 		// Nav
 		"nav.singles":         "Individuales",
 		"nav.doubles":         "Dobles",
-		"nav.events":          "Eventos",
+		"nav.events":          "Torneos",
 		"nav.register":        "Registro",
 		"nav.dashboard":       "Inicio",
 		"nav.players":         "Jugadores",
@@ -563,7 +563,7 @@ var Translations = map[string]map[string]string{
 		"nav.alerts_not_now":       "Ahora No",
 		"nav.alerts_enable":        "Activar",
 		"nav.mob_rankings":         "Ranking",
-		"nav.mob_tournaments":      "Eventos",
+		"nav.mob_tournaments":      "Torneos",
 		"nav.mob_alerts":           "Alertas",
 		"nav.alerts_iphone_title":  "Recibir Alertas en iPhone",
 		"nav.alerts_iphone_desc":   "Toca el <b>icono de Compartir</b> (cuadrado con una flecha hacia arriba) en la parte inferior y selecciona <b>'Añadir a inicio'</b> para activar las notificaciones push.",

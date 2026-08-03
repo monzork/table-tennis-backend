@@ -292,7 +292,7 @@ func (h *PublicHandler) Sitemap(c *fiber.Ctx) error {
 	// Static routes
 	staticRoutes := []string{
 		"/rankings/singles",
-		"/events",
+		"/tournaments",
 		"/register",
 	}
 	for _, route := range staticRoutes {
@@ -306,7 +306,7 @@ func (h *PublicHandler) Sitemap(c *fiber.Ctx) error {
 	// Dynamic routes (Events)
 	for _, t := range events {
 		sb.WriteString("  <url>\n")
-		sb.WriteString(fmt.Sprintf("    <loc>%s/events/%s</loc>\n", baseURL, t.ID))
+		sb.WriteString(fmt.Sprintf("    <loc>%s/categories/%s</loc>\n", baseURL, t.ID))
 		sb.WriteString("    <changefreq>hourly</changefreq>\n")
 		sb.WriteString("    <priority>1.0</priority>\n")
 		sb.WriteString("  </url>\n")

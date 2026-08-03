@@ -502,6 +502,20 @@ func (h *EventHandler) PublicList(c *fiber.Ctx) error {
 	}), "layouts/public")
 }
 
+// PublicRedirectToTournament sends old per-category public links (/events/:id) to
+// the parent tournament page; the category bracket itself now lives at /categories/:id.
+func (h *EventHandler) PublicRedirectToTournament(c *fiber.Ctx) error {
+	id := c.Params("id")
+	ev, err := h.getByID.Execute(c.Context(), id)
+	if err != nil {
+		return ErrorHandler(err)
+	}
+	if ev.TournamentID == nil {
+		return h.PublicDetail(c)
+	}
+	return c.Redirect("/tournaments/" + *ev.TournamentID)
+}
+
 func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 	lang := getLang(c)
 	id := c.Params("id")

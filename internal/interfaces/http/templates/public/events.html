@@ -10,34 +10,24 @@
                 <thead class="hidden sm:table-header-group">
                     <tr class="bg-black/40 border-b border-white/10 text-gray-400 uppercase text-[10px] sm:text-xs tracking-wider font-bold">
                         <th class="p-4 sm:p-6">{{t .T "tourneys.col_name"}}</th>
-                        <th class="p-4 sm:p-6">{{t .T "tourneys.col_type"}}</th>
                         <th class="p-4 sm:p-6">{{t .T "tourneys.col_category"}}</th>
                         <th class="p-4 sm:p-6">{{t .T "tourneys.col_dates"}}</th>
                         <th class="p-4 sm:p-6 text-right">{{t .T "tourneys.col_bracket"}}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y sm:divide-white/10 text-sm sm:text-base">
-                    {{range .Events}}
+                    {{range .Tournaments}}
                     <tr class="hover:bg-white/5 transition-colors flex flex-col sm:table-row p-5 sm:p-0 mb-4 sm:mb-0 bg-white/5 sm:bg-transparent rounded-2xl sm:rounded-none border border-white/10 sm:border-0 relative">
-                        
-                        {{/* Event Name (Header of the mobile card) */}}
+
+                        {{/* Tournament Name (Header of the mobile card) */}}
                         <td class="block sm:table-cell p-0 sm:p-6 font-semibold mb-3 sm:mb-0 text-xl sm:text-base border-b border-white/10 sm:border-0 pb-3 sm:pb-0">
-                            {{if .TournamentID}}
-                            <a href="/tournaments/{{.TournamentID}}" class="block text-[8px] sm:text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider mb-1">{{t $.T "tourneys.part_of"}}</a>
-                            {{end}}
                             {{.Name}}
                         </td>
 
-                        {{/* Type */}}
-                        <td class="flex sm:table-cell items-center justify-between sm:justify-start p-0 sm:p-6 text-gray-300 capitalize mb-2 sm:mb-0 text-sm sm:text-base">
-                            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t $.T "tourneys.col_type"}}:</span>
-                            <span class="px-2 py-0.5 bg-white/10 sm:bg-transparent sm:px-0 sm:py-0 rounded-md text-xs sm:text-base font-medium">{{.Type}}</span>
-                        </td>
-
-                        {{/* Category */}}
+                        {{/* Category count */}}
                         <td class="flex sm:table-cell items-center justify-between sm:justify-start p-0 sm:p-6 text-gray-300 capitalize mb-2 sm:mb-0 text-sm sm:text-base">
                             <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t $.T "tourneys.col_category"}}:</span>
-                            <span class="px-2 py-0.5 bg-white/10 sm:bg-transparent sm:px-0 sm:py-0 rounded-md text-xs sm:text-base font-medium">{{.EventCategory}}</span>
+                            <span class="px-2 py-0.5 bg-white/10 sm:bg-transparent sm:px-0 sm:py-0 rounded-md text-xs sm:text-base font-medium">{{len .Events}}</span>
                         </td>
 
                         {{/* Dates */}}
@@ -48,14 +38,14 @@
 
                         {{/* Action Button (Footer of the mobile card) */}}
                         <td class="block sm:table-cell p-0 sm:p-6 text-left sm:text-right mt-1 sm:mt-0 pt-4 sm:pt-0 border-t border-white/10 sm:border-0">
-                            <a href="/events/{{.ID}}" class="inline-flex justify-center items-center w-full sm:w-auto bg-white hover:bg-gray-200 text-black font-extrabold py-3 sm:py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-[11px] sm:text-xs shadow text-center focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black">
+                            <a href="/tournaments/{{.ID}}" class="inline-flex justify-center items-center w-full sm:w-auto bg-white hover:bg-gray-200 text-black font-extrabold py-3 sm:py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-[11px] sm:text-xs shadow text-center focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black">
                                 {{t $.T "tourneys.view_bracket"}}
                             </a>
                         </td>
                     </tr>
                     {{else}}
                     <tr>
-                        <td colspan="5" class="p-8 text-center text-gray-500">{{t .T "tourneys.no_avail"}}</td>
+                        <td colspan="4" class="p-8 text-center text-gray-500">{{t .T "tourneys.no_avail"}}</td>
                     </tr>
                     {{end}}
                 </tbody>

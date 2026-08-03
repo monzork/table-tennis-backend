@@ -405,6 +405,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	app.Get("/public/events", tournamentHandler.PublicList)
 	app.Get("/public/events/:id", tournamentHandler.PublicDetail)
 	app.Get("/public/events/:id/tv", tournamentHandler.PublicTVDashboard)
+	app.Get("/public/redirect/events/:id", tournamentHandler.PublicRedirectToTournament)
 	app.Get("/events/:id/board", tournamentHandler.Board)
 	app.Get("/events/:id/board/columns", tournamentHandler.BoardColumns)
 	admin.Post("/events/:id/toggle-seeding-lock", tournamentHandler.ToggleSeedingLock)

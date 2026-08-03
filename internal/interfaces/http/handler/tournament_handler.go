@@ -274,6 +274,21 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	}), "layouts/public")
 }
 
+func (h *TournamentHandler) PublicList(c *fiber.Ctx) error {
+	lang := getLang(c)
+	tournaments, err := h.getAll.Execute(c.Context())
+	if err != nil {
+		return ErrorHandler(err)
+	}
+	return c.Render("public/events", merge(tMap(lang), fiber.Map{
+		"Tournaments":  tournaments,
+		"Type":         "Events",
+		"OGImage":      c.BaseURL() + "/open_tdm.jpeg",
+		"Title":        "Tournaments",
+		"CanonicalURL": c.BaseURL() + c.Path(),
+	}), "layouts/public")
+}
+
 func (h *TournamentHandler) ExportEventPDF(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	pdfBytes, err := h.exportPdfUC.Execute(c.Context(), idStr)
