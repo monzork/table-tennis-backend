@@ -149,12 +149,13 @@ func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
 	}()
 	wg.Wait()
 
-	return c.Render("admin/tournaments", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/tournaments", merge(tMap(lang), fiber.Map{
 		"Tournaments": res.tournaments,
 		"Divisions":   res.divisions,
 		"Players":     res.players,
 		"Standalone":  res.standalone,
-	}, "layouts/admin")
+	}), "layouts/admin")
 }
 func (h *AdminHandler) Divisions(c *fiber.Ctx) error {
 	divisions, err := h.divisionUC.GetAll(c.Context())

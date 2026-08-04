@@ -9,7 +9,7 @@
       <h3 class="text-xs font-black uppercase tracking-widest text-gray-400">{{t $.T "board.table_status"}}</h3>
       <p class="text-[11px] text-gray-500 mt-1">{{t $.T "board.table_desc"}}</p>
     </div>
-    <button onclick="printAllTableQRs()" class="ml-4 px-4 py-2 bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Print All Tables</button>
+    <button onclick="printAllTableQRs()" class="ml-4 px-4 py-2 bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">{{t $.T "board.print_all_tables"}}</button>
   </div>
   <div class="flex flex-wrap gap-2.5">
     {{range .Tables}}
@@ -22,7 +22,7 @@
       <button type="button" onclick="showQRCodeModal('', 'Table {{.Number}}', '{{.Number}}', '{{$e.ID}}', '')"
         class="qr-table-btn ml-1 text-gray-400 hover:text-white transition-colors flex items-center justify-center"
         data-table="{{.Number}}" data-tournament-id="{{$e.ID}}"
-        title="Show Table {{.Number}} QR Code">
+        title="{{t $.T "board.table"}} {{.Number}} - {{t $.T "board.show_qr_code"}}">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z">
@@ -62,10 +62,10 @@
           {{end}}
           {{if eq .Category "men"}}
           <span
-            class="text-[9px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded font-mono">Male</span>
+            class="text-[9px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded font-mono">{{t $.T "register.gender_male"}}</span>
           {{else if eq .Category "women"}}
           <span
-            class="text-[9px] font-black uppercase tracking-widest text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded font-mono">Female</span>
+            class="text-[9px] font-black uppercase tracking-widest text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded font-mono">{{t $.T "register.gender_female"}}</span>
           {{else if .Category}}
           <span
             class="text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded font-mono">{{.Category}}</span>
@@ -150,7 +150,7 @@
             data-table-number="{{if .TableNumber}}{{.TableNumber}}{{end}}"
             onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup, this.dataset.tableNumber, '{{$e.ID}}', '{{.EventID}}')"
             class="px-3 text-gray-400 hover:text-white border border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/15 rounded-lg transition-all flex items-center justify-center"
-            title="Show QR Code">
+            title="{{t $.T "board.show_qr_code"}}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z">
@@ -191,10 +191,10 @@
           {{end}}
           {{if eq .Category "men"}}
           <span
-            class="text-[9px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded font-mono">Male</span>
+            class="text-[9px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded font-mono">{{t $.T "register.gender_male"}}</span>
           {{else if eq .Category "women"}}
           <span
-            class="text-[9px] font-black uppercase tracking-widest text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded font-mono">Female</span>
+            class="text-[9px] font-black uppercase tracking-widest text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded font-mono">{{t $.T "register.gender_female"}}</span>
           {{else if .Category}}
           <span
             class="text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded font-mono">{{.Category}}</span>
@@ -220,7 +220,7 @@
       </div>
       {{if .Pin}}
       <div class="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl px-3 py-1.5">
-        <span class="text-[9px] text-gray-500 font-mono uppercase tracking-widest">OLD PIN</span>
+        <span class="text-[9px] text-gray-500 font-mono uppercase tracking-widest">{{t $.T "board.old_pin"}}</span>
         <span
           class="text-sm font-black text-yellow-400 font-mono tracking-widest line-through opacity-50">{{.Pin}}</span>
       </div>
@@ -236,7 +236,7 @@
           data-table-number="{{if .TableNumber}}{{.TableNumber}}{{end}}"
           onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup, this.dataset.tableNumber, '{{$e.ID}}', '{{.EventID}}')"
           class="px-3 text-yellow-500 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 rounded-lg transition-all flex items-center justify-center"
-          title="Show QR Code">
+          title="{{t $.T "board.show_qr_code"}}">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z">
@@ -278,10 +278,10 @@
           {{end}}
           {{if eq .Category "men"}}
           <span
-            class="text-[9px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded font-mono">Male</span>
+            class="text-[9px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded font-mono">{{t $.T "register.gender_male"}}</span>
           {{else if eq .Category "women"}}
           <span
-            class="text-[9px] font-black uppercase tracking-widest text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded font-mono">Female</span>
+            class="text-[9px] font-black uppercase tracking-widest text-pink-400 bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded font-mono">{{t $.T "register.gender_female"}}</span>
           {{else if .Category}}
           <span
             class="text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded font-mono">{{.Category}}</span>

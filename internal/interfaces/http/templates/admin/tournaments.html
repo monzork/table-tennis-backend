@@ -1,19 +1,19 @@
 <div class="space-y-8 animate-fade-in text-white/90">
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
         <div>
-            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight uppercase">Tournaments <span class="text-white">.</span></h1>
-            <p class="text-gray-400 mt-1">Manage Multi-Bracket Division Events</p>
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight uppercase">{{t .T "admin.tournaments.title"}} <span class="text-white">.</span></h1>
+            <p class="text-gray-400 mt-1">{{t .T "admin.tournaments.subtitle"}}</p>
         </div>
         <div class="flex flex-wrap sm:flex-nowrap gap-3 items-center w-full sm:w-auto">
-            <button id="bulk-delete-btn" 
-                    hx-post="/tournaments/bulk-delete" 
-                    hx-include=".tournament-checkbox" 
-                    hx-confirm="Are you sure you want to delete all selected tournaments? Child events will NOT be deleted, but they will be unlinked."
+            <button id="bulk-delete-btn"
+                    hx-post="/tournaments/bulk-delete"
+                    hx-include=".tournament-checkbox"
+                    hx-confirm="{{t .T "admin.tournaments.bulk_delete_confirm"}}"
                     class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-full transition-all uppercase tracking-wider text-sm flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                Delete Selected
+                {{t .T "admin.tournaments.delete_selected"}}
             </button>
-            <button hx-on:click="document.getElementById('add-tournament-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">Add Tournament</button>
+            <button hx-on:click="document.getElementById('add-tournament-modal').classList.remove('hidden')" class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-6 rounded-full transition-all uppercase tracking-wider text-sm">{{t .T "admin.tournaments.add_btn"}}</button>
         </div>
     </header>
 
@@ -22,19 +22,19 @@
             <thead class="hidden sm:table-header-group">
                 <tr class="bg-black/40 border-b border-white/10">
                     <th class="p-4 w-12"><input type="checkbox" id="select-all-tournaments" hx-on:change="document.querySelectorAll('.tournament-checkbox').forEach(cb => cb.checked = this.checked)" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer"></th>
-                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Name</th>
-                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Division</th>
-                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Categories</th>
-                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Start Date</th>
-                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">End Date</th>
-                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">Actions</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">{{t .T "admin.tournaments.col_name"}}</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">{{t .T "admin.tournaments.col_division"}}</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">{{t .T "admin.tournaments.col_categories"}}</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">{{t .T "admin.tournaments.col_start_date"}}</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">{{t .T "admin.tournaments.col_end_date"}}</th>
+                    <th class="p-4 font-semibold text-gray-400 uppercase text-xs tracking-wider">{{t .T "admin.tournaments.col_actions"}}</th>
                 </tr>
             </thead>
             <tbody id="tournament-list" class="divide-y divide-white/10 block sm:table-row-group">
                 {{range .Tournaments}}
-                {{template "admin/partials/tournament-row" .}}
+                {{template "admin/partials/tournament-row" (dict "Tournament" . "T" $.T)}}
                 {{else}}
-                 <tr id="empty-state"><td colspan="6" class="p-4 text-center text-gray-500">No Tournaments yet. Click Add to create one.</td></tr>
+                 <tr id="empty-state"><td colspan="6" class="p-4 text-center text-gray-500">{{t .T "admin.tournaments.empty"}}</td></tr>
                 {{end}}
             </tbody>
         </table>
@@ -48,15 +48,15 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         
-        <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">Create <span class="text-white">Tournament</span>.</h2>
+        <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">{{t .T "admin.tournaments.modal_title_prefix"}} <span class="text-white">{{t .T "admin.tournaments.modal_title_suffix"}}</span>.</h2>
         
         <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" 
               hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-tournament-modal').classList.add('hidden'); this.reset(); document.getElementById('empty-state')?.remove(); }"
               class="space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div class="space-y-2">
-                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Tournament Name</label>
-                    <input type="text" name="name" placeholder="e.g., Spring Championship 2026" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.tournaments.name_label"}}</label>
+                    <input type="text" name="name" placeholder="{{t .T "admin.tournaments.name_ph"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all">
                 </div>
                 <div class="space-y-2" id="division-select-container">
                     {{template "admin/partials/division-select-options" dict "Divisions" .Divisions}}
@@ -71,41 +71,41 @@
                        hx-swap="innerHTML"
                        class="w-5 h-5 rounded border-white/10 bg-black/40 checked:bg-white text-black focus:ring-0 cursor-pointer">
                 <div>
-                    <label for="skipElo" class="text-sm font-bold uppercase tracking-wider text-white/90 cursor-pointer">Skip Elo Calculations</label>
-                    <p class="text-[10px] text-gray-500">If checked, no Elo updates will occur for any category, and player Elo boundaries will be bypassed.</p>
+                    <label for="skipElo" class="text-sm font-bold uppercase tracking-wider text-white/90 cursor-pointer">{{t .T "admin.tournaments.skip_elo_label"}}</label>
+                    <p class="text-[10px] text-gray-500">{{t .T "admin.tournaments.skip_elo_desc"}}</p>
                 </div>
             </div>
 
             <div class="space-y-2">
-                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Auto-Provision Categories & Setup</label>
+                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.tournaments.auto_provision_label"}}</label>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Men's Singles -->
                     <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardSinglesMen">
                         <div class="flex items-center justify-between border-b border-white/5 pb-2">
                             <div class="flex flex-col">
-                                <span class="text-xs font-bold text-white">♂ Singles</span>
-                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Men</span>
+                                <span class="text-xs font-bold text-white">♂ {{t $.T "admin.tournaments.singles"}}</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">{{t $.T "admin.tournaments.men"}}</span>
                             </div>
                             <input type="checkbox" name="autoSinglesMen" checked onchange="toggleCategory(this, 'SinglesMen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <div class="space-y-1">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.format_label"}}</label>
                                 <select name="formatSinglesMen" onchange="document.getElementById('passCountSinglesMenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
-                                    <option value="groups_elimination" selected>Group + KO</option>
-                                    <option value="elimination">Elimination</option>
-                                    <option value="round_robin">Round Robin</option>
+                                    <option value="groups_elimination" selected>{{t $.T "admin.tournaments.fmt_group_ko"}}</option>
+                                    <option value="elimination">{{t $.T "admin.tournaments.fmt_elimination"}}</option>
+                                    <option value="round_robin">{{t $.T "admin.tournaments.fmt_round_robin"}}</option>
                                 </select>
                             </div>
                             <div class="space-y-1" id="passCountSinglesMenContainer">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.pass_count_label"}}</label>
                                 <input type="number" name="groupPassCountSinglesMen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-1">
-                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.player_pool_label"}}</label>
                             <select name="participantIdsSinglesMen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "M"}}
@@ -120,29 +120,29 @@
                     <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardSinglesWomen">
                         <div class="flex items-center justify-between border-b border-white/5 pb-2">
                             <div class="flex flex-col">
-                                <span class="text-xs font-bold text-white">♀ Singles</span>
-                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Women</span>
+                                <span class="text-xs font-bold text-white">♀ {{t $.T "admin.tournaments.singles"}}</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">{{t $.T "admin.tournaments.women"}}</span>
                             </div>
                             <input type="checkbox" name="autoSinglesWomen" checked onchange="toggleCategory(this, 'SinglesWomen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <div class="space-y-1">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.format_label"}}</label>
                                 <select name="formatSinglesWomen" onchange="document.getElementById('passCountSinglesWomenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
-                                    <option value="groups_elimination" selected>Group + KO</option>
-                                    <option value="elimination">Elimination</option>
-                                    <option value="round_robin">Round Robin</option>
+                                    <option value="groups_elimination" selected>{{t $.T "admin.tournaments.fmt_group_ko"}}</option>
+                                    <option value="elimination">{{t $.T "admin.tournaments.fmt_elimination"}}</option>
+                                    <option value="round_robin">{{t $.T "admin.tournaments.fmt_round_robin"}}</option>
                                 </select>
                             </div>
                             <div class="space-y-1" id="passCountSinglesWomenContainer">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.pass_count_label"}}</label>
                                 <input type="number" name="groupPassCountSinglesWomen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-1">
-                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.player_pool_label"}}</label>
                             <select name="participantIdsSinglesWomen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "F"}}
@@ -157,29 +157,29 @@
                     <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardDoublesMen">
                         <div class="flex items-center justify-between border-b border-white/5 pb-2">
                             <div class="flex flex-col">
-                                <span class="text-xs font-bold text-white">♂ Doubles</span>
-                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Men</span>
+                                <span class="text-xs font-bold text-white">♂ {{t $.T "admin.tournaments.doubles"}}</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">{{t $.T "admin.tournaments.men"}}</span>
                             </div>
                             <input type="checkbox" name="autoDoublesMen" checked onchange="toggleCategory(this, 'DoublesMen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <div class="space-y-1">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.format_label"}}</label>
                                 <select name="formatDoublesMen" onchange="document.getElementById('passCountDoublesMenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
-                                    <option value="elimination" selected>Elimination</option>
-                                    <option value="groups_elimination">Group + KO</option>
-                                    <option value="round_robin">Round Robin</option>
+                                    <option value="elimination" selected>{{t $.T "admin.tournaments.fmt_elimination"}}</option>
+                                    <option value="groups_elimination">{{t $.T "admin.tournaments.fmt_group_ko"}}</option>
+                                    <option value="round_robin">{{t $.T "admin.tournaments.fmt_round_robin"}}</option>
                                 </select>
                             </div>
                             <div class="space-y-1" id="passCountDoublesMenContainer" style="display: none;">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.pass_count_label"}}</label>
                                 <input type="number" name="groupPassCountDoublesMen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-1">
-                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.player_pool_label"}}</label>
                             <select name="participantIdsDoublesMen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "M"}}
@@ -194,29 +194,29 @@
                     <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardDoublesWomen">
                         <div class="flex items-center justify-between border-b border-white/5 pb-2">
                             <div class="flex flex-col">
-                                <span class="text-xs font-bold text-white">♀ Doubles</span>
-                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Women</span>
+                                <span class="text-xs font-bold text-white">♀ {{t $.T "admin.tournaments.doubles"}}</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">{{t $.T "admin.tournaments.women"}}</span>
                             </div>
                             <input type="checkbox" name="autoDoublesWomen" checked onchange="toggleCategory(this, 'DoublesWomen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <div class="space-y-1">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.format_label"}}</label>
                                 <select name="formatDoublesWomen" onchange="document.getElementById('passCountDoublesWomenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
-                                    <option value="elimination" selected>Elimination</option>
-                                    <option value="groups_elimination">Group + KO</option>
-                                    <option value="round_robin">Round Robin</option>
+                                    <option value="elimination" selected>{{t $.T "admin.tournaments.fmt_elimination"}}</option>
+                                    <option value="groups_elimination">{{t $.T "admin.tournaments.fmt_group_ko"}}</option>
+                                    <option value="round_robin">{{t $.T "admin.tournaments.fmt_round_robin"}}</option>
                                 </select>
                             </div>
                             <div class="space-y-1" id="passCountDoublesWomenContainer" style="display: none;">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.pass_count_label"}}</label>
                                 <input type="number" name="groupPassCountDoublesWomen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-1">
-                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.player_pool_label"}}</label>
                             <select name="participantIdsDoublesWomen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "F"}}
@@ -231,29 +231,29 @@
                     <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardDoublesMixed">
                         <div class="flex items-center justify-between border-b border-white/5 pb-2">
                             <div class="flex flex-col">
-                                <span class="text-xs font-bold text-white">⚤ Doubles</span>
-                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Mixed</span>
+                                <span class="text-xs font-bold text-white">⚤ {{t $.T "admin.tournaments.doubles"}}</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">{{t $.T "admin.tournaments.mixed"}}</span>
                             </div>
                             <input type="checkbox" name="autoDoublesMixed" checked onchange="toggleCategory(this, 'DoublesMixed')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <div class="space-y-1">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.format_label"}}</label>
                                 <select name="formatDoublesMixed" onchange="document.getElementById('passCountDoublesMixedContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
-                                    <option value="elimination" selected>Elimination</option>
-                                    <option value="groups_elimination">Group + KO</option>
-                                    <option value="round_robin">Round Robin</option>
+                                    <option value="elimination" selected>{{t $.T "admin.tournaments.fmt_elimination"}}</option>
+                                    <option value="groups_elimination">{{t $.T "admin.tournaments.fmt_group_ko"}}</option>
+                                    <option value="round_robin">{{t $.T "admin.tournaments.fmt_round_robin"}}</option>
                                 </select>
                             </div>
                             <div class="space-y-1" id="passCountDoublesMixedContainer" style="display: none;">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.pass_count_label"}}</label>
                                 <input type="number" name="groupPassCountDoublesMixed" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-1">
-                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.player_pool_label"}}</label>
                             <select name="participantIdsDoublesMixed[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} (Elo: {{.DoublesElo}})</option>
@@ -266,29 +266,29 @@
                     <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardTeamsMen">
                         <div class="flex items-center justify-between border-b border-white/5 pb-2">
                             <div class="flex flex-col">
-                                <span class="text-xs font-bold text-white">👥 Teams</span>
-                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Men</span>
+                                <span class="text-xs font-bold text-white">👥 {{t $.T "admin.tournaments.teams"}}</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">{{t $.T "admin.tournaments.men"}}</span>
                             </div>
                             <input type="checkbox" name="autoTeamsMen" checked onchange="toggleCategory(this, 'TeamsMen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
                             <div class="space-y-1">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.format_label"}}</label>
                                 <select name="formatTeamsMen" onchange="document.getElementById('passCountTeamsMenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
-                                    <option value="round_robin" selected>Round Robin</option>
-                                    <option value="groups_elimination">Group + KO</option>
-                                    <option value="elimination">Elimination</option>
+                                    <option value="round_robin" selected>{{t $.T "admin.tournaments.fmt_round_robin"}}</option>
+                                    <option value="groups_elimination">{{t $.T "admin.tournaments.fmt_group_ko"}}</option>
+                                    <option value="elimination">{{t $.T "admin.tournaments.fmt_elimination"}}</option>
                                 </select>
                             </div>
                             <div class="space-y-1" id="passCountTeamsMenContainer" style="display: none;">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.pass_count_label"}}</label>
                                 <input type="number" name="groupPassCountTeamsMen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-1">
-                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.player_pool_label"}}</label>
                             <select name="participantIdsTeamsMen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "M"}}
@@ -303,29 +303,29 @@
                     <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardTeamsWomen">
                         <div class="flex items-center justify-between border-b border-white/5 pb-2">
                             <div class="flex flex-col">
-                                <span class="text-xs font-bold text-white">👥 Teams</span>
-                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">Women</span>
+                                <span class="text-xs font-bold text-white">👥 {{t $.T "admin.tournaments.teams"}}</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">{{t $.T "admin.tournaments.women"}}</span>
                             </div>
                             <input type="checkbox" name="autoTeamsWomen" checked onchange="toggleCategory(this, 'TeamsWomen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
                             <div class="space-y-1">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Format</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.format_label"}}</label>
                                 <select name="formatTeamsWomen" onchange="document.getElementById('passCountTeamsWomenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
-                                    <option value="round_robin" selected>Round Robin</option>
-                                    <option value="groups_elimination">Group + KO</option>
-                                    <option value="elimination">Elimination</option>
+                                    <option value="round_robin" selected>{{t $.T "admin.tournaments.fmt_round_robin"}}</option>
+                                    <option value="groups_elimination">{{t $.T "admin.tournaments.fmt_group_ko"}}</option>
+                                    <option value="elimination">{{t $.T "admin.tournaments.fmt_elimination"}}</option>
                                 </select>
                             </div>
                             <div class="space-y-1" id="passCountTeamsWomenContainer" style="display: none;">
-                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Pass Count</label>
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.pass_count_label"}}</label>
                                 <input type="number" name="groupPassCountTeamsWomen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-1">
-                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">Player Pool (Hold Ctrl/Cmd to select multiple)</label>
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.player_pool_label"}}</label>
                             <select name="participantIdsTeamsWomen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
                                 {{range $.Players}}
                                 {{if eq .Gender "F"}}
@@ -337,29 +337,29 @@
                     </div>
                 </div>
             <div class="space-y-2 pt-4 border-t border-white/5">
-                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Link Existing Standalone Events (Optional)</label>
+                <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.tournaments.link_existing_label"}}</label>
                 <select name="existingTournamentIds[]" multiple class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-32 custom-scrollbar">
                     {{range $.Standalone}}
                     <option value="{{.ID}}" class="py-2 px-3 hover:bg-white/10 rounded cursor-pointer mb-1">{{.Name}} ({{.Format}})</option>
                     {{else}}
-                    <option disabled class="text-gray-500 italic">No standalone events available</option>
+                    <option disabled class="text-gray-500 italic">{{t $.T "admin.tournaments.no_standalone"}}</option>
                     {{end}}
                 </select>
-                <p class="text-[10px] text-gray-500">Hold Ctrl/Cmd to select multiple. Selected events will be added to this new tournament.</p>
+                <p class="text-[10px] text-gray-500">{{t .T "admin.tournaments.link_existing_hint"}}</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-white/5">
                 <div class="space-y-2">
-                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Start Date</label>
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.tournaments.col_start_date"}}</label>
                     <input type="date" name="startDate" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all [color-scheme:dark]">
                 </div>
                 <div class="space-y-2">
-                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">End Date</label>
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.tournaments.col_end_date"}}</label>
                     <input type="date" name="endDate" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all [color-scheme:dark]">
                 </div>
             </div>
 
-            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-5 rounded-2xl transition-all uppercase tracking-widest shadow-lg transform hover:-translate-y-0.5 mt-6">Initialize Tournament</button>
+            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-5 rounded-2xl transition-all uppercase tracking-widest shadow-lg transform hover:-translate-y-0.5 mt-6">{{t .T "admin.tournaments.submit_btn"}}</button>
         </form>
     </div>
 </div>

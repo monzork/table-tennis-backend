@@ -1,54 +1,54 @@
 {{define "admin/partials/tournament-row"}}
-<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-5 sm:p-0 relative gap-1.5 sm:gap-0" id="tournament-{{.ID}}">
+<tr class="hover:bg-white/5 transition-colors group flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-5 sm:p-0 relative gap-1.5 sm:gap-0" id="tournament-{{.Tournament.ID}}">
     <td class="block sm:table-cell p-0 sm:p-4 w-auto sm:w-12 mb-1 sm:mb-0">
         <div class="flex items-center gap-2 bg-white/5 sm:bg-transparent px-3 py-2 sm:p-0 rounded border border-white/10 sm:border-0 mb-2 sm:mb-0">
-            <input type="checkbox" name="ids" value="{{.ID}}" class="tournament-checkbox accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
-            <span class="sm:hidden text-xs text-gray-500 font-bold uppercase tracking-widest">Select Tournament</span>
+            <input type="checkbox" name="ids" value="{{.Tournament.ID}}" class="tournament-checkbox accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+            <span class="sm:hidden text-xs text-gray-500 font-bold uppercase tracking-widest">{{t .T "admin.tournament_row.select_label"}}</span>
         </div>
     </td>
     <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0">
         <div class="flex flex-col">
-            <span class="font-bold uppercase text-white tracking-widest text-xl sm:text-base">{{.Name}}</span>
+            <span class="font-bold uppercase text-white tracking-widest text-xl sm:text-base">{{.Tournament.Name}}</span>
             <div class="flex gap-1.5 mt-1">
-                {{if .SkipElo}}
-                <span class="text-[8px] font-black uppercase tracking-tighter text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded w-fit border border-yellow-500/20">Non-Rated (No Elo)</span>
+                {{if .Tournament.SkipElo}}
+                <span class="text-[8px] font-black uppercase tracking-tighter text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded w-fit border border-yellow-500/20">{{t .T "admin.tournament_row.non_rated"}}</span>
                 {{else}}
-                <span class="text-[8px] font-black uppercase tracking-tighter text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded w-fit border border-blue-500/20">Rated (Elo)</span>
+                <span class="text-[8px] font-black uppercase tracking-tighter text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded w-fit border border-blue-500/20">{{t .T "admin.tournament_row.rated"}}</span>
                 {{end}}
             </div>
         </div>
     </td>
     <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 capitalize tracking-widest text-xs mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
         <div class="flex items-center gap-2 justify-between w-full sm:justify-start">
-            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500">Division:</span>
-            {{if .SkipElo}}
+            <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500">{{t .T "admin.tournament_row.mob_division"}}</span>
+            {{if .Tournament.SkipElo}}
             <span class="px-2.5 py-1 rounded bg-white/5 border border-white/5 text-gray-500 font-bold">—</span>
             {{else}}
-            <span class="px-2.5 py-1 rounded bg-white/5 border border-white/10 font-bold">{{len .DivisionIDs}} Divisions</span>
+            <span class="px-2.5 py-1 rounded bg-white/5 border border-white/10 font-bold">{{len .Tournament.DivisionIDs}} {{t .T "admin.tournament_row.divisions_suffix"}}</span>
             {{end}}
         </div>
     </td>
     <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 capitalize tracking-widest text-xs font-bold mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Categories:</span><span>{{len .Events}} Categories</span>
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "admin.tournament_row.mob_categories"}}</span><span>{{len .Tournament.Events}} {{t .T "admin.tournament_row.categories_suffix"}}</span>
     </td>
     <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-mono text-xs mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Start Date:</span><span>{{.StartDate.Format "Jan 02, 2006"}}</span>
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "admin.tournament_row.mob_start"}}</span><span>{{.Tournament.StartDate.Format "Jan 02, 2006"}}</span>
     </td>
     <td class="block sm:table-cell p-0 sm:p-4 text-gray-400 font-mono text-xs mb-3 sm:mb-0 flex justify-between items-center sm:table-cell">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">End Date:</span><span>{{.EndDate.Format "Jan 02, 2006"}}</span>
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "admin.tournament_row.mob_end"}}</span><span>{{.Tournament.EndDate.Format "Jan 02, 2006"}}</span>
     </td>
     <td class="block sm:table-cell p-0 sm:p-4 mt-3 sm:mt-0 pt-4 sm:pt-0 border-t border-white/10 sm:border-t-0 w-full sm:w-auto">
         <div class="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity justify-between sm:justify-end w-full">
-            <a href="/admin/tournaments/{{.ID}}" class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 sm:py-1.5 rounded-lg transition-all text-center flex-1 sm:flex-none">
-                Manage
+            <a href="/admin/tournaments/{{.Tournament.ID}}" class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 sm:py-1.5 rounded-lg transition-all text-center flex-1 sm:flex-none">
+                {{t .T "admin.tournament_row.manage_btn"}}
             </a>
-            <button 
-                hx-delete="/tournaments/{{.ID}}" 
-                hx-confirm="Delete this parent tournament? Child events will NOT be deleted, but they will be unlinked."
-                hx-target="closest tr" 
+            <button
+                hx-delete="/tournaments/{{.Tournament.ID}}"
+                hx-confirm="{{t .T "admin.tournament_row.delete_confirm"}}"
+                hx-target="closest tr"
                 hx-swap="outerHTML swap:0.5s"
                 class="text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-700 border border-red-900/50 hover:border-red-700 px-3 py-2 sm:py-1.5 rounded-lg transition-all flex-1 sm:flex-none text-center">
-                Delete
+                {{t .T "admin.common.delete"}}
             </button>
         </div>
     </td>

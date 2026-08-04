@@ -74,6 +74,7 @@ func (h *TournamentHandler) Start(c *fiber.Ctx) error {
 }
 
 func (h *TournamentHandler) Create(c *fiber.Ctx) error {
+	lang := getLang(c)
 	name := c.FormValue("name")
 	skipEloVal := c.FormValue("skipElo")
 	skipElo := skipEloVal == "on" || skipEloVal == "true"
@@ -147,7 +148,10 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	}
 
 	var rowBuf strings.Builder
-	if err := c.App().Config().Views.Render(&rowBuf, "admin/partials/tournament-row", e); err != nil {
+	if err := c.App().Config().Views.Render(&rowBuf, "admin/partials/tournament-row", fiber.Map{
+		"Tournament": e,
+		"T":          tMap(lang)["T"],
+	}); err != nil {
 		return ErrorHandler(err)
 	}
 
@@ -173,6 +177,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 }
 
 func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
+	lang := getLang(c)
 	id := c.Params("id")
 
 	type result struct {
@@ -198,10 +203,10 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		return ErrorHandler(res.err)
 	}
 
-	return c.Render("admin/tournament-detail", fiber.Map{
+	return c.Render("admin/tournament-detail", merge(tMap(lang), fiber.Map{
 		"Tournament": res.tournament,
 		"Divisions":  res.divisions,
-	}, "layouts/admin")
+	}), "layouts/admin")
 }
 
 func (h *TournamentHandler) Delete(c *fiber.Ctx) error {
@@ -487,18 +492,20 @@ func (h *TournamentHandler) BoardColumns(c *fiber.Ctx) error {
 }
 
 func (h *TournamentHandler) TournamentHealth(c *fiber.Ctx) error {
+	lang := getLang(c)
 	id := c.Params("id")
 	t, err := h.getByID.Execute(c.Context(), id)
 	if err != nil {
 		return ErrorHandler(err)
 	}
 
-	return c.Render("admin/tournament-health", fiber.Map{
+	return c.Render("admin/tournament-health", merge(tMap(lang), fiber.Map{
 		"Tournament": t,
-	}, "layouts/admin")
+	}), "layouts/admin")
 }
 
 func (h *TournamentHandler) TournamentHealthMetrics(c *fiber.Ctx) error {
+	lang := getLang(c)
 	id := c.Params("id")
 	t, err := h.getByID.Execute(c.Context(), id)
 	if err != nil {
@@ -548,10 +555,10 @@ func (h *TournamentHandler) TournamentHealthMetrics(c *fiber.Ctx) error {
 		avgMatchMinutes = overall.AverageMatchDurationSeconds / 60
 	}
 
-	return c.Render("admin/partials/tournament-health-metrics", fiber.Map{
+	return c.Render("admin/partials/tournament-health-metrics", merge(tMap(lang), fiber.Map{
 		"Metrics":         metricsPtr,
 		"AvgMatchMinutes": avgMatchMinutes,
-	})
+	}))
 }
 
 // buildEventTables creates a TableVM slice from an tournament's NumTables + occupied tables.
@@ -615,6 +622,7 @@ func buildDivPriorities(divs []*divisionDomain.Division, t *eventDomain.Tourname
 }
 
 func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
+	lang := getLang(c)
 	id := c.Params("id")
 	e, err := h.getByID.Execute(c.Context(), id)
 	if err != nil {
@@ -623,13 +631,14 @@ func (h *TournamentHandler) ShowEditForm(c *fiber.Ctx) error {
 	divs, _ := h.divisionUC.GetAll(c.Context())
 	divPriorities := buildDivPriorities(divs, e)
 
-	return c.Render("admin/partials/tournament-edit-form", fiber.Map{
+	return c.Render("admin/partials/tournament-edit-form", merge(tMap(lang), fiber.Map{
 		"Tournament":    e,
 		"DivPriorities": divPriorities,
-	})
+	}))
 }
 
 func (h *TournamentHandler) Update(c *fiber.Ctx) error {
+	lang := getLang(c)
 	id := c.Params("id")
 	name := c.FormValue("name")
 	startDate := c.FormValue("startDate")
@@ -669,11 +678,11 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		divs, _ := h.divisionUC.GetAll(c.Context())
 		divPriorities := buildDivPriorities(divs, e)
 
-		return c.Render("admin/partials/tournament-edit-form", fiber.Map{
+		return c.Render("admin/partials/tournament-edit-form", merge(tMap(lang), fiber.Map{
 			"Tournament":    e,
 			"DivPriorities": divPriorities,
 			"Success":       true,
-		})
+		}))
 	}
 	return c.Redirect("/admin/tournaments/" + id)
 }
