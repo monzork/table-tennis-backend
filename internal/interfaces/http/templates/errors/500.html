@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{if .Lang}}{{.Lang}}{{else}}en{{end}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>500 — Server Error | Open TDM Nicaragua</title>
+    <title>500 — {{t .T "errors.500_title"}} | Open TDM Nicaragua</title>
     <link href="/static/dist/tailwind.css?v=3" rel="stylesheet">
     <link href="/static/fonts/outfit.css" rel="stylesheet">
     <style>
@@ -19,21 +19,21 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                           d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
-                <h1 class="text-3xl sm:text-5xl font-black uppercase tracking-tight">Something Went Wrong</h1>
+                <h1 class="text-3xl sm:text-5xl font-black uppercase tracking-tight">{{t .T "errors.500_title"}}</h1>
             </div>
         </div>
         <p class="text-gray-500 text-lg max-w-md mx-auto">
-            An unexpected error occurred on our end. Please try again in a moment.
+            {{t .T "errors.500_desc"}}
         </p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center pt-4">
             <a href="/" class="bg-white hover:bg-gray-200 text-black font-bold py-3 px-8 rounded-full transition-all uppercase tracking-wider text-sm">
-                Go Home
+                {{t .T "errors.go_home"}}
             </a>
             <button onclick="window.history.back()" class="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-full transition-all uppercase tracking-wider text-sm border border-white/10">
-                Go Back
+                {{t .T "errors.go_back"}}
             </button>
         </div>
-        <p class="text-gray-700 text-xs font-mono pt-2">Error reference: {{if .Message}}{{.Message}}{{end}}</p>
+        <p class="text-gray-700 text-xs font-mono pt-2">{{t .T "errors.ref"}} {{if .Message}}{{.Message}}{{end}}</p>
     </div>
 </body>
 </html>

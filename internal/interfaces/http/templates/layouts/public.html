@@ -99,19 +99,19 @@
       // Expose a function to manually request permission
       window.requestPushPermission = async function() {
         if (!('Notification' in window)) {
-            alert("Push notifications are not supported in this browser (make sure you are using HTTPS or localhost).");
+            alert("{{t .T "push.not_supported"}}");
             return;
         }
         
         if (Notification.permission === 'granted') {
-            alert("Notifications are already enabled!");
+            alert("{{t .T "push.already_enabled"}}");
             const reg = await navigator.serviceWorker.ready;
             subscribeToPush(reg);
             return;
         }
         
         if (Notification.permission === 'denied') {
-            alert("You have previously blocked notifications for this site. Please click the lock icon next to the URL in your browser and allow notifications.");
+            alert("{{t .T "push.blocked"}}");
             return;
         }
 
@@ -120,13 +120,13 @@
             if (permission === 'granted') {
                 const reg = await navigator.serviceWorker.ready;
                 subscribeToPush(reg);
-                alert("Notifications enabled successfully!");
+                alert("{{t .T "push.enabled_success"}}");
             } else {
-                alert("Notification permission was denied.");
+                alert("{{t .T "push.denied"}}");
             }
         } catch(e) {
             console.error("Error requesting permission:", e);
-            alert("Failed to request permission: " + e.message);
+            alert("{{t .T "push.failed_prefix"}}" + e.message);
         }
       };
 
@@ -162,7 +162,7 @@
               if (!banner) return;
               
               if (isIOS && !isStandalone) {
-                  document.getElementById('push-prompt-title').innerText = "Get Live Alertas on iPhone";
+                  document.getElementById('push-prompt-title').innerText = "{{t .T "nav.alerts_iphone_title"}}";
                   document.getElementById('push-prompt-desc').innerHTML = "{{t .T "nav.alerts_iphone_desc" | safeHTML}}";
                   
                   document.getElementById('push-prompt-actions').innerHTML = `
@@ -264,7 +264,7 @@
             <!-- Main Nav & Desktop Lang Switcher -->
             <div class="hidden lg:flex items-center justify-end gap-6 pb-0 overflow-x-auto hide-scrollbar w-auto snap-x">
                 <div class="flex flex-nowrap gap-5 lg:gap-6 font-bold text-[11px] lg:text-sm tracking-widest uppercase text-gray-400 min-w-max px-1 items-center">
-                    <button type="button" onclick="toggleTheme()" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1 focus:outline-none" aria-label="Toggle Theme" title="Toggle Theme">
+                    <button type="button" onclick="toggleTheme()" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1 focus:outline-none" aria-label="{{t .T "nav.toggle_theme"}}" title="{{t .T "nav.toggle_theme"}}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                     </button>
                     <button type="button" onclick="window.requestPushPermission()" class="snap-start shrink-0 hover:text-white transition-colors pb-1 flex items-center gap-1 focus:outline-none" aria-label="{{t .T "nav.alerts_enable"}} Notifications" title="{{t .T "nav.alerts_enable"}} Notifications">
@@ -327,7 +327,7 @@
         </a>
         <button type="button" onclick="toggleTheme()" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-            <span class="text-[9px] font-bold uppercase tracking-widest">Theme</span>
+            <span class="text-[9px] font-bold uppercase tracking-widest">{{t .T "nav.toggle_theme"}}</span>
         </button>
         <a href="/tournaments" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors {{if eq .Type "Events"}}text-white{{end}}">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>

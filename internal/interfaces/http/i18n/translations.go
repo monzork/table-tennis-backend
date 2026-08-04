@@ -285,6 +285,89 @@ var Translations = map[string]map[string]string{
 		"nav.alerts_iphone_desc":   "Tap the <b>Share icon</b> (square with an up arrow) at the bottom of your screen and select <b>'Add to Home Screen'</b> to enable push notifications.",
 		"nav.alerts_got_it":        "Got It",
 		"footer.copy":              "© 2026 Club Rankings System",
+
+		// Public tournament detail
+		"pubtd.back":                "Back to Tournaments",
+		"pubtd.subtitle":            "Multi-Category Division Tournament Details",
+		"pubtd.target_division":     "Target Division",
+		"pubtd.divisions_suffix":    "Divisions",
+		"pubtd.non_rated_desc":      "This tournament is non-rated; any athlete in the system is qualified.",
+		"pubtd.rated_desc":          "Only players in this division's rating band are qualified.",
+		"pubtd.elo_status":          "Elo Status",
+		"pubtd.non_rated_badge":     "Non-Rated (No Elo)",
+		"pubtd.non_rated_note":      "Rankings will NOT change upon category completions.",
+		"pubtd.rated_badge":         "Rated (Elo Calculations Enabled)",
+		"pubtd.rated_note":          "Athlete Elo scores will be recalculated automatically.",
+		"pubtd.duration":            "Tournament Duration",
+		"pubtd.duration_note":       "Sub-events run simultaneously during this range.",
+		"pubtd.categories_title":    "Active Categories & Brackets",
+		"pubtd.live_registration":   "Live Registration",
+		"pubtd.registered_teams":    "Registered Teams",
+		"pubtd.teams_suffix":        "Teams",
+		"pubtd.registered_athletes": "Registered Athletes",
+		"pubtd.athletes_suffix":     "Athletes",
+		"pubtd.no_categories":       "No categories set up for this tournament.",
+
+		// Board (misc)
+		"board.events": "Categories",
+
+		// Team match score form
+		"team_form.title_team":     "Team",
+		"team_form.title_matchup":  "Matchup",
+		"team_form.cup_suffix":     "Cup",
+		"team_form.team_a_default": "Team A",
+		"team_form.team_b_default": "Team B",
+		"team_form.squad_abc":      "Squad (A, B, C)",
+		"team_form.squad_xyz":      "Squad (X, Y, Z)",
+		"team_form.sel_a1":         "Select Player 1 (A)...",
+		"team_form.sel_a2":         "Select Player 2 (B)...",
+		"team_form.sel_a3":         "Select Player 3 (C)...",
+		"team_form.sel_b1":         "Select Player 1 (X)...",
+		"team_form.sel_b2":         "Select Player 2 (Y)...",
+		"team_form.sel_b3":         "Select Player 3 (Z)...",
+		"team_form.align_save":     "Align Squads & Save",
+		"team_form.sub_matches":    "Sub-Matches",
+		"team_form.match":          "Match",
+		"team_form.unplayed":       "Unplayed",
+		"team_form.close_matchup":  "Close Matchup",
+
+		// Score confirmation modal
+		"confirm.title":       "Confirm Score",
+		"confirm.confirm_btn": "Confirm",
+		"confirm.js_sure":     "Are you sure the result is:",
+		"confirm.js_wins":     "wins",
+		"confirm.js_over":     "over",
+		"confirm.js_tie":      "Tie",
+
+		// Push notifications
+		"push.not_supported":   "Push notifications are not supported in this browser (make sure you are using HTTPS or localhost).",
+		"push.already_enabled": "Notifications are already enabled!",
+		"push.blocked":         "You have previously blocked notifications for this site. Please click the lock icon next to the URL in your browser and allow notifications.",
+		"push.enabled_success": "Notifications enabled successfully!",
+		"push.denied":          "Notification permission was denied.",
+		"push.failed_prefix":   "Failed to request permission: ",
+
+		"nav.toggle_theme": "Toggle Theme",
+
+		// Rankings (division rules)
+		"rankings.div_rules_title":       "Division Rules",
+		"rankings.div_rules_modal_title": "Division Ranking Rules",
+		"rankings.no_divisions":          "No divisions configured.",
+		"rankings.div_rules_desc":        "Players automatically rank into divisions based on their accumulated ELO points from event matches.",
+
+		// Department input
+		"dept.optional":  "(Optional)",
+		"dept.select_ph": "Select Department...",
+
+		// Error pages
+		"errors.404_title":     "Page Not Found",
+		"errors.404_desc":      "The page you're looking for doesn't exist or has been moved.",
+		"errors.go_home":       "Go Home",
+		"errors.rankings_link": "Rankings",
+		"errors.500_title":     "Something Went Wrong",
+		"errors.500_desc":      "An unexpected error occurred on our end. Please try again in a moment.",
+		"errors.go_back":       "Go Back",
+		"errors.ref":           "Error reference:",
 	},
 	"es": {
 		// Nav
@@ -569,6 +652,89 @@ var Translations = map[string]map[string]string{
 		"nav.alerts_iphone_desc":   "Toca el <b>icono de Compartir</b> (cuadrado con una flecha hacia arriba) en la parte inferior y selecciona <b>'Añadir a inicio'</b> para activar las notificaciones push.",
 		"nav.alerts_got_it":        "Entendido",
 		"footer.copy":              "© 2026 Sistema de Rankings del Club",
+
+		// Public tournament detail
+		"pubtd.back":                "Volver a Torneos",
+		"pubtd.subtitle":            "Detalles del Torneo Multi-Categoría",
+		"pubtd.target_division":     "División Objetivo",
+		"pubtd.divisions_suffix":    "Divisiones",
+		"pubtd.non_rated_desc":      "Este torneo no es calificado; cualquier atleta en el sistema es elegible.",
+		"pubtd.rated_desc":          "Solo los jugadores dentro del rango de esta división son elegibles.",
+		"pubtd.elo_status":          "Estado Elo",
+		"pubtd.non_rated_badge":     "No Calificado (Sin Elo)",
+		"pubtd.non_rated_note":      "El ranking NO cambiará al finalizar las categorías.",
+		"pubtd.rated_badge":         "Calificado (Cálculo de Elo Activado)",
+		"pubtd.rated_note":          "El Elo de los atletas se recalculará automáticamente.",
+		"pubtd.duration":            "Duración del Torneo",
+		"pubtd.duration_note":       "Las sub-categorías se juegan simultáneamente en este rango.",
+		"pubtd.categories_title":    "Categorías y Brackets Activos",
+		"pubtd.live_registration":   "Registro Abierto",
+		"pubtd.registered_teams":    "Equipos Registrados",
+		"pubtd.teams_suffix":        "Equipos",
+		"pubtd.registered_athletes": "Atletas Registrados",
+		"pubtd.athletes_suffix":     "Atletas",
+		"pubtd.no_categories":       "No hay categorías configuradas para este torneo.",
+
+		// Board (misc)
+		"board.events": "Categorías",
+
+		// Team match score form
+		"team_form.title_team":     "Equipo",
+		"team_form.title_matchup":  "Enfrentamiento",
+		"team_form.cup_suffix":     "Copa",
+		"team_form.team_a_default": "Equipo A",
+		"team_form.team_b_default": "Equipo B",
+		"team_form.squad_abc":      "Alineación (A, B, C)",
+		"team_form.squad_xyz":      "Alineación (X, Y, Z)",
+		"team_form.sel_a1":         "Selecciona Jugador 1 (A)...",
+		"team_form.sel_a2":         "Selecciona Jugador 2 (B)...",
+		"team_form.sel_a3":         "Selecciona Jugador 3 (C)...",
+		"team_form.sel_b1":         "Selecciona Jugador 1 (X)...",
+		"team_form.sel_b2":         "Selecciona Jugador 2 (Y)...",
+		"team_form.sel_b3":         "Selecciona Jugador 3 (Z)...",
+		"team_form.align_save":     "Alinear y Guardar",
+		"team_form.sub_matches":    "Sub-Partidos",
+		"team_form.match":          "Partido",
+		"team_form.unplayed":       "Sin Jugar",
+		"team_form.close_matchup":  "Cerrar Enfrentamiento",
+
+		// Score confirmation modal
+		"confirm.title":       "Confirmar Resultado",
+		"confirm.confirm_btn": "Confirmar",
+		"confirm.js_sure":     "¿Confirmas que el resultado es:",
+		"confirm.js_wins":     "gana",
+		"confirm.js_over":     "sobre",
+		"confirm.js_tie":      "Empate",
+
+		// Push notifications
+		"push.not_supported":   "Las notificaciones push no son compatibles con este navegador (asegúrate de usar HTTPS o localhost).",
+		"push.already_enabled": "¡Las notificaciones ya están activadas!",
+		"push.blocked":         "Bloqueaste las notificaciones para este sitio anteriormente. Haz clic en el ícono de candado junto a la URL en tu navegador y permite las notificaciones.",
+		"push.enabled_success": "¡Notificaciones activadas exitosamente!",
+		"push.denied":          "Se denegó el permiso de notificaciones.",
+		"push.failed_prefix":   "Error al solicitar permiso: ",
+
+		"nav.toggle_theme": "Cambiar Tema",
+
+		// Rankings (division rules)
+		"rankings.div_rules_title":       "Reglas de División",
+		"rankings.div_rules_modal_title": "Reglas de Clasificación por División",
+		"rankings.no_divisions":          "No hay divisiones configuradas.",
+		"rankings.div_rules_desc":        "Los jugadores se clasifican automáticamente en divisiones según sus puntos ELO acumulados en los partidos de los torneos.",
+
+		// Department input
+		"dept.optional":  "(Opcional)",
+		"dept.select_ph": "Selecciona Departamento...",
+
+		// Error pages
+		"errors.404_title":     "Página No Encontrada",
+		"errors.404_desc":      "La página que buscas no existe o fue movida.",
+		"errors.go_home":       "Ir al Inicio",
+		"errors.rankings_link": "Ranking",
+		"errors.500_title":     "Algo Salió Mal",
+		"errors.500_desc":      "Ocurrió un error inesperado de nuestro lado. Por favor intenta de nuevo en un momento.",
+		"errors.go_back":       "Regresar",
+		"errors.ref":           "Referencia de error:",
 	},
 }
 

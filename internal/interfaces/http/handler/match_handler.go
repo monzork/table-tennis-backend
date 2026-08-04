@@ -1083,7 +1083,10 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, eventI
 		return ErrorHandler(err)
 	}
 
+	lang := getLang(c)
 	return c.Render(templateName, fiber.Map{
+		"T":            i18n.PrecomputedMaps[lang],
+		"Lang":         lang,
 		"MatchID":      view.MatchID,
 		"EventID":      view.EventID,
 		"Stage":        view.Stage,
@@ -1578,6 +1581,7 @@ func (h *MatchHandler) ValidateMatchPIN(c *fiber.Ctx) error {
 		eventID = t.ID
 	}
 
+	lang := getLang(c)
 	return c.Render("public/match-score-form", fiber.Map{
 		"MatchID":     matchIDStr,
 		"EventID":     eventID,
@@ -1591,5 +1595,7 @@ func (h *MatchHandler) ValidateMatchPIN(c *fiber.Ctx) error {
 		"IsDoubles":   m.MatchType == "doubles",
 		"TableNumber": m.TableNumber,
 		"Pin":         submittedPin, // pass validated PIN so form can re-submit
+		"T":           i18n.PrecomputedMaps[lang],
+		"Lang":        lang,
 	})
 }

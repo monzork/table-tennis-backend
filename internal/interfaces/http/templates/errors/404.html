@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{if .Lang}}{{.Lang}}{{else}}en{{end}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 — Page Not Found | Open TDM Nicaragua</title>
+    <title>404 — {{t .T "errors.404_title"}} | Open TDM Nicaragua</title>
     <link href="/static/dist/tailwind.css?v=3" rel="stylesheet">
     <link href="/static/fonts/outfit.css" rel="stylesheet">
     <style>
@@ -19,18 +19,18 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                           d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <h1 class="text-3xl sm:text-5xl font-black uppercase tracking-tight">Page Not Found</h1>
+                <h1 class="text-3xl sm:text-5xl font-black uppercase tracking-tight">{{t .T "errors.404_title"}}</h1>
             </div>
         </div>
         <p class="text-gray-500 text-lg max-w-md mx-auto">
-            {{if .Message}}{{.Message}}{{else}}The page you're looking for doesn't exist or has been moved.{{end}}
+            {{if .Message}}{{.Message}}{{else}}{{t .T "errors.404_desc"}}{{end}}
         </p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center pt-4">
             <a href="/" class="bg-white hover:bg-gray-200 text-black font-bold py-3 px-8 rounded-full transition-all uppercase tracking-wider text-sm">
-                Go Home
+                {{t .T "errors.go_home"}}
             </a>
             <a href="/rankings/singles" class="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-full transition-all uppercase tracking-wider text-sm border border-white/10">
-                Rankings
+                {{t .T "errors.rankings_link"}}
             </a>
         </div>
     </div>

@@ -101,13 +101,14 @@ func (h *PublicHandler) DepartmentInput(c *fiber.Ctx) error {
 	theme := c.Query("theme") // "register", "admin-add", "admin-edit"
 
 	isNicaragua := country == "NIC" || country == "NICARAGUA" || country == "NI"
+	lang := getLang(c)
 
-	return c.Render("partials/department-input", fiber.Map{
+	return c.Render("partials/department-input", merge(tMap(lang), fiber.Map{
 		"IsNicaragua":          isNicaragua,
 		"NicaraguaDepartments": NicaraguaDepartments,
 		"Department":           currentDept,
 		"Theme":                theme,
-	})
+	}))
 }
 func (h *PublicHandler) ShowSignup(c *fiber.Ctx) error {
 	lang := getLang(c)

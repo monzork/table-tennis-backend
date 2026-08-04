@@ -60,17 +60,17 @@
 
       window.requestPushPermission = async function() {
         if (!('Notification' in window)) {
-            alert("Push notifications are not supported in this browser (make sure you are using HTTPS or localhost).");
+            alert("{{t .T "push.not_supported"}}");
             return;
         }
         if (Notification.permission === 'granted') {
-            alert("Notifications are already enabled!");
+            alert("{{t .T "push.already_enabled"}}");
             const reg = await navigator.serviceWorker.ready;
             subscribeToPush(reg);
             return;
         }
         if (Notification.permission === 'denied') {
-            alert("You have previously blocked notifications for this site. Please click the lock icon next to the URL in your browser and allow notifications.");
+            alert("{{t .T "push.blocked"}}");
             return;
         }
         try {
@@ -78,13 +78,13 @@
             if (permission === 'granted') {
                 const reg = await navigator.serviceWorker.ready;
                 subscribeToPush(reg);
-                alert("Notifications enabled successfully!");
+                alert("{{t .T "push.enabled_success"}}");
             } else {
-                alert("Notification permission was denied.");
+                alert("{{t .T "push.denied"}}");
             }
         } catch(e) {
             console.error("Error requesting permission:", e);
-            alert("Failed to request permission: " + e.message);
+            alert("{{t .T "push.failed_prefix"}}" + e.message);
         }
       };
 
@@ -120,11 +120,11 @@
               if (!banner) return;
               
               if (isIOS && !isStandalone) {
-                  document.getElementById('push-prompt-title').innerText = "Get Live Alerts on iPhone";
-                  document.getElementById('push-prompt-desc').innerHTML = "Tap the <b>Share icon</b> (square with an up arrow) at the bottom of your screen and select <b>'Add to Home Screen'</b> to enable push notifications.";
+                  document.getElementById('push-prompt-title').innerText = "{{t .T "nav.alerts_iphone_title"}}";
+                  document.getElementById('push-prompt-desc').innerHTML = "{{t .T "nav.alerts_iphone_desc" | safeHTML}}";
                   
                   document.getElementById('push-prompt-actions').innerHTML = `
-                      <button onclick="dismissPushPrompt()" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">Got It</button>
+                      <button onclick="dismissPushPrompt()" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">{{t .T "nav.alerts_got_it"}}</button>
                   `;
                   
                   banner.classList.remove('hidden');
@@ -236,7 +236,7 @@
                                             </div>
                                             <div class="flex flex-col items-end gap-1">
                                                 <span class="px-2 py-1 rounded bg-white/5 text-[9px] uppercase tracking-widest text-gray-400 font-bold">{{.MatchType}}</span>
-                                                {{if gt .RoundNumber 0}}<span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Match #{{.RoundNumber}}</span>{{end}}
+                                                {{if gt .RoundNumber 0}}<span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{{t $.T "pub_detail.match_number"}}{{.RoundNumber}}</span>{{end}}
                                             </div>
                                         </div>
 
@@ -268,7 +268,7 @@
                                             <div class="hidden sm:flex px-4 flex-col items-center justify-center shrink-0">
                                                 <span class="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1">{{t $.T "tv.vs"}}</span>
                                                 <span class="px-1.5 py-0.5 rounded bg-white/5 text-[8px] uppercase tracking-widest text-gray-400">{{.MatchType}}</span>
-                                                {{if gt .RoundNumber 0}}<span class="text-[8px] font-bold text-gray-500 uppercase mt-1">Match #{{.RoundNumber}}</span>{{end}}
+                                                {{if gt .RoundNumber 0}}<span class="text-[8px] font-bold text-gray-500 uppercase mt-1">{{t $.T "pub_detail.match_number"}}{{.RoundNumber}}</span>{{end}}
                                             </div>
 
                                             <!-- Player B -->
@@ -310,7 +310,7 @@
                                     <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 sm:gap-3 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                                         <div class="flex justify-between items-center border-b border-yellow-500/20 pb-2">
                                             <div class="flex items-center gap-2 truncate pr-2">
-                                                <span class="text-[10px] font-bold uppercase tracking-widest text-yellow-400/80">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}{{if gt .RoundNumber 0}} • Match #{{.RoundNumber}}{{end}}</span>
+                                                <span class="text-[10px] font-bold uppercase tracking-widest text-yellow-400/80">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}{{if gt .RoundNumber 0}} • {{t $.T "pub_detail.match_number"}}{{.RoundNumber}}{{end}}</span>
                                                 {{if .EstimatedStartTime}}
                                                   <span class="rest-countdown hidden text-[9px] font-black uppercase tracking-widest bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded font-mono" data-time="{{.EstimatedStartTime.Format "2006-01-02T15:04:05Z07:00"}}"></span>
                                                 {{end}}
@@ -340,7 +340,7 @@
                                     <div class="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-lg opacity-70">
                                         <div class="flex justify-between items-center border-b border-white/5 pb-2">
                                             <div class="flex items-center gap-2 truncate pr-2">
-                                                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}{{if gt .RoundNumber 0}} • Match #{{.RoundNumber}}{{end}}</span>
+                                                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">{{if .DivisionName}}{{.DivisionName}}{{else}}{{.GroupName}}{{end}} • {{.Stage}}{{if gt .RoundNumber 0}} • {{t $.T "pub_detail.match_number"}}{{.RoundNumber}}{{end}}</span>
                                                 {{if .EstimatedStartTime}}
                                                   <span class="rest-countdown hidden text-[9px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400/80 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono" data-time="{{.EstimatedStartTime.Format "2006-01-02T15:04:05Z07:00"}}"></span>
                                                 {{end}}
@@ -591,16 +591,16 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
             </div>
             <div>
-                <h3 id="push-prompt-title" class="text-sm font-bold text-white">Live Match Alerts</h3>
-                <p id="push-prompt-desc" class="text-xs text-gray-400 mt-1">Get instant push notifications when your matches are called to the table or finished.</p>
+                <h3 id="push-prompt-title" class="text-sm font-bold text-white">{{t .T "nav.alerts_title"}}</h3>
+                <p id="push-prompt-desc" class="text-xs text-gray-400 mt-1">{{t .T "nav.alerts_desc"}}</p>
             </div>
             <button onclick="dismissPushPrompt()" class="text-gray-500 hover:text-white transition-colors shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
         <div id="push-prompt-actions" class="flex gap-2 mt-2">
-            <button onclick="dismissPushPrompt()" class="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">Not Now</button>
-            <button onclick="acceptPushPrompt()" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">Enable</button>
+            <button onclick="dismissPushPrompt()" class="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">{{t .T "nav.alerts_not_now"}}</button>
+            <button onclick="acceptPushPrompt()" class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">{{t .T "nav.alerts_enable"}}</button>
         </div>
     </div>
 </body>

@@ -67,11 +67,16 @@ func main() {
 			}
 			slog.Error("HTTP error", "status", code, "path", ctx.Path(), "msg", msg, "actual_error", actualErr, "ip", ctx.IP())
 
+			lang := ctx.Cookies("lang")
+			if lang != "es" && lang != "en" {
+				lang = "es"
+			}
+
 			if code == fiber.StatusNotFound {
 				if ctx.Get("HX-Request") != "" {
 					return ctx.Status(code).SendString(msg)
 				}
-				if renderErr := ctx.Status(code).Render("errors/404", fiber.Map{"Message": msg}); renderErr != nil {
+				if renderErr := ctx.Status(code).Render("errors/404", fiber.Map{"Message": msg, "T": i18n.PrecomputedMaps[lang], "Lang": lang}); renderErr != nil {
 					return ctx.Status(code).SendString(msg)
 				}
 				return nil
@@ -79,7 +84,7 @@ func main() {
 			if ctx.Get("HX-Request") != "" {
 				return ctx.Status(code).SendString(msg)
 			}
-			if renderErr := ctx.Status(code).Render("errors/500", fiber.Map{"Message": msg}); renderErr != nil {
+			if renderErr := ctx.Status(code).Render("errors/500", fiber.Map{"Message": msg, "T": i18n.PrecomputedMaps[lang], "Lang": lang}); renderErr != nil {
 				return ctx.Status(code).SendString(msg)
 			}
 			return nil
