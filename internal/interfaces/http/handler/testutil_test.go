@@ -275,6 +275,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	engine.AddFunc("safeHTML", func(s string) template.HTML {
 		return template.HTML(s)
 	})
+	engine.AddFunc("eventDivision", handler.EventDivisionName)
 	app := fiber.New(fiber.Config{
 		Views:             engine,
 		PassLocalsToViews: true,

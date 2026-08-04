@@ -2,6 +2,8 @@ package handler
 
 import (
 	"fmt"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -238,14 +240,54 @@ func (h *TournamentHandler) DeleteBulk(c *fiber.Ctx) error {
 	return c.Redirect("/admin/tournaments")
 }
 
+var eventDivisionSuffix = regexp.MustCompile(`\(([^)]+)\)\s*$`)
+
+// EventDivisionName extracts the trailing "(Division Name)" suffix that
+// CreateEventUseCase bakes into the event name, e.g. "... (1st Division)".
+func EventDivisionName(name string) string {
+	m := eventDivisionSuffix.FindStringSubmatch(name)
+	if len(m) < 2 {
+		return ""
+	}
+	return m[1]
+}
+
+func genderRank(category string) int {
+	switch category {
+	case "women":
+		return 0
+	case "men":
+		return 1
+	default:
+		return 2
+	}
+}
+
+// sortEventsForPublicDisplay orders category cards female-first (lowest
+// division first), then male (lowest division first), then mixed/open.
+func sortEventsForPublicDisplay(events []*domainEvent.Event, divisions []*divisionDomain.Division) {
+	order := make(map[string]int, len(divisions))
+	for _, d := range divisions {
+		order[d.Name] = d.DisplayOrder
+	}
+	sort.SliceStable(events, func(i, j int) bool {
+		gi, gj := genderRank(events[i].EventCategory), genderRank(events[j].EventCategory)
+		if gi != gj {
+			return gi < gj
+		}
+		oi, oj := order[EventDivisionName(events[i].Name)], order[EventDivisionName(events[j].Name)]
+		return oi < oj
+	})
+}
+
 func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 	lang := getLang(c)
 	id := c.Params("id")
 
 	type result struct {
-		tournament any
+		tournament *eventDomain.Tournament
 		err        error
-		divisions  any
+		divisions  []*divisionDomain.Division
 	}
 	var res result
 	var wg sync.WaitGroup
@@ -263,6 +305,10 @@ func (h *TournamentHandler) PublicDetail(c *fiber.Ctx) error {
 
 	if res.err != nil {
 		return ErrorHandler(res.err)
+	}
+
+	if res.tournament != nil {
+		sortEventsForPublicDisplay(res.tournament.Events, res.divisions)
 	}
 
 	return c.Render("public/tournament-detail", merge(tMap(lang), fiber.Map{

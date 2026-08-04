@@ -82,6 +82,7 @@ func createTestLeaderboardApp(t *testing.T) *fiber.App {
 	engine.AddFunc("t", func(tmap map[string]string, key string) string { return key })
 	engine.AddFunc("cleanPhone", func(phone string) string { return phone })
 	engine.AddFunc("safeHTML", func(s string) template.HTML { return template.HTML(s) })
+	engine.AddFunc("eventDivision", handler.EventDivisionName)
 
 	app := fiber.New(fiber.Config{
 		Views:             engine,

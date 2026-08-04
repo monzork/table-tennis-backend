@@ -101,5 +101,6 @@ func SetupTemplateEngine() *html.Engine {
 	engine.AddFunc("safeHTML", func(s string) template.HTML {
 		return template.HTML(s)
 	})
+	engine.AddFunc("eventDivision", handler.EventDivisionName)
 	return engine
 }
