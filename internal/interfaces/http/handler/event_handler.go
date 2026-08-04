@@ -141,7 +141,8 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 		return ErrorHandler(err)
 	}
 
-	return c.Render("admin/partials/event-row", t)
+	lang := getLang(c)
+	return c.Render("admin/partials/event-row", merge(tMap(lang), fiber.Map{"Event": t}))
 }
 
 func (h *EventHandler) Detail(c *fiber.Ctx) error {
@@ -155,7 +156,8 @@ func (h *EventHandler) Detail(c *fiber.Ctx) error {
 		return ErrorHandler(err)
 	}
 
-	return c.Render("admin/event-detail", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/event-detail", merge(tMap(lang), fiber.Map{
 		"Event":                 view.Event,
 		"Players":               view.Players,
 		"Divisions":             view.Divisions,
@@ -166,7 +168,7 @@ func (h *EventHandler) Detail(c *fiber.Ctx) error {
 		"PlayerPins":            view.PlayerPins,
 		"Officials":             view.Officials,
 		"ParticipantRows":       view.ParticipantRows,
-	}, "layouts/admin")
+	}), "layouts/admin")
 }
 
 func (h *EventHandler) AddOfficial(c *fiber.Ctx) error {
@@ -224,11 +226,12 @@ func (h *EventHandler) ShowEditForm(c *fiber.Ctx) error {
 		fmt.Println(err)
 		return ErrorHandler(err)
 	}
-	return c.Render("admin/partials/event-edit-form", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/partials/event-edit-form", merge(tMap(lang), fiber.Map{
 		"Event":     view.Event,
 		"Players":   view.Players,
 		"Divisions": view.Divisions,
-	})
+	}))
 }
 
 func (h *EventHandler) Update(c *fiber.Ctx) error {
@@ -247,7 +250,8 @@ func (h *EventHandler) Update(c *fiber.Ctx) error {
 		c.Set("HX-Refresh", "true")
 		return c.SendStatus(fiber.StatusOK)
 	}
-	return c.Render("admin/partials/event-row", t)
+	lang := getLang(c)
+	return c.Render("admin/partials/event-row", merge(tMap(lang), fiber.Map{"Event": t}))
 }
 
 func (h *EventHandler) Delete(c *fiber.Ctx) error {
@@ -985,7 +989,8 @@ func (h *EventHandler) Board(c *fiber.Ctx) error {
 
 	tables := event.BuildTableVMs(view.Event, "", h.getOccupiedTables(c.Context(), view.Event))
 
-	return c.Render("admin/event-board", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/event-board", merge(tMap(lang), fiber.Map{
 		"Event":        view.Event,
 		"Scheduled":    view.Scheduled,
 		"InProgress":   view.InProgress,
@@ -994,7 +999,7 @@ func (h *EventHandler) Board(c *fiber.Ctx) error {
 		"SelectedDivs": selectedDivs,
 		"Query":        q,
 		"Tables":       tables,
-	}, "layouts/admin")
+	}), "layouts/admin")
 }
 
 func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
@@ -1039,15 +1044,14 @@ func (h *EventHandler) BoardColumns(c *fiber.Ctx) error {
 		finished = FilterBoardCards(finished, q, selectedDivs)
 	}
 
-	return c.Render("admin/partials/board-columns", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/partials/board-columns", merge(tMap(lang), fiber.Map{
 		"Event":      t,
 		"Scheduled":  scheduled,
 		"InProgress": inProgress,
 		"Finished":   finished,
 		"Tables":     tables,
-		"T":          c.Locals("T"),
-		"Lang":       c.Locals("Lang"),
-	})
+	}))
 }
 
 func (h *EventHandler) ToggleSeedingLock(c *fiber.Ctx) error {

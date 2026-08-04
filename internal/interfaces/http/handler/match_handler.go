@@ -125,7 +125,9 @@ func (h *MatchHandler) broadcastToTournamentOrEvent(c *fiber.Ctx, eventID string
 			}
 			if matched != nil {
 				var buf bytes.Buffer
-				if err := c.App().Config().Views.Render(&buf, "admin/partials/match-row", matched, ""); err == nil {
+				lang := getLang(c)
+				bindData := fiber.Map{"Match": matched, "T": i18n.PrecomputedMaps[lang]}
+				if err := c.App().Config().Views.Render(&buf, "admin/partials/match-row", bindData, ""); err == nil {
 					searchStr := fmt.Sprintf(`id="match-row-%s"`, matched.ID)
 					replaceStr := fmt.Sprintf(`id="match-row-%s" hx-swap-oob="true"`, matched.ID)
 					htmlStr = strings.Replace(buf.String(), searchStr, replaceStr, 1)
@@ -195,7 +197,8 @@ func (h *MatchHandler) Create(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"id": newMatch.ID})
 	}
 	// HTMX requests get the rendered row
-	return c.Render("admin/partials/match-row", newMatch)
+	lang := getLang(c)
+	return c.Render("admin/partials/match-row", fiber.Map{"Match": newMatch, "T": i18n.PrecomputedMaps[lang]})
 }
 
 func (h *MatchHandler) Finish(c *fiber.Ctx) error {
@@ -308,7 +311,8 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "match not found")
 	}
 
-	return c.Render("admin/partials/match-row", updatedMatched)
+	lang := getLang(c)
+	return c.Render("admin/partials/match-row", fiber.Map{"Match": updatedMatched, "T": i18n.PrecomputedMaps[lang]})
 }
 
 func (h *MatchHandler) ShowScoreForm(c *fiber.Ctx) error {
@@ -1241,7 +1245,8 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 			if matched == nil {
 				return fiber.NewError(fiber.StatusNotFound, "Match not found in event list")
 			}
-			return c.Render("admin/partials/match-row", matched)
+			lang := getLang(c)
+			return c.Render("admin/partials/match-row", fiber.Map{"Match": matched, "T": i18n.PrecomputedMaps[lang]})
 		}
 		return ErrorHandler(err)
 	}
@@ -1297,7 +1302,8 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 	if matched == nil {
 		return fiber.NewError(fiber.StatusNotFound, "Match not found in event list")
 	}
-	return c.Render("admin/partials/match-row", matched)
+	lang := getLang(c)
+	return c.Render("admin/partials/match-row", fiber.Map{"Match": matched, "T": i18n.PrecomputedMaps[lang]})
 }
 
 // Reset reverts a match back to "scheduled", clearing all sets, winner, and table assignment.

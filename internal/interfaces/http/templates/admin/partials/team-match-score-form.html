@@ -1,5 +1,5 @@
-<h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter text-white">Team <span class="text-blue-500">Matchup</span></h2>
-<p class="text-xs text-gray-400 mb-6 font-mono">{{if .TeamA}}{{.TeamA.Name}}{{else}}Team A{{end}} vs {{if .TeamB}}{{.TeamB.Name}}{{else}}Team B{{end}} · {{.TeamFormat}} Cup</p>
+<h2 class="text-2xl font-extrabold uppercase mb-1 tracking-tighter text-white">{{t .T "team_form.title_team"}} <span class="text-blue-500">{{t .T "team_form.title_matchup"}}</span></h2>
+<p class="text-xs text-gray-400 mb-6 font-mono">{{if .TeamA}}{{.TeamA.Name}}{{else}}{{t .T "team_form.team_a_default"}}{{end}} vs {{if .TeamB}}{{.TeamB.Name}}{{else}}{{t .T "team_form.team_b_default"}}{{end}} · {{.TeamFormat}} {{t .T "team_form.cup_suffix"}}</p>
 
 <!-- Squad Selection Form -->
 <form hx-put="/matches/{{.MatchID}}/score" hx-target="#score-modal-body" hx-swap="innerHTML" 
@@ -16,23 +16,23 @@
         <!-- Team A Squad -->
         <div class="space-y-2">
             <h4 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">
-                <span id="team-a-name-label">{{if .TeamA}}{{.TeamA.Name}}{{else}}Team A{{end}}</span> Squad (A, B, C)
+                <span id="team-a-name-label">{{if .TeamA}}{{.TeamA.Name}}{{else}}{{t .T "team_form.team_a_default"}}{{end}}</span> {{t .T "team_form.squad_abc"}}
             </h4>
             <div class="space-y-1.5">
                 <select name="squad_a_p1" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <option value="" disabled {{if not .SquadAP1}}selected{{end}}>Select Player 1 (A)...</option>
+                    <option value="" disabled {{if not .SquadAP1}}selected{{end}}>{{t .T "team_form.sel_a1"}}</option>
                     {{if .TeamA}}{{range .TeamA.Players}}
                     <option value="{{.ID}}" {{if eq .ID $.SquadAP1}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
                     {{end}}{{end}}
                 </select>
                 <select name="squad_a_p2" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <option value="" disabled {{if not .SquadAP2}}selected{{end}}>Select Player 2 (B)...</option>
+                    <option value="" disabled {{if not .SquadAP2}}selected{{end}}>{{t .T "team_form.sel_a2"}}</option>
                     {{if .TeamA}}{{range .TeamA.Players}}
                     <option value="{{.ID}}" {{if eq .ID $.SquadAP2}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
                     {{end}}{{end}}
                 </select>
                 <select name="squad_a_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <option value="" disabled {{if not .SquadAP3}}selected{{end}}>Select Player 3 (C)...</option>
+                    <option value="" disabled {{if not .SquadAP3}}selected{{end}}>{{t .T "team_form.sel_a3"}}</option>
                     {{if .TeamA}}{{range .TeamA.Players}}
                     <option value="{{.ID}}" {{if eq .ID $.SquadAP3}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
                     {{end}}{{end}}
@@ -43,23 +43,23 @@
         <!-- Team B Squad -->
         <div class="space-y-2">
             <h4 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">
-                <span id="team-b-name-label">{{if .TeamB}}{{.TeamB.Name}}{{else}}Team B{{end}}</span> Squad (X, Y, Z)
+                <span id="team-b-name-label">{{if .TeamB}}{{.TeamB.Name}}{{else}}{{t .T "team_form.team_b_default"}}{{end}}</span> {{t .T "team_form.squad_xyz"}}
             </h4>
             <div class="space-y-1.5">
                 <select name="squad_b_p1" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <option value="" disabled {{if not .SquadBP1}}selected{{end}}>Select Player 1 (X)...</option>
+                    <option value="" disabled {{if not .SquadBP1}}selected{{end}}>{{t .T "team_form.sel_b1"}}</option>
                     {{if .TeamB}}{{range .TeamB.Players}}
                     <option value="{{.ID}}" {{if eq .ID $.SquadBP1}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
                     {{end}}{{end}}
                 </select>
                 <select name="squad_b_p2" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <option value="" disabled {{if not .SquadBP2}}selected{{end}}>Select Player 2 (Y)...</option>
+                    <option value="" disabled {{if not .SquadBP2}}selected{{end}}>{{t .T "team_form.sel_b2"}}</option>
                     {{if .TeamB}}{{range .TeamB.Players}}
                     <option value="{{.ID}}" {{if eq .ID $.SquadBP2}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
                     {{end}}{{end}}
                 </select>
                 <select name="squad_b_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <option value="" disabled {{if not .SquadBP3}}selected{{end}}>Select Player 3 (Z)...</option>
+                    <option value="" disabled {{if not .SquadBP3}}selected{{end}}>{{t .T "team_form.sel_b3"}}</option>
                     {{if .TeamB}}{{range .TeamB.Players}}
                     <option value="{{.ID}}" {{if eq .ID $.SquadBP3}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
                     {{end}}{{end}}
@@ -70,30 +70,30 @@
 
     <div class="flex gap-2">
         <button type="submit" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-extrabold py-2 rounded-xl transition-all uppercase tracking-widest text-[9px]">
-            Update &amp; Align Squads
+            {{t .T "team_form.align_save"}}
         </button>
         <button type="button"
                 hx-post="/admin/matches/score/form?action=swap"
                 hx-target="#score-modal-body"
                 hx-include="closest form"
                 class="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-extrabold py-2 px-3 rounded-xl transition-all text-[9px] uppercase tracking-widest"
-                title="Swap Team A ⇄ Team B">
-            ⇄ Swap
+                title="{{t .T "team_form.swap_title"}}">
+            ⇄ {{t .T "team_form.swap_btn"}}
         </button>
     </div>
 </form>
 
 <!-- Sub-matches List -->
 <div class="space-y-3 mb-6">
-    <h3 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-2">Sub-Matches</h3>
+    <h3 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-2">{{t .T "team_form.sub_matches"}}</h3>
     {{range .SubMatches}}
     <div class="flex items-center justify-between bg-black/20 border border-white/5 rounded-xl p-3">
         <div class="flex-1">
             <div class="flex items-center gap-1.5">
-                <span class="text-[9px] font-bold uppercase text-gray-500 bg-white/5 px-1.5 py-0.5 rounded font-mono">Match {{.RoundNumber}}</span>
+                <span class="text-[9px] font-bold uppercase text-gray-500 bg-white/5 px-1.5 py-0.5 rounded font-mono">{{t $.T "team_form.match"}} {{.RoundNumber}}</span>
                 <span class="text-[9px] font-extrabold uppercase tracking-wide text-blue-400">{{.MatchType}}</span>
                 {{if eq .Status "finished"}}
-                <span class="text-[8px] font-bold uppercase tracking-wider text-green-500 bg-green-500/10 px-1 rounded">Finished</span>
+                <span class="text-[8px] font-bold uppercase tracking-wider text-green-500 bg-green-500/10 px-1 rounded">{{t $.T "status.finished"}}</span>
                 {{end}}
             </div>
             
@@ -122,10 +122,10 @@
             <button hx-get="/admin/matches/score/form?tournamentId={{$.EventID}}&matchId={{.ID}}&stage={{$.Stage}}&bestOf={{$.BestOf}}&p1Id={{.TeamAPlayer1ID}}&p2Id={{.TeamBPlayer1ID}}"
                 hx-target="#score-modal-body"
                 class="bg-white hover:bg-gray-200 text-black font-extrabold text-[10px] uppercase tracking-widest px-3 py-2 rounded-xl transition-colors">
-                Score
+                {{t $.T "team_form.score_btn"}}
             </button>
             {{else}}
-            <span class="text-[9px] font-bold uppercase tracking-wider text-gray-500 bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">Unplayed</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider text-gray-500 bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">{{t $.T "team_form.unplayed"}}</span>
             {{end}}
         </div>
     </div>
@@ -133,9 +133,9 @@
 </div>
 
 <div class="flex gap-3">
-    <button type="button" 
+    <button type="button"
         onclick="document.getElementById('score-modal').classList.add('hidden')"
         class="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-bold py-3 rounded-2xl transition-all uppercase tracking-widest text-xs">
-        Close Matchup
+        {{t .T "team_form.close_matchup"}}
     </button>
 </div>

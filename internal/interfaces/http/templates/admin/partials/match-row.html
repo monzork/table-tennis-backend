@@ -1,74 +1,74 @@
 {{define "admin/partials/match-row"}}
-<tr class="hover:bg-white/5 transition-colors group match-log-row flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-4 sm:p-0 relative" id="match-row-{{.ID}}" data-status="{{.Status}}">
-    <td class="block sm:table-cell p-0 sm:p-4 text-xs font-mono text-gray-500 mb-1 sm:mb-0" title="{{.EventID}}">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Match ID:</span>{{.EventID}}
+<tr class="hover:bg-white/5 transition-colors group match-log-row flex flex-col sm:table-row border-b border-white/10 sm:border-b-0 p-4 sm:p-0 relative" id="match-row-{{.Match.ID}}" data-status="{{.Match.Status}}">
+    <td class="block sm:table-cell p-0 sm:p-4 text-xs font-mono text-gray-500 mb-1 sm:mb-0" title="{{.Match.EventID}}">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "admin.match_row.match_id_label"}}</span>{{.Match.EventID}}
     </td>
     <td class="block sm:table-cell p-0 sm:p-4 text-gray-300 capitalize mb-1 sm:mb-0">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Type:</span>{{.MatchType}}
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "pub_detail.mob_type"}}</span>{{.Match.MatchType}}
     </td>
-    
+
     <td class="block sm:table-cell p-0 sm:p-4 mb-1 sm:mb-0">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">Player(s) A:</span>
-        {{range $index, $p := .TeamA}}
-            <div class="{{if eq $.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">{{t .T "pub_detail.mob_player_a"}}</span>
+        {{range $index, $p := .Match.TeamA}}
+            <div class="{{if eq $.Match.WinnerTeam "A"}}text-white font-bold{{else}}text-gray-300{{end}}">
                 {{$p.FirstName}} <span class="uppercase font-bold">{{$p.LastName}}</span>
             </div>
         {{end}}
     </td>
-    
+
     <td class="block sm:table-cell p-0 sm:p-4 mb-2 sm:mb-0">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">Player(s) B:</span>
-        {{range $index, $p := .TeamB}}
-            <div class="{{if eq $.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 block mb-1">{{t .T "pub_detail.mob_player_b"}}</span>
+        {{range $index, $p := .Match.TeamB}}
+            <div class="{{if eq $.Match.WinnerTeam "B"}}text-white font-bold{{else}}text-gray-300{{end}}">
                 {{$p.FirstName}} <span class="uppercase font-bold">{{$p.LastName}}</span>
             </div>
         {{end}}
     </td>
 
     <td class="block sm:table-cell p-0 sm:p-4 mb-3 sm:mb-0">
-        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">Status:</span>
-        {{if eq .Status "finished"}}
-            <span class="px-2 py-1 rounded bg-white/10 text-white text-xs font-bold uppercase tracking-wider border border-white/20">Finished</span>
-        {{else if eq .Status "in_progress"}}
-            <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-wider border border-blue-500/20">In Progress</span>
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "pub_detail.mob_status"}}</span>
+        {{if eq .Match.Status "finished"}}
+            <span class="px-2 py-1 rounded bg-white/10 text-white text-xs font-bold uppercase tracking-wider border border-white/20">{{t .T "status.finished"}}</span>
+        {{else if eq .Match.Status "in_progress"}}
+            <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-wider border border-blue-500/20">{{t .T "status.in_progress"}}</span>
         {{else}}
-            <span class="px-2 py-1 rounded bg-white/5 text-gray-500 text-xs font-bold uppercase tracking-wider border border-white/10">Waiting</span>
+            <span class="px-2 py-1 rounded bg-white/5 text-gray-500 text-xs font-bold uppercase tracking-wider border border-white/10">{{t .T "status.scheduled"}}</span>
         {{end}}
     </td>
 
     <td class="block sm:table-cell p-0 sm:p-4">
-        {{if eq .Status "in_progress"}}
+        {{if eq .Match.Status "in_progress"}}
             <div class="flex flex-col gap-1.5">
-                <form hx-post="/matches/finish" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.ID}}" hx-confirm="Confirm match result?" class="flex gap-2">
-                    <input type="hidden" name="matchId" value="{{.ID}}">
+                <form hx-post="/matches/finish" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.Match.ID}}" hx-confirm="{{t .T "admin.match_row.finish_confirm"}}" class="flex gap-2">
+                    <input type="hidden" name="matchId" value="{{.Match.ID}}">
                     <select name="winnerTeam" class="flex-1 sm:flex-none bg-black/50 border border-white/10 rounded px-2 py-2 sm:py-1 text-xs text-white uppercase" required>
-                        <option value="" disabled selected>Winner</option>
-                        <option value="A">Team A</option>
-                        <option value="B">Team B</option>
+                        <option value="" disabled selected>{{t .T "admin.match_row.winner_ph"}}</option>
+                        <option value="A">{{t .T "team_form.team_a_default"}}</option>
+                        <option value="B">{{t .T "team_form.team_b_default"}}</option>
                     </select>
-                    <button type="submit" class="bg-white hover:bg-gray-200 text-black font-bold py-2 sm:py-1 px-4 sm:px-3 text-xs rounded transition-all uppercase tracking-wider">Finish</button>
+                    <button type="submit" class="bg-white hover:bg-gray-200 text-black font-bold py-2 sm:py-1 px-4 sm:px-3 text-xs rounded transition-all uppercase tracking-wider">{{t .T "admin.match_row.finish_btn"}}</button>
                 </form>
-                {{if .Pin}}
-                <button type="button" data-match-id="{{.ID}}" data-matchup="{{range $i, $p := .TeamA}}{{if $i}} & {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}} vs {{range $i, $p := .TeamB}}{{if $i}} & {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
-                        data-table-number="{{if .TableNumber}}{{.TableNumber}}{{end}}"
-                        onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup, this.dataset.tableNumber, '', '{{.EventID}}')"
+                {{if .Match.Pin}}
+                <button type="button" data-match-id="{{.Match.ID}}" data-matchup="{{range $i, $p := .Match.TeamA}}{{if $i}} & {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}} vs {{range $i, $p := .Match.TeamB}}{{if $i}} & {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
+                        data-table-number="{{if .Match.TableNumber}}{{.Match.TableNumber}}{{end}}"
+                        onclick="showQRCodeModal(this.dataset.matchId, this.dataset.matchup, this.dataset.tableNumber, '', '{{.Match.EventID}}')"
                         class="inline-flex items-center justify-center sm:justify-start gap-1.5 text-[9px] font-bold uppercase tracking-wider text-indigo-400 hover:text-indigo-300 transition-colors bg-white/5 sm:bg-transparent py-2 sm:py-0 rounded mt-1 sm:mt-0"
-                        title="Share QR score link">
+                        title="{{t .T "admin.match_row.share_qr_title"}}">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
-                    Share QR
+                    {{t .T "admin.match_row.share_qr_btn"}}
                 </button>
                 {{end}}
             </div>
-        {{else if eq .Status "scheduled"}}
-            <button hx-post="/matches/{{.ID}}/start" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.ID}}" 
-                    data-p1="{{range $i, $p := .TeamA}}{{if $i}} y {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
-                    data-p2="{{range $i, $p := .TeamB}}{{if $i}} y {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
+        {{else if eq .Match.Status "scheduled"}}
+            <button hx-post="/matches/{{.Match.ID}}/start" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.Match.ID}}"
+                    data-p1="{{range $i, $p := .Match.TeamA}}{{if $i}} y {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
+                    data-p2="{{range $i, $p := .Match.TeamB}}{{if $i}} y {{end}}{{$p.FirstName}} {{$p.LastName}}{{end}}"
                     class="w-full sm:w-auto bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
-                Start Match
+                {{t .T "admin.match_row.start_match_btn"}}
             </button>
-        {{else if eq .Status "finished"}}
-            <button hx-post="/matches/{{.ID}}/reset" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.ID}}" hx-confirm="Are you sure you want to undo this match result? This will erase the scores and clear the winner." class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
-                Undo Score
+        {{else if eq .Match.Status "finished"}}
+            <button hx-post="/matches/{{.Match.ID}}/reset" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.Match.ID}}" hx-confirm="{{t .T "admin.match_row.undo_confirm"}}" class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
+                {{t .T "admin.match_row.undo_btn"}}
             </button>
         {{end}}
     </td>

@@ -1,4 +1,4 @@
-<h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">Edit <span class="text-white">Event</span></h2>
+<h2 class="text-2xl font-extrabold uppercase mb-6 tracking-tighter">{{t .T "admin.event_edit_form.title"}} <span class="text-white">{{t .T "admin.event_edit_form.title_suffix"}}</span></h2>
 <form hx-put="/events/{{.Event.ID}}" hx-target="#edit-modal-content" hx-on:htmx:before-request="sessionStorage.setItem('pending_toast', 'Event updated successfully!')" class="space-y-5">
     <div id="edit-selected-participants-hidden">
         {{range .Event.Participants}}
@@ -8,89 +8,89 @@
     {{if .Event.SkipElo}}<input type="hidden" name="skipElo" value="on">{{end}}
     {{if .Event.TournamentID}}<input type="hidden" name="eventId" value="{{.Event.TournamentID}}">{{end}}
     <div class="space-y-2">
-        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Event Name</label>
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.events.name_label"}}</label>
         <input type="text" name="name" value="{{.Event.Name}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
     </div>
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Type</label>
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_edit_form.type_label"}}</label>
             <select name="type" onchange="this.value === 'teams' ? document.getElementById('edit-team-format-container').classList.remove('hidden') : document.getElementById('edit-team-format-container').classList.add('hidden')" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
-                <option value="singles" {{if eq .Event.Type "singles"}}selected{{end}}>Singles</option>
-                <option value="doubles" {{if eq .Event.Type "doubles"}}selected{{end}}>Doubles</option>
-                <option value="teams" {{if eq .Event.Type "teams"}}selected{{end}}>Teams</option>
+                <option value="singles" {{if eq .Event.Type "singles"}}selected{{end}}>{{t .T "admin.event_form.singles"}}</option>
+                <option value="doubles" {{if eq .Event.Type "doubles"}}selected{{end}}>{{t .T "admin.event_form.doubles"}}</option>
+                <option value="teams" {{if eq .Event.Type "teams"}}selected{{end}}>{{t .T "admin.event_form.teams"}}</option>
             </select>
         </div>
         <div class="space-y-2">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Format</label>
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_edit_form.format_label"}}</label>
             <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" hx-on:change="this.value === 'groups_elimination' ? (document.getElementById('edit-group-pass-count-container').classList.remove('hidden'), document.getElementById('edit-group-pass-count-input').disabled = false, document.getElementById('edit-losers-group-pass-count-input').disabled = false) : (document.getElementById('edit-group-pass-count-container').classList.add('hidden'), document.getElementById('edit-group-pass-count-input').disabled = true, document.getElementById('edit-losers-group-pass-count-input').disabled = true)">
-                <option value="elimination" {{if eq .Event.Format "elimination"}}selected{{end}}>Elimination</option>
-                <option value="double_elimination" {{if eq .Event.Format "double_elimination"}}selected{{end}}>Double Elimination</option>
-                <option value="groups_elimination" {{if eq .Event.Format "groups_elimination"}}selected{{end}}>Group + Knockout</option>
-                <option value="round_robin" {{if eq .Event.Format "round_robin"}}selected{{end}}>All Against All</option>
+                <option value="elimination" {{if eq .Event.Format "elimination"}}selected{{end}}>{{t .T "admin.event_form.fmt_elimination"}}</option>
+                <option value="double_elimination" {{if eq .Event.Format "double_elimination"}}selected{{end}}>{{t .T "admin.event_edit_form.fmt_double_elimination"}}</option>
+                <option value="groups_elimination" {{if eq .Event.Format "groups_elimination"}}selected{{end}}>{{t .T "admin.event_form.fmt_groups"}}</option>
+                <option value="round_robin" {{if eq .Event.Format "round_robin"}}selected{{end}}>{{t .T "admin.event_form.fmt_round_robin"}}</option>
             </select>
         </div>
     </div>
     <div id="edit-team-format-container" class="space-y-2 {{if ne .Event.Type "teams"}}hidden{{end}}">
-        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Team Match Format</label>
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_form.team_format_label"}}</label>
         <select name="teamFormat" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
-            <option value="olympic" {{if eq .Event.TeamFormat "olympic"}}selected{{end}}>Olympic Format (Corbillon Cup - 1 Doubles, 4 Singles)</option>
-            <option value="swaythling" {{if eq .Event.TeamFormat "swaythling"}}selected{{end}}>World Championship Format (Swaythling Cup - 5 Singles)</option>
+            <option value="olympic" {{if eq .Event.TeamFormat "olympic"}}selected{{end}}>{{t .T "admin.event_form.format_olympic"}}</option>
+            <option value="swaythling" {{if eq .Event.TeamFormat "swaythling"}}selected{{end}}>{{t .T "admin.event_form.format_swaythling"}}</option>
         </select>
     </div>
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Category</label>
-            <select name="eventCategory" id="edit-category-select" 
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_edit_form.category_label"}}</label>
+            <select name="eventCategory" id="edit-category-select"
                     hx-get="/players/search/cards"
                     hx-target="#edit-player-selection-grid"
                     hx-include="#edit-player-search, #edit-category-select, #edit-selected-participants-hidden input"
                     hx-trigger="change"
                     class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
-                <option value="open" {{if eq .Event.EventCategory "open"}}selected{{end}}>Open (All Genders)</option>
-                <option value="men" {{if eq .Event.EventCategory "men"}}selected{{end}}>Men's (Male Only)</option>
-                <option value="women" {{if eq .Event.EventCategory "women"}}selected{{end}}>Women's (Female Only)</option>
-                <option value="mixed" {{if eq .Event.EventCategory "mixed"}}selected{{end}}>Mixed (Doubles)</option>
+                <option value="open" {{if eq .Event.EventCategory "open"}}selected{{end}}>{{t .T "admin.event_edit_form.cat_open_full"}}</option>
+                <option value="men" {{if eq .Event.EventCategory "men"}}selected{{end}}>{{t .T "admin.event_edit_form.cat_men_full"}}</option>
+                <option value="women" {{if eq .Event.EventCategory "women"}}selected{{end}}>{{t .T "admin.event_edit_form.cat_women_full"}}</option>
+                <option value="mixed" {{if eq .Event.EventCategory "mixed"}}selected{{end}}>{{t .T "admin.event_edit_form.cat_mixed_full"}}</option>
             </select>
         </div>
         <div class="space-y-2">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Available Tables</label>
-            <input type="number" name="numTables" min="0" max="50" value="{{.Event.NumTables}}" placeholder="0 = auto" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
-            <p class="text-[10px] text-gray-600">Used for auto-assigning tables when starting matches. 0 = inherit from tournament or default 4.</p>
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_edit_form.available_tables_label"}}</label>
+            <input type="number" name="numTables" min="0" max="50" value="{{.Event.NumTables}}" placeholder="{{t .T "admin.event_edit_form.available_tables_ph"}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <p class="text-[10px] text-gray-600">{{t .T "admin.event_edit_form.available_tables_desc"}}</p>
         </div>
     </div>
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Start Date</label>
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_form.start_date"}}</label>
             <input type="date" name="startDate" value="{{.Event.StartDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
         </div>
         <div class="space-y-2">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">End Date</label>
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_form.end_date"}}</label>
             <input type="date" name="endDate" value="{{.Event.EndDate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
         </div>
     </div>
-    
+
     <div id="edit-group-pass-count-container" class="grid grid-cols-2 gap-4 {{if ne .Event.Format "groups_elimination"}}hidden{{end}}">
         <div class="space-y-2">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Knockout Pass Count</label>
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_form.knockout_pass_label"}}</label>
             <input type="number" id="edit-group-pass-count-input" name="groupPassCount" value="{{.Event.GroupPassCount}}" min="1" {{if ne .Event.Format "groups_elimination"}}disabled{{end}} class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         <div class="space-y-2">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Loser Pass Count</label>
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_edit_form.loser_pass_label"}}</label>
             <input type="number" id="edit-losers-group-pass-count-input" name="losersGroupPassCount" value="{{.Event.LosersGroupPassCount}}" min="0" {{if ne .Event.Format "groups_elimination"}}disabled{{end}} class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
     </div>
-    
+
     <div class="space-y-2">
-        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Manage Participants</label>
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_edit_form.manage_participants_label"}}</label>
         <div class="relative">
-            <input type="text" id="edit-player-search" 
+            <input type="text" id="edit-player-search"
                 name="q"
-                hx-get="/players/search/cards" 
-                hx-trigger="keyup changed delay:300ms" 
+                hx-get="/players/search/cards"
+                hx-trigger="keyup changed delay:300ms"
                 hx-target="#edit-player-selection-grid"
                 hx-include="#edit-player-search, #edit-category-select, #edit-selected-participants-hidden input"
                 onkeydown="if (event.key === 'Enter') { event.preventDefault(); }"
-                placeholder="Search athletes by name..." 
+                placeholder="{{t .T "admin.event_form.search_players_ph"}}"
                 class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-white transition-all pl-10">
             <svg class="w-4 h-4 absolute left-3 top-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
@@ -121,23 +121,23 @@
     <div class="space-y-2">
         <label class="flex items-center gap-3 cursor-pointer group">
             <input type="checkbox" name="registrationOpen" value="true" {{if .Event.RegistrationOpen}}checked{{end}} class="w-5 h-5 rounded bg-black/40 border border-white/10 text-white accent-white cursor-pointer">
-            <span class="text-xs font-bold uppercase text-gray-400 tracking-widest group-hover:text-white transition-colors">Open Public Registration</span>
+            <span class="text-xs font-bold uppercase text-gray-400 tracking-widest group-hover:text-white transition-colors">{{t .T "admin.event_edit_form.open_registration_label"}}</span>
         </label>
-        <p class="text-[10px] text-gray-600 ml-8">When enabled, players can self-register at /events/register</p>
+        <p class="text-[10px] text-gray-600 ml-8">{{t .T "admin.event_edit_form.open_registration_desc"}}</p>
     </div>
 
     <div class="space-y-2">
         <label class="flex items-center gap-3 cursor-pointer group">
             <input type="checkbox" name="hasThirdPlaceMatch" value="true" {{if .Event.HasThirdPlaceMatch}}checked{{end}} class="w-5 h-5 rounded bg-black/40 border border-white/10 text-white accent-white cursor-pointer">
-            <span class="text-xs font-bold uppercase text-gray-400 tracking-widest group-hover:text-white transition-colors">Has 3rd Place Match</span>
+            <span class="text-xs font-bold uppercase text-gray-400 tracking-widest group-hover:text-white transition-colors">{{t .T "admin.event_form.third_place_label"}}</span>
         </label>
-        <p class="text-[10px] text-gray-600 ml-8">If checked, a match for the third place will be automatically generated between semifinal losers.</p>
+        <p class="text-[10px] text-gray-600 ml-8">{{t .T "admin.event_form.third_place_desc"}}</p>
     </div>
 
     <div class="space-y-2">
-        <div class="flex items-center justify-between cursor-pointer" onclick="document.getElementById('edit-rules-panel').classList.toggle('hidden'); this.querySelector('span.toggle-arrow').textContent = document.getElementById('edit-rules-panel').classList.contains('hidden') ? 'Expand ▾' : 'Collapse ▴'">
-            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">Match Rules per Stage</label>
-            <span class="toggle-arrow text-[10px] text-gray-400 uppercase tracking-widest">Expand ▾</span>
+        <div class="flex items-center justify-between cursor-pointer" onclick="document.getElementById('edit-rules-panel').classList.toggle('hidden'); this.querySelector('span.toggle-arrow').textContent = document.getElementById('edit-rules-panel').classList.contains('hidden') ? '{{t .T "admin.event_form.expand"}}' : '{{t .T "admin.event_form.collapse"}}'">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest cursor-pointer">{{t .T "admin.event_form.match_rules_label"}}</label>
+            <span class="toggle-arrow text-[10px] text-gray-400 uppercase tracking-widest">{{t .T "admin.event_form.expand"}}</span>
         </div>
         <div id="edit-rules-panel" class="hidden space-y-3">
             {{/* Build a lookup map of existing rules by stage */}}
@@ -146,9 +146,9 @@
             {{/* Group stage */}}
             {{$bo := 5}}{{$pts := 11}}{{range $rules}}{{if eq .Stage "group"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
             <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
-                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Group</span>
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{t $.T "admin.event_form.stage_group"}}</span>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.best_of"}}</label>
                     <select name="stage_rule[group][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
                         <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
                         <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
@@ -157,7 +157,7 @@
                     </select>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.pts_to_win"}}</label>
                     <input type="number" name="stage_rule[group][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                 </div>
                 <input type="hidden" name="stage_rule[group][points_margin]" value="2">
@@ -166,9 +166,9 @@
             {{/* R32 */}}
             {{$bo = 5}}{{$pts = 11}}{{range $rules}}{{if eq .Stage "r32"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
             <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
-                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Round of 32</span>
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{t $.T "admin.event_form.stage_r32"}}</span>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.best_of"}}</label>
                     <select name="stage_rule[r32][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
                         <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
                         <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
@@ -177,7 +177,7 @@
                     </select>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.pts_to_win"}}</label>
                     <input type="number" name="stage_rule[r32][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                 </div>
                 <input type="hidden" name="stage_rule[r32][points_margin]" value="2">
@@ -186,9 +186,9 @@
             {{/* R16 */}}
             {{$bo = 5}}{{$pts = 11}}{{range $rules}}{{if eq .Stage "r16"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
             <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
-                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Round of 16</span>
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{t $.T "admin.event_form.stage_r16"}}</span>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.best_of"}}</label>
                     <select name="stage_rule[r16][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
                         <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
                         <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
@@ -197,7 +197,7 @@
                     </select>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.pts_to_win"}}</label>
                     <input type="number" name="stage_rule[r16][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                 </div>
                 <input type="hidden" name="stage_rule[r16][points_margin]" value="2">
@@ -206,9 +206,9 @@
             {{/* Quarterfinal */}}
             {{$bo = 7}}{{$pts = 11}}{{range $rules}}{{if eq .Stage "quarterfinal"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
             <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
-                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">QF</span>
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{t $.T "admin.event_form.stage_qf"}}</span>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.best_of"}}</label>
                     <select name="stage_rule[quarterfinal][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
                         <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
                         <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
@@ -217,7 +217,7 @@
                     </select>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.pts_to_win"}}</label>
                     <input type="number" name="stage_rule[quarterfinal][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                 </div>
                 <input type="hidden" name="stage_rule[quarterfinal][points_margin]" value="2">
@@ -226,9 +226,9 @@
             {{/* Semifinal */}}
             {{$bo = 7}}{{$pts = 11}}{{range $rules}}{{if eq .Stage "semifinal"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
             <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
-                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">SF</span>
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{t $.T "admin.event_form.stage_sf"}}</span>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.best_of"}}</label>
                     <select name="stage_rule[semifinal][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
                         <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
                         <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
@@ -237,7 +237,7 @@
                     </select>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.pts_to_win"}}</label>
                     <input type="number" name="stage_rule[semifinal][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                 </div>
                 <input type="hidden" name="stage_rule[semifinal][points_margin]" value="2">
@@ -246,9 +246,9 @@
             {{/* Final */}}
             {{$bo = 7}}{{$pts = 11}}{{range $rules}}{{if eq .Stage "final"}}{{$bo = .BestOf}}{{$pts = .PointsToWin}}{{end}}{{end}}
             <div class="grid grid-cols-3 gap-3 items-center bg-black/20 border border-white/5 rounded-xl px-4 py-3">
-                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">Final</span>
+                <span class="text-xs font-bold uppercase text-gray-300 tracking-widest">{{t $.T "admin.event_form.stage_final"}}</span>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Best Of</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.best_of"}}</label>
                     <select name="stage_rule[final][best_of]" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white appearance-none">
                         <option value="3" {{if eq $bo 3}}selected{{end}}>3</option>
                         <option value="5" {{if eq $bo 5}}selected{{end}}>5</option>
@@ -257,7 +257,7 @@
                     </select>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">Pts to Win</label>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest">{{t $.T "admin.event_form.pts_to_win"}}</label>
                     <input type="number" name="stage_rule[final][points_to_win]" value="{{$pts}}" min="5" max="21" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-white">
                 </div>
                 <input type="hidden" name="stage_rule[final][points_margin]" value="2">
@@ -266,7 +266,7 @@
     </div>
 
     <div class="flex gap-3 mt-2">
-        <button type="button" onclick="document.getElementById('edit-modal').classList.add('hidden')" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 font-bold py-4 rounded-2xl transition-all uppercase tracking-widest">Cancel</button>
-        <button type="submit" class="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest">Save Changes</button>
+        <button type="button" onclick="document.getElementById('edit-modal').classList.add('hidden')" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 font-bold py-4 rounded-2xl transition-all uppercase tracking-widest">{{t .T "admin.event_edit_form.cancel_btn"}}</button>
+        <button type="submit" class="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest">{{t .T "admin.event_edit_form.save_btn"}}</button>
     </div>
 </form>
