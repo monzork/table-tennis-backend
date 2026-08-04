@@ -1,16 +1,16 @@
 <div class="space-y-8 animate-fade-in text-white/90">
     <header class="flex justify-between items-center border-b border-white/10 pb-6">
         <div>
-            <h1 class="text-4xl font-black tracking-tight uppercase italic"><span class="text-white">Manage</span> DIVISIONS</h1>
-            <p class="text-gray-400 mt-2 tracking-wide font-light">Configure ranking divisions and ELO brackets.</p>
+            <h1 class="text-4xl font-black tracking-tight uppercase italic"><span class="text-white">{{t .T "admin.divisions.header_manage"}}</span> {{t .T "nav.divisions"}}</h1>
+            <p class="text-gray-400 mt-2 tracking-wide font-light">{{t .T "admin.divisions.subtitle"}}</p>
         </div>
-        <button 
-            hx-get="/divisions" 
+        <button
+            hx-get="/divisions"
             hx-target="#division-modal-content"
             hx-on:click="document.getElementById('divisionModal').classList.remove('hidden')"
             class="bg-white hover:bg-gray-200 text-black font-bold py-3 px-6 rounded-lg transition-all uppercase tracking-widest text-sm flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            Add Division
+            {{t .T "admin.divisions.add_btn"}}
         </button>
     </header>
 
@@ -18,18 +18,18 @@
         <table class="w-full text-left border-collapse block sm:table sm:whitespace-nowrap">
             <thead class="hidden sm:table-header-group">
                 <tr class="bg-black/60 border-b border-white/10">
-                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">Order</th>
-                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">Division Name</th>
-                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">ELO Range</th>
-                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest text-center">Color</th>
-                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest text-right">Actions</th>
+                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">{{t .T "admin.divisions.col_order"}}</th>
+                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">{{t .T "admin.divisions.col_name"}}</th>
+                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">{{t .T "admin.divisions.col_elo_range"}}</th>
+                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest text-center">{{t .T "admin.divisions.col_color"}}</th>
+                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest text-right">{{t .T "pub_detail.col_actions"}}</th>
                 </tr>
             </thead>
             <tbody id="division-list" class="divide-y divide-white/5 block sm:table-row-group">
                 {{range .Divisions}}
-                    {{template "admin/partials/division-row" .}}
+                    {{template "admin/partials/division-row" (dict "Division" . "T" $.T)}}
                 {{else}}
-                    <tr><td colspan="5" class="py-12 text-center text-gray-500 italic font-light tracking-wider">No divisions configured. Add one to get started.</td></tr>
+                    <tr><td colspan="5" class="py-12 text-center text-gray-500 italic font-light tracking-wider">{{t .T "admin.divisions.empty"}}</td></tr>
                 {{end}}
             </tbody>
         </table>

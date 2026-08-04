@@ -81,7 +81,8 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.Render("admin/partials/player-row", player)
+	lang := getLang(c)
+	return c.Render("admin/partials/player-row", merge(tMap(lang), fiber.Map{"Player": player}))
 }
 
 func (h *PlayerHandler) Update(c *fiber.Ctx) error {
@@ -117,7 +118,8 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.Render("admin/partials/player-row", player)
+	lang := getLang(c)
+	return c.Render("admin/partials/player-row", merge(tMap(lang), fiber.Map{"Player": player}))
 }
 
 func (h *PlayerHandler) Delete(c *fiber.Ctx) error {
@@ -145,10 +147,11 @@ func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.Render("admin/partials/player-edit-form", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/partials/player-edit-form", merge(tMap(lang), fiber.Map{
 		"Player": p,
 		"Events": activeTournaments,
-	})
+	}))
 }
 
 func (h *PlayerHandler) Search(c *fiber.Ctx) error {
@@ -157,9 +160,10 @@ func (h *PlayerHandler) Search(c *fiber.Ctx) error {
 	if err != nil {
 		return ErrorHandler(err)
 	}
-	return c.Render("admin/partials/player-list-rows", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/partials/player-list-rows", merge(tMap(lang), fiber.Map{
 		"Players": players,
-	})
+	}))
 }
 
 func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
@@ -190,10 +194,11 @@ func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.Render("admin/partials/player-selection-cards", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/partials/player-selection-cards", merge(tMap(lang), fiber.Map{
 		"Players":     players,
 		"SelectedIDs": selectedMap,
-	})
+	}))
 }
 
 // ImportTemplate returns a downloadable player template.

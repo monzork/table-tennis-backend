@@ -1,45 +1,45 @@
-<h2 class="text-2xl font-extrabold uppercase mb-8 tracking-tighter">Edit <span class="text-white">Athlete</span>.</h2>
+<h2 class="text-2xl font-extrabold uppercase mb-8 tracking-tighter">{{t .T "admin.common.edit"}} <span class="text-white">{{t .T "admin.player_form.athlete_word"}}</span>.</h2>
 
 <form hx-put="/players/{{.Player.ID}}" hx-target="#player-{{.Player.ID}}" hx-swap="outerHTML" class="space-y-4" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('edit-player-modal').classList.add('hidden')">
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">First Name</label>
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "register.first_name"}}</label>
             <input type="text" name="firstName" value="{{.Player.FirstName}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Second Name</label>
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.player_form.second_name"}}</label>
             <input type="text" name="secondName" value="{{.Player.SecondName}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Last Name</label>
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "register.last_name"}}</label>
             <input type="text" name="lastName" value="{{.Player.LastName}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Second Last Name</label>
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.player_form.second_last_name"}}</label>
             <input type="text" name="secondLastName" value="{{.Player.SecondLastName}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Birthdate</label>
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "register.birthdate"}}</label>
             <input type="date" name="birthdate" value="{{.Player.Birthdate.Format "2006-01-02"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white [color-scheme:dark]">
         </div>
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Gender</label>
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "register.gender"}}</label>
             <select name="gender" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
-                <option value="M" {{if eq .Player.Gender "M"}}selected{{end}}>Male</option>
-                <option value="F" {{if eq .Player.Gender "F"}}selected{{end}}>Female</option>
+                <option value="M" {{if eq .Player.Gender "M"}}selected{{end}}>{{t .T "register.gender_male"}}</option>
+                <option value="F" {{if eq .Player.Gender "F"}}selected{{end}}>{{t .T "register.gender_female"}}</option>
             </select>
         </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Nationality (ISO)</label>
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.player_form.nationality"}}</label>
             <select id="edit-country" name="country" required
                     hx-get="/players/department-input?theme=admin-edit"
                     hx-trigger="change"
@@ -58,30 +58,30 @@
     </div>
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">WhatsApp Number</label>
-            <input type="text" name="whatsAppNumber" value="{{.Player.WhatsAppNumber}}" placeholder="+52..." class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.player_form.whatsapp"}}</label>
+            <input type="text" name="whatsAppNumber" value="{{.Player.WhatsAppNumber}}" placeholder="{{t .T "admin.player_form.whatsapp_ph"}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">National ID (Cédula)</label>
-            <input type="text" name="nationalID" value="{{.Player.NationalID}}" placeholder="e.g. 001-000000-0000A" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.player_form.national_id"}}</label>
+            <input type="text" name="nationalID" value="{{.Player.NationalID}}" placeholder="{{t .T "admin.player_form.national_id_ph"}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4 pt-2 border-t border-white/5 mt-4">
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Singles Elo</label>
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.common.singles_elo"}}</label>
             <input type="number" name="singlesElo" value="{{.Player.SinglesElo}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
         <div class="space-y-1">
-            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Doubles Elo</label>
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.common.doubles_elo"}}</label>
             <input type="number" name="doublesElo" value="{{.Player.DoublesElo}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
         </div>
     </div>
 
     <div class="pt-2 border-t border-white/5 mt-4">
-        <label class="text-[10px] font-bold uppercase text-gray-500 mb-1 block">Enroll into Event (Optional)</label>
+        <label class="text-[10px] font-bold uppercase text-gray-500 mb-1 block">{{t .T "admin.player_form.enroll_label"}}</label>
         <select name="tournamentId" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none cursor-pointer">
-            <option value="">Don't enroll now</option>
+            <option value="">{{t .T "admin.player_form.no_enroll"}}</option>
             {{range .Events}}
                 <option value="{{.ID}}">{{.Name}}</option>
             {{end}}
@@ -89,7 +89,7 @@
     </div>
 
     <div class="flex gap-3 pt-6">
-        <button type="button" hx-on:click="document.getElementById('edit-player-modal').classList.add('hidden')" class="flex-1 border border-white/10 hover:border-white/20 text-gray-400 font-bold py-4 rounded-2xl transition-all uppercase tracking-widest text-xs">Cancel</button>
-        <button type="submit" class="flex-2 bg-white hover:bg-gray-200 text-black font-extrabold py-4 px-8 rounded-2xl transition-all uppercase tracking-widest text-xs shadow-lg">Save Athlete</button>
+        <button type="button" hx-on:click="document.getElementById('edit-player-modal').classList.add('hidden')" class="flex-1 border border-white/10 hover:border-white/20 text-gray-400 font-bold py-4 rounded-2xl transition-all uppercase tracking-widest text-xs">{{t .T "score_form.cancel"}}</button>
+        <button type="submit" class="flex-2 bg-white hover:bg-gray-200 text-black font-extrabold py-4 px-8 rounded-2xl transition-all uppercase tracking-widest text-xs shadow-lg">{{t .T "admin.player_form.save"}}</button>
     </div>
 </form>

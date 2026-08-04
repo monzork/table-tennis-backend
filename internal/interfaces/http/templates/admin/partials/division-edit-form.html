@@ -1,38 +1,38 @@
 <div class="p-8 relative z-10">
-    <h2 class="text-3xl font-black uppercase italic tracking-tight mb-8">{{if .ID}}Edit <span class="text-white">Division</span>{{else}}Add <span class="text-white">Division</span>{{end}}</h2>
-    <form hx-post="/divisions" hx-target="{{if .ID}}#division-{{.ID}}{{else}}#division-list{{end}}" hx-swap="{{if .ID}}outerHTML{{else}}beforeend{{end}}" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('divisionModal').classList.add('hidden')">
-        <input type="hidden" name="id" value="{{.ID}}">
+    <h2 class="text-3xl font-black uppercase italic tracking-tight mb-8">{{if .Division.ID}}{{t .T "admin.division_form.edit_title"}} <span class="text-white">{{t .T "admin.division_form.word"}}</span>{{else}}{{t .T "admin.division_form.add_title"}} <span class="text-white">{{t .T "admin.division_form.word"}}</span>{{end}}</h2>
+    <form hx-post="/divisions" hx-target="{{if .Division.ID}}#division-{{.Division.ID}}{{else}}#division-list{{end}}" hx-swap="{{if .Division.ID}}outerHTML{{else}}beforeend{{end}}" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('divisionModal').classList.add('hidden')">
+        <input type="hidden" name="id" value="{{.Division.ID}}">
         <div class="space-y-6">
             <div>
-                <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Division Name</label>
-                <input type="text" name="name" value="{{.Name}}" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all">
+                <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{{t .T "admin.divisions.col_name"}}</label>
+                <input type="text" name="name" value="{{.Division.Name}}" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all">
             </div>
             <div class="grid grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Display Order</label>
-                    <input type="number" name="display_order" value="{{.DisplayOrder}}" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all">
+                    <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{{t .T "admin.division_form.order_label"}}</label>
+                    <input type="number" name="display_order" value="{{.Division.DisplayOrder}}" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all">
                 </div>
                 <div>
-                    <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Color (Hex)</label>
+                    <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{{t .T "admin.division_form.color_label"}}</label>
                     <div class="flex gap-2">
-                        <input type="color" id="colorPicker" value="{{if .Color}}{{.Color}}{{else}}#ffffff{{end}}" class="h-12 w-12 rounded bg-transparent border-0 cursor-pointer" hx-on:change="htmx.find('#colorInput').value = this.value">
-                        <input type="text" name="color" id="colorInput" value="{{if .Color}}{{.Color}}{{else}}#ffffff{{end}}" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all uppercase font-mono">
+                        <input type="color" id="colorPicker" value="{{if .Division.Color}}{{.Division.Color}}{{else}}#ffffff{{end}}" class="h-12 w-12 rounded bg-transparent border-0 cursor-pointer" hx-on:change="htmx.find('#colorInput').value = this.value">
+                        <input type="text" name="color" id="colorInput" value="{{if .Division.Color}}{{.Division.Color}}{{else}}#ffffff{{end}}" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all uppercase font-mono">
                     </div>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Min ELO</label>
-                    <input type="number" name="min_elo" value="{{.MinElo}}" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all">
+                    <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{{t .T "admin.division_form.min_elo"}}</label>
+                    <input type="number" name="min_elo" value="{{.Division.MinElo}}" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all">
                 </div>
                 <div>
-                    <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Max ELO</label>
-                    <input type="number" name="max_elo" value="{{if .MaxElo}}{{.MaxElo}}{{end}}" placeholder="Leave empty for infinity" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all">
+                    <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{{t .T "admin.division_form.max_elo"}}</label>
+                    <input type="number" name="max_elo" value="{{if .Division.MaxElo}}{{.Division.MaxElo}}{{end}}" placeholder="{{t .T "admin.division_form.max_elo_ph"}}" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all">
                 </div>
             </div>
             <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-white/10">
-                <button type="button" hx-on:click="document.getElementById('divisionModal').classList.add('hidden')" class="px-6 py-3 text-gray-400 hover:text-white uppercase tracking-widest text-sm font-bold transition-colors">Cancel</button>
-                <button type="submit" class="bg-white hover:bg-gray-200 text-black font-bold py-3 px-8 rounded-lg uppercase tracking-widest text-sm transition-all">Save Division</button>
+                <button type="button" hx-on:click="document.getElementById('divisionModal').classList.add('hidden')" class="px-6 py-3 text-gray-400 hover:text-white uppercase tracking-widest text-sm font-bold transition-colors">{{t .T "score_form.cancel"}}</button>
+                <button type="submit" class="bg-white hover:bg-gray-200 text-black font-bold py-3 px-8 rounded-lg uppercase tracking-widest text-sm transition-all">{{t .T "admin.division_form.save"}}</button>
             </div>
         </div>
     </form>

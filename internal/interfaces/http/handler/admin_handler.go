@@ -78,12 +78,13 @@ func (h *AdminHandler) Dashboard(c *fiber.Ctx) error {
 	}()
 	wg.Wait()
 
-	return c.Render("admin/dashboard", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/dashboard", merge(tMap(lang), fiber.Map{
 		"Tournaments": res.tournaments,
 		"Events":      res.events,
 		"Players":     res.players,
 		"Divisions":   res.divisions,
-	}, "layouts/admin")
+	}), "layouts/admin")
 }
 
 func (h *AdminHandler) Players(c *fiber.Ctx) error {
@@ -101,10 +102,11 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 			}
 		}
 	}
-	return c.Render("admin/players", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/players", merge(tMap(lang), fiber.Map{
 		"Players": board,
 		"Events":  activeTournaments,
-	}, "layouts/admin")
+	}), "layouts/admin")
 }
 
 func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {
@@ -159,14 +161,16 @@ func (h *AdminHandler) Divisions(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
-	return c.Render("admin/divisions", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/divisions", merge(tMap(lang), fiber.Map{
 		"Divisions": divisions,
-	}, "layouts/admin")
+	}), "layouts/admin")
 }
 
 // NewPlayerField returns an empty player field row for inline new-player entry in event creation.
 func (h *AdminHandler) NewPlayerField(c *fiber.Ctx) error {
-	return c.Render("admin/partials/new-player-field", nil)
+	lang := getLang(c)
+	return c.Render("admin/partials/new-player-field", tMap(lang))
 }
 
 // CloseModal returns an empty response so HTMX can clear the modal root container.
@@ -183,7 +187,8 @@ func (h *AdminHandler) DivisionSelect(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
-	return c.Render("admin/partials/division-select-options", fiber.Map{
+	lang := getLang(c)
+	return c.Render("admin/partials/division-select-options", merge(tMap(lang), fiber.Map{
 		"Divisions": divisions,
-	})
+	}))
 }

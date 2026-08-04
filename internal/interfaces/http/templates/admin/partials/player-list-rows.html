@@ -1,5 +1,5 @@
 {{range .Players}}
-    {{template "admin/partials/player-row" .}}
+    {{template "admin/partials/player-row" (dict "Player" . "T" $.T)}}
 {{else}}
-    <tr><td colspan="6" class="p-8 text-center text-gray-500 italic uppercase tracking-widest text-xs">No athletes found matching your search.</td></tr>
+    <tr><td colspan="6" class="p-8 text-center text-gray-500 italic uppercase tracking-widest text-xs">{{t .T "admin.player_list.empty"}}</td></tr>
 {{end}}
