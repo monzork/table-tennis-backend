@@ -48,7 +48,7 @@ func NewGetEventDetailViewUseCase(getByID *GetTournamentByIDUseCase, leaderboard
 	}
 }
 
-func (uc *GetEventDetailViewUseCase) Execute(ctx context.Context, tournamentID string, statusFilter, playerSearch string) (*EventDetailView, error) {
+func (uc *GetEventDetailViewUseCase) Execute(ctx context.Context, tournamentID string, statusFilter, playerSearch string, tmap map[string]string) (*EventDetailView, error) {
 	type result struct {
 		event     *tournamentDomain.Event
 		err       error
@@ -121,7 +121,7 @@ func (uc *GetEventDetailViewUseCase) Execute(ctx context.Context, tournamentID s
 		t.Matches = filtered
 	}
 
-	vm := bracket.BuildBracket(t, res.divisions, nil)
+	vm := bracket.BuildBracket(t, res.divisions, tmap)
 
 	var availableParticipants []*player.Player
 	assignedMap := make(map[string]bool)

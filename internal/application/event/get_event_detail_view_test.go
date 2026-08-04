@@ -44,7 +44,7 @@ func TestGetEventDetailViewUseCase_Execute(t *testing.T) {
 		playerRepo := newMockPlayerRepo()
 
 		uc := newUC(repo, divRepo, playerRepo)
-		view, err := uc.Execute(context.Background(), "t1", "all", "")
+		view, err := uc.Execute(context.Background(), "t1", "all", "", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -66,7 +66,7 @@ func TestGetEventDetailViewUseCase_Execute(t *testing.T) {
 		playerRepo := newMockPlayerRepo()
 
 		uc := newUC(repo, divRepo, playerRepo)
-		_, err := uc.Execute(context.Background(), "missing", "all", "")
+		_, err := uc.Execute(context.Background(), "missing", "all", "", nil)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -88,7 +88,7 @@ func TestGetEventDetailViewUseCase_Execute(t *testing.T) {
 		playerRepo := newMockPlayerRepo()
 
 		uc := newUC(repo, divRepo, playerRepo)
-		view, err := uc.Execute(context.Background(), "t1", "finished", "alice")
+		view, err := uc.Execute(context.Background(), "t1", "finished", "alice", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -112,7 +112,7 @@ func TestGetEventDetailViewUseCase_Execute(t *testing.T) {
 		playerRepo := newMockPlayerRepo()
 
 		uc := newUC(repo, divRepo, playerRepo)
-		view, err := uc.Execute(context.Background(), "t1", "all", "nonexistent")
+		view, err := uc.Execute(context.Background(), "t1", "all", "nonexistent", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -132,7 +132,7 @@ func TestGetEventDetailViewUseCase_Execute(t *testing.T) {
 		playerRepo := newMockPlayerRepo()
 
 		uc := newUC(repo, divRepo, playerRepo)
-		view, err := uc.Execute(context.Background(), "t1", "all", "")
+		view, err := uc.Execute(context.Background(), "t1", "all", "", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}

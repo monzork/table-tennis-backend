@@ -13,6 +13,7 @@ import (
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
+	"table-tennis-backend/internal/interfaces/http/i18n"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -150,13 +151,13 @@ func (h *EventHandler) Detail(c *fiber.Ctx) error {
 	statusFilter := c.Query("status", "all")
 	playerSearch := c.Query("player_search", "")
 
-	view, err := h.getDetailViewUC.Execute(c.Context(), id, statusFilter, playerSearch)
+	lang := getLang(c)
+	view, err := h.getDetailViewUC.Execute(c.Context(), id, statusFilter, playerSearch, i18n.PrecomputedMaps[lang])
 	if err != nil {
 		fmt.Println(err)
 		return ErrorHandler(err)
 	}
 
-	lang := getLang(c)
 	return c.Render("admin/event-detail", merge(tMap(lang), fiber.Map{
 		"Event":                 view.Event,
 		"Players":               view.Players,
