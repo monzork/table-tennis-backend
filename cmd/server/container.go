@@ -17,6 +17,7 @@ import (
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	qrinfra "table-tennis-backend/internal/infrastructure/qrcode"
 	"table-tennis-backend/internal/infrastructure/security"
+	svgchartinfra "table-tennis-backend/internal/infrastructure/svgchart"
 	"table-tennis-backend/internal/interfaces/http/handler"
 
 	"github.com/gofiber/fiber/v2/middleware/session"
@@ -81,8 +82,10 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	})
 	updateParticipantEloUC := event.NewUpdateParticipantEloBeforeUseCase(eventRepo, regenerateSeedsUC)
 	addGroupUC := event.NewAddGroupUseCase(eventRepo)
+	chartGenerator := svgchartinfra.NewSVGGenerator()
 	getPlayerStatsUC := player.NewGetPlayerTournamentStatsUseCase(playerRepo, eventRepo, tournamentRepo)
-	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC, getPlayerStatsUC)
+	getEloTrendUC := player.NewGetPlayerEloTrendUseCase(chartGenerator)
+	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC, getPlayerStatsUC, getEloTrendUC)
 
 	tournamentHandler := handler.NewEventHandler(
 		createTournamentUC,
@@ -138,7 +141,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, eventRepo, tournamentRepo, finishTournamentUC, broadcastNotificationUC, teamMatchUC, startMatchUC, divisionRepo)
 
-	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
+	distUC := leaderboard.NewGetDivisionDistributionUseCase(chartGenerator)
+	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
 	selfRegisterUC := event.NewSelfRegisterUseCase(eventRepo, playerRepo)
 	publicHandler := handler.NewPublicHandler(playerUC, selfRegisterUC)

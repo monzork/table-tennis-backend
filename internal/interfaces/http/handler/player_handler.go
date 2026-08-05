@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"strconv"
 	"table-tennis-backend/internal/application/event"
@@ -23,6 +24,7 @@ type PlayerHandler struct {
 	enrollPlayerUC          *event.EnrollPlayerUseCase
 	getTournamentsUC        *event.GetTournamentsUseCase
 	getPlayerStatsUC        *player.GetPlayerTournamentStatsUseCase
+	getEloTrendUC           *player.GetPlayerEloTrendUseCase
 }
 
 func NewPlayerHandler(
@@ -36,6 +38,7 @@ func NewPlayerHandler(
 	enrollUC *event.EnrollPlayerUseCase,
 	gtuc *event.GetTournamentsUseCase,
 	gpsuc *player.GetPlayerTournamentStatsUseCase,
+	getEloTrendUC *player.GetPlayerEloTrendUseCase,
 ) *PlayerHandler {
 	return &PlayerHandler{
 		registerPlayerUC:        uc,
@@ -48,6 +51,7 @@ func NewPlayerHandler(
 		enrollPlayerUC:          enrollUC,
 		getTournamentsUC:        gtuc,
 		getPlayerStatsUC:        gpsuc,
+		getEloTrendUC:           getEloTrendUC,
 	}
 }
 
@@ -169,11 +173,16 @@ func (h *PlayerHandler) PublicStats(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "Player not found")
 	}
 
+	singlesSVG, _ := h.getEloTrendUC.Execute(history, "singles")
+	doublesSVG, _ := h.getEloTrendUC.Execute(history, "doubles")
+
 	return c.Render("public/player-stats", merge(tMap(lang), fiber.Map{
-		"Player":       p,
-		"Tournaments":  history,
-		"Type":         "Rankings",
-		"CanonicalURL": c.BaseURL() + c.Path(),
+		"Player":          p,
+		"Tournaments":     history,
+		"EloTrendSingles": template.HTML(singlesSVG),
+		"EloTrendDoubles": template.HTML(doublesSVG),
+		"Type":            "Rankings",
+		"CanonicalURL":    c.BaseURL() + c.Path(),
 	}), "layouts/public")
 }
 

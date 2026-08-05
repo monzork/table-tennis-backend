@@ -15,6 +15,7 @@ import (
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/player"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
+	svgchartinfra "table-tennis-backend/internal/infrastructure/svgchart"
 	"table-tennis-backend/internal/interfaces/http/handler"
 
 	"github.com/gofiber/fiber/v2"
@@ -58,7 +59,8 @@ func createTestLeaderboardApp(t *testing.T) *fiber.App {
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
-	lh := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
+	distUC := leaderboard.NewGetDivisionDistributionUseCase(svgchartinfra.NewSVGGenerator())
+	lh := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
 
 	engine := html.New("../templates", ".html")
 	type CountryInfo struct {

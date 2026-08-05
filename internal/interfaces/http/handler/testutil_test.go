@@ -29,6 +29,7 @@ import (
 	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
 	securityInfra "table-tennis-backend/internal/infrastructure/security"
+	svgchartinfra "table-tennis-backend/internal/infrastructure/svgchart"
 	"table-tennis-backend/internal/interfaces/http/handler"
 	"table-tennis-backend/internal/interfaces/http/i18n"
 	"table-tennis-backend/internal/interfaces/http/middleware"
@@ -113,7 +114,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	getTournamentsUC := event.NewGetTournamentsUseCase(tournamentRepoForEnroll)
 	parentTournamentRepoForStats := bunRepo.NewTournamentRepository(db, tournamentRepoForEnroll)
 	getPlayerStatsUC := player.NewGetPlayerTournamentStatsUseCase(playerRepo, tournamentRepoForEnroll, parentTournamentRepoForStats)
-	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC, getPlayerStatsUC)
+	getEloTrendUC := player.NewGetPlayerEloTrendUseCase(svgchartinfra.NewSVGGenerator())
+	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC, getPlayerStatsUC, getEloTrendUC)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 
@@ -182,7 +184,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	broadcastPushUC := notification.NewBroadcastPushNotificationUseCase(pushSubRepo, "test-pubkey", "test-privkey")
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, broadcastPushUC, teamMatchUC, startMatchUC, divisionRepo)
 
-	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC)
+	distUC := leaderboard.NewGetDivisionDistributionUseCase(svgchartinfra.NewSVGGenerator())
+	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
 	selfRegisterUC := event.NewSelfRegisterUseCase(tournamentRepo, playerRepo)
 	publicHandler := handler.NewPublicHandler(playerUC, selfRegisterUC)

@@ -10,10 +10,13 @@ import (
 	"table-tennis-backend/internal/application/leaderboard"
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/player"
+	svgchartinfra "table-tennis-backend/internal/infrastructure/svgchart"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
 )
+
+var distUC = leaderboard.NewGetDivisionDistributionUseCase(svgchartinfra.NewSVGGenerator())
 
 type mockPlayerRepo struct {
 	player.Repository
@@ -96,28 +99,28 @@ func TestLeaderboardHandler_GetGroupedPlayers_Errors(t *testing.T) {
 	okPlayerRepo := &mockPlayerRepo{players: nil}
 
 	t.Run("getGroupedPlayers player error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(okDivRepo))
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(okDivRepo), distUC)
 		if _, err := h.getGroupedPlayers(ctx, "singles"); err == nil {
 			t.Fatal("expected error from player repo")
 		}
 	})
 
 	t.Run("getGroupedPlayers division error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(okPlayerRepo), division.NewDivisionUseCase(&erroringDivisionRepo{}))
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(okPlayerRepo), division.NewDivisionUseCase(&erroringDivisionRepo{}), distUC)
 		if _, err := h.getGroupedPlayers(ctx, "singles"); err == nil {
 			t.Fatal("expected error from division repo")
 		}
 	})
 
 	t.Run("getGroupedPlayersByGender player error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(okDivRepo))
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(okDivRepo), distUC)
 		if _, err := h.getGroupedPlayersByGender(ctx, "singles", "M"); err == nil {
 			t.Fatal("expected error from player repo")
 		}
 	})
 
 	t.Run("getGroupedPlayersByGender division error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(okPlayerRepo), division.NewDivisionUseCase(&erroringDivisionRepo{}))
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(okPlayerRepo), division.NewDivisionUseCase(&erroringDivisionRepo{}), distUC)
 		if _, err := h.getGroupedPlayersByGender(ctx, "singles", "M"); err == nil {
 			t.Fatal("expected error from division repo")
 		}
@@ -126,7 +129,7 @@ func TestLeaderboardHandler_GetGroupedPlayers_Errors(t *testing.T) {
 
 func TestLeaderboardHandler_RenderRanking_Errors(t *testing.T) {
 	t.Run("renderRanking player error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(&mockDivisionRepo{}))
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(&mockDivisionRepo{}), distUC)
 		app := fiber.New()
 		app.Get("/rankings/singles", h.GetSingles)
 		req := httptest.NewRequest("GET", "/rankings/singles", nil)
@@ -137,7 +140,7 @@ func TestLeaderboardHandler_RenderRanking_Errors(t *testing.T) {
 	})
 
 	t.Run("renderRanking division error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&mockPlayerRepo{}), division.NewDivisionUseCase(&erroringDivisionRepo{}))
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&mockPlayerRepo{}), division.NewDivisionUseCase(&erroringDivisionRepo{}), distUC)
 		app := fiber.New()
 		app.Get("/rankings/singles", h.GetSingles)
 		req := httptest.NewRequest("GET", "/rankings/singles", nil)
@@ -174,7 +177,7 @@ func TestLeaderboardHandler_GetGroupedPlayers(t *testing.T) {
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 
-	h := NewLeaderboardHandler(leaderboardUC, divisionUC)
+	h := NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
 
 	app := fiber.New()
 	ctx := app.AcquireCtx(&fasthttp.RequestCtx{})
@@ -243,7 +246,7 @@ func TestLeaderboardHandler_GetGroupedPlayersByGender(t *testing.T) {
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 
-	h := NewLeaderboardHandler(leaderboardUC, divisionUC)
+	h := NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
 
 	app := fiber.New()
 	ctx := app.AcquireCtx(&fasthttp.RequestCtx{})

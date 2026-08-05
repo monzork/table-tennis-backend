@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"html/template"
 	"sync"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/leaderboard"
@@ -12,12 +13,13 @@ import (
 )
 
 type LeaderboardHandler struct {
-	getUC      *leaderboard.GetLeaderboardUseCase
-	divisionUC *division.DivisionUseCase
+	getUC             *leaderboard.GetLeaderboardUseCase
+	divisionUC        *division.DivisionUseCase
+	getDistributionUC *leaderboard.GetDivisionDistributionUseCase
 }
 
-func NewLeaderboardHandler(uc *leaderboard.GetLeaderboardUseCase, divUC *division.DivisionUseCase) *LeaderboardHandler {
-	return &LeaderboardHandler{getUC: uc, divisionUC: divUC}
+func NewLeaderboardHandler(uc *leaderboard.GetLeaderboardUseCase, divUC *division.DivisionUseCase, distUC *leaderboard.GetDivisionDistributionUseCase) *LeaderboardHandler {
+	return &LeaderboardHandler{getUC: uc, divisionUC: divUC, getDistributionUC: distUC}
 }
 
 type DivisionGroup struct {
@@ -196,8 +198,14 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 	}
 
 	if c.Get("HX-Request") == "true" && c.Get("HX-Boosted") != "true" {
+		// Fragment responses (search/filter/sort keystrokes) never compute the
+		// distribution chart -- it would otherwise be recomputed on every
+		// request instead of once per full page load.
 		return c.Render("partials/rankings-container", data)
 	}
+
+	distSVG, _ := h.getDistributionUC.Execute(players, divisions, rankType)
+	data["DistributionSVG"] = template.HTML(distSVG)
 
 	return c.Render("rankings", data, "layouts/public")
 }

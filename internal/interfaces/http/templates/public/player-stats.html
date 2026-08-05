@@ -12,6 +12,23 @@
         <a href="javascript:history.back()" class="inline-block text-[11px] sm:text-sm text-gray-500 hover:text-white transition-colors">{{t .T "player_stats.back"}}</a>
     </header>
 
+    {{if or .EloTrendSingles .EloTrendDoubles}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {{if .EloTrendSingles}}
+        <div class="glass p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10">
+            <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">{{t .T "player_stats.elo_singles"}}</p>
+            <div class="text-white">{{.EloTrendSingles}}</div>
+        </div>
+        {{end}}
+        {{if .EloTrendDoubles}}
+        <div class="glass p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10">
+            <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">{{t .T "player_stats.elo_doubles"}}</p>
+            <div class="text-white">{{.EloTrendDoubles}}</div>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+
     {{if eq (len .Tournaments) 0}}
         <div class="glass p-12 rounded-2xl sm:rounded-3xl border border-white/10 text-center text-gray-500 italic font-light tracking-wider">
             {{t .T "player_stats.no_tournaments"}}
