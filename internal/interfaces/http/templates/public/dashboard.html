@@ -1,0 +1,48 @@
+<div class="space-y-6 sm:space-y-10 animate-fade-in text-white/90 w-full px-2 sm:px-4 max-w-5xl mx-auto">
+    <header class="text-center space-y-2 sm:space-y-4">
+        <h1 class="text-3xl sm:text-6xl font-black tracking-tight uppercase italic"><span class="text-white">{{t .T "dashboard.title"}}</span></h1>
+        <p class="text-sm sm:text-xl text-gray-400 font-light tracking-wide">{{t .T "dashboard.subtitle"}}</p>
+    </header>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="glass p-6 rounded-2xl sm:rounded-3xl border border-white/10 text-center">
+            <div class="text-3xl sm:text-4xl font-black text-white">{{.Stats.TotalPlayers}}</div>
+            <div class="text-[10px] sm:text-xs uppercase tracking-widest text-gray-500 mt-1">{{t .T "dashboard.stat_players"}}</div>
+        </div>
+        <div class="glass p-6 rounded-2xl sm:rounded-3xl border border-white/10 text-center">
+            <div class="text-3xl sm:text-4xl font-black text-white">{{.Stats.TotalTournaments}}</div>
+            <div class="text-[10px] sm:text-xs uppercase tracking-widest text-gray-500 mt-1">{{t .T "dashboard.stat_tournaments"}}</div>
+        </div>
+        <div class="glass p-6 rounded-2xl sm:rounded-3xl border border-white/10 text-center">
+            <div class="text-3xl sm:text-4xl font-black text-white">{{.Stats.TotalMatches}}</div>
+            <div class="text-[10px] sm:text-xs uppercase tracking-widest text-gray-500 mt-1">{{t .T "dashboard.stat_matches"}}</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {{if .PlayersByCountry}}
+        <div class="glass p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10">
+            <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">{{t .T "dashboard.chart_country"}}</p>
+            <div class="text-white">{{.PlayersByCountry}}</div>
+        </div>
+        {{end}}
+        {{if .EventsByFormat}}
+        <div class="glass p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10">
+            <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">{{t .T "dashboard.chart_format"}}</p>
+            <div class="text-white">{{.EventsByFormat}}</div>
+        </div>
+        {{end}}
+        {{if .ActivityByMonth}}
+        <div class="glass p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10">
+            <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">{{t .T "dashboard.chart_activity"}}</p>
+            <div class="text-white">{{.ActivityByMonth}}</div>
+        </div>
+        {{end}}
+        {{if .TopGainers}}
+        <div class="glass p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10">
+            <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">{{t .T "dashboard.chart_gainers"}}</p>
+            <div class="text-white">{{.TopGainers}}</div>
+        </div>
+        {{end}}
+    </div>
+</div>

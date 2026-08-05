@@ -243,7 +243,7 @@
             
             <!-- Logo & Lang Switcher Row (Mobile) -->
             <div class="flex items-center justify-between py-3 lg:py-0">
-                <div class="flex items-center gap-3">
+                <a href="{{if .IsAdminSession}}/admin{{else}}/dashboard{{end}}" class="flex items-center gap-3">
                     <div class="w-10 h-10 lg:w-12 lg:h-12 rounded flex items-center justify-center overflow-hidden">
                         <img src="/open_tdm.jpeg" alt="Logo" class="w-full h-full object-cover">
                     </div>
@@ -251,7 +251,7 @@
                         <span class="text-base lg:text-xl font-extrabold uppercase tracking-widest text-white leading-tight">Open TDM</span>
                         <span class="text-[8px] lg:text-xs text-gray-400 font-bold uppercase tracking-widest">{{t .T "nav.global_rankings"}}</span>
                     </div>
-                </div>
+                </a>
                 
                 <!-- Language switcher (Mobile Right) -->
                 <div class="flex lg:hidden shrink-0 items-center gap-1 bg-white/5 rounded-full border border-white/10 p-1">
@@ -280,6 +280,9 @@
                     </a>
                     <a href="/tournaments" class="snap-start shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Events"}}text-white border-b-2 border-white{{end}}">
                         {{t .T "nav.events"}}
+                    </a>
+                    <a href="/dashboard" class="snap-start shrink-0 hover:text-white transition-colors pb-1 {{if eq .Type "Dashboard"}}text-white border-b-2 border-white{{end}}">
+                        {{t .T "nav.dashboard"}}
                     </a>
 
                 </div>

@@ -16,6 +16,17 @@ var Translations = map[string]map[string]string{
 		"nav.logout":          "Logout",
 		"nav.projector":       "Projector",
 
+		// Public dashboard page
+		"dashboard.title":            "Dashboard",
+		"dashboard.subtitle":         "A snapshot of the club's activity.",
+		"dashboard.stat_players":     "Players",
+		"dashboard.stat_tournaments": "Tournaments",
+		"dashboard.stat_matches":     "Matches Played",
+		"dashboard.chart_country":    "Players by Country",
+		"dashboard.chart_format":     "Events by Format",
+		"dashboard.chart_activity":   "Tournament Activity",
+		"dashboard.chart_gainers":    "Most Improved Players",
+
 		// Rankings page
 		"rankings.title":              "Rankings",
 		"rankings.subtitle":           "Official world rankings by category.",
@@ -831,6 +842,17 @@ var Translations = map[string]map[string]string{
 		"nav.public_rankings": "Rankings",
 		"nav.logout":          "Salir",
 		"nav.projector":       "Proyector",
+
+		// Public dashboard page
+		"dashboard.title":            "Panel",
+		"dashboard.subtitle":         "Un resumen de la actividad del club.",
+		"dashboard.stat_players":     "Jugadores",
+		"dashboard.stat_tournaments": "Torneos",
+		"dashboard.stat_matches":     "Partidos Jugados",
+		"dashboard.chart_country":    "Jugadores por País",
+		"dashboard.chart_format":     "Eventos por Formato",
+		"dashboard.chart_activity":   "Actividad de Torneos",
+		"dashboard.chart_gainers":    "Jugadores Más Mejorados",
 
 		// Rankings page
 		"rankings.title":              "Clasificación",

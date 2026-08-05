@@ -175,6 +175,20 @@ func main() {
 		return ctx.Next()
 	})
 
+	// Non-blocking admin-session check, distinct from middleware.Protected:
+	// this never redirects/blocks, it just exposes whether the visitor has a
+	// valid admin session so templates (public and admin alike) can decide
+	// where "home" points. PassLocalsToViews makes IsAdminSession available
+	// in every template render without touching individual handlers.
+	app.Use(func(ctx *fiber.Ctx) error {
+		isAdmin := false
+		if sess, err := store.Get(ctx); err == nil {
+			isAdmin, _ = sess.Get("authenticated").(bool)
+		}
+		ctx.Locals("IsAdminSession", isAdmin)
+		return ctx.Next()
+	})
+
 	SetupRoutes(app, c, authMiddleware)
 
 	go func() {

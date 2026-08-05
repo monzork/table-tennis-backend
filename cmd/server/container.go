@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"table-tennis-backend/internal/application/dashboard"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
@@ -35,6 +36,7 @@ type Container struct {
 	AuthHandler         *handler.AuthHandler
 	AdminHandler        *handler.AdminHandler
 	NotificationHandler *handler.NotificationHandler
+	DashboardHandler    *handler.DashboardHandler
 }
 
 func NewContainer(store *session.Store, cfg Config) *Container {
@@ -171,6 +173,11 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 
 	notificationHandler := handler.NewNotificationHandler(notificationRepo, cfg.VAPIDPublicKey, broadcastNotificationUC)
+
+	dashboardRepo := bun.NewDashboardRepository(bun.DB)
+	getDashboardViewUC := dashboard.NewGetPublicDashboardViewUseCase(dashboardRepo, chartGenerator)
+	dashboardHandler := handler.NewDashboardHandler(getDashboardViewUC)
+
 	return &Container{
 		PlayerHandler:       playerHandler,
 		EventHandler:        tournamentHandler,
@@ -183,5 +190,6 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		AuthHandler:         authHandler,
 		AdminHandler:        adminHandler,
 		NotificationHandler: notificationHandler,
+		DashboardHandler:    dashboardHandler,
 	}
 }

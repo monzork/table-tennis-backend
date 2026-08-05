@@ -15,6 +15,7 @@ import (
 	"github.com/uptrace/bun/dialect/sqlitedialect"
 	_ "modernc.org/sqlite"
 
+	dashboardApp "table-tennis-backend/internal/application/dashboard"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
@@ -187,6 +188,9 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	distUC := leaderboard.NewGetDivisionDistributionUseCase(svgchartinfra.NewSVGGenerator())
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
+	dashboardRepo := bunRepo.NewDashboardRepository(db)
+	getDashboardViewUC := dashboardApp.NewGetPublicDashboardViewUseCase(dashboardRepo, svgchartinfra.NewSVGGenerator())
+	dashboardHandler := handler.NewDashboardHandler(getDashboardViewUC)
 	selfRegisterUC := event.NewSelfRegisterUseCase(tournamentRepo, playerRepo)
 	publicHandler := handler.NewPublicHandler(playerUC, selfRegisterUC)
 
@@ -309,9 +313,23 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 		return c.Next()
 	})
 
+	// Non-blocking admin-session check, mirroring cmd/server/main.go.
+	sessStore := store // capture by value: `store` is a shared package var some
+	// nested SetupTestApp() calls in other subtests reassign; middleware.Protected
+	// below captures its store argument at construction time the same way.
+	app.Use(func(c *fiber.Ctx) error {
+		isAdmin := false
+		if sess, err := sessStore.Get(c); err == nil {
+			isAdmin, _ = sess.Get("authenticated").(bool)
+		}
+		c.Locals("IsAdminSession", isAdmin)
+		return c.Next()
+	})
+
 	adminHandler := handler.NewAdminHandler(playerUC, createTournamentUC, createMatchUC, GetMatchesUC, leaderboardUC, getTournamentsUC, divisionUC, getAllEventsUC)
 
 	app.Get("/rankings/singles", leaderboardHandler.GetSingles)
+	app.Get("/dashboard", dashboardHandler.Public)
 	app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)
 	app.Get("/players/department-input", publicHandler.DepartmentInput)
 	app.Get("/players/:id/stats", playerHandler.PublicStats)
