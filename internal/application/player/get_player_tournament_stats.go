@@ -17,6 +17,7 @@ import (
 type PlayerEventStatsView struct {
 	Event            *tournamentEvent.Event
 	Stats            tournamentEvent.PlayerEventStats
+	Matches          []tournamentEvent.PlayerMatchDetail
 	Participated     bool // false if the player was registered but never actually played a match
 	EloBeforeSingles *int16
 	EloAfterSingles  *int16
@@ -29,6 +30,15 @@ type PlayerEventStatsView struct {
 type PlayerTournamentView struct {
 	Tournament *tournament.Tournament
 	Events     []PlayerEventStatsView
+}
+
+// TotalMatchesPlayed sums matches played across all events within this tournament.
+func (v PlayerTournamentView) TotalMatchesPlayed() int {
+	total := 0
+	for _, ev := range v.Events {
+		total += ev.Stats.Played
+	}
+	return total
 }
 
 type GetPlayerTournamentStatsUseCase struct {
@@ -127,6 +137,7 @@ func (uc *GetPlayerTournamentStatsUseCase) Execute(ctx context.Context, playerID
 		view := PlayerEventStatsView{
 			Event:        ev,
 			Stats:        stats,
+			Matches:      tournamentEvent.BuildPlayerMatchDetails(playerID, ev.Matches),
 			Participated: stats.Played > 0,
 		}
 		if snap, ok := snapshotsByEvent[ev.ID]; ok {

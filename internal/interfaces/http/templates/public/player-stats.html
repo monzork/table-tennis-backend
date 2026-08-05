@@ -42,7 +42,7 @@
                         {{$tv.Tournament.Name}}
                     </a>
                     <span class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">
-                        {{$tv.Tournament.StartDate.Format "Jan 02, 2006"}}
+                        {{$tv.Tournament.StartDate.Format "Jan 02, 2006"}} &middot; {{$tv.TotalMatchesPlayed}} {{t $.T "player_stats.played"}}
                     </span>
                 </div>
 
@@ -79,6 +79,24 @@
                                 <div class="text-[9px] uppercase tracking-widest text-gray-500 mt-0.5">{{t $.T "player_stats.points"}}</div>
                             </div>
                         </div>
+
+                        {{if $ev.Matches}}
+                        <div class="mt-3 space-y-1.5">
+                            <p class="text-[9px] uppercase tracking-widest text-gray-500">{{t $.T "player_stats.matches"}}</p>
+                            {{range $m := $ev.Matches}}
+                            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-[11px] sm:text-xs">
+                                <span class="text-gray-300">
+                                    <span class="{{if $m.Won}}text-green-400{{else}}text-red-400{{end}} font-bold uppercase mr-1">{{if $m.Won}}W{{else}}L{{end}}</span>
+                                    {{t $.T "player_stats.vs"}} <span class="font-bold text-gray-200">{{$m.Opponent}}</span>
+                                </span>
+                                <span class="text-gray-400 font-mono">
+                                    <span class="font-bold text-white">{{$m.SetsWon}}-{{$m.SetsLost}}</span>
+                                    {{range $s := $m.Sets}}<span class="ml-2">{{$s.Own}}-{{$s.Opponent}}</span>{{end}}
+                                </span>
+                            </div>
+                            {{end}}
+                        </div>
+                        {{end}}
                         {{end}}
 
                         {{if or $ev.EloBeforeSingles $ev.EloBeforeDoubles}}

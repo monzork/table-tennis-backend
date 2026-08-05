@@ -244,6 +244,8 @@ var Translations = map[string]map[string]string{
 		"player_stats.points":              "Points",
 		"player_stats.elo_singles":         "Singles Elo",
 		"player_stats.elo_doubles":         "Doubles Elo",
+		"player_stats.vs":                  "vs",
+		"player_stats.matches":             "Matches",
 
 		// Bracket
 		"bracket.participants":     "Participants",
@@ -1071,6 +1073,8 @@ var Translations = map[string]map[string]string{
 		"player_stats.points":              "Puntos",
 		"player_stats.elo_singles":         "Elo Individual",
 		"player_stats.elo_doubles":         "Elo Dobles",
+		"player_stats.vs":                  "vs",
+		"player_stats.matches":             "Partidos",
 
 		// Bracket
 		"bracket.participants":     "Participantes",

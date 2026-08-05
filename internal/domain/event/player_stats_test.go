@@ -96,3 +96,54 @@ func TestBuildAllPlayerEventStats(t *testing.T) {
 		}
 	})
 }
+
+func TestBuildPlayerMatchDetails(t *testing.T) {
+	p1 := &player.Player{ID: "p1", FirstName: "Ana"}
+	p2 := &player.Player{ID: "p2", FirstName: "Beto"}
+
+	t.Run("normalizes score and sets to the player's own perspective on both sides", func(t *testing.T) {
+		matches := []Match{
+			{
+				Status: "finished", WinnerTeam: "A",
+				TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2},
+				Sets: []MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}, {Number: 2, ScoreA: 11, ScoreB: 7}},
+			},
+			{
+				Status: "finished", WinnerTeam: "A",
+				TeamA: []*player.Player{p2}, TeamB: []*player.Player{p1},
+				Sets: []MatchSet{{Number: 1, ScoreA: 11, ScoreB: 6}},
+			},
+		}
+
+		details := BuildPlayerMatchDetails("p1", matches)
+		if len(details) != 2 {
+			t.Fatalf("expected 2 matches, got %d", len(details))
+		}
+
+		won := details[0]
+		if !won.Won || won.Opponent != "Beto " || won.SetsWon != 2 || won.SetsLost != 0 {
+			t.Errorf("unexpected result as team A: %+v", won)
+		}
+		if won.Sets[0] != (PlayerSetScore{Number: 1, Own: 11, Opponent: 5}) {
+			t.Errorf("unexpected set from team A perspective: %+v", won.Sets[0])
+		}
+
+		lost := details[1]
+		if lost.Won || lost.Opponent != "Beto " || lost.SetsWon != 0 || lost.SetsLost != 1 {
+			t.Errorf("unexpected result as team B: %+v", lost)
+		}
+		if lost.Sets[0] != (PlayerSetScore{Number: 1, Own: 6, Opponent: 11}) {
+			t.Errorf("unexpected set from team B perspective: %+v", lost.Sets[0])
+		}
+	})
+
+	t.Run("skips unfinished matches and matches the player wasn't in", func(t *testing.T) {
+		matches := []Match{
+			{Status: "in_progress", TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2}},
+			{Status: "finished", TeamA: []*player.Player{p2}, TeamB: []*player.Player{p2}, WinnerTeam: "A"},
+		}
+		if details := BuildPlayerMatchDetails("p1", matches); len(details) != 0 {
+			t.Errorf("expected no matches, got %+v", details)
+		}
+	})
+}
