@@ -219,6 +219,18 @@ var Translations = map[string]map[string]string{
 		// Rankings table
 		"rankings_table.pts":      "pts",
 		"rankings_table.no_match": "No matching players found.",
+		"rankings_table.view":     "View stats",
+
+		// Player tournament stats page
+		"player_stats.eyebrow":        "Player Profile",
+		"player_stats.back":           "← Back",
+		"player_stats.no_tournaments": "This player hasn't participated in any tournaments yet.",
+		"player_stats.played":         "Played",
+		"player_stats.record":         "W-L",
+		"player_stats.sets":           "Sets",
+		"player_stats.points":         "Points",
+		"player_stats.elo_singles":    "Singles Elo",
+		"player_stats.elo_doubles":    "Doubles Elo",
 
 		// Bracket
 		"bracket.participants":     "Participants",
@@ -1021,6 +1033,18 @@ var Translations = map[string]map[string]string{
 		// Rankings table
 		"rankings_table.pts":      "pts",
 		"rankings_table.no_match": "No se encontraron jugadores.",
+		"rankings_table.view":     "Ver estadísticas",
+
+		// Player tournament stats page
+		"player_stats.eyebrow":        "Perfil del Jugador",
+		"player_stats.back":           "← Volver",
+		"player_stats.no_tournaments": "Este jugador aún no ha participado en ningún torneo.",
+		"player_stats.played":         "Jugados",
+		"player_stats.record":         "G-P",
+		"player_stats.sets":           "Sets",
+		"player_stats.points":         "Puntos",
+		"player_stats.elo_singles":    "Elo Individual",
+		"player_stats.elo_doubles":    "Elo Dobles",
 
 		// Bracket
 		"bracket.participants":     "Participantes",

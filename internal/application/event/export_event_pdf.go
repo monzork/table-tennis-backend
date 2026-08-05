@@ -28,5 +28,6 @@ func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDS
 		return nil, err
 	}
 	divs, _ := uc.divisionRepo.GetAll(ctx)
+	t.ParticipantSnapshots, _ = uc.tournamentRepo.GetParticipantSnapshots(ctx, tournamentIDStr)
 	return uc.pdfGenerator.GenerateTournamentReport(t, divs)
 }

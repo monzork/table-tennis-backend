@@ -32,8 +32,13 @@
                     {{.Country}}
                 </div>
             </td>
-            <td class="py-6 px-4 text-right font-black text-3xl italic text-white tracking-tight pr-8">
-                {{if eq $.RankType "doubles"}}{{.DoublesElo}}{{else}}{{.SinglesElo}}{{end}}
+            <td class="py-6 px-4 text-right pr-8">
+                <div class="flex items-center justify-end gap-3">
+                    <span class="font-black text-3xl italic text-white tracking-tight">{{if eq $.RankType "doubles"}}{{.DoublesElo}}{{else}}{{.SinglesElo}}{{end}}</span>
+                    <a href="/players/{{.ID}}/stats" title="{{t $.T "rankings_table.view"}}" class="shrink-0 w-9 h-9 rounded-lg bg-black/60 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:border-white/30 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </a>
+                </div>
             </td>
         </tr>
 
@@ -66,6 +71,11 @@
                         </div>
                         <div class="text-[9px] font-bold uppercase tracking-widest text-gray-500 mt-0.5">{{t $.T "rankings_table.pts"}}</div>
                     </div>
+
+                    {{/* View stats */}}
+                    <a href="/players/{{.ID}}/stats" title="{{t $.T "rankings_table.view"}}" class="shrink-0 w-9 h-9 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center text-gray-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </a>
                 </div>
             </td>
         </tr>

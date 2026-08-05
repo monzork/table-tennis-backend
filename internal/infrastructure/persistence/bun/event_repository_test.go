@@ -312,6 +312,47 @@ func TestEventRepository_GetByTournamentID(t *testing.T) {
 	}
 }
 
+func TestEventRepository_GetByParticipantID(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	playerRepo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	e1 := newBareEvent(t, "Event With Player", nil)
+	if err := eventRepo.Save(ctx, e1); err != nil {
+		t.Fatalf("Save e1: %v", err)
+	}
+	e2 := newBareEvent(t, "Event Without Player", nil)
+	if err := eventRepo.Save(ctx, e2); err != nil {
+		t.Fatalf("Save e2: %v", err)
+	}
+
+	p1 := savePlayer(t, playerRepo, "Part", "Icipant", "M")
+	if err := eventRepo.AddParticipant(ctx, e1.ID, p1.ID, 1000, 1000); err != nil {
+		t.Fatalf("AddParticipant: %v", err)
+	}
+
+	got, err := eventRepo.GetByParticipantID(ctx, p1.ID)
+	if err != nil {
+		t.Fatalf("GetByParticipantID: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 event for participant, got %d", len(got))
+	}
+	if got[0].ID != e1.ID {
+		t.Fatalf("expected event %s, got %s", e1.ID, got[0].ID)
+	}
+
+	p2 := savePlayer(t, playerRepo, "No", "Events", "F")
+	none, err := eventRepo.GetByParticipantID(ctx, p2.ID)
+	if err != nil {
+		t.Fatalf("GetByParticipantID (none): %v", err)
+	}
+	if len(none) != 0 {
+		t.Fatalf("expected 0 events for player with no participation, got %d", len(none))
+	}
+}
+
 func TestEventRepository_TeamLifecycle(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)

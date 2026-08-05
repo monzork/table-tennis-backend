@@ -204,6 +204,9 @@ func (m *mockEventRepo) GetOfficials(ctx context.Context, tournamentID string) (
 func (m *mockEventRepo) GetTournamentNumTables(ctx context.Context, eventID string) (int, error) {
 	return 4, nil
 }
+func (m *mockEventRepo) GetByParticipantID(ctx context.Context, playerID string) ([]*eventDomain.Event, error) {
+	return nil, nil
+}
 
 type mockGrandRepo struct {
 	grands map[string]*grandDomain.Tournament

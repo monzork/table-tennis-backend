@@ -47,6 +47,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	app.Get("/tournaments/:id/tv", c.TournamentHandler.PublicTVDashboard)
 
 	app.Get("/players/department-input", c.PublicHandler.DepartmentInput)
+	app.Get("/players/:id/stats", c.PlayerHandler.PublicStats)
 
 	// Language Switcher
 	app.Get("/lang/:locale", c.PublicHandler.SetLang)

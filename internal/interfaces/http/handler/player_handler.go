@@ -22,6 +22,7 @@ type PlayerHandler struct {
 	importPlayersUC         *player.ImportPlayersUseCase
 	enrollPlayerUC          *event.EnrollPlayerUseCase
 	getTournamentsUC        *event.GetTournamentsUseCase
+	getPlayerStatsUC        *player.GetPlayerTournamentStatsUseCase
 }
 
 func NewPlayerHandler(
@@ -34,6 +35,7 @@ func NewPlayerHandler(
 	iuc *player.ImportPlayersUseCase,
 	enrollUC *event.EnrollPlayerUseCase,
 	gtuc *event.GetTournamentsUseCase,
+	gpsuc *player.GetPlayerTournamentStatsUseCase,
 ) *PlayerHandler {
 	return &PlayerHandler{
 		registerPlayerUC:        uc,
@@ -45,6 +47,7 @@ func NewPlayerHandler(
 		importPlayersUC:         iuc,
 		enrollPlayerUC:          enrollUC,
 		getTournamentsUC:        gtuc,
+		getPlayerStatsUC:        gpsuc,
 	}
 }
 
@@ -152,6 +155,26 @@ func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
 		"Player": p,
 		"Events": activeTournaments,
 	}))
+}
+
+// PublicStats renders a player's public tournament history: every tournament
+// they've played in, and their per-tournament match/Elo record.
+// Route: GET /players/:id/stats
+func (h *PlayerHandler) PublicStats(c *fiber.Ctx) error {
+	id := c.Params("id")
+	lang := getLang(c)
+
+	p, history, err := h.getPlayerStatsUC.Execute(c.Context(), id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "Player not found")
+	}
+
+	return c.Render("public/player-stats", merge(tMap(lang), fiber.Map{
+		"Player":       p,
+		"Tournaments":  history,
+		"Type":         "Rankings",
+		"CanonicalURL": c.BaseURL() + c.Path(),
+	}), "layouts/public")
 }
 
 func (h *PlayerHandler) Search(c *fiber.Ctx) error {

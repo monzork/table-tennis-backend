@@ -81,7 +81,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	})
 	updateParticipantEloUC := event.NewUpdateParticipantEloBeforeUseCase(eventRepo, regenerateSeedsUC)
 	addGroupUC := event.NewAddGroupUseCase(eventRepo)
-	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC)
+	getPlayerStatsUC := player.NewGetPlayerTournamentStatsUseCase(playerRepo, eventRepo, tournamentRepo)
+	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC, getPlayerStatsUC)
 
 	tournamentHandler := handler.NewEventHandler(
 		createTournamentUC,
@@ -114,7 +115,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		event.NewGetBoardViewUseCase(getTournamentByIDUC, divisionUC),
 		event.NewGetEditFormViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
 	)
-	exportEventPdfUC := event.NewExportEventPdfUseCase(tournamentRepo, divisionRepo, pdfGenerator)
+	exportEventPdfUC := event.NewExportEventPdfUseCase(tournamentRepo, eventRepo, divisionRepo, pdfGenerator)
 	createEventUC := tournament.NewCreateEventUseCase(tournamentRepo, eventRepo, playerRepo, divisionRepo)
 	getEventByIDUC := tournament.NewGetEventByIDUseCase(tournamentRepo)
 	getAllEventsUC := tournament.NewGetAllEventsUseCase(tournamentRepo)

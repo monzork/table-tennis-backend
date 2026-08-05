@@ -188,6 +188,10 @@ func (m *mockRepo) GetTournamentNumTables(ctx context.Context, eventID string) (
 	return m.numTables, m.numTablesErr
 }
 
+func (m *mockRepo) GetByParticipantID(ctx context.Context, playerID string) ([]*tournamentDomain.Event, error) {
+	return nil, nil
+}
+
 // ─── event.MatchRepository mock ────────────────────────────────────────────
 
 type mockMatchRepo struct {

@@ -63,7 +63,7 @@ func TestExportEventPdfUseCase_Execute(t *testing.T) {
 		repo.tournaments["e1"] = &singleTournamentDomain.Tournament{ID: "e1"}
 		divRepo := &mockDivisionRepo{}
 		pdfGen := &mockPdfGenerator{eventReportBytes: []byte("event-pdf")}
-		uc := NewExportEventPdfUseCase(repo, divRepo, pdfGen)
+		uc := NewExportEventPdfUseCase(repo, newMockRepo(), divRepo, pdfGen)
 
 		data, err := uc.Execute(context.Background(), "e1")
 		if err != nil {
@@ -77,7 +77,7 @@ func TestExportEventPdfUseCase_Execute(t *testing.T) {
 	t.Run("event repo error propagates", func(t *testing.T) {
 		repo := newMockSingleTournamentRepo()
 		repo.getByIDDeepErr = errors.New("db error")
-		uc := NewExportEventPdfUseCase(repo, &mockDivisionRepo{}, &mockPdfGenerator{})
+		uc := NewExportEventPdfUseCase(repo, newMockRepo(), &mockDivisionRepo{}, &mockPdfGenerator{})
 
 		_, err := uc.Execute(context.Background(), "missing")
 		if err == nil {
@@ -89,7 +89,7 @@ func TestExportEventPdfUseCase_Execute(t *testing.T) {
 		repo := newMockSingleTournamentRepo()
 		repo.tournaments["e1"] = &singleTournamentDomain.Tournament{ID: "e1"}
 		divRepo := &mockDivisionRepo{getAllErr: errors.New("boom")}
-		uc := NewExportEventPdfUseCase(repo, divRepo, &mockPdfGenerator{})
+		uc := NewExportEventPdfUseCase(repo, newMockRepo(), divRepo, &mockPdfGenerator{})
 
 		_, err := uc.Execute(context.Background(), "e1")
 		if err == nil {

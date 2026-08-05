@@ -171,6 +171,9 @@ func (m *mockSubTourneyRepo) GetOfficials(ctx context.Context, tournamentID stri
 func (m *mockSubTourneyRepo) GetTournamentNumTables(ctx context.Context, eventID string) (int, error) {
 	return 4, nil
 }
+func (m *mockSubTourneyRepo) GetByParticipantID(ctx context.Context, playerID string) ([]*subTourneyDomain.Event, error) {
+	return nil, nil
+}
 
 // ── Mock Player Repository ────────────────────────────────────────────────
 

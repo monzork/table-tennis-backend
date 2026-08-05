@@ -1305,6 +1305,53 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 			}
 		}
 	}
+
+	// 6. PLAYER STATISTICS (per participant, all stages including knockout)
+	if len(t.Participants) > 0 {
+		statsByPlayer := event.BuildAllPlayerEventStats(t.Matches)
+		snapshotByPlayer := make(map[string]event.ParticipantSnapshot, len(t.ParticipantSnapshots))
+		for _, snap := range t.ParticipantSnapshots {
+			snapshotByPlayer[snap.PlayerID] = snap
+		}
+		isDoublesType := t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams"
+
+		writeHeader("ESTADÍSTICAS DE JUGADORES")
+
+		pdf.SetFont("Arial", "B", 8)
+		pdf.SetFillColor(245, 247, 250)
+		pdf.CellFormat(55, 7, tr("Jugador"), "1", 0, "L", true, 0, "")
+		pdf.CellFormat(20, 7, tr("Jug."), "1", 0, "C", true, 0, "")
+		pdf.CellFormat(20, 7, tr("G-P"), "1", 0, "C", true, 0, "")
+		pdf.CellFormat(25, 7, tr("Sets"), "1", 0, "C", true, 0, "")
+		pdf.CellFormat(25, 7, tr("Puntos"), "1", 0, "C", true, 0, "")
+		pdf.CellFormat(35, 7, tr("Elo"), "1", 1, "C", true, 0, "")
+
+		pdf.SetFont("Arial", "", 8)
+		for _, p := range t.Participants {
+			stats := statsByPlayer[p.ID]
+			eloStr := "-"
+			if snap, ok := snapshotByPlayer[p.ID]; ok {
+				before, after := snap.EloBeforeSingles, snap.EloAfterSingles
+				if isDoublesType {
+					before, after = snap.EloBeforeDoubles, snap.EloAfterDoubles
+				}
+				if before != nil {
+					if after != nil {
+						eloStr = fmt.Sprintf("%d -> %d", *before, *after)
+					} else {
+						eloStr = fmt.Sprintf("%d", *before)
+					}
+				}
+			}
+
+			pdf.CellFormat(55, 6, tr(truncateStr(formatPlayerName(p), 32)), "1", 0, "L", false, 0, "")
+			pdf.CellFormat(20, 6, fmt.Sprintf("%d", stats.Played), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(20, 6, fmt.Sprintf("%d-%d", stats.Wins, stats.Losses), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25, 6, fmt.Sprintf("%d-%d", stats.SetsWon, stats.SetsLost), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25, 6, fmt.Sprintf("%d-%d", stats.PointsWon, stats.PointsLost), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(35, 6, eloStr, "1", 1, "C", false, 0, "")
+		}
+	}
 }
 
 type GroupStanding struct {

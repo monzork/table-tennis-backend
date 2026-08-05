@@ -1046,6 +1046,34 @@ func (r *EventRepository) GetByTournamentID(ctx context.Context, tournamentID uu
 		Scan(ctx); err != nil {
 		return nil, err
 	}
+	return r.hydrateEvents(ctx, models, deep)
+}
+
+// GetByParticipantID returns every event a player is registered in (as a
+// direct participant), fully hydrated with matches for stats purposes. All
+// relations are batch-loaded (see hydrateEvents) to avoid N+1 queries.
+func (r *EventRepository) GetByParticipantID(ctx context.Context, playerID string) ([]*event.Event, error) {
+	pID, err := uuid.Parse(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	var models []EventModel
+	if err := ExtractDB(ctx, r.db).NewSelect().
+		Model(&models).
+		Relation("StageRules").
+		Where("id IN (SELECT event_id FROM event_participants WHERE player_id = ?)", pID).
+		Order("start_date DESC").
+		Scan(ctx); err != nil {
+		return nil, err
+	}
+	return r.hydrateEvents(ctx, models, true)
+}
+
+// hydrateEvents batch-loads all relations (participants, teams, groups,
+// matches, sets) for the given event base models in a small, fixed number
+// of parallel queries, regardless of how many events are being loaded.
+func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel, deep bool) ([]*event.Event, error) {
 	if len(models) == 0 {
 		return nil, nil
 	}

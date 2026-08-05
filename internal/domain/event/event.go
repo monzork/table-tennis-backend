@@ -180,6 +180,10 @@ type Event struct {
 	Metrics               *TournamentMetrics
 	ManualSeedingLocked   bool
 	KnockoutBracketsCount int
+	// ParticipantSnapshots carries each participant's Elo before/after this
+	// event. It is only populated by callers that need it (e.g. PDF export);
+	// nil elsewhere.
+	ParticipantSnapshots []ParticipantSnapshot
 }
 
 func NewEvent(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Event, error) {
@@ -396,6 +400,7 @@ type EventRepository interface {
 	UpdateGroups(ctx context.Context, t *Event) error
 	Delete(ctx context.Context, id string) error
 	GetTournamentNumTables(ctx context.Context, tournamentID string) (int, error)
+	GetByParticipantID(ctx context.Context, playerID string) ([]*Event, error)
 }
 
 // ParticipantRepository manages player participation and Elo snapshots within an event.

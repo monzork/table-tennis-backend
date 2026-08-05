@@ -9,8 +9,12 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
+	playerDomain "table-tennis-backend/internal/domain/player"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
+
+	"github.com/google/uuid"
 )
 
 func TestPlayerHandler(t *testing.T) {
@@ -437,6 +441,36 @@ func TestPlayerHandler(t *testing.T) {
 		}
 		if ct := resp.Header.Get("Content-Type"); ct != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" {
 			t.Errorf("expected xlsx Content-Type, got %v", ct)
+		}
+	})
+
+	t.Run("PublicStats - player with no tournaments", func(t *testing.T) {
+		p, err := playerDomain.NewPlayer(uuid.NewString(), "Stats", "Viewer", time.Now(), "M", "USA", "", "")
+		if err != nil {
+			t.Fatalf("NewPlayer: %v", err)
+		}
+		if err := bunRepo.NewPlayerRepository(db).Save(context.Background(), p); err != nil {
+			t.Fatalf("Save player: %v", err)
+		}
+
+		req := httptest.NewRequest("GET", "/players/"+p.ID+"/stats", nil)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("PublicStats - player not found", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/players/does-not-exist/stats", nil)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 404 {
+			t.Errorf("expected 404, got %v", resp.StatusCode)
 		}
 	})
 }

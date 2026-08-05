@@ -1,0 +1,78 @@
+<div class="space-y-6 sm:space-y-10 animate-fade-in text-white/90 w-full px-2 sm:px-4 max-w-5xl mx-auto">
+    <header class="text-center space-y-2 sm:space-y-4">
+        <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">{{t .T "player_stats.eyebrow"}}</p>
+        <h1 class="text-3xl sm:text-6xl font-black tracking-tight uppercase italic">
+            <span class="font-light text-gray-400 mr-1">{{.Player.FirstNameWithSecond}}</span><span class="text-white">{{.Player.LastNameWithSecond}}</span>
+        </h1>
+        <div class="flex items-center justify-center gap-3 text-xs sm:text-sm text-gray-400 font-light tracking-wide">
+            {{if .Player.Country}}<span class="px-3 py-1 rounded-lg bg-black/50 border border-white/10 font-bold tracking-widest">{{.Player.Country}}</span>{{end}}
+            <span>{{t .T "player_stats.elo_singles"}}: <span class="text-white font-bold">{{.Player.SinglesElo}}</span></span>
+            <span>{{t .T "player_stats.elo_doubles"}}: <span class="text-white font-bold">{{.Player.DoublesElo}}</span></span>
+        </div>
+        <a href="javascript:history.back()" class="inline-block text-[11px] sm:text-sm text-gray-500 hover:text-white transition-colors">{{t .T "player_stats.back"}}</a>
+    </header>
+
+    {{if eq (len .Tournaments) 0}}
+        <div class="glass p-12 rounded-2xl sm:rounded-3xl border border-white/10 text-center text-gray-500 italic font-light tracking-wider">
+            {{t .T "player_stats.no_tournaments"}}
+        </div>
+    {{else}}
+        <div class="space-y-6">
+        {{range $tv := .Tournaments}}
+            <div class="glass rounded-2xl sm:rounded-3xl border border-white/10 overflow-hidden">
+                <div class="px-4 py-4 sm:px-6 sm:py-5 bg-black/40 border-b border-white/10 flex flex-wrap items-baseline justify-between gap-2">
+                    <a href="/tournaments/{{$tv.Tournament.ID}}" class="text-lg sm:text-2xl font-black uppercase italic tracking-wide text-white hover:text-gray-300 transition-colors">
+                        {{$tv.Tournament.Name}}
+                    </a>
+                    <span class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">
+                        {{$tv.Tournament.StartDate.Format "Jan 02, 2006"}}
+                    </span>
+                </div>
+
+                <div class="divide-y divide-white/5">
+                {{range $ev := $tv.Events}}
+                    <div class="px-4 py-4 sm:px-6 sm:py-5">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <span class="text-sm sm:text-base font-bold text-gray-200">{{$ev.Event.Name}}</span>
+                            <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-black/40 border border-white/10 px-2 py-0.5 rounded">
+                                {{$ev.Event.EventCategory}} &middot; {{$ev.Event.Type}}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                            <div class="bg-black/40 border border-white/10 rounded-xl p-3 text-center">
+                                <div class="text-lg sm:text-2xl font-black text-white">{{$ev.Stats.Played}}</div>
+                                <div class="text-[9px] uppercase tracking-widest text-gray-500 mt-0.5">{{t $.T "player_stats.played"}}</div>
+                            </div>
+                            <div class="bg-black/40 border border-white/10 rounded-xl p-3 text-center">
+                                <div class="text-lg sm:text-2xl font-black"><span class="text-green-400">{{$ev.Stats.Wins}}</span><span class="text-gray-600">-</span><span class="text-red-400">{{$ev.Stats.Losses}}</span></div>
+                                <div class="text-[9px] uppercase tracking-widest text-gray-500 mt-0.5">{{t $.T "player_stats.record"}}</div>
+                            </div>
+                            <div class="bg-black/40 border border-white/10 rounded-xl p-3 text-center">
+                                <div class="text-lg sm:text-2xl font-black text-gray-200">{{$ev.Stats.SetsWon}}<span class="text-gray-600">-</span>{{$ev.Stats.SetsLost}}</div>
+                                <div class="text-[9px] uppercase tracking-widest text-gray-500 mt-0.5">{{t $.T "player_stats.sets"}}</div>
+                            </div>
+                            <div class="bg-black/40 border border-white/10 rounded-xl p-3 text-center">
+                                <div class="text-lg sm:text-2xl font-black text-gray-200">{{$ev.Stats.PointsWon}}<span class="text-gray-600">-</span>{{$ev.Stats.PointsLost}}</div>
+                                <div class="text-[9px] uppercase tracking-widest text-gray-500 mt-0.5">{{t $.T "player_stats.points"}}</div>
+                            </div>
+                        </div>
+
+                        {{if or $ev.EloBeforeSingles $ev.EloBeforeDoubles}}
+                        <div class="flex flex-wrap gap-4 mt-3 text-[11px] sm:text-xs text-gray-400">
+                            {{if $ev.EloBeforeSingles}}
+                            <span>{{t $.T "player_stats.elo_singles"}}: <span class="text-gray-300 font-bold">{{$ev.EloBeforeSingles}}</span> → <span class="text-white font-bold">{{if $ev.EloAfterSingles}}{{$ev.EloAfterSingles}}{{else}}{{$ev.EloBeforeSingles}}{{end}}</span></span>
+                            {{end}}
+                            {{if $ev.EloBeforeDoubles}}
+                            <span>{{t $.T "player_stats.elo_doubles"}}: <span class="text-gray-300 font-bold">{{$ev.EloBeforeDoubles}}</span> → <span class="text-white font-bold">{{if $ev.EloAfterDoubles}}{{$ev.EloAfterDoubles}}{{else}}{{$ev.EloBeforeDoubles}}{{end}}</span></span>
+                            {{end}}
+                        </div>
+                        {{end}}
+                    </div>
+                {{end}}
+                </div>
+            </div>
+        {{end}}
+        </div>
+    {{end}}
+</div>

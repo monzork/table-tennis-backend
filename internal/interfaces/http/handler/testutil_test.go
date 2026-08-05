@@ -111,7 +111,9 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	dispatcher := tournaments.NewInMemoryDispatcher()
 	enrollPlayerUC := event.NewEnrollPlayerUseCase(tournamentRepoForEnroll, dispatcher)
 	getTournamentsUC := event.NewGetTournamentsUseCase(tournamentRepoForEnroll)
-	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC)
+	parentTournamentRepoForStats := bunRepo.NewTournamentRepository(db, tournamentRepoForEnroll)
+	getPlayerStatsUC := player.NewGetPlayerTournamentStatsUseCase(playerRepo, tournamentRepoForEnroll, parentTournamentRepoForStats)
+	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC, getPlayerStatsUC)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 
@@ -160,7 +162,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	)
 
 	eventRepo := bunRepo.NewTournamentRepository(db, tournamentRepo)
-	exportEventPdfUC := event.NewExportEventPdfUseCase(eventRepo, divisionRepo, pdfGen)
+	exportEventPdfUC := event.NewExportEventPdfUseCase(eventRepo, tournamentRepo, divisionRepo, pdfGen)
 	createEventUC := tournament.NewCreateEventUseCase(eventRepo, tournamentRepo, playerRepo, divisionRepo)
 	updateEventUC := tournament.NewUpdateEventUseCase(eventRepo)
 	getEventByIDUC := tournament.NewGetEventByIDUseCase(eventRepo)
@@ -309,6 +311,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	app.Get("/rankings/singles", leaderboardHandler.GetSingles)
 	app.Get("/rankings/doubles", leaderboardHandler.GetDoubles)
 	app.Get("/players/department-input", publicHandler.DepartmentInput)
+	app.Get("/players/:id/stats", playerHandler.PublicStats)
 	app.Get("/register", publicHandler.ShowSignup)
 	app.Post("/register", publicHandler.Register)
 	app.Get("/events/register", publicHandler.ShowTournamentRegistration)
