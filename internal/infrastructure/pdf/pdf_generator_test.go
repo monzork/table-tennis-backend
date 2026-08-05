@@ -224,6 +224,46 @@ func TestGoFpdfGenerator_GenerateEventReport(t *testing.T) {
 	}
 }
 
+// TestGoFpdfGenerator_GenerateTournamentReport_PlayerStatsGetsOwnPage guards
+// against a regression where the player-statistics section (which draws with
+// flowing CellFormat calls) continued on whatever page the bracket section
+// (which draws with absolute coordinates and never advances fpdf's page/
+// cursor state) left the cursor on — including a still-open landscape
+// bracket page when the optional Metrics section was skipped, causing the
+// stats table to render on top of the bracket.
+func TestGoFpdfGenerator_GenerateTournamentReport_PlayerStatsGetsOwnPage(t *testing.T) {
+	gen := pdf.NewGoFpdfGenerator()
+
+	pA1 := &player.Player{ID: "pA1", FirstName: "A1", LastName: "Alpha", Gender: "M", SinglesElo: 1600}
+	pA2 := &player.Player{ID: "pA2", FirstName: "A2", LastName: "Alpha", Gender: "M", SinglesElo: 1500}
+	win3 := []event.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}}
+	matches := []event.Match{
+		{ID: "final1", Stage: "final", Status: "finished", DivisionID: "div1", WinnerTeam: "A", TeamA: []*player.Player{pA1}, TeamB: []*player.Player{pA2}, Sets: win3},
+	}
+	maxElo := int16(1700)
+	divs := []*division.Division{{ID: "div1", Name: "Elite", MinElo: 1000, MaxElo: &maxElo, Category: "singles"}}
+	ev := &event.Event{
+		ID: "e1", Name: "Bracket No Metrics", Type: "singles", Format: "elimination", Status: "finished",
+		StartDate: time.Now(), Participants: []*player.Player{pA1, pA2},
+		Groups:  []event.Group{{ID: "g1", Name: "Elite - Bracket Draw", Players: []*player.Player{pA1, pA2}}},
+		Matches: matches,
+		Metrics: nil, // deliberately omitted: this is the case that used to skip the page break
+	}
+
+	pdfBytes, err := gen.GenerateTournamentReport(ev, divs)
+	if err != nil {
+		t.Fatalf("unexpected error generating tournament report: %v", err)
+	}
+
+	// The bracket landscape page and the player-stats portrait page must be
+	// distinct pages. Page object dictionaries aren't stream-compressed, so
+	// counting "/Type /Page" occurrences reliably counts generated pages.
+	pageCount := bytes.Count(pdfBytes, []byte("/Type /Page"))
+	if pageCount < 3 {
+		t.Errorf("expected at least 3 pages (cover/standings, bracket, player stats), got %d", pageCount)
+	}
+}
+
 func TestGoFpdfGenerator_GenerateTournamentReport_FullBracket(t *testing.T) {
 	gen := pdf.NewGoFpdfGenerator()
 

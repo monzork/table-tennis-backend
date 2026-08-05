@@ -1315,6 +1315,14 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 		}
 		isDoublesType := t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams"
 
+		// The bracket section above draws with absolute coordinates and never
+		// advances fpdf's page/cursor state, so this section must always start
+		// on its own fresh portrait page rather than continuing wherever the
+		// cursor was left (which can still be mid-way through a landscape
+		// bracket page).
+		pdf.AddPageFormat("P", fpdf.SizeType{Wd: 210, Ht: 297})
+		pdf.SetMargins(15, 52, 15)
+
 		writeHeader("ESTADÍSTICAS DE JUGADORES")
 
 		pdf.SetFont("Arial", "B", 8)
