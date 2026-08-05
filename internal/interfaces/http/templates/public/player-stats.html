@@ -39,6 +39,11 @@
                             </span>
                         </div>
 
+                        {{if not $ev.Participated}}
+                        <div class="bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-center text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-500 italic">
+                            {{t $.T "player_stats.did_not_participate"}}
+                        </div>
+                        {{else}}
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                             <div class="bg-black/40 border border-white/10 rounded-xl p-3 text-center">
                                 <div class="text-lg sm:text-2xl font-black text-white">{{$ev.Stats.Played}}</div>
@@ -57,6 +62,7 @@
                                 <div class="text-[9px] uppercase tracking-widest text-gray-500 mt-0.5">{{t $.T "player_stats.points"}}</div>
                             </div>
                         </div>
+                        {{end}}
 
                         {{if or $ev.EloBeforeSingles $ev.EloBeforeDoubles}}
                         <div class="flex flex-wrap gap-4 mt-3 text-[11px] sm:text-xs text-gray-400">

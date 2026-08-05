@@ -109,6 +109,9 @@ func TestGetPlayerTournamentStatsUseCase_Execute(t *testing.T) {
 		if stats.SetsWon != 2 || stats.SetsLost != 0 {
 			t.Errorf("expected 2-0 sets, got %d-%d", stats.SetsWon, stats.SetsLost)
 		}
+		if !tv.Events[0].Participated {
+			t.Errorf("expected Participated=true for a player who played a match")
+		}
 		if tv.Events[0].EloBeforeSingles == nil || *tv.Events[0].EloBeforeSingles != 1000 {
 			t.Errorf("expected elo before 1000, got %v", tv.Events[0].EloBeforeSingles)
 		}
@@ -158,12 +161,12 @@ func TestGetPlayerTournamentStatsUseCase_Execute(t *testing.T) {
 		}
 	})
 
-	t.Run("unfinished events are excluded from the history", func(t *testing.T) {
+	t.Run("registered but never played is marked as not participated", func(t *testing.T) {
 		playerRepo := newMockPlayerRepo()
 		playerRepo.players["p1"] = &playerDomain.Player{ID: "p1"}
 		tid := "t1"
 		eventRepo := &fakeEventRepo{events: []*eventDomain.Event{
-			{ID: "e1", Status: "in_progress", TournamentID: &tid},
+			{ID: "e1", Status: "in_progress", TournamentID: &tid, Matches: nil},
 		}}
 		tournamentRepo := &fakeTournamentRepo{byID: map[string]*tournament.Tournament{
 			tid: {ID: tid, Name: "Cup"},
@@ -174,8 +177,11 @@ func TestGetPlayerTournamentStatsUseCase_Execute(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		if len(history) != 0 {
-			t.Errorf("expected 0 tournaments for an in-progress event, got %d", len(history))
+		if len(history) != 1 || len(history[0].Events) != 1 {
+			t.Fatalf("expected the tournament and event to still appear, got %+v", history)
+		}
+		if history[0].Events[0].Participated {
+			t.Errorf("expected Participated=false for a player with 0 matches played")
 		}
 	})
 

@@ -17,6 +17,7 @@ import (
 type PlayerEventStatsView struct {
 	Event            *tournamentEvent.Event
 	Stats            tournamentEvent.PlayerEventStats
+	Participated     bool // false if the player was registered but never actually played a match
 	EloBeforeSingles *int16
 	EloAfterSingles  *int16
 	EloBeforeDoubles *int16
@@ -62,15 +63,6 @@ func (uc *GetPlayerTournamentStatsUseCase) Execute(ctx context.Context, playerID
 	if err := eg.Wait(); err != nil {
 		return nil, nil, err
 	}
-
-	// Only finished events count toward a player's tournament history.
-	finished := events[:0]
-	for _, ev := range events {
-		if ev.Status == "finished" {
-			finished = append(finished, ev)
-		}
-	}
-	events = finished
 
 	// Fetch each event's Elo snapshot and each distinct parent tournament
 	// concurrently, since these are independent per-event/per-tournament reads.
@@ -131,9 +123,11 @@ func (uc *GetPlayerTournamentStatsUseCase) Execute(ctx context.Context, playerID
 			order = append(order, tid)
 		}
 
+		stats := tournamentEvent.BuildPlayerEventStats(playerID, ev.Matches)
 		view := PlayerEventStatsView{
-			Event: ev,
-			Stats: tournamentEvent.BuildPlayerEventStats(playerID, ev.Matches),
+			Event:        ev,
+			Stats:        stats,
+			Participated: stats.Played > 0,
 		}
 		if snap, ok := snapshotsByEvent[ev.ID]; ok {
 			view.EloBeforeSingles = snap.EloBeforeSingles
