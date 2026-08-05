@@ -60,6 +60,7 @@ func TestGetPlayerTournamentStatsUseCase_Execute(t *testing.T) {
 		ev := &eventDomain.Event{
 			ID:           "e1",
 			Name:         "Men's Singles",
+			Status:       "finished",
 			TournamentID: &tid,
 			Matches: []eventDomain.Match{
 				{
@@ -157,12 +158,33 @@ func TestGetPlayerTournamentStatsUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("unfinished events are excluded from the history", func(t *testing.T) {
+		playerRepo := newMockPlayerRepo()
+		playerRepo.players["p1"] = &playerDomain.Player{ID: "p1"}
+		tid := "t1"
+		eventRepo := &fakeEventRepo{events: []*eventDomain.Event{
+			{ID: "e1", Status: "in_progress", TournamentID: &tid},
+		}}
+		tournamentRepo := &fakeTournamentRepo{byID: map[string]*tournament.Tournament{
+			tid: {ID: tid, Name: "Cup"},
+		}}
+		uc := player.NewGetPlayerTournamentStatsUseCase(playerRepo, eventRepo, tournamentRepo)
+
+		_, history, err := uc.Execute(context.Background(), "p1")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if len(history) != 0 {
+			t.Errorf("expected 0 tournaments for an in-progress event, got %d", len(history))
+		}
+	})
+
 	t.Run("missing snapshot is tolerated", func(t *testing.T) {
 		playerRepo := newMockPlayerRepo()
 		playerRepo.players["p1"] = &playerDomain.Player{ID: "p1"}
 		tid := "t1"
 		eventRepo := &fakeEventRepo{
-			events:       []*eventDomain.Event{{ID: "e1", TournamentID: &tid}},
+			events:       []*eventDomain.Event{{ID: "e1", Status: "finished", TournamentID: &tid}},
 			snapshotsErr: errors.New("no snapshot"),
 		}
 		tournamentRepo := &fakeTournamentRepo{byID: map[string]*tournament.Tournament{

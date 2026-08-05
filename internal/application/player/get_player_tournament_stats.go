@@ -63,6 +63,15 @@ func (uc *GetPlayerTournamentStatsUseCase) Execute(ctx context.Context, playerID
 		return nil, nil, err
 	}
 
+	// Only finished events count toward a player's tournament history.
+	finished := events[:0]
+	for _, ev := range events {
+		if ev.Status == "finished" {
+			finished = append(finished, ev)
+		}
+	}
+	events = finished
+
 	// Fetch each event's Elo snapshot and each distinct parent tournament
 	// concurrently, since these are independent per-event/per-tournament reads.
 	tournamentIDs := make(map[string]struct{})
