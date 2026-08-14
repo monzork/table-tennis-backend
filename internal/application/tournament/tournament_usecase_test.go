@@ -296,6 +296,7 @@ func TestCreateEventUseCase(t *testing.T) {
 			tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{},
 			tournament.CategoryConfig{},
 			nil,
+			nil,
 		)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -318,7 +319,7 @@ func TestCreateEventUseCase(t *testing.T) {
 			"2026-08-05",
 			tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{},
 			tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{},
-			tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil,
+			tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil, nil,
 		)
 		if err == nil {
 			t.Fatal("expected error for invalid start date")

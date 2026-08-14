@@ -134,6 +134,31 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	teamsWomen := parseCategoryConfig("TeamsWomen", "round_robin")
 	singlesOpen := parseCategoryConfig("SinglesOpen", "groups_elimination")
 
+	var customSinglesEvents []tournament.CustomEventConfig
+	for i := 0; i < 20; i++ {
+		suffix := strconv.Itoa(i)
+		customName := c.FormValue("customEventName_" + suffix)
+		if customName == "" {
+			continue
+		}
+		var ids []string
+		for _, rawId := range c.Request().PostArgs().PeekMulti("customEventParticipants_" + suffix + "[]") {
+			ids = append(ids, string(rawId))
+		}
+		format := c.FormValue("customEventFormat_" + suffix)
+		if format == "" {
+			format = "groups_elimination"
+		}
+		passCount := 2
+		fmt.Sscanf(c.FormValue("customEventPassCount_"+suffix), "%d", &passCount)
+		customSinglesEvents = append(customSinglesEvents, tournament.CustomEventConfig{
+			Name:           customName,
+			Format:         format,
+			GroupPassCount: passCount,
+			PlayerIDs:      ids,
+		})
+	}
+
 	var existingTournamentIDs []string
 	for _, rawId := range c.Request().PostArgs().PeekMulti("existingTournamentIds[]") {
 		existingTournamentIDs = append(existingTournamentIDs, string(rawId))
@@ -142,7 +167,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	e, err := h.createUC.Execute(
 		c.Context(), name, divisionIDs, skipElo, startDate, endDate,
 		singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen, singlesOpen,
-		existingTournamentIDs,
+		customSinglesEvents, existingTournamentIDs,
 	)
 	if err != nil {
 		return ErrorHandler(err)

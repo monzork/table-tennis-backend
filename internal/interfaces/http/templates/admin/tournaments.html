@@ -51,7 +51,7 @@
         <h2 class="text-3xl font-extrabold uppercase mb-8 tracking-tighter">{{t .T "admin.tournaments.modal_title_prefix"}} <span class="text-white">{{t .T "admin.tournaments.modal_title_suffix"}}</span>.</h2>
         
         <form hx-post="/tournaments" hx-target="#tournament-list" hx-swap="beforeend" 
-              hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-tournament-modal').classList.add('hidden'); this.reset(); document.getElementById('empty-state')?.remove(); }"
+              hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-tournament-modal').classList.add('hidden'); this.reset(); document.getElementById('empty-state')?.remove(); document.getElementById('customSinglesContainer').innerHTML = ''; }"
               class="space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div class="space-y-2">
@@ -371,6 +371,47 @@
                         </div>
                     </div>
                 </div>
+
+            <div class="space-y-2 pt-4 border-t border-white/5">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.tournaments.custom_singles_label"}}</label>
+                    <button type="button" onclick="addCustomSinglesEvent()" class="text-[10px] font-bold uppercase tracking-widest text-white/80 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-all">{{t .T "admin.tournaments.custom_singles_add_btn"}}</button>
+                </div>
+                <p class="text-[10px] text-gray-500">{{t .T "admin.tournaments.custom_singles_hint"}}</p>
+                <div id="customSinglesContainer" class="space-y-3"></div>
+            </div>
+
+            <template id="customSinglesTemplate">
+                <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 custom-singles-block">
+                    <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                        <input type="text" name="customEventName___INDEX__" placeholder="{{t .T "admin.tournaments.custom_singles_name_ph"}}" required class="bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-xs text-white font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all flex-1 mr-2">
+                        <button type="button" onclick="this.closest('.custom-singles-block').remove()" class="text-red-500 hover:text-red-400 text-[10px] font-bold uppercase tracking-widest border border-red-900/50 hover:border-red-700 px-2 py-1 rounded-lg transition-all">{{t .T "admin.common.delete"}}</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.format_label"}}</label>
+                            <select name="customEventFormat___INDEX__" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                <option value="groups_elimination" selected>{{t $.T "admin.tournaments.fmt_group_ko"}}</option>
+                                <option value="elimination">{{t $.T "admin.tournaments.fmt_elimination"}}</option>
+                                <option value="round_robin">{{t $.T "admin.tournaments.fmt_round_robin"}}</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.pass_count_label"}}</label>
+                            <input type="number" name="customEventPassCount___INDEX__" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.player_pool_label"}}</label>
+                        <select name="customEventParticipants___INDEX__[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                            {{range $.Players}}
+                            <option value="{{.ID}}" class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} ({{.Gender}}, Elo: {{.SinglesElo}})</option>
+                            {{end}}
+                        </select>
+                    </div>
+                </div>
+            </template>
+
             <div class="space-y-2 pt-4 border-t border-white/5">
                 <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.tournaments.link_existing_label"}}</label>
                 <select name="existingTournamentIds[]" multiple class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-32 custom-scrollbar">
@@ -412,5 +453,14 @@ function toggleCategory(checkbox, catName) {
     } else {
         card.classList.add('opacity-40', 'grayscale');
     }
+}
+
+let customSinglesCounter = 0;
+function addCustomSinglesEvent() {
+    const tpl = document.getElementById('customSinglesTemplate');
+    const html = tpl.innerHTML.replaceAll('__INDEX__', customSinglesCounter++);
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+    document.getElementById('customSinglesContainer').appendChild(wrapper.firstElementChild);
 }
 </script>

@@ -358,6 +358,37 @@ func TestEventHandler(t *testing.T) {
 		app.Test(req)
 	})
 
+	t.Run("Create Tournament With Custom Singles Events", func(t *testing.T) {
+		data := url.Values{}
+		data.Set("name", "Custom Groups Cup")
+		data.Set("startDate", "2026-05-01")
+		data.Set("endDate", "2026-05-10")
+		data.Add("divisionIds[]", "none")
+		data.Set("customEventName_0", "Group A")
+		data.Add("customEventParticipants_0[]", p1.ID)
+		data.Set("customEventFormat_0", "elimination")
+		data.Set("customEventPassCount_0", "3")
+		// A second index with no players should be skipped, not create an event.
+		data.Set("customEventName_1", "Empty Group")
+
+		req := httptest.NewRequest("POST", "/tournaments", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+
+		var parentModels []bunRepo.TournamentModel
+		db.NewSelect().Model(&parentModels).Where("name = ?", "Custom Groups Cup").Scan(ctx)
+		if len(parentModels) != 1 {
+			t.Fatalf("expected tournament to be created, got %d", len(parentModels))
+		}
+	})
+
 	t.Run("Update Tournament HX Request", func(t *testing.T) {
 		data := url.Values{}
 		data.Set("name", "Updated HX")

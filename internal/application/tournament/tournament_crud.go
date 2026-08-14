@@ -18,6 +18,15 @@ type CategoryConfig struct {
 	PlayerIDs      []string
 }
 
+// CustomEventConfig defines one manually-named child event with a hand-picked
+// player roster, bypassing gender/division auto-grouping entirely.
+type CustomEventConfig struct {
+	Name           string
+	Format         string
+	GroupPassCount int
+	PlayerIDs      []string
+}
+
 type CreateEventUseCase struct {
 	tournamentRepo tournamentDomain.Repository
 	eventRepo      eventDomain.Repository
@@ -46,6 +55,7 @@ func (uc *CreateEventUseCase) Execute(
 	skipElo bool,
 	startDateStr, endDateStr string,
 	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen, singlesOpen CategoryConfig,
+	customSinglesEvents []CustomEventConfig,
 	existingTournamentIDs []string,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startDateStr)
@@ -81,6 +91,13 @@ func (uc *CreateEventUseCase) Execute(
 		if !cfg.Auto {
 			continue
 		}
+		for _, idStr := range cfg.PlayerIDs {
+			if idStr != "" {
+				allIDSet[idStr] = true
+			}
+		}
+	}
+	for _, cfg := range customSinglesEvents {
 		for _, idStr := range cfg.PlayerIDs {
 			if idStr != "" {
 				allIDSet[idStr] = true
@@ -208,6 +225,20 @@ func (uc *CreateEventUseCase) Execute(
 	processCategory(teamsMen, "Men's Teams", "teams", "M", false)
 	processCategory(teamsWomen, "Women's Teams", "teams", "F", false)
 	processCategory(singlesOpen, "Open Singles", "singles", "", false)
+
+	for _, cfg := range customSinglesEvents {
+		var players []*playerDomain.Player
+		for _, idStr := range cfg.PlayerIDs {
+			if p, ok := playerCache[idStr]; ok {
+				players = append(players, p)
+			}
+		}
+		if len(players) == 0 || cfg.Name == "" {
+			continue
+		}
+		tName := fmt.Sprintf("%s - %s", e.Name, cfg.Name)
+		_ = createSubTourney(tName, "singles", cfg.Format, "open", cfg.GroupPassCount, players)
+	}
 
 	if err := uc.tournamentRepo.Save(ctx, e); err != nil {
 		return nil, err
