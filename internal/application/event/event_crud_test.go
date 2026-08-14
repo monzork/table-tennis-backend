@@ -228,6 +228,30 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("preserves SkipDivisionSplit and ManualSeedingLocked from the existing event", func(t *testing.T) {
+		uc, repo, _ := newUC()
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID:                  "t1",
+			Format:              "round_robin",
+			Type:                "singles",
+			EventCategory:       "open",
+			SkipDivisionSplit:   true,
+			ManualSeedingLocked: true,
+		}
+		cmd := baseCmd()
+
+		got, err := uc.Execute(context.Background(), cmd)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if !got.SkipDivisionSplit {
+			t.Errorf("expected SkipDivisionSplit to be preserved as true after an unrelated edit")
+		}
+		if !got.ManualSeedingLocked {
+			t.Errorf("expected ManualSeedingLocked to be preserved as true after an unrelated edit")
+		}
+	})
+
 	t.Run("regenerates groups when format changed", func(t *testing.T) {
 		uc, repo, _ := newUC()
 		repo.events["t1"] = &tournamentDomain.Event{

@@ -203,9 +203,12 @@
       </div>
       <div class="space-y-2">
         <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.tournaments.player_pool_label"}}</label>
-        <select name="participant_ids[]" multiple class="w-full bg-black/40 border border-white/10 rounded-xl p-2 text-xs text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-40 custom-scrollbar">
+        <input type="text" placeholder="{{t .T "admin.event_form.search_players_ph"}}"
+               oninput="filterAddEventPlayers(this)"
+               class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white transition-all mb-2">
+        <select name="participant_ids[]" multiple id="add-event-participant-select" class="w-full bg-black/40 border border-white/10 rounded-xl p-2 text-xs text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-40 custom-scrollbar">
           {{range .Players}}
-          <option value="{{.ID}}" class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} ({{.Gender}}, Elo: {{.SinglesElo}})</option>
+          <option value="{{.ID}}" data-search="{{.FirstNameWithSecond}} {{.LastNameWithSecond}}" class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} ({{.Gender}}, Elo: {{.SinglesElo}})</option>
           {{end}}
         </select>
       </div>
@@ -219,5 +222,13 @@ function openEditEventModal(eventId) {
   const modal = document.getElementById('edit-tournament-modal');
   modal.classList.remove('hidden');
   htmx.trigger('#edit-tournament-modal-body', 'openEditModal');
+}
+
+function filterAddEventPlayers(input) {
+  const term = input.value.trim().toLowerCase();
+  const options = document.getElementById('add-event-participant-select').options;
+  for (const opt of options) {
+    opt.hidden = term !== '' && !opt.dataset.search.toLowerCase().includes(term);
+  }
 }
 </script>
