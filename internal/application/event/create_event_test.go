@@ -57,6 +57,32 @@ func TestCreateTournamentUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("attaches event to an existing tournament via TournamentID", func(t *testing.T) {
+		uc, _, playerRepo, _ := newUC()
+		existing := &playerDomain.Player{ID: "p1", FirstName: "Alice", LastName: "A", Gender: "F", SinglesElo: 1200}
+		playerRepo.players["p1"] = existing
+
+		tournamentID := "parent-tournament-1"
+		cmd := CreateEventCommand{
+			Name:           "Group A",
+			Type:           "singles",
+			Format:         "elimination",
+			Category:       "open",
+			StartDate:      "2026-01-01",
+			EndDate:        "2026-01-02",
+			ParticipantIDs: []string{"p1"},
+			TournamentID:   &tournamentID,
+		}
+
+		got, err := uc.Execute(context.Background(), cmd)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if got.TournamentID == nil || *got.TournamentID != tournamentID {
+			t.Fatalf("expected event to be attached to tournament %q, got %v", tournamentID, got.TournamentID)
+		}
+	})
+
 	t.Run("invalid start date returns error", func(t *testing.T) {
 		uc, _, _, _ := newUC()
 		cmd := CreateEventCommand{Name: "X", StartDate: "bad-date", EndDate: "2026-01-02"}

@@ -104,6 +104,7 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 	}
 	t.SkipElo = cmd.SkipElo
 	t.SkipDivisionSplit = true
+	t.TournamentID = cmd.TournamentID
 
 	t.LosersGroupPassCount = cmd.LosersGroupPassCount
 
