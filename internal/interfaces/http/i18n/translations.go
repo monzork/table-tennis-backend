@@ -471,7 +471,9 @@ var Translations = map[string]map[string]string{
 		"admin.division_form.save":        "Save Division",
 
 		// Admin: division select (event form)
-		"admin.division_select.label": "Division (Elo restrictions)",
+		"admin.division_select.label":             "Division (Elo restrictions)",
+		"admin.division_select.open_option":       "Open (all Elo ranges play together, rated)",
+		"admin.division_select.open_option_short": "Open",
 
 		// Admin: player form
 		"admin.player_form.athlete_word":     "Athlete",
@@ -1300,7 +1302,9 @@ var Translations = map[string]map[string]string{
 		"admin.division_form.save":        "Guardar División",
 
 		// Admin: division select (event form)
-		"admin.division_select.label": "División (restricciones de Elo)",
+		"admin.division_select.label":             "División (restricciones de Elo)",
+		"admin.division_select.open_option":       "Abierta (todos los rangos de Elo juegan juntos, con puntuación)",
+		"admin.division_select.open_option_short": "Abierta",
 
 		// Admin: player form
 		"admin.player_form.athlete_word":     "Atleta",

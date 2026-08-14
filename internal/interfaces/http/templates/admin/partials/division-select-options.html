@@ -1,5 +1,6 @@
 <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.division_select.label"}}</label>
 <select name="divisionIds[]" multiple id="divisionIdSelect" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white transition-all h-24 custom-scrollbar" required>
+    <option value="none">{{t .T "admin.division_select.open_option"}}</option>
     {{range .Divisions}}
         {{if or (ne .MinElo 0) (not (eq .MaxElo nil))}}
         <option value="{{.ID}}">{{.Name}} ({{.MinElo}}{{if .MaxElo}} - {{.MaxElo}}{{else}}+{{end}} Elo)</option>

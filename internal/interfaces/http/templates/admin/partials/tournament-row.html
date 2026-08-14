@@ -23,6 +23,8 @@
             <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500">{{t .T "admin.tournament_row.mob_division"}}</span>
             {{if .Tournament.SkipElo}}
             <span class="px-2.5 py-1 rounded bg-white/5 border border-white/5 text-gray-500 font-bold">—</span>
+            {{else if and (eq (len .Tournament.DivisionIDs) 1) (eq (index .Tournament.DivisionIDs 0) "none")}}
+            <span class="px-2.5 py-1 rounded bg-white/5 border border-white/10 font-bold">{{t .T "admin.division_select.open_option_short"}}</span>
             {{else}}
             <span class="px-2.5 py-1 rounded bg-white/5 border border-white/10 font-bold">{{len .Tournament.DivisionIDs}} {{t .T "admin.tournament_row.divisions_suffix"}}</span>
             {{end}}
