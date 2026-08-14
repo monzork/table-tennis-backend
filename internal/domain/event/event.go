@@ -180,6 +180,10 @@ type Event struct {
 	Metrics               *TournamentMetrics
 	ManualSeedingLocked   bool
 	KnockoutBracketsCount int
+	// SkipDivisionSplit marks events whose roster was hand-picked across Elo
+	// bands (e.g. an "Open" tournament category) so the bracket view must not
+	// re-bucket participants into per-division sub-brackets by their live Elo.
+	SkipDivisionSplit bool
 	// ParticipantSnapshots carries each participant's Elo before/after this
 	// event. It is only populated by callers that need it (e.g. PDF export);
 	// nil elsewhere.

@@ -119,7 +119,7 @@ func (uc *CreateEventUseCase) Execute(
 	}
 
 	// Helper to create a event under this tournament
-	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player) error {
+	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player, skipDivisionSplit bool) error {
 		t, err := eventDomain.NewEvent(idgen.Generate(), tName, tType, tFormat, category, start, end, []eventDomain.Rule{}, groupPassCount, players, false)
 		if err != nil {
 			return err
@@ -127,6 +127,7 @@ func (uc *CreateEventUseCase) Execute(
 		t.TournamentID = &e.ID
 		t.SkipElo = skipElo
 		t.NumTables = e.NumTables
+		t.SkipDivisionSplit = skipDivisionSplit
 		e.Events = append(e.Events, t)
 		return nil
 	}
@@ -186,7 +187,7 @@ func (uc *CreateEventUseCase) Execute(
 			} else {
 				catArg = "open"
 			}
-			_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, allCatPlayers)
+			_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, allCatPlayers, len(divs) == 0)
 		} else {
 			// Group by division
 			for _, div := range divs {
@@ -211,7 +212,7 @@ func (uc *CreateEventUseCase) Execute(
 					} else {
 						catArg = "open"
 					}
-					_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, divPlayers)
+					_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, divPlayers, false)
 				}
 			}
 		}
@@ -237,7 +238,7 @@ func (uc *CreateEventUseCase) Execute(
 			continue
 		}
 		tName := fmt.Sprintf("%s - %s", e.Name, cfg.Name)
-		_ = createSubTourney(tName, "singles", cfg.Format, "open", cfg.GroupPassCount, players)
+		_ = createSubTourney(tName, "singles", cfg.Format, "open", cfg.GroupPassCount, players, true)
 	}
 
 	if err := uc.tournamentRepo.Save(ctx, e); err != nil {

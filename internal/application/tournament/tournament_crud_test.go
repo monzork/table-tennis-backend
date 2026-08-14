@@ -135,6 +135,11 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 	if res3 == nil {
 		t.Fatalf("result is nil")
 	}
+	for _, ev := range res3.Events {
+		if !ev.SkipDivisionSplit {
+			t.Errorf("expected event %q created via the flat (no-division) branch to have SkipDivisionSplit=true", ev.Name)
+		}
+	}
 }
 
 func TestUpdateEventUseCase_Execute(t *testing.T) {

@@ -197,7 +197,7 @@ func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]str
 		return ei > ej
 	})
 
-	if t.SkipElo || t.Format == "single_division_multiple_brackets" {
+	if t.SkipElo || t.SkipDivisionSplit || t.Format == "single_division_multiple_brackets" {
 		openPlayers := participants
 		var openGroupID string
 		if t.Format == "elimination" {

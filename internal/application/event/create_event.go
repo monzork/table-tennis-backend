@@ -103,6 +103,7 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 		return nil, err
 	}
 	t.SkipElo = cmd.SkipElo
+	t.SkipDivisionSplit = true
 
 	t.LosersGroupPassCount = cmd.LosersGroupPassCount
 

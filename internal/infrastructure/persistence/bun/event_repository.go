@@ -90,6 +90,7 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 		KnockoutBracketsCount: t.KnockoutBracketsCount,
 		Metrics:               t.Metrics,
 		ManualSeedingLocked:   t.ManualSeedingLocked,
+		SkipDivisionSplit:     t.SkipDivisionSplit,
 	}
 	if _, err := tx.NewInsert().Model(model).Exec(ctx); err != nil {
 		return err
@@ -254,6 +255,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 			KnockoutBracketsCount: m.KnockoutBracketsCount,
 			Metrics:               m.Metrics,
 			ManualSeedingLocked:   m.ManualSeedingLocked,
+			SkipDivisionSplit:     m.SkipDivisionSplit,
 			Participants:          participants,
 		}
 	}
@@ -392,6 +394,7 @@ func (r *EventRepository) GetByIDLite(ctx context.Context, idStr string) (*event
 		KnockoutBracketsCount: model.KnockoutBracketsCount,
 		Metrics:               model.Metrics,
 		ManualSeedingLocked:   model.ManualSeedingLocked,
+		SkipDivisionSplit:     model.SkipDivisionSplit,
 	}, nil
 }
 
@@ -762,6 +765,7 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 		KnockoutBracketsCount: model.KnockoutBracketsCount,
 		Metrics:               model.Metrics,
 		ManualSeedingLocked:   model.ManualSeedingLocked,
+		SkipDivisionSplit:     model.SkipDivisionSplit,
 	}, nil
 }
 
@@ -804,9 +808,10 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			KnockoutBracketsCount: t.KnockoutBracketsCount,
 			Metrics:               t.Metrics,
 			ManualSeedingLocked:   t.ManualSeedingLocked,
+			SkipDivisionSplit:     t.SkipDivisionSplit,
 		}
 
-		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked").Exec(ctx)
+		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked", "skip_division_split").Exec(ctx)
 		if err != nil {
 			return err
 		}
@@ -1532,6 +1537,8 @@ func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel
 			NumTables:            m.NumTables,
 			HasThirdPlaceMatch:   m.HasThirdPlaceMatch,
 			Metrics:              m.Metrics,
+			ManualSeedingLocked:  m.ManualSeedingLocked,
+			SkipDivisionSplit:    m.SkipDivisionSplit,
 		}
 	}
 	return events, nil

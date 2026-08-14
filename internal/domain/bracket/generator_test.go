@@ -105,6 +105,49 @@ func TestBracketGenerator_LosersGroupPassCount(t *testing.T) {
 	}
 }
 
+func TestBracketGenerator_SkipDivisionSplit(t *testing.T) {
+	// Two players from clearly different Elo bands, hand-picked into one
+	// "Open" event that must NOT be fragmented back into per-division
+	// sub-brackets by the global division list.
+	players := []*player.Player{
+		{ID: "p1", FirstName: "Player", LastName: "1", SinglesElo: 2000, Gender: "M"},
+		{ID: "p2", FirstName: "Player", LastName: "2", SinglesElo: 500, Gender: "M"},
+	}
+
+	div1MaxElo := int16(1200)
+	divs := []*division.Division{
+		{ID: "div1", Name: "Division 1", Category: "both", MinElo: 0, MaxElo: &div1MaxElo},
+		{ID: "div2", Name: "Division 2", Category: "both", MinElo: 1201, MaxElo: nil},
+	}
+
+	tourney := &event.Event{
+		ID:                "t1",
+		Name:              "Open Tournament",
+		Type:              "singles",
+		Format:            "groups_elimination",
+		EventCategory:     "open",
+		GroupPassCount:    2,
+		Participants:      players,
+		SkipDivisionSplit: true,
+	}
+
+	br := bracket.BuildBracket(tourney, divs, map[string]string{})
+	if len(br.Divisions) != 1 {
+		t.Fatalf("expected a single flat bracket when SkipDivisionSplit is set, got %d", len(br.Divisions))
+	}
+	if len(br.Divisions[0].Players) != 2 {
+		t.Fatalf("expected both players in the single bracket, got %d", len(br.Divisions[0].Players))
+	}
+
+	// Sanity check: without the flag, the same roster fragments into two
+	// division buckets — proving the flag is what changes the outcome.
+	tourney.SkipDivisionSplit = false
+	br = bracket.BuildBracket(tourney, divs, map[string]string{})
+	if len(br.Divisions) != 2 {
+		t.Fatalf("expected the roster to split by division without the flag, got %d", len(br.Divisions))
+	}
+}
+
 func createFinishedMatch(id string, p1, p2 *player.Player, winner string) event.Match {
 	scoreA := 0
 	scoreB := 0
