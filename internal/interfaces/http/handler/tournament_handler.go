@@ -210,10 +210,11 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 		tournament any
 		err        error
 		divisions  any
+		players    any
 	}
 	var res result
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
@@ -222,6 +223,10 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	go func() {
 		defer wg.Done()
 		res.divisions, _ = h.divisionUC.GetAll(c.Context())
+	}()
+	go func() {
+		defer wg.Done()
+		res.players, _ = h.leaderboardUC.ExecuteSingles(c.Context())
 	}()
 	wg.Wait()
 
@@ -232,6 +237,7 @@ func (h *TournamentHandler) Detail(c *fiber.Ctx) error {
 	return c.Render("admin/tournament-detail", merge(tMap(lang), fiber.Map{
 		"Tournament": res.tournament,
 		"Divisions":  res.divisions,
+		"Players":    res.players,
 	}), "layouts/admin")
 }
 

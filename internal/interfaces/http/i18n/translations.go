@@ -814,6 +814,8 @@ var Translations = map[string]map[string]string{
 		"admin.tournament_detail.manage_bracket":        "Manage Bracket",
 		"admin.tournament_detail.empty_brackets":        "No active brackets are currently provisioned under this tournament.",
 		"admin.tournament_detail.edit_modal_title":      "Edit Tournament",
+		"admin.tournament_detail.add_event_btn":         "Add Event",
+		"admin.tournament_detail.add_event_modal_title": "Add Singles Event",
 
 		// Admin: tournament edit form
 		"admin.tournament_edit_form.success":          "Tournament updated successfully",
@@ -1650,6 +1652,8 @@ var Translations = map[string]map[string]string{
 		"admin.tournament_detail.manage_bracket":        "Administrar Bracket",
 		"admin.tournament_detail.empty_brackets":        "Aún no hay brackets activos provisionados bajo este torneo.",
 		"admin.tournament_detail.edit_modal_title":      "Editar Torneo",
+		"admin.tournament_detail.add_event_btn":         "Agregar Evento",
+		"admin.tournament_detail.add_event_modal_title": "Agregar Evento Individual",
 
 		// Admin: tournament edit form
 		"admin.tournament_edit_form.success":          "Torneo actualizado exitosamente",

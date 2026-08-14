@@ -25,6 +25,12 @@
                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                    {{t .T "admin.common.edit"}}
                 </button>
+                <button
+                   onclick="document.getElementById('add-event-to-tournament-modal').classList.remove('hidden')"
+                   class="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all border border-white/20">
+                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                   {{t .T "admin.tournament_detail.add_event_btn"}}
+                </button>
                 <a href="/admin/tournaments/{{.Tournament.ID}}/board" 
                    class="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)]">
                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
@@ -160,6 +166,54 @@
     </div>
   </div>
 </div>
+{{/* ── Add Singles Event Modal ── */}}
+<div id="add-event-to-tournament-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[200]">
+  <div class="bg-[#111] border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+    <button onclick="document.getElementById('add-event-to-tournament-modal').classList.add('hidden')"
+            class="absolute top-5 right-5 text-gray-400 hover:text-white transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <h3 class="text-sm font-black uppercase tracking-widest text-white mb-6">{{t .T "admin.tournament_detail.add_event_modal_title"}}</h3>
+    <form hx-post="/events" hx-swap="none"
+          hx-on::after-request="if(event.detail.successful) { location.reload(); }"
+          class="space-y-4">
+      <input type="hidden" name="eventId" value="{{.Tournament.ID}}">
+      <input type="hidden" name="type" value="singles">
+      <input type="hidden" name="eventCategory" value="open">
+      <input type="hidden" name="startDate" value="{{.Tournament.StartDate.Format "2006-01-02"}}">
+      <input type="hidden" name="endDate" value="{{.Tournament.EndDate.Format "2006-01-02"}}">
+      {{if .Tournament.SkipElo}}<input type="hidden" name="skipElo" value="on">{{end}}
+      <div class="space-y-2">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.events.name_label"}}</label>
+        <input type="text" name="name" placeholder="{{t .T "admin.tournaments.custom_singles_name_ph"}}" required class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_edit_form.format_label"}}</label>
+          <select name="format" onchange="document.getElementById('add-event-pass-count-container').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none">
+            <option value="groups_elimination" selected>{{t .T "admin.tournaments.fmt_group_ko"}}</option>
+            <option value="elimination">{{t .T "admin.tournaments.fmt_elimination"}}</option>
+            <option value="round_robin">{{t .T "admin.tournaments.fmt_round_robin"}}</option>
+          </select>
+        </div>
+        <div class="space-y-2" id="add-event-pass-count-container">
+          <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.tournaments.pass_count_label"}}</label>
+          <input type="number" name="groupPassCount" value="2" min="1" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+      </div>
+      <div class="space-y-2">
+        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.tournaments.player_pool_label"}}</label>
+        <select name="participant_ids[]" multiple class="w-full bg-black/40 border border-white/10 rounded-xl p-2 text-xs text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-40 custom-scrollbar">
+          {{range .Players}}
+          <option value="{{.ID}}" class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} ({{.Gender}}, Elo: {{.SinglesElo}})</option>
+          {{end}}
+        </select>
+      </div>
+      <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-extrabold py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg mt-2">{{t .T "admin.tournaments.submit_btn"}}</button>
+    </form>
+  </div>
+</div>
+
 <script>
 function openEditEventModal(eventId) {
   const modal = document.getElementById('edit-tournament-modal');
