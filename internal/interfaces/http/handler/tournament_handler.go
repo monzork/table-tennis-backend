@@ -132,6 +132,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 	doublesMixed := parseCategoryConfig("DoublesMixed", "elimination")
 	teamsMen := parseCategoryConfig("TeamsMen", "round_robin")
 	teamsWomen := parseCategoryConfig("TeamsWomen", "round_robin")
+	singlesOpen := parseCategoryConfig("SinglesOpen", "groups_elimination")
 
 	var existingTournamentIDs []string
 	for _, rawId := range c.Request().PostArgs().PeekMulti("existingTournamentIds[]") {
@@ -140,7 +141,7 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 
 	e, err := h.createUC.Execute(
 		c.Context(), name, divisionIDs, skipElo, startDate, endDate,
-		singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen,
+		singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen, singlesOpen,
 		existingTournamentIDs,
 	)
 	if err != nil {

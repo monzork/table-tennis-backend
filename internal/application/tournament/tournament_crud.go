@@ -45,7 +45,7 @@ func (uc *CreateEventUseCase) Execute(
 	divisionIDs []string,
 	skipElo bool,
 	startDateStr, endDateStr string,
-	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen CategoryConfig,
+	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen, singlesOpen CategoryConfig,
 	existingTournamentIDs []string,
 ) (*tournamentDomain.Tournament, error) {
 	start, err := time.Parse("2006-01-02", startDateStr)
@@ -77,7 +77,7 @@ func (uc *CreateEventUseCase) Execute(
 
 	// Collect all unique player IDs across all categories and batch-load them
 	allIDSet := make(map[string]bool)
-	for _, cfg := range []CategoryConfig{singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen} {
+	for _, cfg := range []CategoryConfig{singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen, singlesOpen} {
 		if !cfg.Auto {
 			continue
 		}
@@ -207,6 +207,7 @@ func (uc *CreateEventUseCase) Execute(
 	processCategory(doublesMixed, "Mixed Doubles", "doubles", "", true)
 	processCategory(teamsMen, "Men's Teams", "teams", "M", false)
 	processCategory(teamsWomen, "Women's Teams", "teams", "F", false)
+	processCategory(singlesOpen, "Open Singles", "singles", "", false)
 
 	if err := uc.tournamentRepo.Save(ctx, e); err != nil {
 		return nil, err

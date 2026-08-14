@@ -153,6 +153,41 @@
                         </div>
                     </div>
 
+                    <!-- Open Singles (mixed gender, plays together regardless of gender/division) -->
+                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardSinglesOpen">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white">⚤ {{t $.T "admin.tournaments.singles"}}</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">{{t $.T "admin.tournaments.open"}}</span>
+                            </div>
+                            <input type="checkbox" name="autoSinglesOpen" onchange="toggleCategory(this, 'SinglesOpen')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.format_label"}}</label>
+                                <select name="formatSinglesOpen" onchange="document.getElementById('passCountSinglesOpenContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                    <option value="groups_elimination" selected>{{t $.T "admin.tournaments.fmt_group_ko"}}</option>
+                                    <option value="elimination">{{t $.T "admin.tournaments.fmt_elimination"}}</option>
+                                    <option value="round_robin">{{t $.T "admin.tournaments.fmt_round_robin"}}</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1" id="passCountSinglesOpenContainer">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.pass_count_label"}}</label>
+                                <input type="number" name="groupPassCountSinglesOpen" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.player_pool_label"}}</label>
+                            <select name="participantIdsSinglesOpen[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                                {{range $.Players}}
+                                <option value="{{.ID}}" class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} (Elo: {{.SinglesElo}})</option>
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+
                     <!-- Men's Doubles -->
                     <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardDoublesMen">
                         <div class="flex items-center justify-between border-b border-white/5 pb-2">

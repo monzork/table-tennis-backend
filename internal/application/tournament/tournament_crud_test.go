@@ -46,6 +46,7 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 		tournament.CategoryConfig{Auto: true, Format: "doubles", PlayerIDs: []string{"p1", "p2"}}, // mixed
 		tournament.CategoryConfig{Auto: true, Format: "teams", PlayerIDs: []string{"p1"}},
 		tournament.CategoryConfig{Auto: true, Format: "teams", PlayerIDs: []string{"p2"}},
+		tournament.CategoryConfig{Auto: true, Format: "single", PlayerIDs: []string{"p1", "p2"}}, // open singles
 		[]string{},
 	)
 	if err != nil {
@@ -56,23 +57,23 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 	}
 
 	// Test errors
-	_, err = uc.Execute(ctx, "Test", []string{"invalid_div"}, false, "2026-10-01", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil)
+	_, err = uc.Execute(ctx, "Test", []string{"invalid_div"}, false, "2026-10-01", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil)
 	if err == nil {
 		t.Errorf("expected error for invalid div")
 	}
 
-	_, err = uc.Execute(ctx, "Test", nil, true, "bad-date", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil)
+	_, err = uc.Execute(ctx, "Test", nil, true, "bad-date", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil)
 	if err == nil {
 		t.Errorf("expected error for bad start date")
 	}
 
-	_, err = uc.Execute(ctx, "Test", nil, true, "2026-10-01", "bad-date", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil)
+	_, err = uc.Execute(ctx, "Test", nil, true, "2026-10-01", "bad-date", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil)
 	if err == nil {
 		t.Errorf("expected error for bad end date")
 	}
 
 	// NewEvent validation error (empty name) with a non-skip-elo division set.
-	_, err = uc.Execute(ctx, "", []string{"d1"}, false, "2026-10-01", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil)
+	_, err = uc.Execute(ctx, "", []string{"d1"}, false, "2026-10-01", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil)
 	if err == nil {
 		t.Errorf("expected error for empty event name")
 	}
@@ -88,6 +89,7 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 		"2026-10-01",
 		"2026-10-02",
 		tournament.CategoryConfig{Auto: true, Format: "single", PlayerIDs: []string{"p1", "p_unknown"}},
+		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
@@ -117,6 +119,7 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{Auto: true, Format: "doubles", PlayerIDs: []string{"p1", "p2"}}, // mixed
+		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		nil,
