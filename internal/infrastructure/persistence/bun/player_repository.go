@@ -2,12 +2,87 @@ package bun
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"table-tennis-backend/internal/domain/player"
+	"unicode"
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
+
+// accentPairs maps accented characters (both cases) to their unaccented,
+// lowercase equivalent. Used only as a SQLite fallback (local dev without
+// DATABASE_URL) — PostgreSQL uses its native unaccent() extension instead
+// (migration 048), which handles this in the DB rather than in Go.
+var accentPairs = []struct{ from, to string }{
+	{"á", "a"}, {"Á", "a"}, {"à", "a"}, {"À", "a"}, {"ä", "a"}, {"Ä", "a"}, {"â", "a"}, {"Â", "a"}, {"ã", "a"}, {"Ã", "a"},
+	{"é", "e"}, {"É", "e"}, {"è", "e"}, {"È", "e"}, {"ë", "e"}, {"Ë", "e"}, {"ê", "e"}, {"Ê", "e"},
+	{"í", "i"}, {"Í", "i"}, {"ì", "i"}, {"Ì", "i"}, {"ï", "i"}, {"Ï", "i"}, {"î", "i"}, {"Î", "i"},
+	{"ó", "o"}, {"Ó", "o"}, {"ò", "o"}, {"Ò", "o"}, {"ö", "o"}, {"Ö", "o"}, {"ô", "o"}, {"Ô", "o"}, {"õ", "o"}, {"Õ", "o"},
+	{"ú", "u"}, {"Ú", "u"}, {"ù", "u"}, {"Ù", "u"}, {"ü", "u"}, {"Ü", "u"}, {"û", "u"}, {"Û", "u"},
+	{"ñ", "n"}, {"Ñ", "n"}, {"ç", "c"}, {"Ç", "c"},
+}
+
+// unaccentExprSQLite builds a SQL expression that folds case and strips the
+// diacritics in accentPairs from col via nested REPLACE()+LOWER(), for
+// dialects (SQLite) without a native unaccent() function.
+func unaccentExprSQLite(col string) string {
+	expr := col
+	for _, p := range accentPairs {
+		expr = fmt.Sprintf("REPLACE(%s, '%s', '%s')", expr, p.from, p.to)
+	}
+	return "LOWER(" + expr + ")"
+}
+
+// stripAccents removes diacritics from s (e.g. "José" -> "Jose") so search
+// terms can be compared against unaccentExprSQLite'd columns.
+func stripAccents(s string) string {
+	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	result, _, err := transform.String(t, s)
+	if err != nil {
+		return s
+	}
+	return result
+}
+
+// applyNameSearch AND-filters q so every whitespace-separated term in query
+// must match (accent- and case-insensitively) at least one of the player's
+// name columns. On PostgreSQL this is delegated entirely to the DB via the
+// unaccent() extension; SQLite (local dev only) falls back to Go-side
+// diacritic stripping since it has no such builtin.
+func (r *PlayerRepository) applyNameSearch(q *bun.SelectQuery, query string) *bun.SelectQuery {
+	if query == "" {
+		return q
+	}
+	cols := []string{"first_name", "second_name", "last_name", "second_last_name"}
+	isPG := r.db.Dialect().Name() == dialect.PG
+
+	parts := make([]string, len(cols))
+	for i, c := range cols {
+		if isPG {
+			parts[i] = fmt.Sprintf("unaccent(LOWER(%s)) LIKE unaccent(?)", c)
+		} else {
+			parts[i] = fmt.Sprintf("%s LIKE ?", unaccentExprSQLite(c))
+		}
+	}
+	condition := "(" + strings.Join(parts, " OR ") + ")"
+
+	terms := strings.Fields(strings.ToLower(query))
+	for _, term := range terms {
+		pattern := term
+		if !isPG {
+			pattern = stripAccents(term)
+		}
+		pattern = "%" + pattern + "%"
+		q = q.Where(condition, pattern, pattern, pattern, pattern)
+	}
+	return q
+}
 
 type PlayerRepository struct {
 	db *bun.DB
@@ -177,14 +252,7 @@ func (r *PlayerRepository) Delete(ctx context.Context, id string) error {
 
 func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.Player, error) {
 	var models []PlayerModel
-	q := ExtractDB(ctx, r.db).NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc)
-	if query != "" {
-		terms := strings.Fields(strings.ToLower(query))
-		for _, term := range terms {
-			lowerTerm := "%" + term + "%"
-			q = q.Where("(LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?)", lowerTerm, lowerTerm, lowerTerm, lowerTerm)
-		}
-	}
+	q := r.applyNameSearch(ExtractDB(ctx, r.db).NewSelect().Model(&models).OrderBy("singles_elo", bun.OrderDesc), query)
 	if err := q.Scan(ctx); err != nil {
 		return nil, err
 	}
@@ -195,17 +263,10 @@ func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.
 // selection cards UI, which only ever renders name, gender and singles Elo.
 func (r *PlayerRepository) SearchForSelection(ctx context.Context, query, gender string) ([]*player.Player, error) {
 	var models []PlayerModel
-	q := ExtractDB(ctx, r.db).NewSelect().
+	q := r.applyNameSearch(ExtractDB(ctx, r.db).NewSelect().
 		Model(&models).
 		Column("id", "first_name", "second_name", "last_name", "second_last_name", "gender", "singles_elo").
-		OrderBy("singles_elo", bun.OrderDesc)
-	if query != "" {
-		terms := strings.Fields(strings.ToLower(query))
-		for _, term := range terms {
-			lowerTerm := "%" + term + "%"
-			q = q.Where("(LOWER(first_name) LIKE ? OR LOWER(second_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(second_last_name) LIKE ?)", lowerTerm, lowerTerm, lowerTerm, lowerTerm)
-		}
-	}
+		OrderBy("singles_elo", bun.OrderDesc), query)
 	if gender != "" {
 		q = q.Where("gender = ?", gender)
 	}

@@ -287,6 +287,48 @@ func TestPlayerRepository_SearchAndSearchForSelection(t *testing.T) {
 	}
 }
 
+func TestPlayerRepository_Search_AccentInsensitive(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	p1 := newTestPlayer(t, "José", "Muñoz", "M")
+	p2 := newTestPlayer(t, "René", "Peña", "M")
+	if err := repo.Save(ctx, p1); err != nil {
+		t.Fatalf("Save p1: %v", err)
+	}
+	if err := repo.Save(ctx, p2); err != nil {
+		t.Fatalf("Save p2: %v", err)
+	}
+
+	// Unaccented query should find accented names.
+	results, err := repo.Search(ctx, "jose munoz")
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if len(results) != 1 || results[0].ID != p1.ID {
+		t.Fatalf("expected to find José Muñoz via unaccented query, got %+v", results)
+	}
+
+	// Accented query should still find accented names.
+	results, err = repo.Search(ctx, "José")
+	if err != nil {
+		t.Fatalf("Search (accented query): %v", err)
+	}
+	if len(results) != 1 || results[0].ID != p1.ID {
+		t.Fatalf("expected to find José via accented query, got %+v", results)
+	}
+
+	// Unaccented query should find "Peña" via SearchForSelection too.
+	selection, err := repo.SearchForSelection(ctx, "pena", "M")
+	if err != nil {
+		t.Fatalf("SearchForSelection: %v", err)
+	}
+	if len(selection) != 1 || selection[0].ID != p2.ID {
+		t.Fatalf("expected to find Peña via unaccented query, got %+v", selection)
+	}
+}
+
 func TestPlayerRepository_SaveMultiple(t *testing.T) {
 	db := setupTestDB(t)
 	repo := bunRepo.NewPlayerRepository(db)

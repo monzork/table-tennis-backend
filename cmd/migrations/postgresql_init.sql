@@ -2,6 +2,8 @@
 -- Consolidated from migrations 001 through 008
 -- Enable UUID extension if needed
 -- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS unaccent;
 -- 1. Table: players
 CREATE TABLE IF NOT EXISTS players (
     id UUID PRIMARY KEY,
