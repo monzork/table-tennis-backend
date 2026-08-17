@@ -31,6 +31,8 @@ type mockMatchRepo struct {
 	saveErr          error
 	getAllErr        error
 	getSubMatchesErr error
+	findOrCreateID   string
+	findOrCreateErr  error
 }
 
 func newMockMatchRepo() *mockMatchRepo {
@@ -136,7 +138,10 @@ func (m *mockMatchRepo) FinishMatch(ctx context.Context, cmd eventDomain.FinishM
 	return nil
 }
 func (m *mockMatchRepo) FindOrCreateMatch(ctx context.Context, tournamentID, p1ID, p2ID, stage, matchType string) (string, error) {
-	return "", nil
+	if m.findOrCreateErr != nil {
+		return "", m.findOrCreateErr
+	}
+	return m.findOrCreateID, nil
 }
 func (m *mockMatchRepo) CreateSubMatches(ctx context.Context, cmd eventDomain.CreateSubMatchesCommand) error {
 	m.subCreated = true

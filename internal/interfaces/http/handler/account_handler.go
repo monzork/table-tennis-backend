@@ -368,11 +368,21 @@ func (h *AccountHandler) UpdatePlayer(c *fiber.Ctx) error {
 
 // ── Score proposals ──────────────────────────────────────────────────────
 
+// ProposeScore handles both a real match (:matchId is its ID) and a
+// "potential" matchup the account UI shows before any Match row exists for
+// it (:matchId is the literal "new" sentinel) — see event.BuildBoardCards
+// and ProposeMatchScoreUseCase's find-or-create handling.
 func (h *AccountHandler) ProposeScore(c *fiber.Ctx) error {
 	matchID := c.Params("matchId")
+	if matchID == "new" {
+		matchID = ""
+	}
 	var body struct {
-		PlayerID string   `json:"playerId" form:"playerId"`
-		Sets     []string `json:"sets" form:"sets[]"`
+		PlayerID   string   `json:"playerId" form:"playerId"`
+		EventID    string   `json:"eventId" form:"eventId"`
+		OpponentID string   `json:"opponentId" form:"opponentId"`
+		Stage      string   `json:"stage" form:"stage"`
+		Sets       []string `json:"sets" form:"sets[]"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
@@ -391,7 +401,16 @@ func (h *AccountHandler) ProposeScore(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	if err := h.proposeScoreUC.Execute(c.Context(), h.accountID(c), matchID, body.PlayerID, sets); err != nil {
+	err = h.proposeScoreUC.Execute(c.Context(), matchApp.ProposeMatchScoreCommand{
+		AccountID:          h.accountID(c),
+		MatchID:            matchID,
+		ProposedByPlayerID: body.PlayerID,
+		EventID:            body.EventID,
+		OpponentID:         body.OpponentID,
+		Stage:              body.Stage,
+		Sets:               sets,
+	})
+	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 

@@ -400,7 +400,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	updateAccountUC := accountApp.NewUpdateAccountUseCase(accountRepo)
 	createChildPlayerUC := accountApp.NewCreateChildPlayerUseCase(playerRepo)
 	getLinkedPlayersUC := accountApp.NewGetLinkedPlayersUseCase(playerRepo)
-	getPlayerPendingMatchesUC := player.NewGetPlayerPendingMatchesUseCase(tournamentRepo)
+	getPlayerPendingMatchesUC := player.NewGetPlayerPendingMatchesUseCase(tournamentRepo, divisionRepo)
 	getGuardianPendingMatchesUC := accountApp.NewGetGuardianPendingMatchesUseCase(getLinkedPlayersUC, getPlayerPendingMatchesUC)
 	proposeMatchScoreUC := match.NewProposeMatchScoreUseCase(matchRepo, tournamentRepo, playerRepo)
 	confirmMatchScoreUC := match.NewConfirmMatchScoreUseCase(matchRepo, tournamentRepo, updateScoreUC)

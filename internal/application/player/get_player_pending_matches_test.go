@@ -6,9 +6,21 @@ import (
 	"testing"
 
 	"table-tennis-backend/internal/application/player"
+	divisionDomain "table-tennis-backend/internal/domain/division"
 	eventDomain "table-tennis-backend/internal/domain/event"
 	playerDomain "table-tennis-backend/internal/domain/player"
 )
+
+// fakeDivisionRepo returns an empty division list — BuildBoardCards degrades
+// gracefully (no divisions matched) with no divisions configured, which is
+// fine for these tests since they only assert on real (non-virtual) matches.
+type fakeDivisionRepo struct {
+	divisionDomain.Repository
+}
+
+func (f *fakeDivisionRepo) GetAll(ctx context.Context) ([]*divisionDomain.Division, error) {
+	return nil, nil
+}
 
 func TestGetPlayerPendingMatchesUseCase_Execute(t *testing.T) {
 	p1 := &playerDomain.Player{ID: "p1", FirstName: "Ana"}
@@ -35,7 +47,7 @@ func TestGetPlayerPendingMatchesUseCase_Execute(t *testing.T) {
 			},
 		}
 
-		uc := player.NewGetPlayerPendingMatchesUseCase(eventRepo)
+		uc := player.NewGetPlayerPendingMatchesUseCase(eventRepo, &fakeDivisionRepo{})
 		pending, err := uc.Execute(context.Background(), "p1")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -50,9 +62,47 @@ func TestGetPlayerPendingMatchesUseCase_Execute(t *testing.T) {
 
 	t.Run("propagates repository error", func(t *testing.T) {
 		eventRepo := &fakeEventRepo{eventsErr: errors.New("boom")}
-		uc := player.NewGetPlayerPendingMatchesUseCase(eventRepo)
+		uc := player.NewGetPlayerPendingMatchesUseCase(eventRepo, &fakeDivisionRepo{})
 		if _, err := uc.Execute(context.Background(), "p1"); err == nil {
 			t.Fatal("expected error to propagate")
+		}
+	})
+
+	t.Run("surfaces a potential round-robin matchup with no Match row yet", func(t *testing.T) {
+		p3 := &playerDomain.Player{ID: "p3", FirstName: "Caro"}
+		eventRepo := &fakeEventRepo{
+			events: []*eventDomain.Event{
+				{
+					ID:            "e3",
+					Name:          "Primera Division",
+					Type:          "singles",
+					EventCategory: "open",
+					Format:        "round_robin",
+					Participants:  []*playerDomain.Player{p1, opponent, p3},
+					// No Matches at all — group play hasn't been "started".
+				},
+			},
+		}
+
+		uc := player.NewGetPlayerPendingMatchesUseCase(eventRepo, &fakeDivisionRepo{})
+		pending, err := uc.Execute(context.Background(), "p1")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		// p1 plays both opponent and p3 in a 3-player round robin.
+		if len(pending) != 2 {
+			t.Fatalf("expected 2 potential matchups for p1, got %d: %+v", len(pending), pending)
+		}
+		for _, d := range pending {
+			if d.MatchID != "" {
+				t.Errorf("expected no MatchID on a not-yet-created matchup, got %q", d.MatchID)
+			}
+			if d.EventID != "e3" || d.EventName != "Primera Division" {
+				t.Errorf("expected EventID/EventName stamped from the owning event, got %+v", d)
+			}
+			if d.OpponentID == "" || d.Opponent == "" {
+				t.Errorf("expected opponent identity populated, got %+v", d)
+			}
 		}
 	})
 }

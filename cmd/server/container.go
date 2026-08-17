@@ -192,7 +192,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	updateAccountUC := accountApp.NewUpdateAccountUseCase(accountRepo)
 	createChildPlayerUC := accountApp.NewCreateChildPlayerUseCase(playerRepo)
 	getLinkedPlayersUC := accountApp.NewGetLinkedPlayersUseCase(playerRepo)
-	getPlayerPendingMatchesUC := player.NewGetPlayerPendingMatchesUseCase(eventRepo)
+	getPlayerPendingMatchesUC := player.NewGetPlayerPendingMatchesUseCase(eventRepo, divisionRepo)
 	getGuardianPendingMatchesUC := accountApp.NewGetGuardianPendingMatchesUseCase(getLinkedPlayersUC, getPlayerPendingMatchesUC)
 	assignPlayerToAccountUC := accountApp.NewAssignPlayerToAccountUseCase(playerRepo, accountRepo)
 

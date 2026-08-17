@@ -5,9 +5,23 @@ import (
 	"errors"
 
 	"table-tennis-backend/internal/domain/account"
+	divisionDomain "table-tennis-backend/internal/domain/division"
 	tournamentEvent "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
 )
+
+// ─── fake division.Repository ───────────────────────────────────────────────
+
+// fakeDivisionRepo returns an empty division list — BuildBoardCards degrades
+// gracefully with no divisions configured, fine for these tests since they
+// only assert on real (non-virtual) matches.
+type fakeDivisionRepo struct {
+	divisionDomain.Repository
+}
+
+func (f *fakeDivisionRepo) GetAll(ctx context.Context) ([]*divisionDomain.Division, error) {
+	return nil, nil
+}
 
 // ─── fake account.Repository ────────────────────────────────────────────────
 

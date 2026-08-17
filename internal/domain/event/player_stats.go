@@ -101,9 +101,14 @@ func BuildPlayerMatchDetails(playerID string, matches []Match) []PlayerMatchDeta
 // Deliberately not PlayerMatchDetail, whose Won/set-score fields only make
 // sense for a finished match.
 type PlayerPendingMatchDetail struct {
-	MatchID      string
-	EventName    string // which event/tournament this match belongs to
-	Opponent     string
+	MatchID   string
+	EventID   string // owning event — needed to materialize a virtual match
+	EventName string // which event/tournament this match belongs to
+	Stage     string
+
+	Opponent   string
+	OpponentID string
+
 	Status       string // scheduled, in_progress
 	TableNumber  *int
 	HasProposal  bool
@@ -136,8 +141,11 @@ func BuildPlayerPendingMatchDetails(playerID, eventName string, matches []Match)
 
 		details = append(details, PlayerPendingMatchDetail{
 			MatchID:      m.ID,
+			EventID:      m.EventID,
 			EventName:    eventName,
+			Stage:        m.Stage,
 			Opponent:     opponentName(opponentTeam),
+			OpponentID:   opponentID(opponentTeam),
 			Status:       m.Status,
 			TableNumber:  m.TableNumber,
 			HasProposal:  hasProposal,
@@ -161,6 +169,13 @@ func opponentName(team []*player.Player) string {
 		return ""
 	}
 	return team[0].FullName()
+}
+
+func opponentID(team []*player.Player) string {
+	if len(team) == 0 || team[0] == nil {
+		return ""
+	}
+	return team[0].ID
 }
 
 func applyTeamStats(stats map[string]PlayerEventStats, m Match, team []*player.Player, won bool, setsWon, setsLost int, isA bool) {

@@ -48,7 +48,7 @@ func TestProposeMatchScoreUseCase(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		uc := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
 
-		err := uc.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets())
+		err := uc.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -62,7 +62,7 @@ func TestProposeMatchScoreUseCase(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		uc := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
 
-		err := uc.Execute(context.Background(), "acc-WRONG", "m1", "p1", sampleWinningSets())
+		err := uc.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-WRONG", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()})
 		if err == nil {
 			t.Fatal("expected ownership error")
 		}
@@ -75,9 +75,63 @@ func TestProposeMatchScoreUseCase(t *testing.T) {
 		playerRepo.players["p3"] = outsider
 
 		uc := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		err := uc.Execute(context.Background(), "acc-2", "m1", "p3", sampleWinningSets())
+		err := uc.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-2", MatchID: "m1", ProposedByPlayerID: "p3", Sets: sampleWinningSets()})
 		if err != match.ErrPlayerNotInMatch {
 			t.Fatalf("expected ErrPlayerNotInMatch, got %v", err)
+		}
+	})
+
+	t.Run("materializes a virtual (not-yet-created) match via find-or-create", func(t *testing.T) {
+		matchRepo, eventRepo, playerRepo, p1, p2 := setupProposalFixtures()
+		// "m2" doesn't exist in matchRepo.matches yet — simulates a
+		// BuildBoardCards potential matchup with no real Match row.
+		matchRepo.findOrCreateID = "m2"
+		matchRepo.matches["m2"] = &eventDomain.Match{
+			ID:      "m2",
+			EventID: "e1",
+			Stage:   "group",
+			Status:  "scheduled",
+			TeamA:   []*playerDomain.Player{p1},
+			TeamB:   []*playerDomain.Player{p2},
+		}
+
+		uc := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
+		err := uc.Execute(context.Background(), match.ProposeMatchScoreCommand{
+			AccountID: "acc-1", ProposedByPlayerID: "p1",
+			EventID: "e1", OpponentID: "p2", Stage: "group",
+			Sets: sampleWinningSets(),
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		m := matchRepo.matches["m2"]
+		if m.ProposedByPlayerID == nil || *m.ProposedByPlayerID != "p1" {
+			t.Fatalf("expected proposal staged on the materialized match, got %+v", m.ProposedByPlayerID)
+		}
+	})
+
+	t.Run("rejects a virtual match missing eventId/opponentId/stage", func(t *testing.T) {
+		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
+		uc := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
+		err := uc.Execute(context.Background(), match.ProposeMatchScoreCommand{
+			AccountID: "acc-1", ProposedByPlayerID: "p1", Sets: sampleWinningSets(),
+		})
+		if err != match.ErrMissingVirtualMatchFields {
+			t.Fatalf("expected ErrMissingVirtualMatchFields, got %v", err)
+		}
+	})
+
+	t.Run("propagates find-or-create errors", func(t *testing.T) {
+		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
+		matchRepo.findOrCreateErr = context.DeadlineExceeded
+		uc := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
+		err := uc.Execute(context.Background(), match.ProposeMatchScoreCommand{
+			AccountID: "acc-1", ProposedByPlayerID: "p1",
+			EventID: "e1", OpponentID: "p2", Stage: "group",
+			Sets: sampleWinningSets(),
+		})
+		if err == nil {
+			t.Fatal("expected error to propagate")
 		}
 	})
 }
@@ -101,7 +155,7 @@ func TestConfirmMatchScoreUseCase(t *testing.T) {
 	t.Run("opposing participant confirms happy path, finalizes and clears proposal", func(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		proposeUC := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		if err := proposeUC.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets()); err != nil {
+		if err := proposeUC.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()}); err != nil {
 			t.Fatalf("propose failed: %v", err)
 		}
 
@@ -123,7 +177,7 @@ func TestConfirmMatchScoreUseCase(t *testing.T) {
 	t.Run("proposer cannot confirm their own proposal", func(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		proposeUC := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		_ = proposeUC.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets())
+		_ = proposeUC.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()})
 
 		uc := newConfirmUC(matchRepo, eventRepo)
 		p1 := "p1"
@@ -135,7 +189,7 @@ func TestConfirmMatchScoreUseCase(t *testing.T) {
 	t.Run("non-participant cannot confirm", func(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		proposeUC := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		_ = proposeUC.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets())
+		_ = proposeUC.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()})
 
 		uc := newConfirmUC(matchRepo, eventRepo)
 		outsider := "p3"
@@ -147,7 +201,7 @@ func TestConfirmMatchScoreUseCase(t *testing.T) {
 	t.Run("nil confirmedByPlayerID rejected for non-admin", func(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		proposeUC := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		_ = proposeUC.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets())
+		_ = proposeUC.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()})
 
 		uc := newConfirmUC(matchRepo, eventRepo)
 		if err := uc.Execute(context.Background(), "m1", nil, false); err != match.ErrNotOpposingParticipant {
@@ -158,7 +212,7 @@ func TestConfirmMatchScoreUseCase(t *testing.T) {
 	t.Run("admin confirm bypasses the opposing-participant check", func(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		proposeUC := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		_ = proposeUC.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets())
+		_ = proposeUC.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()})
 
 		uc := newConfirmUC(matchRepo, eventRepo)
 		if err := uc.Execute(context.Background(), "m1", nil, true); err != nil {
@@ -183,7 +237,7 @@ func TestRejectMatchScoreProposalUseCase(t *testing.T) {
 	t.Run("opposing participant rejects, proposal cleared, re-propose loop works", func(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		proposeUC := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		if err := proposeUC.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets()); err != nil {
+		if err := proposeUC.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()}); err != nil {
 			t.Fatalf("propose failed: %v", err)
 		}
 
@@ -197,7 +251,7 @@ func TestRejectMatchScoreProposalUseCase(t *testing.T) {
 		}
 
 		// Re-propose after rejection should work again.
-		if err := proposeUC.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets()); err != nil {
+		if err := proposeUC.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()}); err != nil {
 			t.Fatalf("expected re-propose to succeed, got %v", err)
 		}
 		if matchRepo.matches["m1"].ProposedByPlayerID == nil {
@@ -208,7 +262,7 @@ func TestRejectMatchScoreProposalUseCase(t *testing.T) {
 	t.Run("proposer cannot reject their own proposal", func(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		proposeUC := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		_ = proposeUC.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets())
+		_ = proposeUC.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()})
 
 		rejectUC := match.NewRejectMatchScoreProposalUseCase(matchRepo)
 		if err := rejectUC.Execute(context.Background(), "m1", "p1"); err != match.ErrNotOpposingParticipant {
@@ -219,7 +273,7 @@ func TestRejectMatchScoreProposalUseCase(t *testing.T) {
 	t.Run("non-participant cannot reject", func(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		proposeUC := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		_ = proposeUC.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets())
+		_ = proposeUC.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()})
 
 		rejectUC := match.NewRejectMatchScoreProposalUseCase(matchRepo)
 		if err := rejectUC.Execute(context.Background(), "m1", "p3"); err != match.ErrNotOpposingParticipant {
@@ -232,7 +286,7 @@ func TestProposeMatchScoreUseCase_ErrorPaths(t *testing.T) {
 	t.Run("unknown player propagates GetById error", func(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		uc := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		if err := uc.Execute(context.Background(), "acc-1", "m1", "missing", sampleWinningSets()); err == nil {
+		if err := uc.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "missing", Sets: sampleWinningSets()}); err == nil {
 			t.Fatal("expected error for unknown player")
 		}
 	})
@@ -240,7 +294,7 @@ func TestProposeMatchScoreUseCase_ErrorPaths(t *testing.T) {
 	t.Run("unknown match propagates GetByID error", func(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		uc := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		if err := uc.Execute(context.Background(), "acc-1", "missing-match", "p1", sampleWinningSets()); err == nil {
+		if err := uc.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "missing-match", ProposedByPlayerID: "p1", Sets: sampleWinningSets()}); err == nil {
 			t.Fatal("expected error for unknown match")
 		}
 	})
@@ -249,7 +303,7 @@ func TestProposeMatchScoreUseCase_ErrorPaths(t *testing.T) {
 		matchRepo, eventRepo, playerRepo, _, _ := setupProposalFixtures()
 		matchRepo.matches["m1"].EventID = "no-such-event"
 		uc := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
-		if err := uc.Execute(context.Background(), "acc-1", "m1", "p1", sampleWinningSets()); err == nil {
+		if err := uc.Execute(context.Background(), match.ProposeMatchScoreCommand{AccountID: "acc-1", MatchID: "m1", ProposedByPlayerID: "p1", Sets: sampleWinningSets()}); err == nil {
 			t.Fatal("expected error for unknown event")
 		}
 	})

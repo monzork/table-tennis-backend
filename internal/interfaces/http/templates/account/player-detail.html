@@ -41,8 +41,13 @@
                 </div>
                 {{end}}
             {{else}}
-                <form hx-post="/account/matches/{{.MatchID}}/propose-score" class="flex items-center gap-2">
+                <form hx-post="/account/matches/{{if .MatchID}}{{.MatchID}}{{else}}new{{end}}/propose-score" class="flex items-center gap-2 flex-wrap">
                     <input type="hidden" name="playerId" value="{{$.Player.ID}}">
+                    {{if not .MatchID}}
+                    <input type="hidden" name="eventId" value="{{.EventID}}">
+                    <input type="hidden" name="opponentId" value="{{.OpponentID}}">
+                    <input type="hidden" name="stage" value="{{.Stage}}">
+                    {{end}}
                     <input type="text" name="sets[]" placeholder="11-8" class="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <input type="text" name="sets[]" placeholder="11-8" class="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <input type="text" name="sets[]" placeholder="11-8" class="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">

@@ -218,7 +218,7 @@ func TestGetGuardianPendingMatchesUseCase(t *testing.T) {
 	// p2 has no pending matches.
 
 	getLinkedUC := accountApp.NewGetLinkedPlayersUseCase(playerRepo)
-	getPendingUC := playerApp.NewGetPlayerPendingMatchesUseCase(eventRepo)
+	getPendingUC := playerApp.NewGetPlayerPendingMatchesUseCase(eventRepo, &fakeDivisionRepo{})
 	uc := accountApp.NewGetGuardianPendingMatchesUseCase(getLinkedUC, getPendingUC)
 
 	results, err := uc.Execute(context.Background(), "acc-1")
@@ -324,7 +324,7 @@ func TestGetGuardianPendingMatchesUseCase_EventRepoError(t *testing.T) {
 	playerRepo.players["p1"] = &player.Player{ID: "p1", GuardianAccountID: &gid}
 
 	getLinkedUC := accountApp.NewGetLinkedPlayersUseCase(playerRepo)
-	getPendingUC := playerApp.NewGetPlayerPendingMatchesUseCase(eventRepo)
+	getPendingUC := playerApp.NewGetPlayerPendingMatchesUseCase(eventRepo, &fakeDivisionRepo{})
 	uc := accountApp.NewGetGuardianPendingMatchesUseCase(getLinkedUC, getPendingUC)
 
 	// best-effort: per-player errors don't fail the whole call, just leave
