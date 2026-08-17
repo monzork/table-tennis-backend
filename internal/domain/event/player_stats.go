@@ -102,6 +102,7 @@ func BuildPlayerMatchDetails(playerID string, matches []Match) []PlayerMatchDeta
 // sense for a finished match.
 type PlayerPendingMatchDetail struct {
 	MatchID      string
+	EventName    string // which event/tournament this match belongs to
 	Opponent     string
 	Status       string // scheduled, in_progress
 	TableNumber  *int
@@ -112,8 +113,9 @@ type PlayerPendingMatchDetail struct {
 // BuildPlayerPendingMatchDetails returns every not-yet-finished match the
 // given player takes part in, opponent-facing, including whether a score
 // proposal is currently staged on it and whether this player is the one who
-// proposed it.
-func BuildPlayerPendingMatchDetails(playerID string, matches []Match) []PlayerPendingMatchDetail {
+// proposed it. eventName is stamped onto every detail so a guardian with a
+// player in multiple simultaneous events can tell them apart.
+func BuildPlayerPendingMatchDetails(playerID, eventName string, matches []Match) []PlayerPendingMatchDetail {
 	details := make([]PlayerPendingMatchDetail, 0, len(matches))
 	for _, m := range matches {
 		if m.Status == "finished" {
@@ -134,6 +136,7 @@ func BuildPlayerPendingMatchDetails(playerID string, matches []Match) []PlayerPe
 
 		details = append(details, PlayerPendingMatchDetail{
 			MatchID:      m.ID,
+			EventName:    eventName,
 			Opponent:     opponentName(opponentTeam),
 			Status:       m.Status,
 			TableNumber:  m.TableNumber,

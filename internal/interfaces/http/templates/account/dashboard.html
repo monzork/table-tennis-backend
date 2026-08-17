@@ -31,7 +31,10 @@
             <div class="space-y-2 mb-4">
                 {{range .Matches}}
                 <div class="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl p-3">
-                    <span class="text-sm">vs {{.Opponent}}</span>
+                    <div class="flex flex-col">
+                        <span class="text-sm">vs {{.Opponent}}</span>
+                        {{if .EventName}}<span class="text-[10px] text-gray-600 font-bold uppercase tracking-widest mt-0.5">{{.EventName}}</span>{{end}}
+                    </div>
                     <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">{{.Status}}</span>
                 </div>
                 {{end}}

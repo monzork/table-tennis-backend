@@ -27,7 +27,7 @@ func (uc *GetPlayerPendingMatchesUseCase) Execute(ctx context.Context, playerID 
 
 	var pending []tournamentEvent.PlayerPendingMatchDetail
 	for _, ev := range events {
-		pending = append(pending, tournamentEvent.BuildPlayerPendingMatchDetails(playerID, ev.Matches)...)
+		pending = append(pending, tournamentEvent.BuildPlayerPendingMatchDetails(playerID, ev.Name, ev.Matches)...)
 	}
 	return pending, nil
 }

@@ -162,11 +162,11 @@ func TestBuildPlayerPendingMatchDetails(t *testing.T) {
 			{ID: "m4", Status: "scheduled", TeamA: []*player.Player{p2}, TeamB: []*player.Player{p3}},
 		}
 
-		details := BuildPlayerPendingMatchDetails("p1", matches)
+		details := BuildPlayerPendingMatchDetails("p1", "Men's Singles", matches)
 		if len(details) != 2 {
 			t.Fatalf("expected 2 pending matches, got %d: %+v", len(details), details)
 		}
-		if details[0].MatchID != "m1" || details[0].Opponent != "Beto " || details[0].Status != "scheduled" {
+		if details[0].MatchID != "m1" || details[0].Opponent != "Beto " || details[0].Status != "scheduled" || details[0].EventName != "Men's Singles" {
 			t.Errorf("unexpected first pending detail: %+v", details[0])
 		}
 		if details[1].MatchID != "m2" || details[1].Opponent != "Beto " || details[1].TableNumber == nil || *details[1].TableNumber != 3 {
@@ -180,12 +180,12 @@ func TestBuildPlayerPendingMatchDetails(t *testing.T) {
 			{ID: "m1", Status: "in_progress", TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2}, ProposedByPlayerID: &proposerID},
 		}
 
-		mine := BuildPlayerPendingMatchDetails("p1", matches)
+		mine := BuildPlayerPendingMatchDetails("p1", "Men's Singles", matches)
 		if len(mine) != 1 || !mine[0].HasProposal || !mine[0].ProposedByMe {
 			t.Errorf("expected proposer to see HasProposal+ProposedByMe, got %+v", mine)
 		}
 
-		theirs := BuildPlayerPendingMatchDetails("p2", matches)
+		theirs := BuildPlayerPendingMatchDetails("p2", "Men's Singles", matches)
 		if len(theirs) != 1 || !theirs[0].HasProposal || theirs[0].ProposedByMe {
 			t.Errorf("expected opponent to see HasProposal but not ProposedByMe, got %+v", theirs)
 		}
@@ -195,7 +195,7 @@ func TestBuildPlayerPendingMatchDetails(t *testing.T) {
 		matches := []Match{
 			{ID: "m1", Status: "scheduled", TeamA: []*player.Player{p1, p3}, TeamB: []*player.Player{p2}},
 		}
-		details := BuildPlayerPendingMatchDetails("p3", matches)
+		details := BuildPlayerPendingMatchDetails("p3", "Men's Singles", matches)
 		if len(details) != 1 {
 			t.Fatalf("expected 1 pending match for doubles partner, got %d", len(details))
 		}

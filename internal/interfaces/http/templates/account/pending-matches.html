@@ -8,11 +8,15 @@
         {{$hasAny := false}}
         {{range .Pending}}
             {{if .Matches}}{{$hasAny = true}}
-            <h2 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 mt-6 first:mt-0">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</h2>
+            {{$player := .Player}}
+            <h2 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 mt-6 first:mt-0">{{$player.FirstNameWithSecond}} {{$player.LastNameWithSecond}}</h2>
             <div class="space-y-2 mb-4">
                 {{range .Matches}}
-                <a href="/account/players/{{$.Player.ID}}" class="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl p-3 hover:border-white/20 transition-colors">
-                    <span class="text-sm">vs {{.Opponent}}</span>
+                <a href="/account/players/{{$player.ID}}" class="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl p-3 hover:border-white/20 transition-colors">
+                    <div class="flex flex-col">
+                        <span class="text-sm">vs {{.Opponent}}</span>
+                        {{if .EventName}}<span class="text-[10px] text-gray-600 font-bold uppercase tracking-widest mt-0.5">{{.EventName}}</span>{{end}}
+                    </div>
                     <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">{{.Status}}{{if .HasProposal}} · {{if .ProposedByMe}}{{t $.T "account.pending.awaiting_opponent"}}{{else}}{{t $.T "account.pending.awaiting_you"}}{{end}}{{end}}</span>
                 </a>
                 {{end}}

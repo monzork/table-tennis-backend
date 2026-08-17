@@ -18,14 +18,16 @@ func TestGetPlayerPendingMatchesUseCase_Execute(t *testing.T) {
 		eventRepo := &fakeEventRepo{
 			events: []*eventDomain.Event{
 				{
-					ID: "e1",
+					ID:   "e1",
+					Name: "Men's Singles",
 					Matches: []eventDomain.Match{
 						{ID: "m1", Status: "scheduled", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{opponent}},
 						{ID: "m2", Status: "finished", WinnerTeam: "A", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{opponent}},
 					},
 				},
 				{
-					ID: "e2",
+					ID:   "e2",
+					Name: "Mixed Doubles",
 					Matches: []eventDomain.Match{
 						{ID: "m3", Status: "in_progress", TeamA: []*playerDomain.Player{opponent}, TeamB: []*playerDomain.Player{p1}},
 					},
@@ -40,6 +42,9 @@ func TestGetPlayerPendingMatchesUseCase_Execute(t *testing.T) {
 		}
 		if len(pending) != 2 {
 			t.Fatalf("expected 2 pending matches (finished one excluded), got %d: %+v", len(pending), pending)
+		}
+		if pending[0].EventName != "Men's Singles" || pending[1].EventName != "Mixed Doubles" {
+			t.Errorf("expected EventName to be stamped from the owning event, got %+v", pending)
 		}
 	})
 
