@@ -76,6 +76,16 @@ func createTestLeaderboardApp(t *testing.T) *fiber.App {
 		}
 		return a / b
 	})
+	engine.AddFunc("seq", func(n int) []int {
+		if n <= 0 {
+			return nil
+		}
+		s := make([]int, n)
+		for i := range s {
+			s[i] = i + 1
+		}
+		return s
+	})
 	engine.AddFunc("dict", func(values ...interface{}) (map[string]interface{}, error) {
 		if len(values)%2 != 0 {
 			return nil, fmt.Errorf("invalid dict call")

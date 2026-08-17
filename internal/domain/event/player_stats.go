@@ -113,6 +113,12 @@ type PlayerPendingMatchDetail struct {
 	TableNumber  *int
 	HasProposal  bool
 	ProposedByMe bool
+
+	// BestOf is the number of sets configured for this match's stage (e.g.
+	// Bo5) — not set by BuildPlayerPendingMatchDetails itself since that
+	// requires the owning Event's stage rules; populated by the caller
+	// (GetPlayerPendingMatchesUseCase) via Event.GetEffectiveStageRule.
+	BestOf int
 }
 
 // BuildPlayerPendingMatchDetails returns every not-yet-finished match the

@@ -19,7 +19,7 @@
             <div class="flex items-center justify-between mb-3">
                 <div class="flex flex-col">
                     <span class="font-semibold">vs {{.Opponent}}</span>
-                    {{if .EventName}}<span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{{.EventName}}</span>{{end}}
+                    <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{{if .EventName}}{{.EventName}}{{if .BestOf}} · {{end}}{{end}}{{if .BestOf}}Bo{{.BestOf}}{{end}}</span>
                 </div>
                 <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">{{.Status}}</span>
             </div>
@@ -48,9 +48,10 @@
                     <input type="hidden" name="opponentId" value="{{.OpponentID}}">
                     <input type="hidden" name="stage" value="{{.Stage}}">
                     {{end}}
-                    <input type="text" name="sets[]" placeholder="11-8" class="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <input type="text" name="sets[]" placeholder="11-8" class="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    <input type="text" name="sets[]" placeholder="11-8" class="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    {{$bestOf := .BestOf}}{{if not $bestOf}}{{$bestOf = 5}}{{end}}
+                    {{range seq $bestOf}}
+                    <input type="text" name="sets[]" placeholder="11-8" title="{{t $.T "account.pending.set_label"}} {{.}}" class="flex-1 min-w-[70px] bg-black/40 border border-white/5 rounded-xl p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    {{end}}
                     <button type="submit" class="shrink-0 bg-white hover:bg-gray-200 text-black font-black py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-[10px]">{{t $.T "account.pending.propose_btn"}}</button>
                 </form>
             {{end}}

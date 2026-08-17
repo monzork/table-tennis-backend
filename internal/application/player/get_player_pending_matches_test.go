@@ -30,10 +30,11 @@ func TestGetPlayerPendingMatchesUseCase_Execute(t *testing.T) {
 		eventRepo := &fakeEventRepo{
 			events: []*eventDomain.Event{
 				{
-					ID:   "e1",
-					Name: "Men's Singles",
+					ID:         "e1",
+					Name:       "Men's Singles",
+					StageRules: []eventDomain.StageRule{{Stage: "group", BestOf: 3, PointsToWin: 11, PointsMargin: 2}},
 					Matches: []eventDomain.Match{
-						{ID: "m1", Status: "scheduled", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{opponent}},
+						{ID: "m1", Status: "scheduled", Stage: "group", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{opponent}},
 						{ID: "m2", Status: "finished", WinnerTeam: "A", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{opponent}},
 					},
 				},
@@ -57,6 +58,12 @@ func TestGetPlayerPendingMatchesUseCase_Execute(t *testing.T) {
 		}
 		if pending[0].EventName != "Men's Singles" || pending[1].EventName != "Mixed Doubles" {
 			t.Errorf("expected EventName to be stamped from the owning event, got %+v", pending)
+		}
+		if pending[0].BestOf != 3 {
+			t.Errorf("expected BestOf 3 from the event's configured group stage rule, got %d", pending[0].BestOf)
+		}
+		if pending[1].BestOf != 5 {
+			t.Errorf("expected BestOf to fall back to the default WTT rule (5) when unconfigured, got %d", pending[1].BestOf)
 		}
 	})
 
@@ -102,6 +109,9 @@ func TestGetPlayerPendingMatchesUseCase_Execute(t *testing.T) {
 			}
 			if d.OpponentID == "" || d.Opponent == "" {
 				t.Errorf("expected opponent identity populated, got %+v", d)
+			}
+			if d.BestOf == 0 {
+				t.Errorf("expected BestOf populated on a potential matchup too, got %+v", d)
 			}
 		}
 	})

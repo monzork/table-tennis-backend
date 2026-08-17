@@ -56,6 +56,18 @@ func SetupTemplateEngine() *html.Engine {
 	engine.AddFunc("add", func(a, b int) int {
 		return a + b
 	})
+	// seq(n) returns [1..n], for {{range seq .BestOf}} to render a
+	// tournament-configured number of set-score inputs.
+	engine.AddFunc("seq", func(n int) []int {
+		if n <= 0 {
+			return nil
+		}
+		s := make([]int, n)
+		for i := range s {
+			s[i] = i + 1
+		}
+		return s
+	})
 	engine.AddFunc("mul", func(a, b int) int {
 		return a * b
 	})

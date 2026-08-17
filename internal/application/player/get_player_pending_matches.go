@@ -44,7 +44,11 @@ func (uc *GetPlayerPendingMatchesUseCase) Execute(ctx context.Context, playerID 
 	var pending []tournamentEvent.PlayerPendingMatchDetail
 	for _, ev := range events {
 		// Real matches (already persisted rows) — carries proposal state.
-		pending = append(pending, tournamentEvent.BuildPlayerPendingMatchDetails(playerID, ev.Name, ev.Matches)...)
+		real := tournamentEvent.BuildPlayerPendingMatchDetails(playerID, ev.Name, ev.Matches)
+		for i := range real {
+			real[i].BestOf = ev.GetEffectiveStageRule(real[i].Stage).BestOf
+		}
+		pending = append(pending, real...)
 
 		// Potential matchups the board already projects but that don't exist
 		// as a Match row yet (BoardCard.MatchID == ""). No proposal is
@@ -70,6 +74,7 @@ func (uc *GetPlayerPendingMatchesUseCase) Execute(ctx context.Context, playerID 
 				Opponent:   opponent,
 				OpponentID: opponentID,
 				Status:     card.Status,
+				BestOf:     card.BestOf,
 			})
 		}
 	}
