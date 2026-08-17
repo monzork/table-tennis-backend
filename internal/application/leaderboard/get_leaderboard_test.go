@@ -84,6 +84,10 @@ func (m *mockPlayerRepo) GetDoublesByGender(ctx context.Context, gender string) 
 	return m.doublesGender[gender], nil
 }
 
+func (m *mockPlayerRepo) GetByGuardianAccountID(ctx context.Context, accountID string) ([]*player.Player, error) {
+	return nil, nil
+}
+
 func TestGetLeaderboardUseCase_Execute(t *testing.T) {
 	repo := newMockPlayerRepo()
 	p1 := &player.Player{ID: "1", FirstName: "Alice", SinglesElo: 1200}

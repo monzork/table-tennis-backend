@@ -42,6 +42,7 @@ func setupTestDB(t *testing.T) *bun.DB {
 
 	models := []interface{}{
 		(*bunRepo.AdminModel)(nil),
+		(*bunRepo.AccountModel)(nil),
 		(*bunRepo.DivisionModel)(nil),
 		(*bunRepo.EventModel)(nil),
 		(*bunRepo.MatchModel)(nil),

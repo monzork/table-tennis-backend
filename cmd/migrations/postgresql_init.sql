@@ -158,3 +158,20 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS skip_division_split BOOLEAN NOT NULL
 -- Alter table tournaments to add new features
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS num_tables INT NOT NULL DEFAULT 4;
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS table_priorities JSONB;
+
+-- Guardian accounts (Google OAuth) + player self-service score confirmation
+CREATE TABLE IF NOT EXISTS accounts (
+    id UUID PRIMARY KEY,
+    google_sub TEXT UNIQUE NOT NULL,
+    email TEXT NOT NULL,
+    name TEXT,
+    picture_url TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP
+);
+ALTER TABLE players ADD COLUMN IF NOT EXISTS guardian_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_players_guardian_account_id ON players(guardian_account_id);
+
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS proposed_sets JSONB;
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS proposed_by_player_id UUID REFERENCES players(id) ON DELETE SET NULL;
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS proposed_at TIMESTAMP;

@@ -407,3 +407,121 @@ func TestPlayerRepository_GetAllSinglesAndDoubles_QueryError(t *testing.T) {
 		t.Fatal("expected error from GetDoublesByGender with a cancelled context")
 	}
 }
+
+func TestPlayerRepository_GuardianAccountID_RoundTrip(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	accountID := uuid.NewString()
+	p, err := player.NewGuardianChildPlayer(uuid.NewString(), accountID, "Kid", "Smith", time.Date(2012, 1, 1, 0, 0, 0, 0, time.UTC), "M", "NIC", "Managua")
+	if err != nil {
+		t.Fatalf("NewGuardianChildPlayer: %v", err)
+	}
+
+	if err := repo.Save(ctx, p); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	got, err := repo.GetById(ctx, p.ID)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.GuardianAccountID == nil || *got.GuardianAccountID != accountID {
+		t.Fatalf("expected GuardianAccountID %q round-tripped, got %+v", accountID, got.GuardianAccountID)
+	}
+}
+
+func TestPlayerRepository_Save_NilGuardianAccountID(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	p := newTestPlayer(t, "No", "Guardian", "M")
+	if err := repo.Save(ctx, p); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	got, err := repo.GetById(ctx, p.ID)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.GuardianAccountID != nil {
+		t.Fatalf("expected nil GuardianAccountID, got %v", got.GuardianAccountID)
+	}
+}
+
+func TestPlayerRepository_Save_InvalidGuardianAccountID(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	p := newTestPlayer(t, "Bad", "Guardian", "M")
+	bad := "not-a-uuid"
+	p.GuardianAccountID = &bad
+
+	if err := repo.Save(ctx, p); err == nil {
+		t.Fatal("expected error for invalid GuardianAccountID UUID")
+	}
+}
+
+func TestPlayerRepository_GetByGuardianAccountID(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	accountID := uuid.NewString()
+	otherAccountID := uuid.NewString()
+
+	child1, _ := player.NewGuardianChildPlayer(uuid.NewString(), accountID, "Kid1", "Smith", time.Date(2012, 1, 1, 0, 0, 0, 0, time.UTC), "M", "NIC", "")
+	child2, _ := player.NewGuardianChildPlayer(uuid.NewString(), accountID, "Kid2", "Smith", time.Date(2014, 1, 1, 0, 0, 0, 0, time.UTC), "F", "NIC", "")
+	otherChild, _ := player.NewGuardianChildPlayer(uuid.NewString(), otherAccountID, "Other", "Kid", time.Date(2013, 1, 1, 0, 0, 0, 0, time.UTC), "M", "NIC", "")
+	unlinked := newTestPlayer(t, "Adult", "Player", "M")
+
+	for _, p := range []*player.Player{child1, child2, otherChild, unlinked} {
+		if err := repo.Save(ctx, p); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
+	}
+
+	linked, err := repo.GetByGuardianAccountID(ctx, accountID)
+	if err != nil {
+		t.Fatalf("GetByGuardianAccountID: %v", err)
+	}
+	if len(linked) != 2 {
+		t.Fatalf("expected 2 linked players, got %d: %+v", len(linked), linked)
+	}
+
+	none, err := repo.GetByGuardianAccountID(ctx, uuid.NewString())
+	if err != nil {
+		t.Fatalf("GetByGuardianAccountID: %v", err)
+	}
+	if len(none) != 0 {
+		t.Fatalf("expected no players for unused account, got %d", len(none))
+	}
+
+	if _, err := repo.GetByGuardianAccountID(ctx, "not-a-uuid"); err == nil {
+		t.Fatal("expected error for invalid account UUID")
+	}
+}
+
+func TestPlayerRepository_SaveMultiple_GuardianAccountID(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	accountID := uuid.NewString()
+	child, _ := player.NewGuardianChildPlayer(uuid.NewString(), accountID, "Kid", "Smith", time.Date(2012, 1, 1, 0, 0, 0, 0, time.UTC), "M", "NIC", "")
+
+	if err := repo.SaveMultiple(ctx, []*player.Player{child}); err != nil {
+		t.Fatalf("SaveMultiple: %v", err)
+	}
+
+	got, err := repo.GetById(ctx, child.ID)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.GuardianAccountID == nil || *got.GuardianAccountID != accountID {
+		t.Fatalf("expected GuardianAccountID round-tripped via SaveMultiple, got %+v", got.GuardianAccountID)
+	}
+}

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	accountApp "table-tennis-backend/internal/application/account"
 	"table-tennis-backend/internal/application/dashboard"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
@@ -14,6 +15,7 @@ import (
 	adminDomain "table-tennis-backend/internal/domain/admin"
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/tournaments"
+	oauthinfra "table-tennis-backend/internal/infrastructure/oauth"
 	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	qrinfra "table-tennis-backend/internal/infrastructure/qrcode"
@@ -37,6 +39,7 @@ type Container struct {
 	AdminHandler        *handler.AdminHandler
 	NotificationHandler *handler.NotificationHandler
 	DashboardHandler    *handler.DashboardHandler
+	AccountHandler      *handler.AccountHandler
 }
 
 func NewContainer(store *session.Store, cfg Config) *Container {
@@ -178,6 +181,44 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	getDashboardViewUC := dashboard.NewGetPublicDashboardViewUseCase(dashboardRepo, chartGenerator)
 	dashboardHandler := handler.NewDashboardHandler(getDashboardViewUC)
 
+	// ── Guardian accounts (Google OAuth) + player self-service score
+	// confirmation — entirely separate area from /admin, see
+	// internal/interfaces/http/middleware/account_auth.go.
+	accountRepo := bun.NewAccountRepository(bun.DB)
+	googleClient := oauthinfra.NewGoogleClient(cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.GoogleRedirectURL)
+
+	loginWithGoogleUC := accountApp.NewLoginWithGoogleUseCase(accountRepo)
+	getAccountByIDUC := accountApp.NewGetAccountByIDUseCase(accountRepo)
+	updateAccountUC := accountApp.NewUpdateAccountUseCase(accountRepo)
+	createChildPlayerUC := accountApp.NewCreateChildPlayerUseCase(playerRepo)
+	getLinkedPlayersUC := accountApp.NewGetLinkedPlayersUseCase(playerRepo)
+	getPlayerPendingMatchesUC := player.NewGetPlayerPendingMatchesUseCase(eventRepo)
+	getGuardianPendingMatchesUC := accountApp.NewGetGuardianPendingMatchesUseCase(getLinkedPlayersUC, getPlayerPendingMatchesUC)
+	assignPlayerToAccountUC := accountApp.NewAssignPlayerToAccountUseCase(playerRepo, accountRepo)
+
+	proposeMatchScoreUC := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
+	confirmMatchScoreUC := match.NewConfirmMatchScoreUseCase(matchRepo, eventRepo, updateScoreUC)
+	rejectMatchScoreProposalUC := match.NewRejectMatchScoreProposalUseCase(matchRepo)
+	matchHandler.WithConfirmMatchScoreUseCase(confirmMatchScoreUC)
+
+	accountHandler := handler.NewAccountHandler(
+		store,
+		googleClient,
+		loginWithGoogleUC,
+		getAccountByIDUC,
+		updateAccountUC,
+		createChildPlayerUC,
+		getLinkedPlayersUC,
+		getGuardianPendingMatchesUC,
+		getPlayerByIDUC,
+		updatePlayerUC,
+		getPlayerPendingMatchesUC,
+		proposeMatchScoreUC,
+		confirmMatchScoreUC,
+		rejectMatchScoreProposalUC,
+	)
+	playerHandler.WithAssignPlayerToAccountUseCase(assignPlayerToAccountUC)
+
 	return &Container{
 		PlayerHandler:       playerHandler,
 		EventHandler:        tournamentHandler,
@@ -191,5 +232,6 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		AdminHandler:        adminHandler,
 		NotificationHandler: notificationHandler,
 		DashboardHandler:    dashboardHandler,
+		AccountHandler:      accountHandler,
 	}
 }

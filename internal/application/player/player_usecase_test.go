@@ -118,6 +118,16 @@ func (m *mockPlayerRepo) GetDoublesByGender(ctx context.Context, gender string) 
 	return m.GetSinglesByGender(ctx, gender)
 }
 
+func (m *mockPlayerRepo) GetByGuardianAccountID(ctx context.Context, accountID string) ([]*playerDomain.Player, error) {
+	var result []*playerDomain.Player
+	for _, p := range m.players {
+		if p.GuardianAccountID != nil && *p.GuardianAccountID == accountID {
+			result = append(result, p)
+		}
+	}
+	return result, nil
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 func TestRegisterPlayerUseCase(t *testing.T) {

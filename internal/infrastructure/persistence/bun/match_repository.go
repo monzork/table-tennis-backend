@@ -39,6 +39,13 @@ type MatchModel struct {
 	CreatedAt      time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
 
+	// ProposedSets/ProposedByPlayerID/ProposedAt stage a player-submitted
+	// score awaiting confirmation (opposing player or admin) — see
+	// MatchRepository.ProposeScore/ClearScoreProposal.
+	ProposedSets       []event.MatchSet `bun:"proposed_sets,type:jsonb"`
+	ProposedByPlayerID *uuid.UUID       `bun:"proposed_by_player_id,type:uuid"`
+	ProposedAt         *time.Time       `bun:"proposed_at"`
+
 	Sets         []MatchSetModel `bun:"rel:has-many,join:id=match_id"`
 	TeamAPlayer1 *PlayerModel    `bun:"rel:belongs-to,join:team_a_player_1_id=id"`
 	TeamBPlayer1 *PlayerModel    `bun:"rel:belongs-to,join:team_b_player_1_id=id"`
@@ -188,6 +195,77 @@ func (r *MatchRepository) GetSets(ctx context.Context, matchID string) ([]MatchS
 	return sets, nil
 }
 
+// computeSetWins parses/validates a proposed set of scores against a stage
+// rule, returning the number of set-wins needed to take the match and each
+// side's current set-win count. Shared by UpdateScore (immediate-finalize
+// path used by admin + QR/PIN, unchanged) and ProposeScore (staging path) so
+// this validation logic exists in exactly one place.
+func computeSetWins(sets []event.MatchSet, stageRule event.StageRule) (needed, winsA, winsB int) {
+	needed = (stageRule.BestOf / 2) + 1
+	for _, s := range sets {
+		diff := s.ScoreA - s.ScoreB
+		if diff < 0 {
+			diff = -diff
+		}
+		if (s.ScoreA >= stageRule.PointsToWin || s.ScoreB >= stageRule.PointsToWin) && diff >= stageRule.PointsMargin {
+			if s.ScoreA > s.ScoreB {
+				winsA++
+			} else if s.ScoreB > s.ScoreA {
+				winsB++
+			}
+		}
+	}
+	return needed, winsA, winsB
+}
+
+// ProposeScore stages a player-submitted score on the match without
+// finalizing it (unlike UpdateScore, which is immediate-finalize for the
+// admin/QR paths). The proposed sets must resolve to a winner under the
+// given stage rule — a partial/inconclusive score can't be proposed.
+func (r *MatchRepository) ProposeScore(ctx context.Context, matchID string, sets []event.MatchSet, proposedByPlayerID string, stageRule event.StageRule) error {
+	id, err := uuid.Parse(matchID)
+	if err != nil {
+		return err
+	}
+	proposerID, err := uuid.Parse(proposedByPlayerID)
+	if err != nil {
+		return err
+	}
+
+	needed, winsA, winsB := computeSetWins(sets, stageRule)
+	if winsA < needed && winsB < needed {
+		return fmt.Errorf("proposed sets do not resolve to a winner")
+	}
+
+	now := time.Now()
+	_, err = ExtractDB(ctx, r.db).NewUpdate().
+		Model((*MatchModel)(nil)).
+		Set("proposed_sets = ?", sets).
+		Set("proposed_by_player_id = ?", proposerID).
+		Set("proposed_at = ?", now).
+		Where("id = ?", id).
+		Exec(ctx)
+	return err
+}
+
+// ClearScoreProposal wipes any staged proposal on a match, either because it
+// was rejected (letting the other side re-propose) or because it was just
+// confirmed and finalized via the existing UpdateScore path.
+func (r *MatchRepository) ClearScoreProposal(ctx context.Context, matchID string) error {
+	id, err := uuid.Parse(matchID)
+	if err != nil {
+		return err
+	}
+	_, err = ExtractDB(ctx, r.db).NewUpdate().
+		Model((*MatchModel)(nil)).
+		Set("proposed_sets = NULL").
+		Set("proposed_by_player_id = NULL").
+		Set("proposed_at = NULL").
+		Where("id = ?", id).
+		Exec(ctx)
+	return err
+}
+
 // UpdateScore replaces all set scores, resolves winner, persists, updates players' Elo,
 // and advances the winner into the next match if configured.
 func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []event.MatchSet, stageRule event.StageRule) error {
@@ -202,21 +280,7 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []
 	}
 
 	// Resolve winner count
-	needed := (stageRule.BestOf / 2) + 1
-	winsA, winsB := 0, 0
-	for _, s := range sets {
-		diff := s.ScoreA - s.ScoreB
-		if diff < 0 {
-			diff = -diff
-		}
-		if (s.ScoreA >= stageRule.PointsToWin || s.ScoreB >= stageRule.PointsToWin) && diff >= stageRule.PointsMargin {
-			if s.ScoreA > s.ScoreB {
-				winsA++
-			} else if s.ScoreB > s.ScoreA {
-				winsB++
-			}
-		}
-	}
+	needed, winsA, winsB := computeSetWins(sets, stageRule)
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 		// Replace sets
@@ -717,26 +781,35 @@ func (r *MatchRepository) mapModelsToEntities(ctx context.Context, models []Matc
 
 		upd := m.UpdatedAt
 
+		var proposedByPlayerID *string
+		if m.ProposedByPlayerID != nil {
+			idStr := m.ProposedByPlayerID.String()
+			proposedByPlayerID = &idStr
+		}
+
 		results = append(results, &event.Match{
-			ID:            m.ID.String(),
-			EventID:       m.EventID.String(),
-			MatchType:     m.MatchType,
-			TeamA:         teamA,
-			TeamB:         teamB,
-			Status:        m.Status,
-			WinnerTeam:    getString(m.WinnerTeam),
-			Stage:         m.Stage,
-			DivisionID:    m.DivisionID,
-			RoundNumber:   m.RoundNumber,
-			GroupID:       groupID,
-			NextMatchID:   nextMatchID,
-			NextMatchSlot: m.NextMatchSlot,
-			TeamMatchID:   teamMatchID,
-			RefereeID:     refereeID,
-			TableNumber:   m.TableNumber,
-			Pin:           m.Pin,
-			Sets:          setsByMatch[m.ID.String()],
-			UpdatedAt:     upd,
+			ID:                 m.ID.String(),
+			EventID:            m.EventID.String(),
+			MatchType:          m.MatchType,
+			TeamA:              teamA,
+			TeamB:              teamB,
+			Status:             m.Status,
+			WinnerTeam:         getString(m.WinnerTeam),
+			Stage:              m.Stage,
+			DivisionID:         m.DivisionID,
+			RoundNumber:        m.RoundNumber,
+			GroupID:            groupID,
+			NextMatchID:        nextMatchID,
+			NextMatchSlot:      m.NextMatchSlot,
+			TeamMatchID:        teamMatchID,
+			RefereeID:          refereeID,
+			TableNumber:        m.TableNumber,
+			Pin:                m.Pin,
+			Sets:               setsByMatch[m.ID.String()],
+			UpdatedAt:          upd,
+			ProposedSets:       m.ProposedSets,
+			ProposedByPlayerID: proposedByPlayerID,
+			ProposedAt:         m.ProposedAt,
 		})
 	}
 	return results, nil

@@ -45,6 +45,7 @@ func main() {
 	})
 
 	authMiddleware := middleware.Protected(store)
+	accountMiddleware := middleware.AccountProtected(store)
 	c := NewContainer(store, cfg)
 
 	engine := SetupTemplateEngine()
@@ -189,7 +190,7 @@ func main() {
 		return ctx.Next()
 	})
 
-	SetupRoutes(app, c, authMiddleware)
+	SetupRoutes(app, c, authMiddleware, accountMiddleware)
 
 	go func() {
 		addr := ":" + cfg.Port

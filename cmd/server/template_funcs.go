@@ -56,6 +56,15 @@ func SetupTemplateEngine() *html.Engine {
 	engine.AddFunc("add", func(a, b int) int {
 		return a + b
 	})
+	engine.AddFunc("mul", func(a, b int) int {
+		return a * b
+	})
+	engine.AddFunc("div", func(a, b int) int {
+		if b == 0 {
+			return 0
+		}
+		return a / b
+	})
 	engine.AddFunc("dict", func(values ...interface{}) (map[string]interface{}, error) {
 		if len(values)%2 != 0 {
 			return nil, fmt.Errorf("invalid dict call, must have even number of arguments")

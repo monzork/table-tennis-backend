@@ -1,0 +1,23 @@
+<style>#global-spinner { display: none !important; }</style>
+<div class="max-w-lg mx-auto animate-fade-in text-white/90">
+    {{template "partials/account-nav" .}}
+
+    <h1 class="text-2xl font-extrabold uppercase tracking-tighter mb-6">{{t .T "account.my_info.title"}}</h1>
+
+    <div class="glass rounded-3xl border border-white/10 p-6">
+        {{if .Saved}}
+        <div class="bg-white/5 border border-white/20 text-gray-200 p-3 rounded-xl mb-4 text-sm text-center font-bold tracking-wide">{{t .T "account.my_info.saved"}}</div>
+        {{end}}
+        <form hx-put="/account/me" class="space-y-4">
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "account.my_info.name_label"}}</label>
+                <input type="text" name="name" value="{{.Account.Name}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Email</label>
+                <input type="text" value="{{.Account.Email}}" disabled class="w-full bg-black/20 border border-white/5 rounded-xl p-3 text-sm text-gray-500">
+            </div>
+            <button type="submit" class="w-full bg-white hover:bg-gray-200 text-black font-black py-3 rounded-xl transition-all uppercase tracking-widest text-xs">{{t .T "account.my_info.save"}}</button>
+        </form>
+    </div>
+</div>

@@ -84,6 +84,27 @@
     </div>
   </header>
 
+  {{/* ── Progress ────────────────────────────────────────────── */}}
+  {{$totalMatches := len .Event.Matches}}
+  {{if gt $totalMatches 0}}
+    {{$finishedMatches := 0}}
+    {{range .Event.Matches}}{{if eq .Status "finished"}}{{$finishedMatches = add $finishedMatches 1}}{{end}}{{end}}
+    {{$pct := 0}}
+    {{if gt $totalMatches 0}}{{$pct = div (mul $finishedMatches 100) $totalMatches}}{{end}}
+    <div class="glass rounded-2xl border border-white/10 px-5 py-4 flex items-center gap-5">
+      <div class="flex-1">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-black uppercase tracking-widest text-gray-500">{{t .T "admin.event_detail.progress_label"}}</span>
+          <span class="text-[11px] font-bold text-gray-400 tabular-nums">{{$finishedMatches}} / {{$totalMatches}}</span>
+        </div>
+        <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+          <div class="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all" style="width: {{$pct}}%"></div>
+        </div>
+      </div>
+      <span class="text-2xl font-black tabular-nums shrink-0 {{if eq $finishedMatches $totalMatches}}text-green-400{{else}}text-white{{end}}">{{$pct}}%</span>
+    </div>
+  {{end}}
+
   {{/* ── Participants ─────────────────────────────────────────── */}}
   {{if not (or (eq .Event.Type "teams") (eq .Event.Type "doubles") (eq .Event.Type "mixed_doubles"))}}
   <details class="space-y-3 group" id="participants-section">
@@ -246,32 +267,40 @@
   {{/* ── Officials ─────────────────────────────────────────── */}}
   <section class="space-y-3">
     <div class="flex justify-between items-center">
-      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.event_detail.officials_title"}}</h2>
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest flex items-center gap-2">
+        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {{t .T "admin.event_detail.officials_title"}} <span class="text-gray-700 ml-1">({{len .Officials}})</span>
+      </h2>
       <button hx-on:click="document.getElementById('add-official-modal').classList.remove('hidden')" class="text-xs font-bold uppercase tracking-wider text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-all">
         {{t .T "admin.event_detail.add_official_btn"}}
       </button>
     </div>
-    <div class="flex flex-wrap gap-2">
-      {{range .Officials}}
-        {{$officialId := .PlayerID}}
-        {{$officialPin := .Pin}}
-        {{range $.Players}}
-          {{if eq .ID $officialId}}
-          <div class="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
-            <span class="text-base font-semibold text-yellow-400">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
-            <span class="ml-2 text-[9px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 rounded font-mono" title="{{t $.T "admin.event_detail.official_pin_title"}}">{{$officialPin}}</span>
-            {{if .WhatsAppNumber}}
-            <a href="https://wa.me/{{cleanPhone .WhatsAppNumber}}?text=Hola%20{{.FirstName}},%20tu%20PIN%20de%20%C3%A1rbitro%20oficial%20para%20{{$.Event.Name}}%20es%20{{$officialPin}}" target="_blank" title="{{t $.T "admin.event_detail.whatsapp_title"}}" class="ml-1 text-green-500 hover:text-green-400 transition-colors">
-              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 21.031c-1.558 0-3.078-.396-4.437-1.144l-.318-.178-3.3.864.881-3.218-.195-.311c-.819-1.309-1.252-2.825-1.252-4.402 0-4.631 3.774-8.406 8.411-8.406 2.25 0 4.364.877 5.955 2.47 1.591 1.593 2.467 3.708 2.467 5.959 0 4.631-3.774 8.366-8.212 8.366zM12.031 5.373c-3.993 0-7.248 3.253-7.248 7.246 0 1.277.332 2.525.962 3.626l1.378 2.404-1.253 4.58 4.693-1.231 2.378 1.348c1.08.612 2.302.936 3.551.936 3.993 0 7.248-3.254 7.248-7.247 0-1.938-.755-3.759-2.126-5.13-1.37-1.372-3.193-2.128-5.132-2.128h-.001m4.053 9.771c-.222-.111-1.314-.648-1.518-.722-.204-.074-.352-.111-.5.111-.148.222-.574.722-.704.87-.13.148-.26.167-.481.056-.222-.111-.938-.346-1.787-1.107-.66-.593-1.106-1.326-1.236-1.548-.13-.222-.014-.343.097-.453.1-.1.222-.259.333-.389.111-.13.148-.222.222-.37.074-.148.037-.278-.019-.389-.056-.111-.5-.1.204-1.204-.076-.481-.148-.962-.352-.102-.019-.204-.019h-.176c-.148 0-.389.056-.593.278-.204.222-.778.759-.778 1.852 0 1.093.796 2.148.907 2.296.111.148 1.556 2.37 3.759 3.333.519.222.926.352 1.241.463.519.167.981.148 1.352.093.414-.056 1.314-.537 1.5-1.056.185-.519.185-.963.13-1.056-.056-.093-.204-.148-.426-.259z"/></svg>
-            </a>
+    <div class="glass rounded-2xl border border-white/10 p-4">
+      <div class="flex flex-wrap gap-2">
+        {{range .Officials}}
+          {{$officialId := .PlayerID}}
+          {{$officialPin := .Pin}}
+          {{range $.Players}}
+            {{if eq .ID $officialId}}
+            <div class="flex items-center gap-2.5 bg-yellow-500/10 border border-yellow-500/20 rounded-xl pl-2 pr-3 py-2">
+              <div class="w-7 h-7 shrink-0 rounded-full bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center text-[10px] font-extrabold text-yellow-400">
+                {{if gt (len .FirstName) 0}}{{slice .FirstName 0 1}}{{else}}?{{end}}
+              </div>
+              <span class="text-sm font-semibold text-yellow-400">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+              <span class="text-[9px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/10 px-1.5 py-0.5 rounded font-mono" title="{{t $.T "admin.event_detail.official_pin_title"}}">{{$officialPin}}</span>
+              {{if .WhatsAppNumber}}
+              <a href="https://wa.me/{{cleanPhone .WhatsAppNumber}}?text=Hola%20{{.FirstName}},%20tu%20PIN%20de%20%C3%A1rbitro%20oficial%20para%20{{$.Event.Name}}%20es%20{{$officialPin}}" target="_blank" title="{{t $.T "admin.event_detail.whatsapp_title"}}" class="text-green-500 hover:text-green-400 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 21.031c-1.558 0-3.078-.396-4.437-1.144l-.318-.178-3.3.864.881-3.218-.195-.311c-.819-1.309-1.252-2.825-1.252-4.402 0-4.631 3.774-8.406 8.411-8.406 2.25 0 4.364.877 5.955 2.47 1.591 1.593 2.467 3.708 2.467 5.959 0 4.631-3.774 8.366-8.212 8.366zM12.031 5.373c-3.993 0-7.248 3.253-7.248 7.246 0 1.277.332 2.525.962 3.626l1.378 2.404-1.253 4.58 4.693-1.231 2.378 1.348c1.08.612 2.302.936 3.551.936 3.993 0 7.248-3.254 7.248-7.247 0-1.938-.755-3.759-2.126-5.13-1.37-1.372-3.193-2.128-5.132-2.128h-.001m4.053 9.771c-.222-.111-1.314-.648-1.518-.722-.204-.074-.352-.111-.5.111-.148.222-.574.722-.704.87-.13.148-.26.167-.481.056-.222-.111-.938-.346-1.787-1.107-.66-.593-1.106-1.326-1.236-1.548-.13-.222-.014-.343.097-.453.1-.1.222-.259.333-.389.111-.13.148-.222.222-.37.074-.148.037-.278-.019-.389-.056-.111-.5-.1.204-1.204-.076-.481-.148-.962-.352-.102-.019-.204-.019h-.176c-.148 0-.389.056-.593.278-.204.222-.778.759-.778 1.852 0 1.093.796 2.148.907 2.296.111.148 1.556 2.37 3.759 3.333.519.222.926.352 1.241.463.519.167.981.148 1.352.093.414-.056 1.314-.537 1.5-1.056.185-.519.185-.963.13-1.056-.056-.093-.204-.148-.426-.259z"/></svg>
+              </a>
+              {{end}}
+              <button hx-delete="/admin/events/{{$.Event.ID}}/officials/{{.ID}}" hx-confirm="{{t $.T "admin.event_detail.remove_official_confirm"}}" class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold">✕</button>
+            </div>
             {{end}}
-            <button hx-delete="/admin/events/{{$.Event.ID}}/officials/{{.ID}}" hx-confirm="{{t $.T "admin.event_detail.remove_official_confirm"}}" class="text-gray-500 hover:text-white transition-colors text-[10px] font-extrabold ml-2">✕</button>
-          </div>
           {{end}}
+        {{else}}
+          <p class="text-sm text-gray-600 italic py-1">{{t .T "admin.event_detail.no_officials"}}</p>
         {{end}}
-      {{else}}
-        <p class="text-sm text-gray-600">{{t .T "admin.event_detail.no_officials"}}</p>
-      {{end}}
+      </div>
     </div>
   </section>
 
@@ -279,7 +308,10 @@
   {{/* ── Team Management ────────────────────────────────────────── */}}
   <section class="space-y-4">
     <div class="flex justify-between items-center">
-      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.event_detail.team_rosters_title"}}</h2>
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest flex items-center gap-2">
+        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-4-4"/></svg>
+        {{t .T "admin.event_detail.team_rosters_title"}}
+      </h2>
       <button hx-on:click="document.getElementById('add-team-modal').classList.remove('hidden')" class="text-xs font-bold uppercase tracking-wider text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-all">
         {{t .T "admin.event_detail.create_team_btn"}}
       </button>
@@ -425,7 +457,10 @@
   {{/* ── Match Rules ──────────────────────────────────────────── */}}
   {{if .Event.StageRules}}
   <section class="space-y-3">
-    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.event_detail.match_rules_title"}}</h2>
+    <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest flex items-center gap-2">
+      <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      {{t .T "admin.event_detail.match_rules_title"}}
+    </h2>
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       {{range .Event.StageRules}}
         <div class="glass rounded-xl border border-white/10 p-3 space-y-1 text-center" data-stage="{{.Stage}}" data-bestof="{{.BestOf}}">
@@ -445,7 +480,10 @@
            hx-on::ws-error="const el = document.getElementById('ws-status'); if(el) { el.textContent = '{{t .T "board.reconnecting"}}'; el.className = 'text-[9px] font-bold uppercase tracking-widest text-red-400'; }"
            hx-on::ws-before-message="try { const data = JSON.parse(event.detail.message); if(data.tournament === 'score_updated') { htmx.trigger('#bracket-container', 'reload-bracket'); htmx.trigger('#custom-matches-list', 'reload-matches'); if (typeof showToast === 'function') { if (data.matchStatus === 'finished' && data.message) { showToast(data.message, 'success'); } else { showToast('📡 Score updated in real-time', 'success'); } } } else if(data.tournament === 'referee_notification') { const container = document.getElementById('referee-alerts-container'); if (container) { const alertId = 'alert-' + Math.random().toString(36).substr(2, 9); const alertHtml = `<div id='${alertId}' onclick='this.remove()' class='cursor-pointer flex items-center justify-between p-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded-2xl shadow-xl backdrop-blur-md animate-fade-in hover:bg-yellow-500/20 transition-colors'><div class='flex items-center gap-3'><span class='text-xl'>🔔</span><div class='flex flex-col'><span class='text-xs font-bold uppercase tracking-widest text-yellow-500 font-mono'>{{t .T "admin.event_detail.referee_alert_label"}}</span><span class='text-sm font-semibold text-white/90'>${data.message}</span></div></div><button class='text-gray-400 hover:text-white transition-colors p-1'><svg class='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg></button></div>`; container.insertAdjacentHTML('beforeend', alertHtml); } } } catch(e) {}">
     <div class="flex items-center justify-between">
-      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.event_detail.event_draw_title"}}</h2>
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest flex items-center gap-2">
+        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+        {{t .T "admin.event_detail.event_draw_title"}}
+      </h2>
       <span id="ws-status" class="text-[9px] font-bold uppercase tracking-widest text-yellow-400">{{t .T "board.connecting"}}</span>
     </div>
 

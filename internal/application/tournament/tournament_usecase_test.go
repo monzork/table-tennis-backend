@@ -230,6 +230,10 @@ func (m *mockPlayerRepo) GetDoublesByGender(ctx context.Context, gender string) 
 	return nil, nil
 }
 
+func (m *mockPlayerRepo) GetByGuardianAccountID(ctx context.Context, accountID string) ([]*playerDomain.Player, error) {
+	return nil, nil
+}
+
 // ── Mock Division Repository ──────────────────────────────────────────────
 
 type mockDivisionRepo struct {

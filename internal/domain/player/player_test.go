@@ -149,3 +149,52 @@ func TestPlayer_NameHelpers(t *testing.T) {
 		t.Errorf("expected LastNameWithSecond 'Austin', got '%s'", pNoSecond.LastNameWithSecond())
 	}
 }
+
+func TestNewGuardianChildPlayer(t *testing.T) {
+	bdate := time.Date(2012, time.March, 1, 0, 0, 0, 0, time.UTC)
+
+	t.Run("happy path sets GuardianAccountID", func(t *testing.T) {
+		p, err := player.NewGuardianChildPlayer("p-2", "acc-1", "Kid", "Smith", bdate, "F", "USA", "Dept1")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if p.GuardianAccountID == nil || *p.GuardianAccountID != "acc-1" {
+			t.Fatalf("expected GuardianAccountID 'acc-1', got %v", p.GuardianAccountID)
+		}
+		if p.SinglesElo != 1000 || p.DoublesElo != 1000 {
+			t.Errorf("expected starting Elo 1000/1000, got %d/%d", p.SinglesElo, p.DoublesElo)
+		}
+		if p.Gender != "F" {
+			t.Errorf("expected Gender 'F', got %q", p.Gender)
+		}
+	})
+
+	t.Run("defaults gender to M when empty", func(t *testing.T) {
+		p, err := player.NewGuardianChildPlayer("p-3", "acc-1", "Kid", "Smith", bdate, "", "USA", "")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if p.Gender != "M" {
+			t.Errorf("expected default Gender 'M', got %q", p.Gender)
+		}
+	})
+
+	t.Run("missing names error", func(t *testing.T) {
+		if _, err := player.NewGuardianChildPlayer("p-4", "acc-1", "", "Smith", bdate, "M", "USA", ""); err != player.ErrInvalidName {
+			t.Fatalf("expected ErrInvalidName, got %v", err)
+		}
+		if _, err := player.NewGuardianChildPlayer("p-5", "acc-1", "Kid", "", bdate, "M", "USA", ""); err != player.ErrInvalidName {
+			t.Fatalf("expected ErrInvalidName, got %v", err)
+		}
+	})
+
+	t.Run("NewPlayer keeps GuardianAccountID nil", func(t *testing.T) {
+		p, err := player.NewPlayer("p-6", "John", "Doe", bdate, "M", "USA", "Dept1", "NID123")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.GuardianAccountID != nil {
+			t.Errorf("expected nil GuardianAccountID for NewPlayer, got %v", p.GuardianAccountID)
+		}
+	})
+}

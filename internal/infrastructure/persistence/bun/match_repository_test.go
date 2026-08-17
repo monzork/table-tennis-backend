@@ -768,3 +768,97 @@ func TestMatchRepository_DB(t *testing.T) {
 		t.Fatal("expected DB() to return a non-nil bun.DB")
 	}
 }
+
+func TestMatchRepository_ProposeScore_And_ClearScoreProposal(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	m := f.newMatch(t, "final")
+	if err := f.matchRepo.Save(ctx, m); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	stageRule := event.StageRule{BestOf: 5, PointsToWin: 11, PointsMargin: 2}
+	sets := []event.MatchSet{
+		{Number: 1, ScoreA: 11, ScoreB: 5},
+		{Number: 2, ScoreA: 11, ScoreB: 7},
+		{Number: 3, ScoreA: 11, ScoreB: 9},
+	}
+
+	if err := f.matchRepo.ProposeScore(ctx, m.ID, sets, f.players[0].ID, stageRule); err != nil {
+		t.Fatalf("ProposeScore: %v", err)
+	}
+
+	got, err := f.matchRepo.GetByID(ctx, m.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.ProposedByPlayerID == nil || *got.ProposedByPlayerID != f.players[0].ID {
+		t.Fatalf("expected ProposedByPlayerID %q, got %+v", f.players[0].ID, got.ProposedByPlayerID)
+	}
+	if len(got.ProposedSets) != 3 || got.ProposedSets[0].ScoreA != 11 {
+		t.Fatalf("expected proposed sets round-tripped, got %+v", got.ProposedSets)
+	}
+	if got.ProposedAt == nil {
+		t.Fatal("expected ProposedAt to be set")
+	}
+	// A proposal in flight should not itself finalize the match.
+	if got.Status == "finished" {
+		t.Fatal("expected match to remain unfinished while a proposal is only staged")
+	}
+
+	if err := f.matchRepo.ClearScoreProposal(ctx, m.ID); err != nil {
+		t.Fatalf("ClearScoreProposal: %v", err)
+	}
+
+	cleared, err := f.matchRepo.GetByID(ctx, m.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if cleared.ProposedByPlayerID != nil || len(cleared.ProposedSets) != 0 || cleared.ProposedAt != nil {
+		t.Fatalf("expected proposal cleared, got %+v", cleared)
+	}
+}
+
+func TestMatchRepository_ProposeScore_InconclusiveSetsRejected(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	m := f.newMatch(t, "final")
+	if err := f.matchRepo.Save(ctx, m); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	stageRule := event.StageRule{BestOf: 5, PointsToWin: 11, PointsMargin: 2}
+	// Only 1 set won each side — not enough to decide a Bo5 match.
+	sets := []event.MatchSet{
+		{Number: 1, ScoreA: 11, ScoreB: 5},
+		{Number: 2, ScoreA: 5, ScoreB: 11},
+	}
+
+	if err := f.matchRepo.ProposeScore(ctx, m.ID, sets, f.players[0].ID, stageRule); err == nil {
+		t.Fatal("expected error for a proposal that doesn't resolve to a winner")
+	}
+}
+
+func TestMatchRepository_ProposeScore_InvalidIDs(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+	stageRule := event.StageRule{BestOf: 5, PointsToWin: 11, PointsMargin: 2}
+
+	if err := f.matchRepo.ProposeScore(ctx, "bad-id", nil, f.players[0].ID, stageRule); err == nil {
+		t.Fatal("expected error for invalid match ID")
+	}
+	if err := f.matchRepo.ProposeScore(ctx, uuid.NewString(), nil, "bad-player-id", stageRule); err == nil {
+		t.Fatal("expected error for invalid player ID")
+	}
+}
+
+func TestMatchRepository_ClearScoreProposal_InvalidID(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	if err := f.matchRepo.ClearScoreProposal(ctx, "bad-id"); err == nil {
+		t.Fatal("expected error for invalid match ID")
+	}
+}

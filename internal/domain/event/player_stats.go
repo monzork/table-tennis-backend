@@ -62,8 +62,8 @@ func BuildPlayerMatchDetails(playerID string, matches []Match) []PlayerMatchDeta
 		if m.Status != "finished" {
 			continue
 		}
-		isA := teamContains(m.TeamA, playerID)
-		if !isA && !teamContains(m.TeamB, playerID) {
+		isA := TeamContains(m.TeamA, playerID)
+		if !isA && !TeamContains(m.TeamB, playerID) {
 			continue
 		}
 
@@ -96,7 +96,55 @@ func BuildPlayerMatchDetails(playerID string, matches []Match) []PlayerMatchDeta
 	return details
 }
 
-func teamContains(team []*player.Player, playerID string) bool {
+// PlayerPendingMatchDetail is a single not-yet-finished match from one
+// player's perspective, for account-dashboard "pending matches" views.
+// Deliberately not PlayerMatchDetail, whose Won/set-score fields only make
+// sense for a finished match.
+type PlayerPendingMatchDetail struct {
+	MatchID      string
+	Opponent     string
+	Status       string // scheduled, in_progress
+	TableNumber  *int
+	HasProposal  bool
+	ProposedByMe bool
+}
+
+// BuildPlayerPendingMatchDetails returns every not-yet-finished match the
+// given player takes part in, opponent-facing, including whether a score
+// proposal is currently staged on it and whether this player is the one who
+// proposed it.
+func BuildPlayerPendingMatchDetails(playerID string, matches []Match) []PlayerPendingMatchDetail {
+	details := make([]PlayerPendingMatchDetail, 0, len(matches))
+	for _, m := range matches {
+		if m.Status == "finished" {
+			continue
+		}
+		isA := TeamContains(m.TeamA, playerID)
+		if !isA && !TeamContains(m.TeamB, playerID) {
+			continue
+		}
+
+		opponentTeam := m.TeamB
+		if !isA {
+			opponentTeam = m.TeamA
+		}
+
+		hasProposal := m.ProposedByPlayerID != nil
+		proposedByMe := hasProposal && *m.ProposedByPlayerID == playerID
+
+		details = append(details, PlayerPendingMatchDetail{
+			MatchID:      m.ID,
+			Opponent:     opponentName(opponentTeam),
+			Status:       m.Status,
+			TableNumber:  m.TableNumber,
+			HasProposal:  hasProposal,
+			ProposedByMe: proposedByMe,
+		})
+	}
+	return details
+}
+
+func TeamContains(team []*player.Player, playerID string) bool {
 	for _, p := range team {
 		if p != nil && p.ID == playerID {
 			return true

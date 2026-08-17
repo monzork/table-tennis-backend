@@ -61,6 +61,13 @@ type Match struct {
 	GroupID       string
 	NextMatchID   string
 	NextMatchSlot string
+	// ProposedSets/ProposedByPlayerID/ProposedAt stage a player-submitted
+	// score that has not yet been finalized. It sits here until either the
+	// opposing player confirms it (or submits a correction) or an admin
+	// verifies it directly — see MatchRepository.ProposeScore/ClearScoreProposal.
+	ProposedSets       []MatchSet
+	ProposedByPlayerID *string
+	ProposedAt         *time.Time
 }
 
 type MatchSet struct {
@@ -454,6 +461,8 @@ type MatchRepository interface {
 	GetMatchByParticipants(ctx context.Context, eventID, p1ID, p2ID, stage string) (*Match, error)
 	GetInProgressMatchOnTable(ctx context.Context, tableNumber int, eventID, tournamentID string) (*Match, error)
 	UpdateScore(ctx context.Context, id string, sets []MatchSet, stageRule StageRule) error
+	ProposeScore(ctx context.Context, matchID string, sets []MatchSet, proposedByPlayerID string, stageRule StageRule) error
+	ClearScoreProposal(ctx context.Context, matchID string) error
 	GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error)
 	GetOccupiedTablesByTournament(ctx context.Context, tournamentID string) ([]int, error)
 	IsTableOccupiedByOtherMatch(ctx context.Context, matchID string, tableNumber int) (bool, error)

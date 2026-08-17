@@ -24,6 +24,11 @@ type Config struct {
 	// Push Notifications
 	VAPIDPublicKey  string
 	VAPIDPrivateKey string
+
+	// Google OAuth (guardian account login)
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURL  string
 }
 
 // LoadConfig reads configuration from environment variables and applies defaults.
@@ -37,6 +42,10 @@ func LoadConfig() Config {
 		AdminPassword:   getEnvOrDefault("ADMIN_PASSWORD", "password"),
 		VAPIDPublicKey:  os.Getenv("VAPID_PUBLIC_KEY"),
 		VAPIDPrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
+
+		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		GoogleRedirectURL:  getEnvOrDefault("GOOGLE_REDIRECT_URL", "http://localhost:8080/account/google/callback"),
 	}
 
 	if cfg.SessionSecret == "" {

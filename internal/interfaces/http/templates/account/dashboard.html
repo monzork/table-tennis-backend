@@ -1,0 +1,45 @@
+<style>#global-spinner { display: none !important; }</style>
+<div class="max-w-3xl mx-auto animate-fade-in text-white/90">
+    {{template "partials/account-nav" .}}
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-extrabold uppercase tracking-tighter">{{t .T "account.dashboard.my_players"}}</h1>
+        <a href="/account/players/new" class="bg-white hover:bg-gray-200 text-black font-black py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-xs">{{t .T "account.dashboard.add_player"}}</a>
+    </div>
+
+    <div class="glass rounded-3xl border border-white/10 p-6 mb-10">
+        {{if .Players}}
+        <div class="space-y-3">
+            {{range .Players}}
+            <a href="/account/players/{{.ID}}" class="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl p-4 hover:border-white/20 transition-colors">
+                <span class="font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+                <span class="text-xs text-gray-500 font-mono">{{.Country}}</span>
+            </a>
+            {{end}}
+        </div>
+        {{else}}
+        <p class="text-sm text-gray-500 italic">{{t .T "account.dashboard.no_players"}}</p>
+        {{end}}
+    </div>
+
+    <h2 class="text-2xl font-extrabold uppercase tracking-tighter mb-6">{{t .T "account.dashboard.pending_matches"}}</h2>
+    <div class="glass rounded-3xl border border-white/10 p-6">
+        {{$hasAny := false}}
+        {{range .Pending}}
+            {{if .Matches}}{{$hasAny = true}}
+            <h3 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 mt-4 first:mt-0">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</h3>
+            <div class="space-y-2 mb-4">
+                {{range .Matches}}
+                <div class="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl p-3">
+                    <span class="text-sm">vs {{.Opponent}}</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">{{.Status}}</span>
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+        {{end}}
+        {{if not $hasAny}}
+        <p class="text-sm text-gray-500 italic">{{t .T "account.dashboard.no_pending"}}</p>
+        {{end}}
+    </div>
+</div>

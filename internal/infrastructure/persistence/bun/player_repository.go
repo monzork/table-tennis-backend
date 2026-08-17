@@ -92,30 +92,48 @@ func NewPlayerRepository(db *bun.DB) *PlayerRepository {
 	return &PlayerRepository{db: db}
 }
 
+// guardianUUID parses a Player's optional guardian account ID into the
+// nullable *uuid.UUID the model layer stores.
+func guardianUUID(guardianAccountID *string) (*uuid.UUID, error) {
+	if guardianAccountID == nil || *guardianAccountID == "" {
+		return nil, nil
+	}
+	gid, err := uuid.Parse(*guardianAccountID)
+	if err != nil {
+		return nil, err
+	}
+	return &gid, nil
+}
+
 func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 	id, err := uuid.Parse(p.ID)
 	if err != nil {
 		return err
 	}
+	guardianID, err := guardianUUID(p.GuardianAccountID)
+	if err != nil {
+		return err
+	}
 	model := &PlayerModel{
-		ID:             id,
-		FirstName:      p.FirstName,
-		SecondName:     p.SecondName,
-		LastName:       p.LastName,
-		SecondLastName: p.SecondLastName,
-		Birthdate:      p.Birthdate,
-		Gender:         p.Gender,
-		SinglesElo:     p.SinglesElo,
-		DoublesElo:     p.DoublesElo,
-		Country:        p.Country,
-		Department:     p.Department,
-		WhatsAppNumber: p.WhatsAppNumber,
-		NationalID:     p.NationalID,
+		ID:                id,
+		FirstName:         p.FirstName,
+		SecondName:        p.SecondName,
+		LastName:          p.LastName,
+		SecondLastName:    p.SecondLastName,
+		Birthdate:         p.Birthdate,
+		Gender:            p.Gender,
+		SinglesElo:        p.SinglesElo,
+		DoublesElo:        p.DoublesElo,
+		Country:           p.Country,
+		Department:        p.Department,
+		WhatsAppNumber:    p.WhatsAppNumber,
+		NationalID:        p.NationalID,
+		GuardianAccountID: guardianID,
 	}
 
 	_, err = ExtractDB(ctx, r.db).NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, guardian_account_id = EXCLUDED.guardian_account_id").
 		Exec(ctx)
 
 	return err
@@ -172,23 +190,33 @@ func (r *PlayerRepository) GetDoublesByGender(ctx context.Context, gender string
 func (r *PlayerRepository) mapModelsToDomain(models []PlayerModel) []*player.Player {
 	players := make([]*player.Player, len(models))
 	for i, m := range models {
-		players[i] = &player.Player{
-			ID:             m.ID.String(),
-			FirstName:      m.FirstName,
-			SecondName:     m.SecondName,
-			LastName:       m.LastName,
-			SecondLastName: m.SecondLastName,
-			Birthdate:      m.Birthdate,
-			Gender:         m.Gender,
-			SinglesElo:     m.SinglesElo,
-			DoublesElo:     m.DoublesElo,
-			Country:        m.Country,
-			Department:     m.Department,
-			WhatsAppNumber: m.WhatsAppNumber,
-			NationalID:     m.NationalID,
-		}
+		players[i] = modelToPlayer(&m)
 	}
 	return players
+}
+
+func modelToPlayer(m *PlayerModel) *player.Player {
+	var guardianID *string
+	if m.GuardianAccountID != nil {
+		s := m.GuardianAccountID.String()
+		guardianID = &s
+	}
+	return &player.Player{
+		ID:                m.ID.String(),
+		FirstName:         m.FirstName,
+		SecondName:        m.SecondName,
+		LastName:          m.LastName,
+		SecondLastName:    m.SecondLastName,
+		Birthdate:         m.Birthdate,
+		Gender:            m.Gender,
+		SinglesElo:        m.SinglesElo,
+		DoublesElo:        m.DoublesElo,
+		Country:           m.Country,
+		Department:        m.Department,
+		WhatsAppNumber:    m.WhatsAppNumber,
+		NationalID:        m.NationalID,
+		GuardianAccountID: guardianID,
+	}
 }
 
 func (r *PlayerRepository) GetById(ctx context.Context, id string) (*player.Player, error) {
@@ -203,21 +231,7 @@ func (r *PlayerRepository) GetById(ctx context.Context, id string) (*player.Play
 		return nil, err
 	}
 
-	return &player.Player{
-		ID:             model.ID.String(),
-		FirstName:      model.FirstName,
-		SecondName:     model.SecondName,
-		LastName:       model.LastName,
-		SecondLastName: model.SecondLastName,
-		Birthdate:      model.Birthdate,
-		Gender:         model.Gender,
-		SinglesElo:     model.SinglesElo,
-		DoublesElo:     model.DoublesElo,
-		Country:        model.Country,
-		Department:     model.Department,
-		WhatsAppNumber: model.WhatsAppNumber,
-		NationalID:     model.NationalID,
-	}, nil
+	return modelToPlayer(&model), nil
 }
 
 func (r *PlayerRepository) GetByIDs(ctx context.Context, ids []string) ([]*player.Player, error) {
@@ -286,26 +300,46 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 		if err != nil {
 			return err
 		}
+		guardianID, err := guardianUUID(p.GuardianAccountID)
+		if err != nil {
+			return err
+		}
 		models[i] = PlayerModel{
-			ID:             id,
-			FirstName:      p.FirstName,
-			SecondName:     p.SecondName,
-			LastName:       p.LastName,
-			SecondLastName: p.SecondLastName,
-			Birthdate:      p.Birthdate,
-			Gender:         p.Gender,
-			SinglesElo:     p.SinglesElo,
-			DoublesElo:     p.DoublesElo,
-			Country:        p.Country,
-			Department:     p.Department,
-			WhatsAppNumber: p.WhatsAppNumber,
-			NationalID:     p.NationalID,
+			ID:                id,
+			FirstName:         p.FirstName,
+			SecondName:        p.SecondName,
+			LastName:          p.LastName,
+			SecondLastName:    p.SecondLastName,
+			Birthdate:         p.Birthdate,
+			Gender:            p.Gender,
+			SinglesElo:        p.SinglesElo,
+			DoublesElo:        p.DoublesElo,
+			Country:           p.Country,
+			Department:        p.Department,
+			WhatsAppNumber:    p.WhatsAppNumber,
+			NationalID:        p.NationalID,
+			GuardianAccountID: guardianID,
 		}
 	}
 
 	_, err := ExtractDB(ctx, r.db).NewInsert().Model(&models).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, guardian_account_id = EXCLUDED.guardian_account_id").
 		Exec(ctx)
 	return err
+}
+
+// GetByGuardianAccountID returns every player linked to the given guardian
+// Account (a parent's children plus any adult players an admin has linked
+// directly to their own account).
+func (r *PlayerRepository) GetByGuardianAccountID(ctx context.Context, accountID string) ([]*player.Player, error) {
+	aid, err := uuid.Parse(accountID)
+	if err != nil {
+		return nil, err
+	}
+	var models []PlayerModel
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&models).Where("guardian_account_id = ?", aid).Scan(ctx); err != nil {
+		return nil, err
+	}
+	return r.mapModelsToDomain(models), nil
 }

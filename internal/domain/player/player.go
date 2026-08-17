@@ -19,6 +19,7 @@ type Repository interface {
 	GetAllDoubles(ctx context.Context) ([]*Player, error)
 	GetSinglesByGender(ctx context.Context, gender string) ([]*Player, error)
 	GetDoublesByGender(ctx context.Context, gender string) ([]*Player, error)
+	GetByGuardianAccountID(ctx context.Context, accountID string) ([]*Player, error)
 }
 
 var ErrInvalidName = errors.New("first and last name required")
@@ -37,6 +38,11 @@ type Player struct {
 	Department     string
 	WhatsAppNumber string
 	NationalID     string
+	// GuardianAccountID links this player to the Account (parent/guardian)
+	// responsible for it. Nil for every admin-created/self-registered player
+	// that hasn't been linked by an admin — see NewGuardianChildPlayer and
+	// the admin-assisted linking flow.
+	GuardianAccountID *string
 }
 
 func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, country, department, nationalID string) (*Player, error) {
@@ -58,6 +64,34 @@ func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, coun
 		Department:     department,
 		WhatsAppNumber: "",
 		NationalID:     nationalID,
+	}, nil
+}
+
+// NewGuardianChildPlayer creates a Player explicitly linked to a guardian
+// Account, for the account-holder-adds-their-child flow. This is a separate
+// constructor from NewPlayer (whose signature and every existing call site
+// stay untouched) so every admin-created/self-registered player keeps
+// GuardianAccountID == nil unless an admin later links it explicitly.
+func NewGuardianChildPlayer(id, guardianAccountID, firstName, lastName string, birthdate time.Time, gender, country, department string) (*Player, error) {
+	if firstName == "" || lastName == "" {
+		return nil, ErrInvalidName
+	}
+	if gender == "" {
+		gender = "M"
+	}
+	gID := guardianAccountID
+	return &Player{
+		ID:                id,
+		FirstName:         firstName,
+		LastName:          lastName,
+		Birthdate:         birthdate,
+		Gender:            gender,
+		SinglesElo:        1000,
+		DoublesElo:        1000,
+		Country:           country,
+		Department:        department,
+		WhatsAppNumber:    "",
+		GuardianAccountID: &gID,
 	}, nil
 }
 

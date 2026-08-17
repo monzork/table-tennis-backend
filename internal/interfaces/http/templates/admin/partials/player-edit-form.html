@@ -78,6 +78,34 @@
         </div>
     </div>
 
+    <div class="pt-2 border-t border-white/5 mt-4 space-y-2">
+        <label class="text-[10px] font-bold uppercase text-gray-500 mb-1 block">{{t .T "admin.player_form.link_account_label"}}</label>
+        {{if .Player.GuardianAccountID}}
+        <div class="flex items-center justify-between gap-2 bg-black/40 border border-white/5 rounded-xl p-3">
+            <span class="text-xs text-gray-400">{{t .T "admin.player_form.linked_badge"}}</span>
+            <button type="button"
+                hx-post="/players/{{.Player.ID}}/unlink-account"
+                hx-target="#player-{{.Player.ID}}"
+                hx-swap="outerHTML"
+                class="text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300">
+                {{t .T "admin.player_form.unlink_btn"}}
+            </button>
+        </div>
+        {{else}}
+        <div class="flex gap-2">
+            <input type="email" name="email" id="link-account-email-{{.Player.ID}}" placeholder="{{t .T "admin.player_form.link_account_ph"}}" class="flex-1 bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+            <button type="button"
+                hx-post="/players/{{.Player.ID}}/link-account"
+                hx-include="#link-account-email-{{.Player.ID}}"
+                hx-target="#player-{{.Player.ID}}"
+                hx-swap="outerHTML"
+                class="shrink-0 bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+                {{t .T "admin.player_form.link_btn"}}
+            </button>
+        </div>
+        {{end}}
+    </div>
+
     <div class="pt-2 border-t border-white/5 mt-4">
         <label class="text-[10px] font-bold uppercase text-gray-500 mb-1 block">{{t .T "admin.player_form.enroll_label"}}</label>
         <select name="tournamentId" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none cursor-pointer">

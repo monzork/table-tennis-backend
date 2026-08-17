@@ -1,0 +1,26 @@
+<style>#global-spinner { display: none !important; }</style>
+<div class="max-w-3xl mx-auto animate-fade-in text-white/90">
+    {{template "partials/account-nav" .}}
+
+    <h1 class="text-2xl font-extrabold uppercase tracking-tighter mb-6">{{t .T "account.pending.title"}}</h1>
+
+    <div class="glass rounded-3xl border border-white/10 p-6">
+        {{$hasAny := false}}
+        {{range .Pending}}
+            {{if .Matches}}{{$hasAny = true}}
+            <h2 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 mt-6 first:mt-0">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</h2>
+            <div class="space-y-2 mb-4">
+                {{range .Matches}}
+                <a href="/account/players/{{$.Player.ID}}" class="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl p-3 hover:border-white/20 transition-colors">
+                    <span class="text-sm">vs {{.Opponent}}</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">{{.Status}}{{if .HasProposal}} · {{if .ProposedByMe}}{{t $.T "account.pending.awaiting_opponent"}}{{else}}{{t $.T "account.pending.awaiting_you"}}{{end}}{{end}}</span>
+                </a>
+                {{end}}
+            </div>
+            {{end}}
+        {{end}}
+        {{if not $hasAny}}
+        <p class="text-sm text-gray-500 italic">{{t .T "account.dashboard.no_pending"}}</p>
+        {{end}}
+    </div>
+</div>

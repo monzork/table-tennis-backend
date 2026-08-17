@@ -36,6 +36,10 @@ type MatchHandler struct {
 	scoreFormViewUC     *match.GetScoreFormViewUseCase
 	teamMatchFormViewUC *match.GetTeamMatchFormViewUseCase
 	divisionRepo        *bun.DivisionRepository
+	// confirmScoreUC is optional (wired via WithConfirmMatchScoreUseCase):
+	// nil in older callers/tests just leaves the admin proposal-confirm
+	// banner/action unavailable, the rest of the handler is unaffected.
+	confirmScoreUC *match.ConfirmMatchScoreUseCase
 }
 
 func NewMatchHandler(
@@ -69,6 +73,32 @@ func NewMatchHandler(
 		teamMatchFormViewUC: match.NewGetTeamMatchFormViewUseCase(matchRepo, tournamentRepo),
 		divisionRepo:        divisionRepo,
 	}
+}
+
+// WithConfirmMatchScoreUseCase wires the confirm-score use case into an
+// already-constructed MatchHandler, enabling AdminConfirmProposal. Kept as a
+// setter rather than a NewMatchHandler parameter so every existing call site
+// keeps compiling unchanged.
+func (h *MatchHandler) WithConfirmMatchScoreUseCase(uc *match.ConfirmMatchScoreUseCase) *MatchHandler {
+	h.confirmScoreUC = uc
+	return h
+}
+
+// AdminConfirmProposal lets an admin verify a player-submitted score
+// proposal directly from the admin score form, reusing the exact same
+// ConfirmMatchScoreUseCase confirm path an opposing player would use — just
+// with isAdmin: true, skipping the opposing-participant check. The admin's
+// existing direct score-entry flow (UpdateScore below) remains available and
+// unchanged for admins who'd rather just enter the score themselves.
+func (h *MatchHandler) AdminConfirmProposal(c *fiber.Ctx) error {
+	matchID := c.Params("id")
+	if h.confirmScoreUC == nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "not available")
+	}
+	if err := h.confirmScoreUC.Execute(c.Context(), matchID, nil, true); err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
+	}
+	return h.renderScoreFormInternal(c, "admin/partials/match-score-form")
 }
 
 // divisionName resolves a division ID to its display name, best-effort.
@@ -381,28 +411,40 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 		tourney, _ = h.tournamentRepo.GetByIDLite(c.Context(), tID)
 	}
 
+	// Player-submitted score awaiting confirmation, if any — see
+	// ConfirmMatchScoreUseCase / AdminConfirmProposal below. Admin/QR direct
+	// entry (below) remains available and unchanged regardless.
+	var proposedSets []event.MatchSet
+	var proposedByPlayerID *string
+	if m, err := h.matchRepo.GetByID(c.Context(), view.MatchID); err == nil && m != nil {
+		proposedSets = m.ProposedSets
+		proposedByPlayerID = m.ProposedByPlayerID
+	}
+
 	return c.Render(templateName, fiber.Map{
-		"MatchID":        view.MatchID,
-		"EventID":        view.EventID,
-		"Stage":          view.Stage,
-		"BestOf":         view.BestOf,
-		"PlayerA":        view.PlayerA,
-		"PlayerB":        view.PlayerB,
-		"Sets":           view.Sets,
-		"P1Id":           view.P1Id,
-		"P2Id":           view.P2Id,
-		"IsSubMatch":     view.IsSubMatch,
-		"IsDoubles":      view.IsDoubles,
-		"PlayerANames":   view.PlayerANames,
-		"PlayerBNames":   view.PlayerBNames,
-		"Pin":            view.Pin,
-		"RefereeID":      view.RefereeID,
-		"TableNumber":    view.TableNumber,
-		"TableNumberVal": view.TableNumberVal,
-		"Status":         view.Status,
-		"Participants":   view.Participants,
-		"Tables":         appTournament.BuildTableVMs(tourney, view.MatchID, h.getOccupiedTables(c.Context(), tourney)),
-		"T":              tMap,
+		"MatchID":            view.MatchID,
+		"EventID":            view.EventID,
+		"Stage":              view.Stage,
+		"BestOf":             view.BestOf,
+		"PlayerA":            view.PlayerA,
+		"PlayerB":            view.PlayerB,
+		"Sets":               view.Sets,
+		"P1Id":               view.P1Id,
+		"P2Id":               view.P2Id,
+		"IsSubMatch":         view.IsSubMatch,
+		"IsDoubles":          view.IsDoubles,
+		"PlayerANames":       view.PlayerANames,
+		"PlayerBNames":       view.PlayerBNames,
+		"Pin":                view.Pin,
+		"RefereeID":          view.RefereeID,
+		"TableNumber":        view.TableNumber,
+		"TableNumberVal":     view.TableNumberVal,
+		"Status":             view.Status,
+		"Participants":       view.Participants,
+		"Tables":             appTournament.BuildTableVMs(tourney, view.MatchID, h.getOccupiedTables(c.Context(), tourney)),
+		"ProposedSets":       proposedSets,
+		"ProposedByPlayerID": proposedByPlayerID,
+		"T":                  tMap,
 	})
 }
 

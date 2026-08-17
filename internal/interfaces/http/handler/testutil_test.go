@@ -15,6 +15,7 @@ import (
 	"github.com/uptrace/bun/dialect/sqlitedialect"
 	_ "modernc.org/sqlite"
 
+	accountApp "table-tennis-backend/internal/application/account"
 	dashboardApp "table-tennis-backend/internal/application/dashboard"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
@@ -27,6 +28,7 @@ import (
 	"table-tennis-backend/internal/domain/idgen"
 	"table-tennis-backend/internal/domain/tournaments"
 	"table-tennis-backend/internal/infrastructure/identity"
+	oauthinfra "table-tennis-backend/internal/infrastructure/oauth"
 	pdfinfra "table-tennis-backend/internal/infrastructure/pdf"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
 	securityInfra "table-tennis-backend/internal/infrastructure/security"
@@ -61,6 +63,7 @@ func SetupTestDB() (*bun.DB, error) {
 
 	models := []interface{}{
 		(*bunRepo.AdminModel)(nil),
+		(*bunRepo.AccountModel)(nil),
 		(*bunRepo.DivisionModel)(nil),
 		(*bunRepo.EventModel)(nil),
 		(*bunRepo.MatchModel)(nil),
@@ -240,6 +243,15 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	engine.AddFunc("add", func(a, b int) int {
 		return a + b
 	})
+	engine.AddFunc("mul", func(a, b int) int {
+		return a * b
+	})
+	engine.AddFunc("div", func(a, b int) int {
+		if b == 0 {
+			return 0
+		}
+		return a / b
+	})
 	engine.AddFunc("dict", func(values ...interface{}) (map[string]interface{}, error) {
 		if len(values)%2 != 0 {
 			return nil, fmt.Errorf("invalid dict call, must have even number of arguments")
@@ -375,6 +387,74 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Get("/new-player-field", adminHandler.NewPlayerField)
 	admin.Get("/close-modal", adminHandler.CloseModal)
 
+	// ── Guardian account area (entirely separate from /admin) ──────────────
+	// Registered before `api := app.Group("/"); api.Use(authMiddleware)` below:
+	// Fiber applies Use() middleware to every route registered afterward that
+	// matches its prefix, and api's prefix is "/" (matches everything), so
+	// these public/account routes must exist before that Use() call or they'd
+	// incorrectly require an admin session.
+	accountRepo := bunRepo.NewAccountRepository(db)
+	googleClient := oauthinfra.NewGoogleClient("test-client-id", "test-client-secret", "http://localhost/account/google/callback")
+	loginWithGoogleUC := accountApp.NewLoginWithGoogleUseCase(accountRepo)
+	getAccountByIDUC := accountApp.NewGetAccountByIDUseCase(accountRepo)
+	updateAccountUC := accountApp.NewUpdateAccountUseCase(accountRepo)
+	createChildPlayerUC := accountApp.NewCreateChildPlayerUseCase(playerRepo)
+	getLinkedPlayersUC := accountApp.NewGetLinkedPlayersUseCase(playerRepo)
+	getPlayerPendingMatchesUC := player.NewGetPlayerPendingMatchesUseCase(tournamentRepo)
+	getGuardianPendingMatchesUC := accountApp.NewGetGuardianPendingMatchesUseCase(getLinkedPlayersUC, getPlayerPendingMatchesUC)
+	proposeMatchScoreUC := match.NewProposeMatchScoreUseCase(matchRepo, tournamentRepo, playerRepo)
+	confirmMatchScoreUC := match.NewConfirmMatchScoreUseCase(matchRepo, tournamentRepo, updateScoreUC)
+	rejectMatchScoreProposalUC := match.NewRejectMatchScoreProposalUseCase(matchRepo)
+
+	accountHandler := handler.NewAccountHandler(
+		store, googleClient,
+		loginWithGoogleUC, getAccountByIDUC, updateAccountUC, createChildPlayerUC,
+		getLinkedPlayersUC, getGuardianPendingMatchesUC,
+		getPlayerByIDUC, updatePlayerUC, getPlayerPendingMatchesUC,
+		proposeMatchScoreUC, confirmMatchScoreUC, rejectMatchScoreProposalUC,
+	)
+
+	app.Get("/account/login", accountHandler.ShowLogin)
+	app.Get("/account/google/login", accountHandler.GoogleLogin)
+	app.Get("/account/google/callback", accountHandler.GoogleCallback)
+	app.Post("/account/logout", accountHandler.Logout)
+
+	// Test-only bypass to establish an account session without a live Google
+	// OAuth client (exercised end-to-end separately in internal/infrastructure/oauth).
+	app.Post("/test/account-login", func(c *fiber.Ctx) error {
+		var body struct {
+			AccountID string `form:"accountId"`
+		}
+		if err := c.BodyParser(&body); err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+		sess, err := store.Get(c)
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+		sess.Set("account_authenticated", true)
+		sess.Set("account_id", body.AccountID)
+		if err := sess.Save(); err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+		return c.SendString("account logged in")
+	})
+
+	accountGroup := app.Group("/account")
+	accountGroup.Use(middleware.AccountProtected(store))
+	accountGroup.Get("/", accountHandler.Dashboard)
+	accountGroup.Get("/me", accountHandler.ShowMyInfo)
+	accountGroup.Put("/me", accountHandler.UpdateMyInfo)
+	accountGroup.Get("/players/new", accountHandler.ShowAddChildForm)
+	accountGroup.Post("/players", accountHandler.CreateChild)
+	accountGroup.Get("/players/:id", accountHandler.PlayerDetail)
+	accountGroup.Get("/players/:id/edit", accountHandler.EditPlayer)
+	accountGroup.Put("/players/:id", accountHandler.UpdatePlayer)
+	accountGroup.Get("/pending-matches", accountHandler.PendingMatches)
+	accountGroup.Post("/matches/:matchId/propose-score", accountHandler.ProposeScore)
+	accountGroup.Post("/matches/:matchId/confirm-score", accountHandler.ConfirmScore)
+	accountGroup.Post("/matches/:matchId/reject-score", accountHandler.RejectScore)
+
 	api := app.Group("/")
 	api.Use(authMiddleware)
 	api.Post("/players", playerHandler.Register)
@@ -436,6 +516,15 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	app.Get("/events/:id/board/columns", tournamentHandler.BoardColumns)
 	admin.Post("/events/:id/toggle-seeding-lock", tournamentHandler.ToggleSeedingLock)
 	admin.Post("/events/:id/recalculate-elo", tournamentHandler.RecalculateElo)
+
+	// Admin-protected additions wired via api (defined above, authMiddleware-guarded).
+	assignPlayerToAccountUC := accountApp.NewAssignPlayerToAccountUseCase(playerRepo, accountRepo)
+	playerHandler.WithAssignPlayerToAccountUseCase(assignPlayerToAccountUC)
+	api.Post("/players/:id/link-account", playerHandler.LinkAccount)
+	api.Post("/players/:id/unlink-account", playerHandler.UnlinkAccount)
+
+	matchHandler.WithConfirmMatchScoreUseCase(confirmMatchScoreUC)
+	api.Post("/matches/:id/confirm-proposal", matchHandler.AdminConfirmProposal)
 
 	return app, db, store, nil
 }

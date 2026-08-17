@@ -87,6 +87,21 @@ func (m *mockMatchRepo) UpdateScore(ctx context.Context, id string, sets []event
 	}
 	return nil
 }
+func (m *mockMatchRepo) ProposeScore(ctx context.Context, matchID string, sets []eventDomain.MatchSet, proposedByPlayerID string, stageRule eventDomain.StageRule) error {
+	if match, ok := m.matches[matchID]; ok {
+		match.ProposedSets = sets
+		match.ProposedByPlayerID = &proposedByPlayerID
+	}
+	return nil
+}
+func (m *mockMatchRepo) ClearScoreProposal(ctx context.Context, matchID string) error {
+	if match, ok := m.matches[matchID]; ok {
+		match.ProposedSets = nil
+		match.ProposedByPlayerID = nil
+		match.ProposedAt = nil
+	}
+	return nil
+}
 func (m *mockMatchRepo) GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error) {
 	var res []int
 	for tNum, occupied := range m.occupiedTables {
@@ -293,6 +308,10 @@ func (m *mockPlayerRepo) GetSinglesByGender(ctx context.Context, gender string) 
 	return nil, nil
 }
 func (m *mockPlayerRepo) GetDoublesByGender(ctx context.Context, gender string) ([]*playerDomain.Player, error) {
+	return nil, nil
+}
+
+func (m *mockPlayerRepo) GetByGuardianAccountID(ctx context.Context, accountID string) ([]*playerDomain.Player, error) {
 	return nil, nil
 }
 

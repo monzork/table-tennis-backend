@@ -9,7 +9,7 @@ import (
 	fiberws "github.com/gofiber/websocket/v2"
 )
 
-func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
+func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler, accountMiddleware fiber.Handler) {
 	// ==========================================
 	// HEALTH CHECK
 	// ==========================================
@@ -124,6 +124,30 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	app.Post("/admin/logout", c.AuthHandler.Logout)
 
 	// ==========================================
+	// GUARDIAN ACCOUNT AREA (entirely separate from /admin)
+	// ==========================================
+
+	app.Get("/account/login", c.AccountHandler.ShowLogin)
+	app.Get("/account/google/login", loginLimiter, c.AccountHandler.GoogleLogin)
+	app.Get("/account/google/callback", c.AccountHandler.GoogleCallback)
+	app.Post("/account/logout", c.AccountHandler.Logout)
+
+	accountGroup := app.Group("/account")
+	accountGroup.Use(accountMiddleware)
+	accountGroup.Get("/", c.AccountHandler.Dashboard)
+	accountGroup.Get("/me", c.AccountHandler.ShowMyInfo)
+	accountGroup.Put("/me", c.AccountHandler.UpdateMyInfo)
+	accountGroup.Get("/players/new", c.AccountHandler.ShowAddChildForm)
+	accountGroup.Post("/players", c.AccountHandler.CreateChild)
+	accountGroup.Get("/players/:id", c.AccountHandler.PlayerDetail)
+	accountGroup.Get("/players/:id/edit", c.AccountHandler.EditPlayer)
+	accountGroup.Put("/players/:id", c.AccountHandler.UpdatePlayer)
+	accountGroup.Get("/pending-matches", c.AccountHandler.PendingMatches)
+	accountGroup.Post("/matches/:matchId/propose-score", c.AccountHandler.ProposeScore)
+	accountGroup.Post("/matches/:matchId/confirm-score", c.AccountHandler.ConfirmScore)
+	accountGroup.Post("/matches/:matchId/reject-score", c.AccountHandler.RejectScore)
+
+	// ==========================================
 	// PROTECTED ADMIN DASHBOARD / VIEW GROUPS
 	// ==========================================
 
@@ -150,6 +174,8 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	api.Get("/players/search/cards", c.PlayerHandler.SearchSelectionCards)
 	api.Get("/players/:id/edit", c.PlayerHandler.ShowEditForm)
 	api.Put("/players/:id", c.PlayerHandler.Update)
+	api.Post("/players/:id/link-account", c.PlayerHandler.LinkAccount)
+	api.Post("/players/:id/unlink-account", c.PlayerHandler.UnlinkAccount)
 	api.Delete("/players/:id", c.PlayerHandler.Delete)
 	api.Post("/players/import", c.PlayerHandler.Import)
 
@@ -200,6 +226,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler) {
 	api.Post("/matches/:id/reset", c.MatchHandler.Reset)
 	api.Get("/matches/:id/score-form", c.MatchHandler.ShowScoreForm)
 	api.Put("/matches/:id/score", c.MatchHandler.UpdateScore)
+	api.Post("/matches/:id/confirm-proposal", c.MatchHandler.AdminConfirmProposal)
 
 	// Divisions API
 	api.Get("/divisions", c.DivisionHandler.ShowEditForm)

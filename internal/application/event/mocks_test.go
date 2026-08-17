@@ -238,6 +238,12 @@ func (m *mockMatchRepo) GetMatchByParticipants(ctx context.Context, tournamentID
 func (m *mockMatchRepo) UpdateScore(ctx context.Context, id string, sets []tournamentDomain.MatchSet, stageRule tournamentDomain.StageRule) error {
 	return nil
 }
+func (m *mockMatchRepo) ProposeScore(ctx context.Context, matchID string, sets []tournamentDomain.MatchSet, proposedByPlayerID string, stageRule tournamentDomain.StageRule) error {
+	return nil
+}
+func (m *mockMatchRepo) ClearScoreProposal(ctx context.Context, matchID string) error {
+	return nil
+}
 func (m *mockMatchRepo) GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error) {
 	return m.occupiedByEvent, m.occupiedByEventErr
 }
@@ -376,6 +382,10 @@ func (m *mockPlayerRepo) GetSinglesByGender(ctx context.Context, gender string) 
 }
 
 func (m *mockPlayerRepo) GetDoublesByGender(ctx context.Context, gender string) ([]*playerDomain.Player, error) {
+	return nil, nil
+}
+
+func (m *mockPlayerRepo) GetByGuardianAccountID(ctx context.Context, accountID string) ([]*playerDomain.Player, error) {
 	return nil, nil
 }
 

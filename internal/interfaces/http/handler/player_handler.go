@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log/slog"
 	"strconv"
+	accountApp "table-tennis-backend/internal/application/account"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/player"
 
@@ -25,6 +26,10 @@ type PlayerHandler struct {
 	getTournamentsUC        *event.GetTournamentsUseCase
 	getPlayerStatsUC        *player.GetPlayerTournamentStatsUseCase
 	getEloTrendUC           *player.GetPlayerEloTrendUseCase
+	// assignPlayerToAccountUC is optional: nil in older callers/tests still
+	// leaves the rest of the handler fully functional, only the admin
+	// link/unlink-to-account actions become unavailable.
+	assignPlayerToAccountUC *accountApp.AssignPlayerToAccountUseCase
 }
 
 func NewPlayerHandler(
@@ -53,6 +58,15 @@ func NewPlayerHandler(
 		getPlayerStatsUC:        gpsuc,
 		getEloTrendUC:           getEloTrendUC,
 	}
+}
+
+// WithAssignPlayerToAccountUseCase wires the admin-assisted player↔account
+// linking use case into an already-constructed PlayerHandler. Kept as a
+// setter rather than a NewPlayerHandler parameter so every existing call
+// site keeps compiling unchanged.
+func (h *PlayerHandler) WithAssignPlayerToAccountUseCase(uc *accountApp.AssignPlayerToAccountUseCase) *PlayerHandler {
+	h.assignPlayerToAccountUC = uc
+	return h
 }
 
 func (h *PlayerHandler) Register(c *fiber.Ctx) error {
@@ -127,6 +141,49 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 
 	lang := getLang(c)
 	return c.Render("admin/partials/player-row", merge(tMap(lang), fiber.Map{"Player": player}))
+}
+
+// LinkAccount lets an admin manually link a Player to a guardian Account by
+// the account's email — covers both "attach an existing adult player to
+// their own Google login" and "fix a mis-linked/duplicate child player,"
+// since there's no real identity verification for a player to self-claim a
+// record. See internal/application/account.AssignPlayerToAccountUseCase.
+func (h *PlayerHandler) LinkAccount(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var body struct {
+		Email string `json:"email" form:"email"`
+	}
+	if err := c.BodyParser(&body); err != nil || h.assignPlayerToAccountUC == nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Invalid request body")
+	}
+
+	if err := h.assignPlayerToAccountUC.Execute(c.Context(), id, body.Email); err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
+	}
+
+	p, err := h.getPlayerByIDUC.Execute(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
+	}
+	lang := getLang(c)
+	return c.Render("admin/partials/player-row", merge(tMap(lang), fiber.Map{"Player": p}))
+}
+
+// UnlinkAccount clears a player's guardian account link, correcting a mistake.
+func (h *PlayerHandler) UnlinkAccount(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if h.assignPlayerToAccountUC == nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "not available")
+	}
+	if err := h.assignPlayerToAccountUC.Unlink(c.Context(), id); err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
+	}
+	p, err := h.getPlayerByIDUC.Execute(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
+	}
+	lang := getLang(c)
+	return c.Render("admin/partials/player-row", merge(tMap(lang), fiber.Map{"Player": p}))
 }
 
 func (h *PlayerHandler) Delete(c *fiber.Ctx) error {
