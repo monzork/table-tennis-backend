@@ -621,6 +621,41 @@ func TestAccountHandler_RejectScoreFlow(t *testing.T) {
 	})
 }
 
+func TestAccountHandler_ProposeScore_SplitABFields(t *testing.T) {
+	// The account UI's score form mirrors the public QR/PIN form's split
+	// A/B number-input pair per set (scores[]_a / scores[]_b) rather than a
+	// single "A-B" text field — verify that combining path works too.
+	app, db, _, err := SetupTestApp()
+	if err != nil {
+		t.Fatalf("failed to setup test app: %v", err)
+	}
+	accountA := seedTestAccount(t, db, "sub-splitab-a", "sa@x.com", "Guardian A")
+	accountB := seedTestAccount(t, db, "sub-splitab-b", "sb@x.com", "Guardian B")
+	p1 := seedLinkedPlayer(t, db, accountA, "PlayerSplitA")
+	p2 := seedLinkedPlayer(t, db, accountB, "PlayerSplitB")
+	matchID := seedScheduledMatch(t, db, p1, p2)
+	cookieA := accountLogin(t, app, accountA)
+
+	data := url.Values{}
+	data.Set("playerId", p1.ID)
+	data.Add("scores[]_a", "11")
+	data.Add("scores[]_b", "5")
+	data.Add("scores[]_a", "11")
+	data.Add("scores[]_b", "7")
+	data.Add("scores[]_a", "11")
+	data.Add("scores[]_b", "9")
+	req := httptest.NewRequest("POST", "/account/matches/"+matchID+"/propose-score", strings.NewReader(data.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Cookie", cookieA)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("test request failed: %v", err)
+	}
+	if resp.StatusCode != 302 {
+		t.Errorf("expected 302 redirect, got %v", resp.StatusCode)
+	}
+}
+
 func TestAccountHandler_ProposeScore_InvalidBody(t *testing.T) {
 	app, db, _, err := SetupTestApp()
 	if err != nil {

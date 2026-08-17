@@ -41,7 +41,13 @@
                 </div>
                 {{end}}
             {{else}}
-                <form hx-post="/account/matches/{{if .MatchID}}{{.MatchID}}{{else}}new{{end}}/propose-score" class="flex items-center gap-2 flex-wrap">
+                {{/* Same visual form as the public QR/PIN score entry
+                     (public/match-score-form.html) — split A/B number
+                     inputs per set — but posting to our own propose-score
+                     endpoint instead of the public immediate-finalize one,
+                     and with no PIN field since the account is already
+                     authenticated. */}}
+                <form hx-post="/account/matches/{{if .MatchID}}{{.MatchID}}{{else}}new{{end}}/propose-score" class="space-y-3">
                     <input type="hidden" name="playerId" value="{{$.Player.ID}}">
                     {{if not .MatchID}}
                     <input type="hidden" name="eventId" value="{{.EventID}}">
@@ -49,10 +55,19 @@
                     <input type="hidden" name="stage" value="{{.Stage}}">
                     {{end}}
                     {{$bestOf := .BestOf}}{{if not $bestOf}}{{$bestOf = 5}}{{end}}
-                    {{range seq $bestOf}}
-                    <input type="text" name="sets[]" placeholder="11-8" title="{{t $.T "account.pending.set_label"}} {{.}}" class="flex-1 min-w-[70px] bg-black/40 border border-white/5 rounded-xl p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
-                    {{end}}
-                    <button type="submit" class="shrink-0 bg-white hover:bg-gray-200 text-black font-black py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-[10px]">{{t $.T "account.pending.propose_btn"}}</button>
+                    <div class="space-y-2">
+                        {{range seq $bestOf}}
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] font-bold text-gray-500 w-10 text-right uppercase tracking-widest">{{t $.T "score_pub.set"}} {{.}}</span>
+                            <input name="scores[]_a" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="99" placeholder="A"
+                                class="flex-1 bg-white/[0.04] border border-white/10 rounded-xl p-4 text-white text-center text-2xl font-black focus:outline-none focus:border-white/30 transition-colors shadow-inner">
+                            <span class="text-gray-600 font-bold text-lg">–</span>
+                            <input name="scores[]_b" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="99" placeholder="B"
+                                class="flex-1 bg-white/[0.04] border border-white/10 rounded-xl p-4 text-white text-center text-2xl font-black focus:outline-none focus:border-white/30 transition-colors shadow-inner">
+                        </div>
+                        {{end}}
+                    </div>
+                    <button type="submit" class="w-full bg-white hover:bg-gray-100 text-black font-black py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg text-xs">{{t $.T "score_pub.submit"}}</button>
                 </form>
             {{end}}
         </div>

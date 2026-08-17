@@ -395,6 +395,20 @@ func (h *AccountHandler) ProposeScore(c *fiber.Ctx) error {
 			body.Sets = append(body.Sets, string(s))
 		}
 	}
+	// The account UI's score form uses the same split A/B number-input pair
+	// per set as the public QR/PIN form (internal/interfaces/http/templates/
+	// public/match-score-form.html), not a single "A-B" text field — combine
+	// them the same way match_handler.go's UpdatePublicScore does.
+	if len(body.Sets) == 0 {
+		as := c.Request().PostArgs().PeekMulti("scores[]_a")
+		bs := c.Request().PostArgs().PeekMulti("scores[]_b")
+		for i := 0; i < len(as) && i < len(bs); i++ {
+			aStr, bStr := string(as[i]), string(bs[i])
+			if aStr != "" && bStr != "" {
+				body.Sets = append(body.Sets, aStr+"-"+bStr)
+			}
+		}
+	}
 
 	sets, err := matchApp.ParseSetScores(body.Sets)
 	if err != nil {
