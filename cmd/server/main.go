@@ -183,10 +183,13 @@ func main() {
 	// in every template render without touching individual handlers.
 	app.Use(func(ctx *fiber.Ctx) error {
 		isAdmin := false
+		isAccount := false
 		if sess, err := store.Get(ctx); err == nil {
 			isAdmin, _ = sess.Get("authenticated").(bool)
+			isAccount, _ = sess.Get("account_authenticated").(bool)
 		}
 		ctx.Locals("IsAdminSession", isAdmin)
+		ctx.Locals("IsAccountSession", isAccount)
 		return ctx.Next()
 	})
 

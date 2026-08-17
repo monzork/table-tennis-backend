@@ -15,6 +15,9 @@ var Translations = map[string]map[string]string{
 		"nav.public_rankings": "Public Rankings",
 		"nav.logout":          "Logout",
 		"nav.projector":       "Projector",
+		"nav.sign_in":         "Sign In",
+		"nav.my_account":      "My Account",
+		"nav.mob_account":     "Account",
 
 		// Public dashboard page
 		"dashboard.title":            "Dashboard",
@@ -894,6 +897,9 @@ var Translations = map[string]map[string]string{
 		"nav.public_rankings": "Rankings",
 		"nav.logout":          "Salir",
 		"nav.projector":       "Proyector",
+		"nav.sign_in":         "Iniciar Sesión",
+		"nav.my_account":      "Mi Cuenta",
+		"nav.mob_account":     "Cuenta",
 
 		// Public dashboard page
 		"dashboard.title":            "Panel",
