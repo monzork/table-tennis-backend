@@ -1,6 +1,9 @@
 package event
 
-import "table-tennis-backend/internal/domain/player"
+import (
+	"table-tennis-backend/internal/domain/match"
+	"table-tennis-backend/internal/domain/player"
+)
 
 // PlayerEventStats is a player's full match record within a single event,
 // across every stage (group and knockout).
@@ -126,6 +129,15 @@ type PlayerPendingMatchDetail struct {
 	// requires the owning Event's stage rules; populated by the caller
 	// (GetPlayerPendingMatchesUseCase) via Event.GetEffectiveStageRule.
 	BestOf int
+
+	// ProjectedEloWin/ProjectedEloLoss are what this player's Elo would
+	// change by if they win/lose this match, computed from both sides'
+	// *current* Elo -- a preview, not a guarantee (the real change at
+	// finish time depends on ratings as of when the match is actually
+	// played). Nil when the opponent isn't a resolved player yet (e.g. a
+	// still-TBD bracket slot).
+	ProjectedEloWin  *float64
+	ProjectedEloLoss *float64
 }
 
 // BuildPlayerPendingMatchDetails returns every not-yet-finished match the
@@ -144,25 +156,31 @@ func BuildPlayerPendingMatchDetails(playerID, eventName string, matches []Match)
 			continue
 		}
 
+		ownTeam := m.TeamA
 		opponentTeam := m.TeamB
 		if !isA {
+			ownTeam = m.TeamB
 			opponentTeam = m.TeamA
 		}
 
 		hasProposal := m.ProposedByPlayerID != nil
 		proposedByMe := hasProposal && *m.ProposedByPlayerID == playerID
 
+		projWin, projLoss := projectedEloDelta(m.MatchType, ownTeam, opponentTeam)
+
 		details = append(details, PlayerPendingMatchDetail{
-			MatchID:      m.ID,
-			EventID:      m.EventID,
-			EventName:    eventName,
-			Stage:        m.Stage,
-			Opponent:     opponentName(opponentTeam),
-			OpponentID:   opponentID(opponentTeam),
-			Status:       m.Status,
-			TableNumber:  m.TableNumber,
-			HasProposal:  hasProposal,
-			ProposedByMe: proposedByMe,
+			MatchID:          m.ID,
+			EventID:          m.EventID,
+			EventName:        eventName,
+			Stage:            m.Stage,
+			Opponent:         opponentName(opponentTeam),
+			OpponentID:       opponentID(opponentTeam),
+			Status:           m.Status,
+			TableNumber:      m.TableNumber,
+			HasProposal:      hasProposal,
+			ProposedByMe:     proposedByMe,
+			ProjectedEloWin:  projWin,
+			ProjectedEloLoss: projLoss,
 		})
 	}
 	return details
@@ -189,6 +207,43 @@ func opponentID(team []*player.Player) string {
 		return ""
 	}
 	return team[0].ID
+}
+
+// projectedEloDelta previews the Elo points a win/loss would be worth right
+// now, from both sides' current Elo. Doubles uses each team's average, same
+// as match.CalculateAndApplyElo. Returns (nil, nil) when either side isn't a
+// resolved player yet (e.g. a still-TBD bracket slot).
+func projectedEloDelta(matchType string, ownTeam, opponentTeam []*player.Player) (*float64, *float64) {
+	if len(ownTeam) == 0 || len(opponentTeam) == 0 {
+		return nil, nil
+	}
+	for _, p := range ownTeam {
+		if p == nil {
+			return nil, nil
+		}
+	}
+	for _, p := range opponentTeam {
+		if p == nil {
+			return nil, nil
+		}
+	}
+
+	eloOf := func(team []*player.Player) int {
+		sum := 0
+		for _, p := range team {
+			if matchType == "doubles" {
+				sum += int(p.DoublesElo)
+			} else {
+				sum += int(p.SinglesElo)
+			}
+		}
+		return sum / len(team)
+	}
+
+	own, opp := eloOf(ownTeam), eloOf(opponentTeam)
+	win := match.StandardEloPoints(own, opp, true, match.DefaultKFactor)
+	loss := match.StandardEloPoints(own, opp, false, match.DefaultKFactor)
+	return &win, &loss
 }
 
 func applyTeamStats(stats map[string]PlayerEventStats, m Match, team []*player.Player, won bool, setsWon, setsLost int, isA bool) {

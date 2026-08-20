@@ -200,4 +200,46 @@ func TestBuildPlayerPendingMatchDetails(t *testing.T) {
 			t.Fatalf("expected 1 pending match for doubles partner, got %d", len(details))
 		}
 	})
+
+	t.Run("projects Elo win/loss from current ratings", func(t *testing.T) {
+		favorite := &player.Player{ID: "fav", FirstName: "Fav", SinglesElo: 1800}
+		underdog := &player.Player{ID: "dog", FirstName: "Dog", SinglesElo: 1200}
+		matches := []Match{
+			{ID: "m1", MatchType: "singles", Status: "scheduled", TeamA: []*player.Player{favorite}, TeamB: []*player.Player{underdog}},
+		}
+
+		details := BuildPlayerPendingMatchDetails("fav", "Men's Singles", matches)
+		if len(details) != 1 {
+			t.Fatalf("expected 1 pending match, got %d", len(details))
+		}
+		d := details[0]
+		if d.ProjectedEloWin == nil || d.ProjectedEloLoss == nil {
+			t.Fatalf("expected both projections set, got %+v", d)
+		}
+		if *d.ProjectedEloWin <= 0 {
+			t.Errorf("expected a positive projected gain for the favorite winning, got %v", *d.ProjectedEloWin)
+		}
+		if *d.ProjectedEloLoss >= 0 {
+			t.Errorf("expected a negative projected loss for the favorite losing, got %v", *d.ProjectedEloLoss)
+		}
+		// The favorite is expected to win, so an upset loss should cost more
+		// than a routine win gains.
+		if -*d.ProjectedEloLoss <= *d.ProjectedEloWin {
+			t.Errorf("expected losing as favorite to cost more than winning gains, got win=%v loss=%v", *d.ProjectedEloWin, *d.ProjectedEloLoss)
+		}
+	})
+
+	t.Run("nil projections when the opponent slot is still TBD", func(t *testing.T) {
+		p1 := &player.Player{ID: "p1", SinglesElo: 1500}
+		matches := []Match{
+			{ID: "m1", MatchType: "singles", Status: "scheduled", TeamA: []*player.Player{p1}, TeamB: nil},
+		}
+		details := BuildPlayerPendingMatchDetails("p1", "Men's Singles", matches)
+		if len(details) != 1 {
+			t.Fatalf("expected 1 pending match, got %d", len(details))
+		}
+		if details[0].ProjectedEloWin != nil || details[0].ProjectedEloLoss != nil {
+			t.Errorf("expected nil projections with no resolved opponent, got %+v", details[0])
+		}
+	})
 }
