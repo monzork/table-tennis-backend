@@ -148,6 +148,57 @@ func TestBracketGenerator_SkipDivisionSplit(t *testing.T) {
 	}
 }
 
+func TestBracketGenerator_GenderScopedDivisions(t *testing.T) {
+	// Women's Elo is now shifted ~700 below men's on a shared scale, so
+	// gender-specific division bands must only apply to the matching
+	// gender's event -- otherwise a women's event would see none of its
+	// players fall into a men's-scaled Elo band.
+	menDiv1200 := int16(1600)
+	womenDiv1200 := int16(900)
+	divs := []*division.Division{
+		{ID: "men1", Name: "Men's 1st", Category: "both", Gender: "M", MinElo: menDiv1200, MaxElo: nil},
+		{ID: "women1", Name: "Women's 1st", Category: "both", Gender: "F", MinElo: womenDiv1200, MaxElo: nil},
+	}
+
+	womenPlayers := []*player.Player{
+		{ID: "p1", FirstName: "Player", LastName: "1", SinglesElo: 1000, Gender: "F"},
+		{ID: "p2", FirstName: "Player", LastName: "2", SinglesElo: 950, Gender: "F"},
+	}
+	womensEvent := &event.Event{
+		ID:             "t1",
+		Name:           "Women's Singles",
+		Type:           "singles",
+		Format:         "groups_elimination",
+		EventCategory:  "women",
+		GroupPassCount: 2,
+		Participants:   womenPlayers,
+	}
+
+	br := bracket.BuildBracket(womensEvent, divs, map[string]string{})
+	if len(br.Divisions) != 1 || br.Divisions[0].Name != "Women's 1st" {
+		t.Fatalf("expected women's event to only use the women's division band, got %+v", br.Divisions)
+	}
+
+	menPlayers := []*player.Player{
+		{ID: "p3", FirstName: "Player", LastName: "3", SinglesElo: 1700, Gender: "M"},
+		{ID: "p4", FirstName: "Player", LastName: "4", SinglesElo: 1650, Gender: "M"},
+	}
+	mensEvent := &event.Event{
+		ID:             "t2",
+		Name:           "Men's Singles",
+		Type:           "singles",
+		Format:         "groups_elimination",
+		EventCategory:  "men",
+		GroupPassCount: 2,
+		Participants:   menPlayers,
+	}
+
+	br = bracket.BuildBracket(mensEvent, divs, map[string]string{})
+	if len(br.Divisions) != 1 || br.Divisions[0].Name != "Men's 1st" {
+		t.Fatalf("expected men's event to only use the men's division band, got %+v", br.Divisions)
+	}
+}
+
 func createFinishedMatch(id string, p1, p2 *player.Player, winner string) event.Match {
 	scoreA := 0
 	scoreB := 0

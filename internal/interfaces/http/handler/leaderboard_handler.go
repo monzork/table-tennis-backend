@@ -211,7 +211,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 }
 
 func (h *LeaderboardHandler) GetSingles(c *fiber.Ctx) error {
-	return h.renderRanking(c, "singles", "", "Singles")
+	return h.renderRanking(c, "singles", "", "Overall Singles")
 }
 
 func (h *LeaderboardHandler) GetDoubles(c *fiber.Ctx) error {

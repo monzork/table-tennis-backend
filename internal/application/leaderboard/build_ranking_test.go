@@ -89,7 +89,7 @@ func TestBuildRanking_SortOrders(t *testing.T) {
 	})
 }
 
-func TestBuildRanking_MixedGenderSplitsByRankWithinGender(t *testing.T) {
+func TestBuildRanking_UngenderedSinglesIsOneCombinedPool(t *testing.T) {
 	players := []*player.Player{
 		{ID: "m1", FirstName: "M1", Gender: "M", SinglesElo: 2000},
 		{ID: "f1", FirstName: "F1", Gender: "F", SinglesElo: 1000},
@@ -101,14 +101,74 @@ func TestBuildRanking_MixedGenderSplitsByRankWithinGender(t *testing.T) {
 		SortOrder: "points_desc",
 	})
 
+	if result.IsMixed {
+		t.Fatalf("expected a single combined ranking for ungendered singles, since singles share one Elo pool")
+	}
+	if len(result.Groups) != 1 || len(result.Groups[0].Players) != 2 {
+		t.Fatalf("expected both players in one combined group, got %+v", result.Groups)
+	}
+	if result.Groups[0].Players[0].ID != "m1" || result.Groups[0].Players[0].Rank != 1 {
+		t.Errorf("expected higher-Elo player ranked 1 regardless of gender, got %+v", result.Groups[0].Players)
+	}
+	if result.Groups[0].Players[1].ID != "f1" || result.Groups[0].Players[1].Rank != 2 {
+		t.Errorf("expected lower-Elo player ranked 2 regardless of gender, got %+v", result.Groups[0].Players)
+	}
+}
+
+func TestBuildRanking_MixedDoublesStillSplitsByGender(t *testing.T) {
+	players := []*player.Player{
+		{ID: "m1", FirstName: "M1", Gender: "M", DoublesElo: 2000},
+		{ID: "f1", FirstName: "F1", Gender: "F", DoublesElo: 1000},
+	}
+
+	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
+		RankType:  "doubles",
+		Gender:    "",
+		SortOrder: "points_desc",
+	})
+
 	if !result.IsMixed {
-		t.Fatalf("expected mixed result for empty gender filter")
+		t.Fatalf("expected mixed result for empty gender filter on doubles")
 	}
 	if len(result.MenGroups) != 1 || result.MenGroups[0].Players[0].Rank != 1 {
 		t.Errorf("expected men ranked independently starting at 1, got %+v", result.MenGroups)
 	}
 	if len(result.WomenGroups) != 1 || result.WomenGroups[0].Players[0].Rank != 1 {
 		t.Errorf("expected women ranked independently starting at 1, got %+v", result.WomenGroups)
+	}
+}
+
+func TestBuildRanking_CombinedSinglesGroupsByGenderedDivision(t *testing.T) {
+	menDiv := &division.Division{ID: "men1", Name: "Men's 1st", Category: "both", Gender: "M", MinElo: 1600}
+	womenDiv := &division.Division{ID: "women1", Name: "Women's 1st", Category: "both", Gender: "F", MinElo: 900}
+	divs := []*division.Division{menDiv, womenDiv}
+
+	players := []*player.Player{
+		{ID: "m1", FirstName: "M1", Gender: "M", SinglesElo: 1700},
+		{ID: "f1", FirstName: "F1", Gender: "F", SinglesElo: 950},
+	}
+
+	result := leaderboard.BuildRanking(players, divs, leaderboard.RankingParams{
+		RankType:  "singles",
+		Gender:    "",
+		SortOrder: "points_desc",
+	})
+
+	if len(result.Groups) != 2 {
+		t.Fatalf("expected each player grouped under their own gendered division, got %+v", result.Groups)
+	}
+	found := map[string]bool{}
+	for _, g := range result.Groups {
+		found[g.Division.ID] = true
+		if g.Division.ID == "men1" && (len(g.Players) != 1 || g.Players[0].ID != "m1") {
+			t.Errorf("expected only m1 in men's division, got %+v", g.Players)
+		}
+		if g.Division.ID == "women1" && (len(g.Players) != 1 || g.Players[0].ID != "f1") {
+			t.Errorf("expected only f1 in women's division, got %+v", g.Players)
+		}
+	}
+	if !found["men1"] || !found["women1"] {
+		t.Fatalf("expected both gendered divisions present, got %+v", result.Groups)
 	}
 }
 

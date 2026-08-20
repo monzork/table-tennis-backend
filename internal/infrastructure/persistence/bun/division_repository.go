@@ -24,6 +24,7 @@ func (r *DivisionRepository) Save(ctx context.Context, d *division.Division) err
 		MinElo:       d.MinElo,
 		MaxElo:       d.MaxElo,
 		Category:     d.Category,
+		Gender:       d.Gender,
 		Color:        d.Color,
 	}
 
@@ -48,6 +49,7 @@ func (r *DivisionRepository) GetAll(ctx context.Context) ([]*division.Division, 
 			MinElo:       m.MinElo,
 			MaxElo:       m.MaxElo,
 			Category:     m.Category,
+			Gender:       m.Gender,
 			Color:        m.Color,
 		}
 	}

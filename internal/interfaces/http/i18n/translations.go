@@ -33,6 +33,7 @@ var Translations = map[string]map[string]string{
 		// Rankings page
 		"rankings.title":              "Rankings",
 		"rankings.subtitle":           "Official world rankings by category.",
+		"rankings.overall_singles":    "Overall Singles",
 		"rankings.mens_singles":       "♂ Men's Singles",
 		"rankings.womens_singles":     "♀ Women's Singles",
 		"rankings.mens_doubles":       "♂ Men's Doubles",
@@ -465,15 +466,19 @@ var Translations = map[string]map[string]string{
 		"admin.divisions.confirm_delete": "Delete this division?",
 
 		// Admin: division form
-		"admin.division_form.edit_title":  "Edit",
-		"admin.division_form.add_title":   "Add",
-		"admin.division_form.word":        "Division",
-		"admin.division_form.order_label": "Display Order",
-		"admin.division_form.color_label": "Color (Hex)",
-		"admin.division_form.min_elo":     "Min ELO",
-		"admin.division_form.max_elo":     "Max ELO",
-		"admin.division_form.max_elo_ph":  "Leave empty for infinity",
-		"admin.division_form.save":        "Save Division",
+		"admin.division_form.edit_title":   "Edit",
+		"admin.division_form.add_title":    "Add",
+		"admin.division_form.word":         "Division",
+		"admin.division_form.order_label":  "Display Order",
+		"admin.division_form.color_label":  "Color (Hex)",
+		"admin.division_form.min_elo":      "Min ELO",
+		"admin.division_form.max_elo":      "Max ELO",
+		"admin.division_form.max_elo_ph":   "Leave empty for infinity",
+		"admin.division_form.gender_label": "Gender",
+		"admin.division_form.gender_both":  "Both",
+		"admin.division_form.gender_men":   "Men",
+		"admin.division_form.gender_women": "Women",
+		"admin.division_form.save":         "Save Division",
 
 		// Admin: division select (event form)
 		"admin.division_select.label":             "Division (Elo restrictions)",
@@ -917,6 +922,7 @@ var Translations = map[string]map[string]string{
 		// Rankings page
 		"rankings.title":              "Clasificación",
 		"rankings.subtitle":           "Ranking mundial oficial por categoría.",
+		"rankings.overall_singles":    "Individuales General",
 		"rankings.mens_singles":       "♂ Individuales Varonil",
 		"rankings.womens_singles":     "♀ Individuales Femenil",
 		"rankings.mens_doubles":       "♂ Dobles Varonil",
@@ -1349,15 +1355,19 @@ var Translations = map[string]map[string]string{
 		"admin.divisions.confirm_delete": "¿Eliminar esta división?",
 
 		// Admin: division form
-		"admin.division_form.edit_title":  "Editar",
-		"admin.division_form.add_title":   "Agregar",
-		"admin.division_form.word":        "División",
-		"admin.division_form.order_label": "Orden de Visualización",
-		"admin.division_form.color_label": "Color (Hex)",
-		"admin.division_form.min_elo":     "ELO Mínimo",
-		"admin.division_form.max_elo":     "ELO Máximo",
-		"admin.division_form.max_elo_ph":  "Dejar vacío para infinito",
-		"admin.division_form.save":        "Guardar División",
+		"admin.division_form.edit_title":   "Editar",
+		"admin.division_form.add_title":    "Agregar",
+		"admin.division_form.word":         "División",
+		"admin.division_form.order_label":  "Orden de Visualización",
+		"admin.division_form.color_label":  "Color (Hex)",
+		"admin.division_form.min_elo":      "ELO Mínimo",
+		"admin.division_form.max_elo":      "ELO Máximo",
+		"admin.division_form.max_elo_ph":   "Dejar vacío para infinito",
+		"admin.division_form.gender_label": "Género",
+		"admin.division_form.gender_both":  "Ambos",
+		"admin.division_form.gender_men":   "Hombres",
+		"admin.division_form.gender_women": "Mujeres",
+		"admin.division_form.save":         "Guardar División",
 
 		// Admin: division select (event form)
 		"admin.division_select.label":             "División (restricciones de Elo)",

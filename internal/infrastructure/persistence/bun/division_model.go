@@ -15,6 +15,7 @@ type DivisionModel struct {
 	MinElo       int16      `bun:"min_elo,notnull,default:0"`
 	MaxElo       *int16     `bun:"max_elo"` // can be null
 	Category     string     `bun:"category,notnull,default:'both'"`
+	Gender       string     `bun:"gender,notnull,default:'both'"`
 	Color        string     `bun:"color,notnull,default:'#ffffff'"`
 	CreatedAt    time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt    *time.Time `bun:"updated_at,nullzero"`

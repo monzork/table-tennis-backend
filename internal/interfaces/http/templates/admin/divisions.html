@@ -21,6 +21,7 @@
                     <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">{{t .T "admin.divisions.col_order"}}</th>
                     <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">{{t .T "admin.divisions.col_name"}}</th>
                     <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">{{t .T "admin.divisions.col_elo_range"}}</th>
+                    <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest">{{t .T "admin.division_form.gender_label"}}</th>
                     <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest text-center">{{t .T "admin.divisions.col_color"}}</th>
                     <th class="py-4 px-6 text-gray-400 font-bold uppercase text-xs tracking-widest text-right">{{t .T "pub_detail.col_actions"}}</th>
                 </tr>
@@ -29,7 +30,7 @@
                 {{range .Divisions}}
                     {{template "admin/partials/division-row" (dict "Division" . "T" $.T)}}
                 {{else}}
-                    <tr><td colspan="5" class="py-12 text-center text-gray-500 italic font-light tracking-wider">{{t .T "admin.divisions.empty"}}</td></tr>
+                    <tr><td colspan="6" class="py-12 text-center text-gray-500 italic font-light tracking-wider">{{t .T "admin.divisions.empty"}}</td></tr>
                 {{end}}
             </tbody>
         </table>

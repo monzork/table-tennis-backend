@@ -45,6 +45,9 @@ func TestNewDivision_Defaults(t *testing.T) {
 	if d.Category != "both" {
 		t.Errorf("expected default Category 'both', got '%s'", d.Category)
 	}
+	if d.Gender != "both" {
+		t.Errorf("expected default Gender 'both', got '%s'", d.Gender)
+	}
 	if d.Color != "#ffffff" {
 		t.Errorf("expected default Color '#ffffff', got '%s'", d.Color)
 	}
@@ -103,6 +106,43 @@ func TestDivision_ContainsElo(t *testing.T) {
 			got := tt.division.ContainsElo(tt.elo)
 			if got != tt.expected {
 				t.Errorf("ContainsElo(%d) = %v, want %v", tt.elo, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDivision_MatchesGender(t *testing.T) {
+	both, _ := division.NewDivision("d1", "Both", 1, 0, nil, "singles", "#000000")
+
+	mens, _ := division.NewDivision("d2", "Men's 1st", 1, 1600, nil, "singles", "#000000")
+	mens.Gender = "M"
+
+	womens, _ := division.NewDivision("d3", "Women's 1st", 1, 900, nil, "singles", "#000000")
+	womens.Gender = "F"
+
+	unset := &division.Division{ID: "d4", Name: "Legacy", MinElo: 0}
+
+	tests := []struct {
+		division *division.Division
+		gender   string
+		expected bool
+		label    string
+	}{
+		{both, "M", true, "both-gender division matches men"},
+		{both, "F", true, "both-gender division matches women"},
+		{mens, "M", true, "men's division matches men"},
+		{mens, "F", false, "men's division does not match women"},
+		{womens, "F", true, "women's division matches women"},
+		{womens, "M", false, "women's division does not match men"},
+		{unset, "M", true, "empty Gender (legacy fixture) matches men"},
+		{unset, "F", true, "empty Gender (legacy fixture) matches women"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.label, func(t *testing.T) {
+			got := tt.division.MatchesGender(tt.gender)
+			if got != tt.expected {
+				t.Errorf("MatchesGender(%q) = %v, want %v", tt.gender, got, tt.expected)
 			}
 		})
 	}

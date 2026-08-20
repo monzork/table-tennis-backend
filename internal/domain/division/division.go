@@ -3,6 +3,7 @@ package division
 import (
 	"context"
 	"errors"
+	"strings"
 )
 
 var (
@@ -24,6 +25,7 @@ type Division struct {
 	MinElo       int16
 	MaxElo       *int16 // nil means no upper limit (top division)
 	Category     string // "singles", "doubles", or "both"
+	Gender       string // "M", "F", or "both" (default) -- lets men's/women's bands use different Elo ranges over one shared Elo pool
 	Color        string
 }
 
@@ -47,8 +49,20 @@ func NewDivision(id, name string, displayOrder int, minElo int16, maxElo *int16,
 		MinElo:       minElo,
 		MaxElo:       maxElo,
 		Category:     category,
+		Gender:       "both",
 		Color:        color,
 	}, nil
+}
+
+// MatchesGender reports whether a player of the given gender ("M"/"F") falls
+// under this division. Divisions with no gender set (empty or "both") apply
+// to everyone; empty is treated the same as "both" for backward compatibility
+// with divisions/fixtures created before this field existed.
+func (d *Division) MatchesGender(playerGender string) bool {
+	if d.Gender == "" || strings.EqualFold(d.Gender, "both") {
+		return true
+	}
+	return strings.EqualFold(d.Gender, playerGender)
 }
 
 // ContainsElo checks if a given ELO rating falls within this division's range.

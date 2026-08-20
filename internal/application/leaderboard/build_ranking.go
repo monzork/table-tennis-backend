@@ -58,7 +58,11 @@ func filterRankableDivisions(divisions []*division.Division) []*division.Divisio
 // ranking/sorting, and division grouping to a player list.
 func BuildRanking(players []*player.Player, divisions []*division.Division, params RankingParams) RankingResult {
 	divisions = filterRankableDivisions(divisions)
-	isMixed := params.Gender == ""
+	// Singles now share a single Elo pool across genders, so the ungendered
+	// "singles" view is one combined ranking rather than a men/women split.
+	// Doubles still splits ("Mixed Doubles" combines two independently
+	// gendered player lists into displayed columns).
+	isMixed := params.Gender == "" && params.RankType != "singles"
 
 	// 0. Pre-rank all players by absolute Elo, per gender when mixed.
 	var preRanked []RankedPlayer
@@ -173,7 +177,7 @@ func groupPlayers(players []RankedPlayer, rankType string, isDivisional bool, di
 	for _, div := range divisions {
 		var divPlayers []RankedPlayer
 		for _, rp := range players {
-			if div.ContainsElo(eloOf(rp.Player, rankType)) {
+			if div.MatchesGender(rp.Gender) && div.ContainsElo(eloOf(rp.Player, rankType)) {
 				divPlayers = append(divPlayers, rp)
 			}
 		}

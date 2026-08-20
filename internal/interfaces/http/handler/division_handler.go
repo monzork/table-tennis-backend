@@ -39,7 +39,9 @@ func (h *DivisionHandler) CreateOrUpdate(c *fiber.Ctx) error {
 		color = "#ffffff"
 	}
 
-	err := h.uc.Save(c.Context(), id, name, order, int16(minElo), maxElo, "both", color)
+	gender := c.FormValue("gender", "both")
+
+	err := h.uc.Save(c.Context(), id, name, order, int16(minElo), maxElo, "both", gender, color)
 	if err != nil {
 		return c.Status(400).SendString(err.Error())
 	}

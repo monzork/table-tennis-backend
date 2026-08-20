@@ -28,7 +28,7 @@ func (uc *GetDivisionDistributionUseCase) Execute(players []*player.Player, divi
 	for i, d := range rankable {
 		count := 0
 		for _, p := range players {
-			if d.ContainsElo(eloOf(p, rankType)) {
+			if d.MatchesGender(p.Gender) && d.ContainsElo(eloOf(p, rankType)) {
 				count++
 			}
 		}

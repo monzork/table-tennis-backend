@@ -148,6 +148,25 @@ func (bm BracketMatch) Player2Won() bool {
 	return bm.Match.WinnerTeam == "A"
 }
 
+// divisionMatchesEventCategory reports whether a division's gender band applies
+// to an event's category. Gender-agnostic ("both") divisions always apply.
+// Gender-specific divisions only apply to single-gender ("men"/"women")
+// events -- a "mixed"/"open" event has no single gender for its Elo bands to
+// be scaled against, so only "both" divisions are valid there.
+func divisionMatchesEventCategory(d *division.Division, eventCategory string) bool {
+	if d.Gender == "" || strings.EqualFold(d.Gender, "both") {
+		return true
+	}
+	switch eventCategory {
+	case "men":
+		return strings.EqualFold(d.Gender, "M")
+	case "women":
+		return strings.EqualFold(d.Gender, "F")
+	default:
+		return false
+	}
+}
+
 func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]string) *Bracket {
 	vm := &Bracket{
 		Event:     t,
@@ -223,7 +242,7 @@ func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]str
 			// Skip "0-infinite" divisions (like 'No Division') for Elo events
 			continue
 		}
-		if d.Category == "both" || d.Category == t.Type {
+		if (d.Category == "both" || d.Category == t.Type) && divisionMatchesEventCategory(d, t.EventCategory) {
 			validDivs = append(validDivs, d)
 		}
 	}

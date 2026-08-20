@@ -20,6 +20,14 @@
                     </div>
                 </div>
             </div>
+            <div>
+                <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{{t .T "admin.division_form.gender_label"}}</label>
+                <select name="gender" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all">
+                    <option value="both" {{if or (not .Division.Gender) (eq .Division.Gender "both")}}selected{{end}}>{{t .T "admin.division_form.gender_both"}}</option>
+                    <option value="M" {{if eq .Division.Gender "M"}}selected{{end}}>{{t .T "admin.division_form.gender_men"}}</option>
+                    <option value="F" {{if eq .Division.Gender "F"}}selected{{end}}>{{t .T "admin.division_form.gender_women"}}</option>
+                </select>
+            </div>
             <div class="grid grid-cols-2 gap-6">
                 <div>
                     <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{{t .T "admin.division_form.min_elo"}}</label>

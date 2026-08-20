@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS divisions (
     min_elo INTEGER NOT NULL,
     max_elo INTEGER,
     category TEXT NOT NULL DEFAULT 'both', -- 'singles', 'doubles', 'both'
+    gender TEXT NOT NULL DEFAULT 'both', -- 'M', 'F', 'both'
     color TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP

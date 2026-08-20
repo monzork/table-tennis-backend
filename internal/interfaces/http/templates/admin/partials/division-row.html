@@ -6,6 +6,10 @@
     <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 text-gray-300 font-mono mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
         <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">{{t .T "admin.divisions.mob_elo"}}</span><span>{{.Division.MinElo}} - {{if .Division.MaxElo}}{{.Division.MaxElo}}{{else}}∞{{end}}</span>
     </td>
+    <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 text-gray-300 mb-1 sm:mb-0 flex justify-between items-center sm:table-cell">
+        <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2 mt-0.5">{{t .T "admin.division_form.gender_label"}}</span>
+        <span>{{if eq .Division.Gender "M"}}{{t .T "admin.division_form.gender_men"}}{{else if eq .Division.Gender "F"}}{{t .T "admin.division_form.gender_women"}}{{else}}{{t .T "admin.division_form.gender_both"}}{{end}}</span>
+    </td>
     <td class="block sm:table-cell py-1 px-0 sm:py-4 sm:px-6 sm:text-center flex items-center justify-between sm:justify-center mt-1 sm:mt-0 mb-3 sm:mb-0 w-full sm:table-cell">
         <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "admin.divisions.mob_color"}}</span>
         <div class="w-6 h-6 rounded-full shadow-sm border border-white/20 sm:mx-auto" style="background-color: {{.Division.Color}};"></div>
