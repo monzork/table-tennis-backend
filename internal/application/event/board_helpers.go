@@ -82,21 +82,29 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 		if m.TeamMatchID != nil { // skip sub-matches
 			continue
 		}
+		projWinA, projLossA := tournamentDomain.ProjectedEloDelta(m.MatchType, m.TeamA, m.TeamB)
+		projWinB, projLossB := tournamentDomain.ProjectedEloDelta(m.MatchType, m.TeamB, m.TeamA)
+
 		card := BoardCard{
-			MatchID:     m.ID,
-			Status:      m.Status,
-			Stage:       m.Stage,
-			BestOf:      t.GetEffectiveStageRule(m.Stage).BestOf,
-			PlayerAName: nameOf(m.TeamA),
-			PlayerBName: nameOf(m.TeamB),
-			P1Id:        idOf(m.TeamA),
-			P2Id:        idOf(m.TeamB),
-			TableNumber: m.TableNumber,
-			ScoreA:      m.ScoreA(),
-			ScoreB:      m.ScoreB(),
-			Pin:         m.Pin,
-			RoundNumber: m.RoundNumber,
-			Category:    t.EventCategory,
+			MatchID:           m.ID,
+			Status:            m.Status,
+			Stage:             m.Stage,
+			BestOf:            t.GetEffectiveStageRule(m.Stage).BestOf,
+			PlayerAName:       nameOf(m.TeamA),
+			PlayerBName:       nameOf(m.TeamB),
+			P1Id:              idOf(m.TeamA),
+			P2Id:              idOf(m.TeamB),
+			TableNumber:       m.TableNumber,
+			ScoreA:            m.ScoreA(),
+			ScoreB:            m.ScoreB(),
+			Pin:               m.Pin,
+			RoundNumber:       m.RoundNumber,
+			Category:          t.EventCategory,
+			ProjectedEloWinA:  projWinA,
+			ProjectedEloLossA: projLossA,
+			ProjectedEloWinB:  projWinB,
+			ProjectedEloLossB: projLossB,
+			HasProposal:       m.ProposedByPlayerID != nil,
 			GroupName: func() string {
 				if len(m.TeamA) > 0 {
 					return findGroupName(m.TeamA[0].ID)

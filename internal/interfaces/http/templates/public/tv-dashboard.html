@@ -320,6 +320,7 @@
                                         <div class="flex flex-col sm:flex-row justify-center sm:justify-between items-stretch sm:items-center text-base sm:text-lg gap-1 sm:gap-0">
                                             <div class="sm:w-[45%] text-left sm:text-right font-bold truncate text-white bg-white/5 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                                                 {{.PlayerAName}}
+                                                {{if .ProjectedEloWinA}}<div class="text-[9px] font-bold tabular-nums normal-case" title="{{t $.T "board.elo_estimate_title"}}"><span class="text-green-400">{{eloDelta .ProjectedEloWinA}}</span><span class="text-gray-500">/</span><span class="text-red-400">{{eloDelta .ProjectedEloLossA}}</span></div>{{end}}
                                             </div>
                                             <div class="hidden sm:block sm:w-[10%] text-center text-xs font-black text-yellow-500 italic">{{t $.T "tv.vs"}}</div>
                                             <div class="sm:hidden flex items-center justify-center my-0.5">
@@ -327,6 +328,7 @@
                                             </div>
                                             <div class="sm:w-[45%] text-left font-bold truncate text-white bg-white/5 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                                                 {{.PlayerBName}}
+                                                {{if .ProjectedEloWinB}}<div class="text-[9px] font-bold tabular-nums normal-case" title="{{t $.T "board.elo_estimate_title"}}"><span class="text-green-400">{{eloDelta .ProjectedEloWinB}}</span><span class="text-gray-500">/</span><span class="text-red-400">{{eloDelta .ProjectedEloLossB}}</span></div>{{end}}
                                             </div>
                                         </div>
                                     </div>
@@ -350,6 +352,7 @@
                                         <div class="flex flex-col sm:flex-row justify-center sm:justify-between items-stretch sm:items-center text-base sm:text-lg gap-1 sm:gap-0">
                                             <div class="sm:w-[45%] text-left sm:text-right font-bold truncate text-gray-200 bg-white/5 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                                                 {{.PlayerAName}}
+                                                {{if .ProjectedEloWinA}}<div class="text-[9px] font-bold tabular-nums normal-case" title="{{t $.T "board.elo_estimate_title"}}"><span class="text-green-400">{{eloDelta .ProjectedEloWinA}}</span><span class="text-gray-500">/</span><span class="text-red-400">{{eloDelta .ProjectedEloLossA}}</span></div>{{end}}
                                             </div>
                                             <div class="hidden sm:block sm:w-[10%] text-center text-xs font-black text-gray-600 italic">{{t $.T "tv.vs"}}</div>
                                             <div class="sm:hidden flex items-center justify-center my-0.5">
@@ -357,6 +360,7 @@
                                             </div>
                                             <div class="sm:w-[45%] text-left font-bold truncate text-gray-200 bg-white/5 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
                                                 {{.PlayerBName}}
+                                                {{if .ProjectedEloWinB}}<div class="text-[9px] font-bold tabular-nums normal-case" title="{{t $.T "board.elo_estimate_title"}}"><span class="text-green-400">{{eloDelta .ProjectedEloWinB}}</span><span class="text-gray-500">/</span><span class="text-red-400">{{eloDelta .ProjectedEloLossB}}</span></div>{{end}}
                                             </div>
                                         </div>
                                     </div>

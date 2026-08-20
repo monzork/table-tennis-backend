@@ -166,7 +166,7 @@ func BuildPlayerPendingMatchDetails(playerID, eventName string, matches []Match)
 		hasProposal := m.ProposedByPlayerID != nil
 		proposedByMe := hasProposal && *m.ProposedByPlayerID == playerID
 
-		projWin, projLoss := projectedEloDelta(m.MatchType, ownTeam, opponentTeam)
+		projWin, projLoss := ProjectedEloDelta(m.MatchType, ownTeam, opponentTeam)
 
 		details = append(details, PlayerPendingMatchDetail{
 			MatchID:          m.ID,
@@ -209,11 +209,11 @@ func opponentID(team []*player.Player) string {
 	return team[0].ID
 }
 
-// projectedEloDelta previews the Elo points a win/loss would be worth right
+// ProjectedEloDelta previews the Elo points a win/loss would be worth right
 // now, from both sides' current Elo. Doubles uses each team's average, same
 // as match.CalculateAndApplyElo. Returns (nil, nil) when either side isn't a
 // resolved player yet (e.g. a still-TBD bracket slot).
-func projectedEloDelta(matchType string, ownTeam, opponentTeam []*player.Player) (*float64, *float64) {
+func ProjectedEloDelta(matchType string, ownTeam, opponentTeam []*player.Player) (*float64, *float64) {
 	if len(ownTeam) == 0 || len(opponentTeam) == 0 {
 		return nil, nil
 	}

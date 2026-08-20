@@ -89,6 +89,46 @@ func TestBuildBoardCards(t *testing.T) {
 			t.Errorf("expected at least one scheduled card involving an in-match player to be flagged")
 		}
 	})
+
+	t.Run("real matches carry projected Elo deltas and a pending-proposal flag", func(t *testing.T) {
+		proposerID := "p1"
+		mScheduled := tournamentDomain.Match{ID: "m1", Status: "scheduled", Stage: "group", MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}}
+		mInProgress := tournamentDomain.Match{ID: "m2", Status: "in_progress", Stage: "group", MatchType: "singles", TeamA: []*playerDomain.Player{p2}, TeamB: []*playerDomain.Player{p3}, ProposedByPlayerID: &proposerID}
+
+		ev := &tournamentDomain.Event{
+			ID:            "t1",
+			Type:          "singles",
+			EventCategory: "open",
+			Format:        "elimination",
+			Participants:  []*playerDomain.Player{p1, p2, p3},
+			Matches:       []tournamentDomain.Match{mScheduled, mInProgress},
+		}
+
+		scheduled, inProgress, _ := BuildBoardCards(ev, nil)
+
+		var sc *BoardCard
+		for i := range scheduled {
+			if scheduled[i].MatchID == "m1" {
+				sc = &scheduled[i]
+			}
+		}
+		if sc == nil {
+			t.Fatalf("expected to find the real scheduled match m1, got %+v", scheduled)
+		}
+		if sc.ProjectedEloWinA == nil || sc.ProjectedEloLossA == nil || sc.ProjectedEloWinB == nil || sc.ProjectedEloLossB == nil {
+			t.Errorf("expected all 4 projected Elo fields set for a real 1v1 match, got %+v", sc)
+		}
+		if sc.HasProposal {
+			t.Errorf("expected no proposal flag on m1, got true")
+		}
+
+		if len(inProgress) != 1 {
+			t.Fatalf("expected 1 in-progress card, got %d", len(inProgress))
+		}
+		if !inProgress[0].HasProposal {
+			t.Errorf("expected HasProposal true for m2 (has ProposedByPlayerID), got false")
+		}
+	})
 }
 
 func TestFilterBoardCards(t *testing.T) {

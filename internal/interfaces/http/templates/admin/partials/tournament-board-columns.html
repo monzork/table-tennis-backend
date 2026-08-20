@@ -90,7 +90,13 @@
             class="text-[9px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded animate-pulse">{{t
             $.T "board.in_match"}}</span>
           {{end}}
+          {{if .ProjectedEloWinA}}
+          <span class="text-[9px] font-bold tabular-nums" title="{{t $.T "board.elo_estimate_title"}}">
+            <span class="text-green-400">{{eloDelta .ProjectedEloWinA}}</span><span class="text-gray-600">/</span><span class="text-red-400">{{eloDelta .ProjectedEloLossA}}</span>
+          </span>
+          {{else}}
           <span class="text-[10px] font-black text-gray-600 tabular-nums">—</span>
+          {{end}}
         </div>
         <div class="flex items-center gap-2 bg-white/5 border border-white/5 rounded-xl px-3 py-2">
           <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerBName}}</span>
@@ -99,7 +105,13 @@
             class="text-[9px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded animate-pulse">{{t
             $.T "board.in_match"}}</span>
           {{end}}
+          {{if .ProjectedEloWinB}}
+          <span class="text-[9px] font-bold tabular-nums" title="{{t $.T "board.elo_estimate_title"}}">
+            <span class="text-green-400">{{eloDelta .ProjectedEloWinB}}</span><span class="text-gray-600">/</span><span class="text-red-400">{{eloDelta .ProjectedEloLossB}}</span>
+          </span>
+          {{else}}
           <span class="text-[10px] font-black text-gray-600 tabular-nums">—</span>
+          {{end}}
         </div>
       </div>
       <div class="flex flex-col gap-2 mt-1 w-full">
@@ -202,6 +214,10 @@
           {{if .GroupName}}
           <span
             class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded font-mono">{{.GroupName}}</span>
+          {{end}}
+          {{if .HasProposal}}
+          <span
+            class="text-[9px] font-black uppercase tracking-widest text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded font-mono animate-pulse">{{t $.T "board.proposal_pending"}}</span>
           {{end}}
         </div>
         {{if .TableNumber}}<span class="text-[9px] font-bold text-yellow-400 font-mono">{{t $.T "board.table"}}
