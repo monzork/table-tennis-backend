@@ -141,6 +141,24 @@ func (uc *GetEventDetailViewUseCase) Execute(ctx context.Context, tournamentID s
 		playerPins[snap.PlayerID] = snap.Pin
 	}
 
+	rows := BuildParticipantRows(t, res.divisions, playerPins)
+
+	return &EventDetailView{
+		Event:                 t,
+		Players:               res.players,
+		Divisions:             res.divisions,
+		BracketViewModel:      vm,
+		AvailableParticipants: availableParticipants,
+		ParticipantRows:       rows,
+		Officials:             res.officials,
+		PlayerPins:            playerPins,
+	}, nil
+}
+
+// BuildParticipantRows computes the seed/group/division/Elo breakdown for
+// every participant of an event, shared by the admin and public event-detail
+// view models. playerPins may be nil (the public view never surfaces PINs).
+func BuildParticipantRows(t *tournamentDomain.Event, divisions []*divisionDomain.Division, playerPins map[string]string) []ParticipantRow {
 	playerGroupMap := make(map[string]string)
 	for _, g := range t.Groups {
 		gDisplayName := g.Name
@@ -159,7 +177,7 @@ func (uc *GetEventDetailViewUseCase) Execute(ctx context.Context, tournamentID s
 			elo = p.DoublesElo
 		}
 		found := false
-		for _, d := range res.divisions {
+		for _, d := range divisions {
 			if d.MinElo == 0 && d.MaxElo == nil {
 				continue
 			}
@@ -202,15 +220,5 @@ func (uc *GetEventDetailViewUseCase) Execute(ctx context.Context, tournamentID s
 			Elo:       elo,
 		}
 	}
-
-	return &EventDetailView{
-		Event:                 t,
-		Players:               res.players,
-		Divisions:             res.divisions,
-		BracketViewModel:      vm,
-		AvailableParticipants: availableParticipants,
-		ParticipantRows:       rows,
-		Officials:             res.officials,
-		PlayerPins:            playerPins,
-	}, nil
+	return rows
 }

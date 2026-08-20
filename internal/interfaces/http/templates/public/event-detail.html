@@ -1,4 +1,4 @@
-<div class="space-y-10 text-white/90 animate-fade-in max-w-5xl mx-auto px-4"
+<div class="space-y-10 text-white/90 animate-fade-in max-w-7xl mx-auto px-4"
      hx-ext="ws" ws-connect="/ws/brackets/{{.Event.ID}}"
      hx-on::ws-open="const el = document.getElementById('public-ws-status'); if(el) { el.textContent = '{{t .T "board.live"}}'; el.className = 'px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-[11px] uppercase tracking-widest text-green-400 font-bold'; }"
      hx-on::ws-close="const el = document.getElementById('public-ws-status'); if(el) { el.textContent = '{{t .T "board.reconnecting"}}'; el.className = 'px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[11px] uppercase tracking-widest text-red-400 font-bold'; }"
@@ -41,11 +41,12 @@
   </header>
 
   {{/* Participants */}}
+  {{if or (eq .Event.Type "teams") (eq .Event.Type "doubles") (eq .Event.Type "mixed_doubles")}}
   <details class="space-y-3 group outline-none cursor-pointer">
     <summary class="flex flex-wrap items-center gap-3 cursor-pointer list-none select-none outline-none">
       <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest pl-1 flex items-center gap-2">
         <svg class="w-4 h-4 transition-transform group-open:rotate-90 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-        {{if or (eq .Event.Type "teams") (eq .Event.Type "doubles") (eq .Event.Type "mixed_doubles")}}{{t .T "pub_detail.player_pool"}}{{else}}{{t .T "pub_detail.participants"}}{{end}}
+        {{t .T "pub_detail.player_pool"}}
       </h2>
     </summary>
     <div class="flex overflow-x-auto gap-2 pb-2 sm:flex-wrap sm:pb-0 snap-x snap-mandatory px-1 mt-3" style="scrollbar-width: none;">
@@ -62,6 +63,65 @@
       {{end}}
     </div>
   </details>
+  {{else}}
+  <details class="space-y-3 group outline-none cursor-pointer" id="participants-section">
+    <summary class="flex flex-wrap items-center gap-3 cursor-pointer list-none select-none outline-none">
+      <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest pl-1 flex items-center gap-2">
+        <svg class="w-4 h-4 transition-transform group-open:rotate-90 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        {{t .T "pub_detail.participants"}} <span class="text-gray-700 ml-1">({{len .Event.Participants}})</span>
+      </h2>
+    </summary>
+    <div class="glass rounded-2xl border border-white/10 overflow-hidden mt-3">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-white/10 bg-white/[0.03]">
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 w-10">#</th>
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">{{t .T "admin.event_detail.col_player"}}</th>
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hidden sm:table-cell">{{t .T "admin.event_detail.col_division"}}</th>
+            <th class="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hidden md:table-cell">{{t .T "admin.event_detail.col_group"}}</th>
+            <th class="text-right px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hidden sm:table-cell">{{t .T "bracket.elo"}}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          {{range .ParticipantRows}}
+          <tr class="hover:bg-white/[0.03] transition-colors">
+            <td class="px-4 py-3">
+              <span class="text-[11px] font-black text-gray-600 tabular-nums">#{{.Seed}}</span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 shrink-0 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[10px] font-extrabold text-white">
+                  {{if gt (len .Player.FirstName) 0}}{{slice .Player.FirstName 0 1}}{{else}}?{{end}}
+                </div>
+                <span class="font-semibold text-white text-sm">{{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 hidden sm:table-cell">
+              {{if .DivName}}
+              <span class="text-[9px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded">{{.DivName}}</span>
+              {{else}}
+              <span class="text-gray-700 text-[10px]">—</span>
+              {{end}}
+            </td>
+            <td class="px-4 py-3 hidden md:table-cell">
+              {{if .GroupName}}
+              <span class="text-[9px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded">{{.GroupName}}</span>
+              {{else}}
+              <span class="text-gray-700 text-[10px]">—</span>
+              {{end}}
+            </td>
+            <td class="px-4 py-3 text-right hidden sm:table-cell">
+              <span class="text-[12px] font-bold text-gray-400 tabular-nums font-mono">{{.Elo}}</span>
+            </td>
+          </tr>
+          {{else}}
+          <tr><td colspan="5" class="text-center py-10 text-gray-600 italic text-sm">{{t .T "admin.event_detail.no_participants"}}</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </details>
+  {{end}}
 
   {{/* Bracket/Groups Draw Area */}}
   <section class="space-y-6 relative">
@@ -94,9 +154,9 @@
   <section class="space-y-4 pt-6 border-t border-white/10" id="match-list-container"
            hx-get="/categories/{{.Event.ID}}"
            hx-trigger="reload-matches, reload-matches from:body"
-           hx-select="#match-list-container"
-           hx-target="this"
-           hx-swap="outerHTML focus-scroll:false scroll:none">
+           hx-select="#public-matches-tbody"
+           hx-target="#public-matches-tbody"
+           hx-swap="innerHTML">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
       <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest">{{t .T "pub_detail.match_title"}}</h2>
       <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">

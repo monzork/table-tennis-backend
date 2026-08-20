@@ -21,6 +21,7 @@ type PublicEventDetailView struct {
 	BracketViewModel *bracket.Bracket
 	RefereeNames     map[string]string
 	JSONLD           string
+	ParticipantRows  []ParticipantRow
 }
 
 type GetPublicEventDetailViewUseCase struct {
@@ -207,11 +208,14 @@ func (uc *GetPublicEventDetailViewUseCase) Execute(ctx context.Context, eventID 
   }
 }`, safeName, t.StartDate.Format(time.RFC3339), t.EndDate.Format(time.RFC3339), canonicalURL)
 
+	rows := BuildParticipantRows(t, divisions, nil)
+
 	return &PublicEventDetailView{
 		Event:            t,
 		Divisions:        divisions,
 		BracketViewModel: vm,
 		RefereeNames:     refereeNames,
 		JSONLD:           jsonLD,
+		ParticipantRows:  rows,
 	}, nil
 }

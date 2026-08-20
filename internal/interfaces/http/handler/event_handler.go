@@ -541,6 +541,7 @@ func (h *EventHandler) PublicDetail(c *fiber.Ctx) error {
 		"Event":            view.Event,
 		"Divisions":        view.Divisions,
 		"BracketViewModel": view.BracketViewModel,
+		"ParticipantRows":  view.ParticipantRows,
 		"Type":             "Events",
 		"StatusFilter":     statusFilter,
 		"PlayerSearch":     playerSearch,
