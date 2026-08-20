@@ -140,7 +140,7 @@ func (uc *GetPlayerTournamentStatsUseCase) Execute(ctx context.Context, playerID
 		view := PlayerEventStatsView{
 			Event:            ev,
 			Stats:            stats,
-			Matches:          tournamentEvent.BuildPlayerMatchDetails(playerID, ev.Matches),
+			Matches:          tournamentEvent.BuildPlayerMatchDetails(playerID, ev.Matches, ev.Status == "finished"),
 			Participated:     stats.Played > 0,
 			PendingProposals: tournamentEvent.BuildPendingProposalPreviews(playerID, ev.Name, ev.Matches),
 		}

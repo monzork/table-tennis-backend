@@ -87,10 +87,14 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 
 		// While the owning event hasn't been finished/recalculated yet (no
 		// real EloDeltaA/B), preview a finished match's actual result from
-		// current Elo instead of leaving it blank.
+		// current Elo instead of leaving it blank. Once the event itself is
+		// finished, a still-missing delta means this match predates
+		// per-match Elo tracking -- current Elo has since moved through
+		// other matches, so previewing from it would show a plausible but
+		// wrong number; leave it blank instead.
 		eloDeltaA, eloDeltaB := m.EloDeltaA, m.EloDeltaB
 		eloDeltaIsPreview := false
-		if eloDeltaA == nil && m.Status == "finished" && m.WinnerTeam != "" {
+		if eloDeltaA == nil && t.Status != "finished" && m.Status == "finished" && m.WinnerTeam != "" {
 			if m.WinnerTeam == "A" {
 				eloDeltaA, eloDeltaB = projWinA, projLossB
 			} else {

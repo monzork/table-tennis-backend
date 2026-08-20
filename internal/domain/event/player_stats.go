@@ -67,7 +67,14 @@ type PlayerMatchDetail struct {
 
 // BuildPlayerMatchDetails returns the per-match breakdown (opponent, sets,
 // points) for every finished match the given player took part in.
-func BuildPlayerMatchDetails(playerID string, matches []Match) []PlayerMatchDetail {
+// eventFinished gates the Elo preview fallback: once the owning event is
+// finished, a missing EloDeltaA/B means the real value predates per-match
+// Elo tracking and simply wasn't recorded -- previewing it from *current*
+// Elo at that point would be actively misleading (current Elo has since
+// moved through every match played since), so it's left nil rather than
+// showing a plausible-looking wrong number. The preview only makes sense
+// while the event is still genuinely unprocessed.
+func BuildPlayerMatchDetails(playerID string, matches []Match, eventFinished bool) []PlayerMatchDetail {
 	details := make([]PlayerMatchDetail, 0, len(matches))
 	for _, m := range matches {
 		if m.Status != "finished" {
@@ -92,7 +99,7 @@ func BuildPlayerMatchDetails(playerID string, matches []Match) []PlayerMatchDeta
 		}
 
 		isPreview := false
-		if eloDelta == nil {
+		if eloDelta == nil && !eventFinished {
 			eloDelta = finishedPreviewEloDeltaFor(m, isA, ownTeam, opponentTeam)
 			isPreview = eloDelta != nil
 		}

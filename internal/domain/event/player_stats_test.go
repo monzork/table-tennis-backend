@@ -115,7 +115,7 @@ func TestBuildPlayerMatchDetails(t *testing.T) {
 			},
 		}
 
-		details := BuildPlayerMatchDetails("p1", matches)
+		details := BuildPlayerMatchDetails("p1", matches, false)
 		if len(details) != 2 {
 			t.Fatalf("expected 2 matches, got %d", len(details))
 		}
@@ -142,7 +142,7 @@ func TestBuildPlayerMatchDetails(t *testing.T) {
 			{Status: "in_progress", TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2}},
 			{Status: "finished", TeamA: []*player.Player{p2}, TeamB: []*player.Player{p2}, WinnerTeam: "A"},
 		}
-		if details := BuildPlayerMatchDetails("p1", matches); len(details) != 0 {
+		if details := BuildPlayerMatchDetails("p1", matches, false); len(details) != 0 {
 			t.Errorf("expected no matches, got %+v", details)
 		}
 	})
@@ -158,7 +158,7 @@ func TestBuildPlayerMatchDetails(t *testing.T) {
 			},
 		}
 
-		details := BuildPlayerMatchDetails("p1", matches)
+		details := BuildPlayerMatchDetails("p1", matches, false)
 		if len(details) != 1 || details[0].EloDelta == nil {
 			t.Fatalf("expected a preview Elo delta, got %+v", details)
 		}
@@ -182,12 +182,33 @@ func TestBuildPlayerMatchDetails(t *testing.T) {
 			},
 		}
 
-		details := BuildPlayerMatchDetails("p1", matches)
+		details := BuildPlayerMatchDetails("p1", matches, true)
 		if len(details) != 1 || details[0].EloDelta == nil || *details[0].EloDelta != realDelta {
 			t.Fatalf("expected the real applied delta %v, got %+v", realDelta, details)
 		}
 		if details[0].EloDeltaIsPreview {
 			t.Errorf("expected EloDeltaIsPreview false once the real delta exists")
+		}
+	})
+
+	t.Run("no preview for a legacy match in an already-finished event with no recorded delta", func(t *testing.T) {
+		// This match predates per-match Elo tracking: its event is finished
+		// (Elo was genuinely applied at the time), but EloDeltaA/B was never
+		// recorded. Current Elo has since moved through other matches, so
+		// previewing from it would show a plausible but wrong number --
+		// must stay nil instead.
+		favorite := &player.Player{ID: "p1", FirstName: "Fav", SinglesElo: 1800}
+		underdog := &player.Player{ID: "p2", FirstName: "Dog", SinglesElo: 1200}
+		matches := []Match{
+			{
+				Status: "finished", WinnerTeam: "A", MatchType: "singles",
+				TeamA: []*player.Player{favorite}, TeamB: []*player.Player{underdog},
+			},
+		}
+
+		details := BuildPlayerMatchDetails("p1", matches, true)
+		if len(details) != 1 || details[0].EloDelta != nil || details[0].EloDeltaIsPreview {
+			t.Errorf("expected no Elo delta/preview for a legacy match in a finished event, got %+v", details)
 		}
 	})
 }
