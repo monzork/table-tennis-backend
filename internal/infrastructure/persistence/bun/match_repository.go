@@ -39,6 +39,11 @@ type MatchModel struct {
 	CreatedAt      time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt      *time.Time `bun:"updated_at,nullzero"`
 
+	// EloDeltaA/EloDeltaB are the Elo points gained/lost by team A/B from
+	// this match, set once Elo is applied for the owning event.
+	EloDeltaA *float64 `bun:"elo_delta_a"`
+	EloDeltaB *float64 `bun:"elo_delta_b"`
+
 	// ProposedSets/ProposedByPlayerID/ProposedAt stage a player-submitted
 	// score awaiting confirmation (opposing player or admin) — see
 	// MatchRepository.ProposeScore/ClearScoreProposal.
@@ -621,6 +626,8 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*event.Match, error) {
 			RefereeID:   refereeIDPtr,
 			TableNumber: m.TableNumber,
 			Pin:         m.Pin,
+			EloDeltaA:   m.EloDeltaA,
+			EloDeltaB:   m.EloDeltaB,
 		})
 	}
 	return matches, nil
@@ -810,6 +817,8 @@ func (r *MatchRepository) mapModelsToEntities(ctx context.Context, models []Matc
 			ProposedSets:       m.ProposedSets,
 			ProposedByPlayerID: proposedByPlayerID,
 			ProposedAt:         m.ProposedAt,
+			EloDeltaA:          m.EloDeltaA,
+			EloDeltaB:          m.EloDeltaB,
 		})
 	}
 	return results, nil
@@ -1045,6 +1054,24 @@ func (r *MatchRepository) FinishMatch(ctx context.Context, cmd event.FinishMatch
 	}
 
 	return tx.Commit()
+}
+
+// UpdateEloDelta persists the per-match Elo points gained/lost by each team,
+// computed once Elo is applied for the owning event (see
+// FinishTournamentUseCase/RecalculateTournamentEloUseCase).
+func (r *MatchRepository) UpdateEloDelta(ctx context.Context, matchID string, deltaA, deltaB *float64) error {
+	mUUID, err := uuid.Parse(matchID)
+	if err != nil {
+		return err
+	}
+
+	_, err = ExtractDB(ctx, r.db).NewUpdate().Model((*MatchModel)(nil)).
+		Set("elo_delta_a = ?", deltaA).
+		Set("elo_delta_b = ?", deltaB).
+		Where("id = ?", mUUID).
+		Exec(ctx)
+
+	return err
 }
 
 func (r *MatchRepository) UpdateMetadata(ctx context.Context, matchID string, refereeID *string, tableNumber *int) error {

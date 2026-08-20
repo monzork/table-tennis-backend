@@ -14,7 +14,7 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 	newUC := func() (*RecalculateTournamentEloUseCase, *mockRepo, *mockPlayerRepo) {
 		repo := newMockRepo()
 		playerRepo := newMockPlayerRepo()
-		uc := NewRecalculateTournamentEloUseCase(repo, playerRepo)
+		uc := NewRecalculateTournamentEloUseCase(repo, &mockMatchRepo{}, playerRepo)
 		return uc, repo, playerRepo
 	}
 

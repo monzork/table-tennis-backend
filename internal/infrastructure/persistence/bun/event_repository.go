@@ -702,6 +702,8 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 			TableNumber: mm.TableNumber,
 			Pin:         mm.Pin,
 			RoundNumber: mm.RoundNumber,
+			EloDeltaA:   mm.EloDeltaA,
+			EloDeltaB:   mm.EloDeltaB,
 		}
 
 		// For parent team matches (MatchType=teams, no TeamMatchID), compute sub-match wins
@@ -1321,6 +1323,8 @@ func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel
 				TableNumber: mm.TableNumber,
 				Pin:         mm.Pin,
 				RoundNumber: mm.RoundNumber,
+				EloDeltaA:   mm.EloDeltaA,
+				EloDeltaB:   mm.EloDeltaB,
 			}
 
 			// Virtual set for parent team matches

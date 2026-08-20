@@ -15,12 +15,14 @@ import (
 
 type RecalculateTournamentEloUseCase struct {
 	tournamentRepo tournamentDomain.Repository
+	matchRepo      tournamentDomain.MatchRepository
 	playerRepo     player.Repository
 }
 
-func NewRecalculateTournamentEloUseCase(tournamentRepo tournamentDomain.Repository, playerRepo player.Repository) *RecalculateTournamentEloUseCase {
+func NewRecalculateTournamentEloUseCase(tournamentRepo tournamentDomain.Repository, matchRepo tournamentDomain.MatchRepository, playerRepo player.Repository) *RecalculateTournamentEloUseCase {
 	return &RecalculateTournamentEloUseCase{
 		tournamentRepo: tournamentRepo,
+		matchRepo:      matchRepo,
 		playerRepo:     playerRepo,
 	}
 }
@@ -180,6 +182,12 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 				"teamA", descA,
 				"teamB", descB,
 			)
+
+			deltaA := float64(afterA[0] - beforeA[0])
+			deltaB := float64(afterB[0] - beforeB[0])
+			if err := uc.matchRepo.UpdateEloDelta(ctx, m.ID, &deltaA, &deltaB); err != nil {
+				slog.Warn("failed to persist match Elo delta", "matchID", m.ID, "error", err)
+			}
 
 			for _, p := range resolvedA {
 				playerElos[p.ID].Singles = p.SinglesElo

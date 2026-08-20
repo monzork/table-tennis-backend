@@ -102,6 +102,12 @@ func createTestLeaderboardApp(t *testing.T) *fiber.App {
 	engine.AddFunc("cleanPhone", func(phone string) string { return phone })
 	engine.AddFunc("safeHTML", func(s string) template.HTML { return template.HTML(s) })
 	engine.AddFunc("eventDivision", handler.EventDivisionName)
+	engine.AddFunc("eloDelta", func(delta *float64) string {
+		if delta == nil {
+			return ""
+		}
+		return fmt.Sprintf("%+.1f", *delta)
+	})
 
 	app := fiber.New(fiber.Config{
 		Views:             engine,

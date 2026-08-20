@@ -149,7 +149,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	saveKnockoutSeedsUC := event.NewSaveKnockoutSeedsUseCase(tournamentRepo, divisionRepo)
 	toggleSeedingLockUC := event.NewToggleSeedingLockUseCase(tournamentRepo)
 	addGroupUC := event.NewAddGroupUseCase(tournamentRepo)
-	recalculateEloUC := event.NewRecalculateTournamentEloUseCase(tournamentRepo, playerRepo)
+	recalculateEloUC := event.NewRecalculateTournamentEloUseCase(tournamentRepo, matchRepo, playerRepo)
 
 	startKnockoutUC := event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo, divisionRepo)
 	getEventDetailViewUC := event.NewGetEventDetailViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC)
@@ -307,6 +307,12 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 		return template.HTML(s)
 	})
 	engine.AddFunc("eventDivision", handler.EventDivisionName)
+	engine.AddFunc("eloDelta", func(delta *float64) string {
+		if delta == nil {
+			return ""
+		}
+		return fmt.Sprintf("%+.1f", *delta)
+	})
 	app := fiber.New(fiber.Config{
 		Views:             engine,
 		PassLocalsToViews: true,

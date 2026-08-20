@@ -212,6 +212,12 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 					"teamB", descB,
 				)
 
+				deltaA := float64(afterA[0] - beforeA[0])
+				deltaB := float64(afterB[0] - beforeB[0])
+				if err := uc.matchRepo.UpdateEloDelta(ctx, m.ID, &deltaA, &deltaB); err != nil {
+					slog.Warn("failed to persist match Elo delta", "matchID", m.ID, "error", err)
+				}
+
 				for _, p := range resolvedA {
 					playerElos[p.ID].Singles = p.SinglesElo
 					playerElos[p.ID].Doubles = p.DoublesElo

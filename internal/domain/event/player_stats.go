@@ -52,6 +52,10 @@ type PlayerMatchDetail struct {
 	SetsWon  int
 	SetsLost int
 	Sets     []PlayerSetScore
+	// EloDelta is the Elo points this player gained (positive) or lost
+	// (negative) from this specific match. Nil if Elo hasn't been applied
+	// yet (e.g. the owning event has SkipElo, or Elo processing hasn't run).
+	EloDelta *float64
 }
 
 // BuildPlayerMatchDetails returns the per-match breakdown (opponent, sets,
@@ -70,10 +74,12 @@ func BuildPlayerMatchDetails(playerID string, matches []Match) []PlayerMatchDeta
 		opponentTeam := m.TeamB
 		setsWon, setsLost := m.ScoreA(), m.ScoreB()
 		won := m.WinnerTeam == "A"
+		eloDelta := m.EloDeltaA
 		if !isA {
 			opponentTeam = m.TeamA
 			setsWon, setsLost = m.ScoreB(), m.ScoreA()
 			won = m.WinnerTeam == "B"
+			eloDelta = m.EloDeltaB
 		}
 
 		sets := make([]PlayerSetScore, 0, len(m.Sets))
@@ -91,6 +97,7 @@ func BuildPlayerMatchDetails(playerID string, matches []Match) []PlayerMatchDeta
 			SetsWon:  setsWon,
 			SetsLost: setsLost,
 			Sets:     sets,
+			EloDelta: eloDelta,
 		})
 	}
 	return details

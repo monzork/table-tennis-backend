@@ -68,6 +68,13 @@ type Match struct {
 	ProposedSets       []MatchSet
 	ProposedByPlayerID *string
 	ProposedAt         *time.Time
+	// EloDeltaA/EloDeltaB are the Elo points gained (positive) or lost
+	// (negative) by team A/B from this specific match, set once Elo is
+	// applied for the event (see FinishTournamentUseCase/
+	// RecalculateTournamentEloUseCase). Nil when Elo hasn't been applied yet
+	// (match unfinished, event has SkipElo, or match type "teams").
+	EloDeltaA *float64
+	EloDeltaB *float64
 }
 
 type MatchSet struct {
@@ -475,6 +482,9 @@ type MatchRepository interface {
 	// Team match orchestration
 	CreateSubMatches(ctx context.Context, cmd CreateSubMatchesCommand) error
 	UpdateSubMatchSquads(ctx context.Context, cmd UpdateSubMatchSquadsCommand) error
+	// UpdateEloDelta persists the per-match Elo points gained/lost by each
+	// team, computed once Elo is applied for the event.
+	UpdateEloDelta(ctx context.Context, matchID string, deltaA, deltaB *float64) error
 }
 
 // FinishMatchCommand carries all data needed to finish a match including bracket advancement.

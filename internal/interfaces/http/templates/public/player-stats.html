@@ -92,6 +92,7 @@
                                 <span class="text-gray-400 font-mono">
                                     <span class="font-bold text-white">{{$m.SetsWon}}-{{$m.SetsLost}}</span>
                                     {{range $s := $m.Sets}}<span class="ml-2">{{$s.Own}}-{{$s.Opponent}}</span>{{end}}
+                                    {{if $m.EloDelta}}<span class="ml-2 {{if $m.Won}}text-green-400{{else}}text-red-400{{end}} font-bold">{{eloDelta $m.EloDelta}}</span>{{end}}
                                 </span>
                             </div>
                             {{end}}

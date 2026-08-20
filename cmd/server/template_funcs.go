@@ -123,5 +123,13 @@ func SetupTemplateEngine() *html.Engine {
 		return template.HTML(s)
 	})
 	engine.AddFunc("eventDivision", handler.EventDivisionName)
+	// eloDelta formats a per-match Elo change as a signed string (e.g.
+	// "+18.4", "-12.0"), or "" if Elo hasn't been applied to this match yet.
+	engine.AddFunc("eloDelta", func(delta *float64) string {
+		if delta == nil {
+			return ""
+		}
+		return fmt.Sprintf("%+.1f", *delta)
+	})
 	return engine
 }
