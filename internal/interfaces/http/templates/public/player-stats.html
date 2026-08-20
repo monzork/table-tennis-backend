@@ -98,6 +98,25 @@
                             {{end}}
                         </div>
                         {{end}}
+
+                        {{if $ev.PendingProposals}}
+                        <div class="mt-3 space-y-1.5">
+                            <p class="text-[9px] uppercase tracking-widest text-orange-400">{{t $.T "player_stats.pending_proposal"}}</p>
+                            {{range $pp := $ev.PendingProposals}}
+                            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 bg-orange-500/5 border border-orange-500/20 rounded-lg px-3 py-2 text-[11px] sm:text-xs animate-pulse">
+                                <span class="text-gray-300">
+                                    <span class="{{if $pp.Won}}text-green-400{{else}}text-red-400{{end}} font-bold uppercase mr-1">{{if $pp.Won}}W{{else}}L{{end}}</span>
+                                    {{t $.T "player_stats.vs"}} <span class="font-bold text-gray-200">{{$pp.Opponent}}</span>
+                                </span>
+                                <span class="text-gray-400 font-mono">
+                                    <span class="font-bold text-white">{{$pp.CurrentElo}}</span>
+                                    <span class="text-gray-600">&rarr;</span>
+                                    <span class="font-bold {{if $pp.Won}}text-green-400{{else}}text-red-400{{end}}">{{printf "%+.1f" $pp.EloDelta}}</span>
+                                </span>
+                            </div>
+                            {{end}}
+                        </div>
+                        {{end}}
                         {{end}}
 
                         {{if or $ev.EloBeforeSingles $ev.EloBeforeDoubles}}

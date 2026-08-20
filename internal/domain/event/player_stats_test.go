@@ -243,3 +243,82 @@ func TestBuildPlayerPendingMatchDetails(t *testing.T) {
 		}
 	})
 }
+
+func TestMatch_ProposedWinner(t *testing.T) {
+	tests := []struct {
+		label string
+		sets  []MatchSet
+		want  string
+	}{
+		{"A wins 2-0", []MatchSet{{ScoreA: 11, ScoreB: 5}, {ScoreA: 11, ScoreB: 8}}, "A"},
+		{"B wins 2-1", []MatchSet{{ScoreA: 11, ScoreB: 5}, {ScoreA: 8, ScoreB: 11}, {ScoreA: 9, ScoreB: 11}}, "B"},
+		{"no sets yet", nil, ""},
+		{"set not yet decisive (no one reached 11)", []MatchSet{{ScoreA: 5, ScoreB: 3}}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.label, func(t *testing.T) {
+			m := Match{ProposedSets: tt.sets}
+			if got := m.ProposedWinner(); got != tt.want {
+				t.Errorf("ProposedWinner() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildPendingProposalPreviews(t *testing.T) {
+	proposerID := "p1"
+	favorite := &player.Player{ID: "p1", FirstName: "Fav", SinglesElo: 1800}
+	underdog := &player.Player{ID: "p2", FirstName: "Dog", SinglesElo: 1200}
+
+	t.Run("upset win by the underdog previews a positive delta for them", func(t *testing.T) {
+		matches := []Match{
+			{
+				ID: "m1", MatchType: "singles", Status: "in_progress",
+				TeamA: []*player.Player{favorite}, TeamB: []*player.Player{underdog},
+				ProposedByPlayerID: &proposerID,
+				ProposedSets:       []MatchSet{{ScoreA: 5, ScoreB: 11}, {ScoreA: 8, ScoreB: 11}},
+			},
+		}
+
+		previews := BuildPendingProposalPreviews("p2", "Men's Singles", matches)
+		if len(previews) != 1 {
+			t.Fatalf("expected 1 preview, got %d: %+v", len(previews), previews)
+		}
+		p := previews[0]
+		if !p.Won {
+			t.Errorf("expected underdog to be marked as winning per the proposed sets, got %+v", p)
+		}
+		if p.CurrentElo != 1200 {
+			t.Errorf("expected CurrentElo 1200, got %d", p.CurrentElo)
+		}
+		if p.EloDelta <= 0 {
+			t.Errorf("expected a positive Elo delta for the winning underdog, got %v", p.EloDelta)
+		}
+		if p.Opponent != "Fav " {
+			t.Errorf("expected opponent name 'Fav ', got %q", p.Opponent)
+		}
+	})
+
+	t.Run("no preview when proposed sets don't yet decide a winner", func(t *testing.T) {
+		matches := []Match{
+			{
+				ID: "m1", MatchType: "singles", Status: "in_progress",
+				TeamA: []*player.Player{favorite}, TeamB: []*player.Player{underdog},
+				ProposedByPlayerID: &proposerID,
+				ProposedSets:       []MatchSet{{ScoreA: 5, ScoreB: 3}},
+			},
+		}
+		if previews := BuildPendingProposalPreviews("p1", "Men's Singles", matches); len(previews) != 0 {
+			t.Errorf("expected no previews for an indecisive proposal, got %+v", previews)
+		}
+	})
+
+	t.Run("no preview when there's no active proposal", func(t *testing.T) {
+		matches := []Match{
+			{ID: "m1", MatchType: "singles", Status: "in_progress", TeamA: []*player.Player{favorite}, TeamB: []*player.Player{underdog}},
+		}
+		if previews := BuildPendingProposalPreviews("p1", "Men's Singles", matches); len(previews) != 0 {
+			t.Errorf("expected no previews with no proposal, got %+v", previews)
+		}
+	})
+}

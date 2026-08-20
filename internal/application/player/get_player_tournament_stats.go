@@ -23,6 +23,9 @@ type PlayerEventStatsView struct {
 	EloAfterSingles  *int16
 	EloBeforeDoubles *int16
 	EloAfterDoubles  *int16
+	// PendingProposals previews the Elo effect of any not-yet-confirmed
+	// score proposal on this player's matches within the event.
+	PendingProposals []tournamentEvent.PendingProposalPreview
 }
 
 // PlayerTournamentView groups a player's per-event stats under the parent
@@ -135,10 +138,11 @@ func (uc *GetPlayerTournamentStatsUseCase) Execute(ctx context.Context, playerID
 
 		stats := tournamentEvent.BuildPlayerEventStats(playerID, ev.Matches)
 		view := PlayerEventStatsView{
-			Event:        ev,
-			Stats:        stats,
-			Matches:      tournamentEvent.BuildPlayerMatchDetails(playerID, ev.Matches),
-			Participated: stats.Played > 0,
+			Event:            ev,
+			Stats:            stats,
+			Matches:          tournamentEvent.BuildPlayerMatchDetails(playerID, ev.Matches),
+			Participated:     stats.Played > 0,
+			PendingProposals: tournamentEvent.BuildPendingProposalPreviews(playerID, ev.Name, ev.Matches),
 		}
 		if snap, ok := snapshotsByEvent[ev.ID]; ok {
 			view.EloBeforeSingles = snap.EloBeforeSingles

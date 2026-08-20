@@ -250,6 +250,7 @@ var Translations = map[string]map[string]string{
 		"player_stats.elo_doubles":         "Doubles Elo",
 		"player_stats.vs":                  "vs",
 		"player_stats.matches":             "Matches",
+		"player_stats.pending_proposal":    "Pending Score Proposal (Elo if confirmed)",
 
 		// Bracket
 		"bracket.participants":     "Participants",
@@ -1139,6 +1140,7 @@ var Translations = map[string]map[string]string{
 		"player_stats.elo_doubles":         "Elo Dobles",
 		"player_stats.vs":                  "vs",
 		"player_stats.matches":             "Partidos",
+		"player_stats.pending_proposal":    "Propuesta de Marcador Pendiente (Elo si se confirma)",
 
 		// Bracket
 		"bracket.participants":     "Participantes",

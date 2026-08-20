@@ -186,6 +186,73 @@ func BuildPlayerPendingMatchDetails(playerID, eventName string, matches []Match)
 	return details
 }
 
+// PendingProposalPreview previews the Elo effect of a still-unconfirmed
+// score proposal on one specific player, from the outcome implied by the
+// proposed sets (not a win/loss coin-flip like ProjectedEloWin/Loss --
+// the proposed result already picks one).
+type PendingProposalPreview struct {
+	MatchID    string
+	EventName  string
+	Opponent   string
+	Won        bool
+	CurrentElo int16
+	EloDelta   float64
+}
+
+// BuildPendingProposalPreviews returns a preview for every match the given
+// player is part of that currently has an unconfirmed score proposal whose
+// proposed sets already decide a winner. eventName is stamped onto every
+// preview the same way BuildPlayerPendingMatchDetails does.
+func BuildPendingProposalPreviews(playerID, eventName string, matches []Match) []PendingProposalPreview {
+	var out []PendingProposalPreview
+	for _, m := range matches {
+		if m.ProposedByPlayerID == nil || len(m.ProposedSets) == 0 {
+			continue
+		}
+		isA := TeamContains(m.TeamA, playerID)
+		if !isA && !TeamContains(m.TeamB, playerID) {
+			continue
+		}
+		winner := m.ProposedWinner()
+		if winner == "" {
+			continue
+		}
+		won := (isA && winner == "A") || (!isA && winner == "B")
+
+		ownTeam, opponentTeam := m.TeamA, m.TeamB
+		if !isA {
+			ownTeam, opponentTeam = m.TeamB, m.TeamA
+		}
+		projWin, projLoss := ProjectedEloDelta(m.MatchType, ownTeam, opponentTeam)
+		if projWin == nil {
+			continue
+		}
+		delta := *projLoss
+		if won {
+			delta = *projWin
+		}
+
+		var currentElo int16
+		if len(ownTeam) > 0 && ownTeam[0] != nil {
+			if m.MatchType == "doubles" {
+				currentElo = ownTeam[0].DoublesElo
+			} else {
+				currentElo = ownTeam[0].SinglesElo
+			}
+		}
+
+		out = append(out, PendingProposalPreview{
+			MatchID:    m.ID,
+			EventName:  eventName,
+			Opponent:   opponentName(opponentTeam),
+			Won:        won,
+			CurrentElo: currentElo,
+			EloDelta:   delta,
+		})
+	}
+	return out
+}
+
 func TeamContains(team []*player.Player, playerID string) bool {
 	for _, p := range team {
 		if p != nil && p.ID == playerID {

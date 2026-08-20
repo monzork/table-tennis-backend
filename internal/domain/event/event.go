@@ -121,6 +121,33 @@ func (m Match) ScoreB() int {
 	return score
 }
 
+// ProposedWinner determines the winner ("A" or "B") implied by ProposedSets,
+// using the same set-counting rule as ScoreA/ScoreB. Returns "" if there's no
+// proposal or the proposed sets don't yet decide a winner.
+func (m Match) ProposedWinner() string {
+	scoreA, scoreB := 0, 0
+	for _, s := range m.ProposedSets {
+		diff := s.ScoreA - s.ScoreB
+		if diff < 0 {
+			diff = -diff
+		}
+		if (s.ScoreA >= 11 || s.ScoreB >= 11) && diff >= 2 {
+			if s.ScoreA > s.ScoreB {
+				scoreA++
+			} else {
+				scoreB++
+			}
+		}
+	}
+	if scoreA > scoreB {
+		return "A"
+	}
+	if scoreB > scoreA {
+		return "B"
+	}
+	return ""
+}
+
 type Group struct {
 	ID      string
 	EventID string
