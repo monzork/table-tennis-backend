@@ -251,6 +251,7 @@ var Translations = map[string]map[string]string{
 		"player_stats.vs":                  "vs",
 		"player_stats.matches":             "Matches",
 		"player_stats.pending_proposal":    "Pending Score Proposal (Elo if confirmed)",
+		"player_stats.elo_estimated":       "est.",
 
 		// Bracket
 		"bracket.participants":     "Participants",
@@ -887,6 +888,7 @@ var Translations = map[string]map[string]string{
 		"account.pending.awaiting_you":      "Awaiting your confirmation",
 		"account.pending.awaiting_opponent": "Awaiting opponent confirmation",
 		"account.pending.if_win":            "If win:",
+		"account.pending.if_confirmed":      "If confirmed:",
 		"account.pending.if_loss":           "If loss:",
 		"account.nav.dashboard":             "Dashboard",
 		"account.nav.my_info":               "My Info",
@@ -1141,6 +1143,7 @@ var Translations = map[string]map[string]string{
 		"player_stats.vs":                  "vs",
 		"player_stats.matches":             "Partidos",
 		"player_stats.pending_proposal":    "Propuesta de Marcador Pendiente (Elo si se confirma)",
+		"player_stats.elo_estimated":       "est.",
 
 		// Bracket
 		"bracket.participants":     "Participantes",
@@ -1777,6 +1780,7 @@ var Translations = map[string]map[string]string{
 		"account.pending.awaiting_you":      "Esperando tu confirmación",
 		"account.pending.awaiting_opponent": "Esperando confirmación del oponente",
 		"account.pending.if_win":            "Si gana:",
+		"account.pending.if_confirmed":      "Si se confirma:",
 		"account.pending.if_loss":           "Si pierde:",
 		"account.nav.dashboard":             "Inicio",
 		"account.nav.my_info":               "Mi Información",

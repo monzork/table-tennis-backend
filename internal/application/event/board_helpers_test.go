@@ -129,6 +129,45 @@ func TestBuildBoardCards(t *testing.T) {
 			t.Errorf("expected HasProposal true for m2 (has ProposedByPlayerID), got false")
 		}
 	})
+
+	t.Run("finished match previews Elo when the real delta isn't applied yet, and prefers the real one once it is", func(t *testing.T) {
+		mNoRealDelta := tournamentDomain.Match{
+			ID: "m1", Status: "finished", Stage: "final", MatchType: "singles", WinnerTeam: "A",
+			TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2},
+		}
+		realDelta := 9.5
+		mWithRealDelta := tournamentDomain.Match{
+			ID: "m2", Status: "finished", Stage: "final", MatchType: "singles", WinnerTeam: "A",
+			TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2},
+			EloDeltaA: &realDelta,
+		}
+		ev := &tournamentDomain.Event{
+			ID: "t1", Type: "singles", EventCategory: "open", Format: "elimination",
+			Participants: []*playerDomain.Player{p1, p2},
+			Matches:      []tournamentDomain.Match{mNoRealDelta, mWithRealDelta},
+		}
+
+		_, _, finished := BuildBoardCards(ev, nil)
+
+		var noRealCard, withRealCard *BoardCard
+		for i := range finished {
+			switch finished[i].MatchID {
+			case "m1":
+				noRealCard = &finished[i]
+			case "m2":
+				withRealCard = &finished[i]
+			}
+		}
+		if noRealCard == nil || withRealCard == nil {
+			t.Fatalf("expected both finished cards, got %+v", finished)
+		}
+		if noRealCard.EloDeltaA == nil || !noRealCard.EloDeltaIsPreview {
+			t.Errorf("expected m1 to carry a preview delta, got %+v", noRealCard)
+		}
+		if withRealCard.EloDeltaA == nil || *withRealCard.EloDeltaA != realDelta || withRealCard.EloDeltaIsPreview {
+			t.Errorf("expected m2 to carry the real delta (not a preview), got %+v", withRealCard)
+		}
+	})
 }
 
 func TestFilterBoardCards(t *testing.T) {

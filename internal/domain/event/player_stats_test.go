@@ -146,6 +146,50 @@ func TestBuildPlayerMatchDetails(t *testing.T) {
 			t.Errorf("expected no matches, got %+v", details)
 		}
 	})
+
+	t.Run("previews Elo from current ratings when the real delta isn't computed yet", func(t *testing.T) {
+		favorite := &player.Player{ID: "p1", FirstName: "Fav", SinglesElo: 1800}
+		underdog := &player.Player{ID: "p2", FirstName: "Dog", SinglesElo: 1200}
+		matches := []Match{
+			{
+				Status: "finished", WinnerTeam: "B", MatchType: "singles",
+				TeamA: []*player.Player{favorite}, TeamB: []*player.Player{underdog},
+				// No EloDeltaA/B set -- the owning event hasn't been finished yet.
+			},
+		}
+
+		details := BuildPlayerMatchDetails("p1", matches)
+		if len(details) != 1 || details[0].EloDelta == nil {
+			t.Fatalf("expected a preview Elo delta, got %+v", details)
+		}
+		if !details[0].EloDeltaIsPreview {
+			t.Errorf("expected EloDeltaIsPreview true, got false")
+		}
+		if *details[0].EloDelta >= 0 {
+			t.Errorf("expected a negative preview delta for the favorite's loss, got %v", *details[0].EloDelta)
+		}
+	})
+
+	t.Run("prefers the real applied delta over a preview once it exists", func(t *testing.T) {
+		p1 := &player.Player{ID: "p1", SinglesElo: 1800}
+		p2 := &player.Player{ID: "p2", SinglesElo: 1200}
+		realDelta := 12.5
+		matches := []Match{
+			{
+				Status: "finished", WinnerTeam: "A", MatchType: "singles",
+				TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2},
+				EloDeltaA: &realDelta,
+			},
+		}
+
+		details := BuildPlayerMatchDetails("p1", matches)
+		if len(details) != 1 || details[0].EloDelta == nil || *details[0].EloDelta != realDelta {
+			t.Fatalf("expected the real applied delta %v, got %+v", realDelta, details)
+		}
+		if details[0].EloDeltaIsPreview {
+			t.Errorf("expected EloDeltaIsPreview false once the real delta exists")
+		}
+	})
 }
 
 func TestBuildPlayerPendingMatchDetails(t *testing.T) {
@@ -188,6 +232,48 @@ func TestBuildPlayerPendingMatchDetails(t *testing.T) {
 		theirs := BuildPlayerPendingMatchDetails("p2", "Men's Singles", matches)
 		if len(theirs) != 1 || !theirs[0].HasProposal || theirs[0].ProposedByMe {
 			t.Errorf("expected opponent to see HasProposal but not ProposedByMe, got %+v", theirs)
+		}
+	})
+
+	t.Run("carries the actual proposed-outcome Elo delta alongside the win/loss projection", func(t *testing.T) {
+		proposerID := "p1"
+		favorite := &player.Player{ID: "p1", FirstName: "Fav", SinglesElo: 1800}
+		underdog := &player.Player{ID: "p2", FirstName: "Dog", SinglesElo: 1200}
+		matches := []Match{
+			{
+				ID: "m1", MatchType: "singles", Status: "in_progress",
+				TeamA: []*player.Player{favorite}, TeamB: []*player.Player{underdog},
+				ProposedByPlayerID: &proposerID,
+				ProposedSets:       []MatchSet{{ScoreA: 5, ScoreB: 11}, {ScoreA: 8, ScoreB: 11}},
+			},
+		}
+
+		favDetails := BuildPlayerPendingMatchDetails("p1", "Men's Singles", matches)
+		if len(favDetails) != 1 || favDetails[0].ProposedEloDelta == nil {
+			t.Fatalf("expected a proposed delta for the favorite, got %+v", favDetails)
+		}
+		if *favDetails[0].ProposedEloDelta >= 0 {
+			t.Errorf("expected a negative proposed delta for the favorite (proposed to lose), got %v", *favDetails[0].ProposedEloDelta)
+		}
+
+		dogDetails := BuildPlayerPendingMatchDetails("p2", "Men's Singles", matches)
+		if len(dogDetails) != 1 || dogDetails[0].ProposedEloDelta == nil {
+			t.Fatalf("expected a proposed delta for the underdog, got %+v", dogDetails)
+		}
+		if *dogDetails[0].ProposedEloDelta <= 0 {
+			t.Errorf("expected a positive proposed delta for the underdog (proposed to win), got %v", *dogDetails[0].ProposedEloDelta)
+		}
+	})
+
+	t.Run("no proposed delta when there's no active proposal", func(t *testing.T) {
+		p1 := &player.Player{ID: "p1", SinglesElo: 1500}
+		p2 := &player.Player{ID: "p2", SinglesElo: 1500}
+		matches := []Match{
+			{ID: "m1", MatchType: "singles", Status: "scheduled", TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2}},
+		}
+		details := BuildPlayerPendingMatchDetails("p1", "Men's Singles", matches)
+		if len(details) != 1 || details[0].ProposedEloDelta != nil {
+			t.Errorf("expected nil ProposedEloDelta with no proposal, got %+v", details)
 		}
 	})
 

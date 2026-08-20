@@ -56,9 +56,13 @@ type PlayerMatchDetail struct {
 	SetsLost int
 	Sets     []PlayerSetScore
 	// EloDelta is the Elo points this player gained (positive) or lost
-	// (negative) from this specific match. Nil if Elo hasn't been applied
-	// yet (e.g. the owning event has SkipElo, or Elo processing hasn't run).
-	EloDelta *float64
+	// (negative) from this specific match. When the real applied delta
+	// isn't available yet (event not finished/recalculated), this falls
+	// back to a preview computed from current Elo and the real result --
+	// see EloDeltaIsPreview. Nil only when neither is computable (e.g. the
+	// owning event has SkipElo).
+	EloDelta          *float64
+	EloDeltaIsPreview bool
 }
 
 // BuildPlayerMatchDetails returns the per-match breakdown (opponent, sets,
@@ -74,15 +78,23 @@ func BuildPlayerMatchDetails(playerID string, matches []Match) []PlayerMatchDeta
 			continue
 		}
 
+		ownTeam := m.TeamA
 		opponentTeam := m.TeamB
 		setsWon, setsLost := m.ScoreA(), m.ScoreB()
 		won := m.WinnerTeam == "A"
 		eloDelta := m.EloDeltaA
 		if !isA {
+			ownTeam = m.TeamB
 			opponentTeam = m.TeamA
 			setsWon, setsLost = m.ScoreB(), m.ScoreA()
 			won = m.WinnerTeam == "B"
 			eloDelta = m.EloDeltaB
+		}
+
+		isPreview := false
+		if eloDelta == nil {
+			eloDelta = finishedPreviewEloDeltaFor(m, isA, ownTeam, opponentTeam)
+			isPreview = eloDelta != nil
 		}
 
 		sets := make([]PlayerSetScore, 0, len(m.Sets))
@@ -95,12 +107,13 @@ func BuildPlayerMatchDetails(playerID string, matches []Match) []PlayerMatchDeta
 		}
 
 		details = append(details, PlayerMatchDetail{
-			Opponent: opponentName(opponentTeam),
-			Won:      won,
-			SetsWon:  setsWon,
-			SetsLost: setsLost,
-			Sets:     sets,
-			EloDelta: eloDelta,
+			Opponent:          opponentName(opponentTeam),
+			Won:               won,
+			SetsWon:           setsWon,
+			SetsLost:          setsLost,
+			Sets:              sets,
+			EloDelta:          eloDelta,
+			EloDeltaIsPreview: isPreview,
 		})
 	}
 	return details
@@ -138,6 +151,15 @@ type PlayerPendingMatchDetail struct {
 	// still-TBD bracket slot).
 	ProjectedEloWin  *float64
 	ProjectedEloLoss *float64
+
+	// ProposedEloDelta is the actual Elo points this player would gain/lose
+	// if the pending score proposal gets confirmed as-is, computed from the
+	// real proposed sets (not a win/loss coin-flip like ProjectedEloWin/Loss
+	// above -- the proposed result already picks an outcome). Nil when
+	// there's no active proposal or its sets don't yet decide a winner.
+	// ProposedWon is only meaningful when ProposedEloDelta is non-nil.
+	ProposedEloDelta *float64
+	ProposedWon      bool
 }
 
 // BuildPlayerPendingMatchDetails returns every not-yet-finished match the
@@ -168,6 +190,9 @@ func BuildPlayerPendingMatchDetails(playerID, eventName string, matches []Match)
 
 		projWin, projLoss := ProjectedEloDelta(m.MatchType, ownTeam, opponentTeam)
 
+		proposedWinner := m.ProposedWinner()
+		proposedWon := (isA && proposedWinner == "A") || (!isA && proposedWinner == "B")
+
 		details = append(details, PlayerPendingMatchDetail{
 			MatchID:          m.ID,
 			EventID:          m.EventID,
@@ -181,6 +206,8 @@ func BuildPlayerPendingMatchDetails(playerID, eventName string, matches []Match)
 			ProposedByMe:     proposedByMe,
 			ProjectedEloWin:  projWin,
 			ProjectedEloLoss: projLoss,
+			ProposedEloDelta: proposedEloDeltaFor(m, isA, ownTeam, opponentTeam),
+			ProposedWon:      proposedWon,
 		})
 	}
 	return details
@@ -206,31 +233,20 @@ type PendingProposalPreview struct {
 func BuildPendingProposalPreviews(playerID, eventName string, matches []Match) []PendingProposalPreview {
 	var out []PendingProposalPreview
 	for _, m := range matches {
-		if m.ProposedByPlayerID == nil || len(m.ProposedSets) == 0 {
-			continue
-		}
 		isA := TeamContains(m.TeamA, playerID)
 		if !isA && !TeamContains(m.TeamB, playerID) {
 			continue
 		}
-		winner := m.ProposedWinner()
-		if winner == "" {
-			continue
-		}
-		won := (isA && winner == "A") || (!isA && winner == "B")
-
 		ownTeam, opponentTeam := m.TeamA, m.TeamB
 		if !isA {
 			ownTeam, opponentTeam = m.TeamB, m.TeamA
 		}
-		projWin, projLoss := ProjectedEloDelta(m.MatchType, ownTeam, opponentTeam)
-		if projWin == nil {
+		delta := proposedEloDeltaFor(m, isA, ownTeam, opponentTeam)
+		if delta == nil {
 			continue
 		}
-		delta := *projLoss
-		if won {
-			delta = *projWin
-		}
+		winner := m.ProposedWinner()
+		won := (isA && winner == "A") || (!isA && winner == "B")
 
 		var currentElo int16
 		if len(ownTeam) > 0 && ownTeam[0] != nil {
@@ -247,7 +263,7 @@ func BuildPendingProposalPreviews(playerID, eventName string, matches []Match) [
 			Opponent:   opponentName(opponentTeam),
 			Won:        won,
 			CurrentElo: currentElo,
-			EloDelta:   delta,
+			EloDelta:   *delta,
 		})
 	}
 	return out
@@ -274,6 +290,49 @@ func opponentID(team []*player.Player) string {
 		return ""
 	}
 	return team[0].ID
+}
+
+// proposedEloDeltaFor computes the actual Elo delta a match's pending score
+// proposal would produce for the player on the isA side, or nil if there's
+// no active proposal, its sets don't yet decide a winner, or the opponent
+// isn't a resolved player yet.
+func proposedEloDeltaFor(m Match, isA bool, ownTeam, opponentTeam []*player.Player) *float64 {
+	if m.ProposedByPlayerID == nil || len(m.ProposedSets) == 0 {
+		return nil
+	}
+	return resultEloDeltaFor(m.MatchType, isA, m.ProposedWinner(), ownTeam, opponentTeam)
+}
+
+// resultEloDeltaFor previews the Elo points a specific winner side ("A" or
+// "B") would be worth for the player on the isA side, from current Elo.
+// Shared by proposedEloDeltaFor (a pending proposal's implied outcome) and
+// finishedPreviewEloDeltaFor (a finished-but-not-yet-processed match's real
+// result). Returns nil if winnerSide is "" or either side isn't resolved.
+func resultEloDeltaFor(matchType string, isA bool, winnerSide string, ownTeam, opponentTeam []*player.Player) *float64 {
+	if winnerSide == "" {
+		return nil
+	}
+	won := (isA && winnerSide == "A") || (!isA && winnerSide == "B")
+
+	projWin, projLoss := ProjectedEloDelta(matchType, ownTeam, opponentTeam)
+	if projWin == nil {
+		return nil
+	}
+	if won {
+		return projWin
+	}
+	return projLoss
+}
+
+// finishedPreviewEloDeltaFor previews a finished match's real Elo delta from
+// *current* Elo, for use only while the owning event hasn't been finished/
+// recalculated yet (i.e. the real m.EloDeltaA/B aren't populated). Returns
+// nil once the real value exists -- callers should prefer that.
+func finishedPreviewEloDeltaFor(m Match, isA bool, ownTeam, opponentTeam []*player.Player) *float64 {
+	if m.Status != "finished" || m.WinnerTeam == "" {
+		return nil
+	}
+	return resultEloDeltaFor(m.MatchType, isA, m.WinnerTeam, ownTeam, opponentTeam)
 }
 
 // ProjectedEloDelta previews the Elo points a win/loss would be worth right

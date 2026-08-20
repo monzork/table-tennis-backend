@@ -37,6 +37,18 @@ type AccountHandler struct {
 	proposeScoreUC *matchApp.ProposeMatchScoreUseCase
 	confirmScoreUC *matchApp.ConfirmMatchScoreUseCase
 	rejectScoreUC  *matchApp.RejectMatchScoreProposalUseCase
+
+	// getPlayerStatsUC is optional: nil in older callers/tests just leaves
+	// the finished-match history off the player detail page.
+	getPlayerStatsUC *playerApp.GetPlayerTournamentStatsUseCase
+}
+
+// WithGetPlayerStatsUseCase wires finished-match history into an
+// already-constructed AccountHandler, same rationale as the other With*
+// setters in this file/package.
+func (h *AccountHandler) WithGetPlayerStatsUseCase(uc *playerApp.GetPlayerTournamentStatsUseCase) *AccountHandler {
+	h.getPlayerStatsUC = uc
+	return h
 }
 
 func NewAccountHandler(
@@ -306,10 +318,16 @@ func (h *AccountHandler) PlayerDetail(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
+	var history []playerApp.PlayerTournamentView
+	if h.getPlayerStatsUC != nil {
+		_, history, _ = h.getPlayerStatsUC.Execute(c.Context(), playerID)
+	}
+
 	return c.Render("account/player-detail", merge(tMap(lang), fiber.Map{
-		"Title":   p.FullName(),
-		"Player":  p,
-		"Pending": pending,
+		"Title":       p.FullName(),
+		"Player":      p,
+		"Pending":     pending,
+		"Tournaments": history,
 	}), "layouts/public")
 }
 

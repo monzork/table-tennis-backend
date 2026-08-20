@@ -16,7 +16,11 @@
                     <div class="flex flex-col">
                         <span class="text-sm">vs {{.Opponent}}</span>
                         {{if .EventName}}<span class="text-[10px] text-gray-600 font-bold uppercase tracking-widest mt-0.5">{{.EventName}}</span>{{end}}
-                        {{if .ProjectedEloWin}}
+                        {{if .ProposedEloDelta}}
+                        <span class="text-[10px] font-bold mt-0.5">
+                            <span class="{{if .ProposedWon}}text-green-400{{else}}text-red-400{{end}}">{{t $.T "account.pending.if_confirmed"}} {{eloDelta .ProposedEloDelta}}</span>
+                        </span>
+                        {{else if .ProjectedEloWin}}
                         <span class="text-[10px] font-bold mt-0.5">
                             <span class="text-green-400">{{t $.T "account.pending.if_win"}} {{eloDelta .ProjectedEloWin}}</span>
                             <span class="text-gray-600 mx-1">·</span>

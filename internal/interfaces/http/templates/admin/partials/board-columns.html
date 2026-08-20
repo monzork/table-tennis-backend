@@ -227,10 +227,12 @@
       <div class="space-y-1.5">
         <div class="flex items-center gap-2 px-3 py-2 rounded-xl border {{if gt .ScoreA .ScoreB}}bg-green-400/10 border-green-400/20{{else}}bg-white/5 border-white/5{{end}}">
           <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerAName}}</span>
+          {{if .EloDeltaA}}<span class="text-[9px] font-bold tabular-nums {{if gt .ScoreA .ScoreB}}text-green-400{{else}}text-red-400{{end}}">{{eloDelta .EloDeltaA}}{{if .EloDeltaIsPreview}}<span class="text-gray-500 italic font-normal ml-0.5">({{t $.T "player_stats.elo_estimated"}})</span>{{end}}</span>{{end}}
           <span class="text-lg font-black {{if gt .ScoreA .ScoreB}}text-green-400{{else}}text-gray-500{{end}} tabular-nums italic">{{.ScoreA}}</span>
         </div>
         <div class="flex items-center gap-2 px-3 py-2 rounded-xl border {{if gt .ScoreB .ScoreA}}bg-green-400/10 border-green-400/20{{else}}bg-white/5 border-white/5{{end}}">
           <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerBName}}</span>
+          {{if .EloDeltaB}}<span class="text-[9px] font-bold tabular-nums {{if gt .ScoreB .ScoreA}}text-green-400{{else}}text-red-400{{end}}">{{eloDelta .EloDeltaB}}{{if .EloDeltaIsPreview}}<span class="text-gray-500 italic font-normal ml-0.5">({{t $.T "player_stats.elo_estimated"}})</span>{{end}}</span>{{end}}
           <span class="text-lg font-black {{if gt .ScoreB .ScoreA}}text-green-400{{else}}text-gray-500{{end}} tabular-nums italic">{{.ScoreB}}</span>
         </div>
       </div>

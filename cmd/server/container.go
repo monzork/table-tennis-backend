@@ -219,6 +219,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	)
 	playerHandler.WithAssignPlayerToAccountUseCase(assignPlayerToAccountUC)
 	playerHandler.WithGetPlayerRankUseCase(player.NewGetPlayerRankUseCase(playerRepo))
+	accountHandler.WithGetPlayerStatsUseCase(getPlayerStatsUC)
 
 	return &Container{
 		PlayerHandler:       playerHandler,

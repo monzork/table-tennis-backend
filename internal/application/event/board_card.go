@@ -39,4 +39,14 @@ type BoardCard struct {
 	ProjectedEloLossA *float64
 	ProjectedEloWinB  *float64
 	ProjectedEloLossB *float64
+
+	// EloDeltaA/EloDeltaB are the *actual* Elo points team A/B gained or
+	// lost from this match, once Elo has been applied (event finished or
+	// recalculated) -- unlike ProjectedEloWin/Loss above, these are a real
+	// result, not a preview. While the owning event hasn't been finished/
+	// recalculated yet, these fall back to a preview computed from current
+	// Elo and the match's real winner -- see EloDeltaIsPreview.
+	EloDeltaA         *float64
+	EloDeltaB         *float64
+	EloDeltaIsPreview bool
 }
