@@ -311,7 +311,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 		if delta == nil {
 			return ""
 		}
-		return fmt.Sprintf("%+.1f", *delta)
+		return fmt.Sprintf("%+.0f", *delta)
 	})
 	app := fiber.New(fiber.Config{
 		Views:             engine,

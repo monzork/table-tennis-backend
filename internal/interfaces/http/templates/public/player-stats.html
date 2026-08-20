@@ -111,7 +111,7 @@
                                 <span class="text-gray-400 font-mono">
                                     <span class="font-bold text-white">{{$pp.CurrentElo}}</span>
                                     <span class="text-gray-600">&rarr;</span>
-                                    <span class="font-bold {{if $pp.Won}}text-green-400{{else}}text-red-400{{end}}">{{printf "%+.1f" $pp.EloDelta}}</span>
+                                    <span class="font-bold {{if $pp.Won}}text-green-400{{else}}text-red-400{{end}}">{{printf "%+.0f" $pp.EloDelta}}</span>
                                 </span>
                             </div>
                             {{end}}
