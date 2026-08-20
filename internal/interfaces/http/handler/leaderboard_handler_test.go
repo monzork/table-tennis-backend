@@ -116,11 +116,6 @@ func createTestLeaderboardApp(t *testing.T) *fiber.App {
 
 	app.Get("/rankings/singles", lh.GetSingles)
 	app.Get("/rankings/doubles", lh.GetDoubles)
-	app.Get("/rankings/mens-singles", lh.GetMensSingles)
-	app.Get("/rankings/womens-singles", lh.GetWomensSingles)
-	app.Get("/rankings/mens-doubles", lh.GetMensDoubles)
-	app.Get("/rankings/womens-doubles", lh.GetWomensDoubles)
-	app.Get("/rankings/mixed-doubles", lh.GetMixedDoubles)
 
 	return app
 }
@@ -168,11 +163,6 @@ func TestLeaderboardHandler_Categories(t *testing.T) {
 
 	routes := []string{
 		"/rankings/doubles",
-		"/rankings/mens-singles",
-		"/rankings/womens-singles",
-		"/rankings/mens-doubles",
-		"/rankings/womens-doubles",
-		"/rankings/mixed-doubles",
 	}
 
 	for _, route := range routes {

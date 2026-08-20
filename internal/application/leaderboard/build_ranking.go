@@ -20,18 +20,14 @@ type DivisionGroupView struct {
 
 type RankingParams struct {
 	RankType       string // "singles" | "doubles"
-	Gender         string // "M", "F", or "" for mixed
 	Query          string
 	DivisionFilter string
 	SortOrder      string // "points_desc" | "points_asc" | "name_asc"
 }
 
 type RankingResult struct {
-	IsMixed      bool
 	IsDivisional bool
 	Groups       []DivisionGroupView
-	MenGroups    []DivisionGroupView
-	WomenGroups  []DivisionGroupView
 }
 
 // eloOf returns the relevant Elo rating for a player given the ranking type.
@@ -58,38 +54,15 @@ func filterRankableDivisions(divisions []*division.Division) []*division.Divisio
 // ranking/sorting, and division grouping to a player list.
 func BuildRanking(players []*player.Player, divisions []*division.Division, params RankingParams) RankingResult {
 	divisions = filterRankableDivisions(divisions)
-	// Singles now share a single Elo pool across genders, so the ungendered
-	// "singles" view is one combined ranking rather than a men/women split.
-	// Doubles still splits ("Mixed Doubles" combines two independently
-	// gendered player lists into displayed columns).
-	isMixed := params.Gender == "" && params.RankType != "singles"
 
-	// 0. Pre-rank all players by absolute Elo, per gender when mixed.
+	// 0. Pre-rank all players by absolute Elo -- one combined ranking
+	// regardless of gender, since both singles and doubles Elo are each a
+	// single shared pool.
 	var preRanked []RankedPlayer
-	if isMixed {
-		var men, women []*player.Player
-		for _, p := range players {
-			switch strings.ToUpper(p.Gender) {
-			case "M":
-				men = append(men, p)
-			case "F":
-				women = append(women, p)
-			}
-		}
-		sort.Slice(men, func(i, j int) bool { return eloOf(men[i], params.RankType) > eloOf(men[j], params.RankType) })
-		for i, p := range men {
-			preRanked = append(preRanked, RankedPlayer{Player: p, Rank: i + 1})
-		}
-		sort.Slice(women, func(i, j int) bool { return eloOf(women[i], params.RankType) > eloOf(women[j], params.RankType) })
-		for i, p := range women {
-			preRanked = append(preRanked, RankedPlayer{Player: p, Rank: i + 1})
-		}
-	} else {
-		sorted := append([]*player.Player{}, players...)
-		sort.Slice(sorted, func(i, j int) bool { return eloOf(sorted[i], params.RankType) > eloOf(sorted[j], params.RankType) })
-		for i, p := range sorted {
-			preRanked = append(preRanked, RankedPlayer{Player: p, Rank: i + 1})
-		}
+	sorted := append([]*player.Player{}, players...)
+	sort.Slice(sorted, func(i, j int) bool { return eloOf(sorted[i], params.RankType) > eloOf(sorted[j], params.RankType) })
+	for i, p := range sorted {
+		preRanked = append(preRanked, RankedPlayer{Player: p, Rank: i + 1})
 	}
 
 	// 1. Filter by search query (name, country, or department).
@@ -150,22 +123,8 @@ func BuildRanking(players []*player.Player, divisions []*division.Division, para
 	isDivisional := params.SortOrder == "points_desc" && params.Query == "" &&
 		(params.DivisionFilter == "" || params.DivisionFilter == "all") && len(divisions) > 0
 
-	result := RankingResult{IsMixed: isMixed, IsDivisional: isDivisional}
-	if isMixed {
-		var menPlayers, womenPlayers []RankedPlayer
-		for _, rp := range final {
-			switch strings.ToUpper(rp.Gender) {
-			case "M":
-				menPlayers = append(menPlayers, rp)
-			case "F":
-				womenPlayers = append(womenPlayers, rp)
-			}
-		}
-		result.MenGroups = groupPlayers(menPlayers, params.RankType, isDivisional, divisions)
-		result.WomenGroups = groupPlayers(womenPlayers, params.RankType, isDivisional, divisions)
-	} else {
-		result.Groups = groupPlayers(final, params.RankType, isDivisional, divisions)
-	}
+	result := RankingResult{IsDivisional: isDivisional}
+	result.Groups = groupPlayers(final, params.RankType, isDivisional, divisions)
 	return result
 }
 

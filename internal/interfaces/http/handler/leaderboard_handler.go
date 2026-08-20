@@ -138,7 +138,7 @@ func (h *LeaderboardHandler) getGroupedPlayersByGender(c *fiber.Ctx, rankType st
 	return groups, nil
 }
 
-func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender string, title string) error {
+func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title string) error {
 	query := c.Query("q")
 	divFilter := c.Query("division")
 	sortOrder := c.Query("sort", "points_desc")
@@ -151,7 +151,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		players, pErr = h.getUC.ExecuteByGender(c.Context(), rankType, gender)
+		players, pErr = h.getUC.Execute(c.Context(), rankType)
 	}()
 	go func() {
 		defer wg.Done()
@@ -168,7 +168,6 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 
 	result := leaderboard.BuildRanking(players, divisions, leaderboard.RankingParams{
 		RankType:       rankType,
-		Gender:         gender,
 		Query:          query,
 		DivisionFilter: divFilter,
 		SortOrder:      sortOrder,
@@ -179,13 +178,9 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 
 	data := fiber.Map{
 		"Groups":       result.Groups,
-		"MenGroups":    result.MenGroups,
-		"WomenGroups":  result.WomenGroups,
-		"IsMixed":      result.IsMixed,
 		"Type":         title,
 		"RankType":     rankType,
-		"Gender":       gender,
-		"ActiveTab":    gender + "-" + rankType,
+		"ActiveTab":    rankType,
 		"Query":        query,
 		"Division":     divFilter,
 		"Sort":         sortOrder,
@@ -211,29 +206,9 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, gender
 }
 
 func (h *LeaderboardHandler) GetSingles(c *fiber.Ctx) error {
-	return h.renderRanking(c, "singles", "", "Overall Singles")
+	return h.renderRanking(c, "singles", "Singles")
 }
 
 func (h *LeaderboardHandler) GetDoubles(c *fiber.Ctx) error {
-	return h.renderRanking(c, "doubles", "", "Doubles")
-}
-
-func (h *LeaderboardHandler) GetMensSingles(c *fiber.Ctx) error {
-	return h.renderRanking(c, "singles", "M", "Men's Singles")
-}
-
-func (h *LeaderboardHandler) GetWomensSingles(c *fiber.Ctx) error {
-	return h.renderRanking(c, "singles", "F", "Women's Singles")
-}
-
-func (h *LeaderboardHandler) GetMensDoubles(c *fiber.Ctx) error {
-	return h.renderRanking(c, "doubles", "M", "Men's Doubles")
-}
-
-func (h *LeaderboardHandler) GetWomensDoubles(c *fiber.Ctx) error {
-	return h.renderRanking(c, "doubles", "F", "Women's Doubles")
-}
-
-func (h *LeaderboardHandler) GetMixedDoubles(c *fiber.Ctx) error {
-	return h.renderRanking(c, "doubles", "", "Mixed Doubles")
+	return h.renderRanking(c, "doubles", "Doubles")
 }

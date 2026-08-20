@@ -25,11 +25,6 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler, acc
 	// Rankings
 	app.Get("/rankings/singles", c.LeaderboardHandler.GetSingles)
 	app.Get("/rankings/doubles", c.LeaderboardHandler.GetDoubles)
-	app.Get("/rankings/mens/singles", c.LeaderboardHandler.GetMensSingles)
-	app.Get("/rankings/womens/singles", c.LeaderboardHandler.GetWomensSingles)
-	app.Get("/rankings/mens/doubles", c.LeaderboardHandler.GetMensDoubles)
-	app.Get("/rankings/womens/doubles", c.LeaderboardHandler.GetWomensDoubles)
-	app.Get("/rankings/mixed/doubles", c.LeaderboardHandler.GetMixedDoubles)
 
 	// Redirect Root to Public Rankings
 	app.Get("/", func(ctx *fiber.Ctx) error {

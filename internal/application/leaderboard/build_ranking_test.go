@@ -17,14 +17,13 @@ func TestBuildRanking_DivisionGrouping(t *testing.T) {
 		{ID: "high", Name: "Primera", MinElo: 1000, MaxElo: nil, Category: "both"},
 	}
 	players := []*player.Player{
-		{ID: "1", FirstName: "A", Gender: "M", SinglesElo: 900},
-		{ID: "2", FirstName: "B", Gender: "M", SinglesElo: 1000}, // boundary: belongs to Primera, not Segunda
-		{ID: "3", FirstName: "C", Gender: "M", SinglesElo: 1500},
+		{ID: "1", FirstName: "A", SinglesElo: 900},
+		{ID: "2", FirstName: "B", SinglesElo: 1000}, // boundary: belongs to Primera, not Segunda
+		{ID: "3", FirstName: "C", SinglesElo: 1500},
 	}
 
 	result := leaderboard.BuildRanking(players, divisions, leaderboard.RankingParams{
 		RankType:  "singles",
-		Gender:    "M",
 		SortOrder: "points_desc",
 	})
 
@@ -46,13 +45,12 @@ func TestBuildRanking_DivisionGrouping(t *testing.T) {
 
 func TestBuildRanking_SearchQuery(t *testing.T) {
 	players := []*player.Player{
-		{ID: "1", FirstName: "Alice", LastName: "Smith", Country: "NIC", Gender: "F", SinglesElo: 1200},
-		{ID: "2", FirstName: "Bob", LastName: "Jones", Country: "CUB", Gender: "F", SinglesElo: 1100},
+		{ID: "1", FirstName: "Alice", LastName: "Smith", Country: "NIC", SinglesElo: 1200},
+		{ID: "2", FirstName: "Bob", LastName: "Jones", Country: "CUB", SinglesElo: 1100},
 	}
 
 	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
 		RankType:  "singles",
-		Gender:    "F",
 		Query:     "cub",
 		SortOrder: "points_desc",
 	})
@@ -64,13 +62,13 @@ func TestBuildRanking_SearchQuery(t *testing.T) {
 
 func TestBuildRanking_SortOrders(t *testing.T) {
 	players := []*player.Player{
-		{ID: "1", FirstName: "Zed", Gender: "M", SinglesElo: 1000},
-		{ID: "2", FirstName: "Amy", Gender: "M", SinglesElo: 1500},
+		{ID: "1", FirstName: "Zed", SinglesElo: 1000},
+		{ID: "2", FirstName: "Amy", SinglesElo: 1500},
 	}
 
 	t.Run("points_asc", func(t *testing.T) {
 		result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
-			RankType: "singles", Gender: "M", SortOrder: "points_asc",
+			RankType: "singles", SortOrder: "points_asc",
 		})
 		got := result.Groups[0].Players
 		if got[0].ID != "1" || got[1].ID != "2" {
@@ -80,7 +78,7 @@ func TestBuildRanking_SortOrders(t *testing.T) {
 
 	t.Run("name_asc", func(t *testing.T) {
 		result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
-			RankType: "singles", Gender: "M", SortOrder: "name_asc",
+			RankType: "singles", SortOrder: "name_asc",
 		})
 		got := result.Groups[0].Players
 		if got[0].ID != "2" || got[1].ID != "1" {
@@ -89,7 +87,7 @@ func TestBuildRanking_SortOrders(t *testing.T) {
 	})
 }
 
-func TestBuildRanking_UngenderedSinglesIsOneCombinedPool(t *testing.T) {
+func TestBuildRanking_SinglesIsOneCombinedPoolRegardlessOfGender(t *testing.T) {
 	players := []*player.Player{
 		{ID: "m1", FirstName: "M1", Gender: "M", SinglesElo: 2000},
 		{ID: "f1", FirstName: "F1", Gender: "F", SinglesElo: 1000},
@@ -97,13 +95,9 @@ func TestBuildRanking_UngenderedSinglesIsOneCombinedPool(t *testing.T) {
 
 	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
 		RankType:  "singles",
-		Gender:    "",
 		SortOrder: "points_desc",
 	})
 
-	if result.IsMixed {
-		t.Fatalf("expected a single combined ranking for ungendered singles, since singles share one Elo pool")
-	}
 	if len(result.Groups) != 1 || len(result.Groups[0].Players) != 2 {
 		t.Fatalf("expected both players in one combined group, got %+v", result.Groups)
 	}
@@ -115,7 +109,7 @@ func TestBuildRanking_UngenderedSinglesIsOneCombinedPool(t *testing.T) {
 	}
 }
 
-func TestBuildRanking_MixedDoublesStillSplitsByGender(t *testing.T) {
+func TestBuildRanking_DoublesIsOneCombinedPoolRegardlessOfGender(t *testing.T) {
 	players := []*player.Player{
 		{ID: "m1", FirstName: "M1", Gender: "M", DoublesElo: 2000},
 		{ID: "f1", FirstName: "F1", Gender: "F", DoublesElo: 1000},
@@ -123,18 +117,14 @@ func TestBuildRanking_MixedDoublesStillSplitsByGender(t *testing.T) {
 
 	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
 		RankType:  "doubles",
-		Gender:    "",
 		SortOrder: "points_desc",
 	})
 
-	if !result.IsMixed {
-		t.Fatalf("expected mixed result for empty gender filter on doubles")
+	if len(result.Groups) != 1 || len(result.Groups[0].Players) != 2 {
+		t.Fatalf("expected both players in one combined group, got %+v", result.Groups)
 	}
-	if len(result.MenGroups) != 1 || result.MenGroups[0].Players[0].Rank != 1 {
-		t.Errorf("expected men ranked independently starting at 1, got %+v", result.MenGroups)
-	}
-	if len(result.WomenGroups) != 1 || result.WomenGroups[0].Players[0].Rank != 1 {
-		t.Errorf("expected women ranked independently starting at 1, got %+v", result.WomenGroups)
+	if result.Groups[0].Players[0].ID != "m1" || result.Groups[0].Players[1].ID != "f1" {
+		t.Errorf("expected players ranked by Elo regardless of gender, got %+v", result.Groups[0].Players)
 	}
 }
 
@@ -150,7 +140,6 @@ func TestBuildRanking_CombinedSinglesGroupsByGenderedDivision(t *testing.T) {
 
 	result := leaderboard.BuildRanking(players, divs, leaderboard.RankingParams{
 		RankType:  "singles",
-		Gender:    "",
 		SortOrder: "points_desc",
 	})
 
@@ -178,13 +167,13 @@ func TestBuildRanking_DivisionFilter(t *testing.T) {
 		{ID: "high", Name: "Primera", MinElo: 1000, Category: "both"},
 	}
 	players := []*player.Player{
-		{ID: "1", FirstName: "A", Gender: "M", SinglesElo: 900},
-		{ID: "2", FirstName: "B", Gender: "M", SinglesElo: 1500},
+		{ID: "1", FirstName: "A", SinglesElo: 900},
+		{ID: "2", FirstName: "B", SinglesElo: 1500},
 	}
 
 	t.Run("all keeps every player", func(t *testing.T) {
 		result := leaderboard.BuildRanking(players, divisions, leaderboard.RankingParams{
-			RankType: "singles", Gender: "M", SortOrder: "points_desc", DivisionFilter: "all",
+			RankType: "singles", SortOrder: "points_desc", DivisionFilter: "all",
 		})
 		if len(result.Groups) != 2 {
 			t.Errorf("expected both divisions populated, got %d groups", len(result.Groups))
@@ -193,7 +182,7 @@ func TestBuildRanking_DivisionFilter(t *testing.T) {
 
 	t.Run("named filter narrows to one division", func(t *testing.T) {
 		result := leaderboard.BuildRanking(players, divisions, leaderboard.RankingParams{
-			RankType: "singles", Gender: "M", SortOrder: "points_desc", DivisionFilter: "Primera",
+			RankType: "singles", SortOrder: "points_desc", DivisionFilter: "Primera",
 		})
 		if len(result.Groups) != 1 || result.Groups[0].Players[0].ID != "2" {
 			t.Errorf("expected only Primera group with player 2, got %+v", result.Groups)
@@ -202,7 +191,7 @@ func TestBuildRanking_DivisionFilter(t *testing.T) {
 
 	t.Run("unknown filter name keeps all players unfiltered", func(t *testing.T) {
 		result := leaderboard.BuildRanking(players, divisions, leaderboard.RankingParams{
-			RankType: "singles", Gender: "M", SortOrder: "points_desc", DivisionFilter: "Nonexistent",
+			RankType: "singles", SortOrder: "points_desc", DivisionFilter: "Nonexistent",
 		})
 		total := 0
 		for _, g := range result.Groups {
@@ -216,12 +205,12 @@ func TestBuildRanking_DivisionFilter(t *testing.T) {
 
 func TestBuildRanking_DoublesUsesDoublesElo(t *testing.T) {
 	players := []*player.Player{
-		{ID: "1", FirstName: "A", Gender: "M", SinglesElo: 2000, DoublesElo: 1000},
-		{ID: "2", FirstName: "B", Gender: "M", SinglesElo: 1000, DoublesElo: 2000},
+		{ID: "1", FirstName: "A", SinglesElo: 2000, DoublesElo: 1000},
+		{ID: "2", FirstName: "B", SinglesElo: 1000, DoublesElo: 2000},
 	}
 
 	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
-		RankType: "doubles", Gender: "M", SortOrder: "points_desc",
+		RankType: "doubles", SortOrder: "points_desc",
 	})
 
 	got := result.Groups[0].Players
