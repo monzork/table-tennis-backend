@@ -1,0 +1,16 @@
+-- Migration 053 tagged the original divisions (Primera/Segunda/Tercera
+-- Division) as Gender='M' when adding gendered bands, treating them as the
+-- "men's" half of the new split. That broke bracket reconstruction for
+-- every already-finished event that used these divisions before the
+-- gendered-division feature existed (they were built as gender-neutral
+-- "both" bands, e.g. women's events whose historical groups/knockout
+-- structure are tied to "Primera Division" by name) -- divisionMatchesEventCategory
+-- now excludes them from non-men events entirely, so the bracket view can no
+-- longer find the real historical groups and silently rebuilds a wrong,
+-- mismatched bracket instead (visible as most slots showing "TBD" despite
+-- every match being finished).
+--
+-- Revert them to gender-neutral so every historical event keeps working.
+-- The new Primera/Segunda/Tercera Division (♀) rows (migration 053) remain
+-- available for new events that want a distinct women's band.
+UPDATE divisions SET gender = 'both' WHERE id IN ('div-first', 'div-second', 'div-third');

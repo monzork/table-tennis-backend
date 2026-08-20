@@ -325,6 +325,68 @@ func TestGeneratorCoverage_GroupsEliminationExistingGroups(t *testing.T) {
 	}
 }
 
+// TestGeneratorCoverage_GroupsEliminationSurvivesEloDrift guards against a
+// real regression: a division's group-stage membership must stay pinned to
+// the "<division> - Group X" groups actually played, even when a player's
+// *current* Elo (which can change after the tournament, e.g. an Elo
+// normalization pass) has drifted outside the division's Elo range. Before
+// this was fixed, a drifted player fell out of her division's Elo-based
+// participant list, breaking buildGroupEliminationGroups' membership match
+// for her group and cascading into unresolved ("TBD") bracket slots despite
+// every match being finished.
+func TestGeneratorCoverage_GroupsEliminationSurvivesEloDrift(t *testing.T) {
+	players := make([]*player.Player, 4)
+	for i := range players {
+		id := "dp" + string(rune('1'+i))
+		players[i] = &player.Player{ID: id, FirstName: "P", LastName: id, Gender: "F", SinglesElo: 1500}
+	}
+	// This player's Elo has since drifted below the division's MinElo (1000),
+	// even though she played entirely within "Primera Division - Group A".
+	players[0].SinglesElo = 500
+
+	group := event.Group{ID: "gA", Name: "Primera Division - Group A", Players: players}
+
+	var matches []event.Match
+	mid := 0
+	for i := 0; i < len(players); i++ {
+		for j := i + 1; j < len(players); j++ {
+			mid++
+			matches = append(matches, event.Match{
+				ID:         fmt.Sprintf("dm%d", mid),
+				Stage:      "group",
+				Status:     "finished",
+				WinnerTeam: "A",
+				TeamA:      []*player.Player{players[i]},
+				TeamB:      []*player.Player{players[j]},
+			})
+		}
+	}
+
+	tourney := &event.Event{
+		ID:                    "t2",
+		Type:                  "singles",
+		EventCategory:         "women",
+		Format:                "groups_elimination",
+		KnockoutBracketsCount: 1,
+		GroupPassCount:        1,
+		Participants:          players,
+		Groups:                []event.Group{group},
+		Matches:               matches,
+	}
+	divs := []*division.Division{
+		{ID: "d1", Name: "Primera Division", Category: "both", Gender: "both", MinElo: 1000, MaxElo: nil},
+	}
+
+	br := bracket.BuildBracket(tourney, divs, nil)
+	if len(br.Divisions) != 1 {
+		t.Fatalf("expected 1 division, got %d", len(br.Divisions))
+	}
+	dv := br.Divisions[0]
+	if len(dv.Groups) != 1 || len(dv.Groups[0].Standings) != 4 {
+		t.Fatalf("expected the drifted player to stay in her original 4-player group, got %+v", dv.Groups)
+	}
+}
+
 // TestGeneratorCoverage_GetMatchWinnerLoser unit-tests getMatchWinner and
 // getMatchLoser directly (via export_test.go wrappers) since, in the real
 // double-elimination flow, they're only ever called on losers-bracket rounds

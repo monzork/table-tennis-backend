@@ -274,9 +274,37 @@ func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]str
 				}
 				break
 			}
+		} else if t.Format == "groups_elimination" || t.Format == "single_division_multiple_brackets" {
+			// Same stability concern as above: group-stage groups are named
+			// "<division name> - Group X" at generation time. Prefer that stable
+			// membership over re-deriving it from each player's current Elo,
+			// which can drift away from the band a player was actually seeded
+			// into (e.g. after a later Elo-normalization pass) and silently
+			// split/misplace an already-played division's groups.
+			prefix := d.Name + " - "
+			seen := make(map[string]bool)
+			for i := range t.Groups {
+				if !strings.HasPrefix(t.Groups[i].Name, prefix) || strings.Contains(t.Groups[i].Name, "Knockout Seeds") {
+					continue
+				}
+				for _, p := range t.Groups[i].Players {
+					if seen[p.ID] {
+						continue
+					}
+					seen[p.ID] = true
+					dPlayers = append(dPlayers, p)
+					assignedMap[p.ID] = true
+				}
+			}
 		}
 
-		if len(dPlayers) == 0 {
+		// For groups_elimination/single_division_multiple_brackets, still fill
+		// in via Elo even when the prefix-based lookup above already found some
+		// players -- it only catches groups literally named after the
+		// division, so anyone in a differently-named (but still this
+		// division's) group relies on this Elo pass the same way it always
+		// has (see buildGroupEliminationGroups' membership-overlap fallback).
+		if len(dPlayers) == 0 || t.Format == "groups_elimination" || t.Format == "single_division_multiple_brackets" {
 			for _, p := range participants {
 				if assignedMap[p.ID] {
 					continue
