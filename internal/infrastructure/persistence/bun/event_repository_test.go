@@ -353,6 +353,67 @@ func TestEventRepository_GetByParticipantID(t *testing.T) {
 	}
 }
 
+// TestEventRepository_GetByParticipantID_HydratesMatchPlayerElo guards
+// against a real regression: match.TeamA/TeamB players hydrated by this path
+// were only ever given ID/FirstName/LastName, never Elo -- silently
+// defaulting to 0 for anything (like the player-stats page's Elo preview)
+// that reads TeamA[0].SinglesElo/DoublesElo off a match loaded this way.
+func TestEventRepository_GetByParticipantID_HydratesMatchPlayerElo(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	playerRepo := bunRepo.NewPlayerRepository(db)
+	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
+	ctx := context.Background()
+
+	p1 := savePlayer(t, playerRepo, "Kevin", "Munoz", "M")
+	p1.SinglesElo = 2163
+	p1.DoublesElo = 1300
+	if err := playerRepo.Save(ctx, p1); err != nil {
+		t.Fatalf("Save p1: %v", err)
+	}
+	p2 := savePlayer(t, playerRepo, "Nelson", "Reyes", "M")
+	p2.SinglesElo = 1907
+	if err := playerRepo.Save(ctx, p2); err != nil {
+		t.Fatalf("Save p2: %v", err)
+	}
+
+	e1 := newBareEvent(t, "Elo Hydration Event", []*player.Player{p1, p2})
+	if err := eventRepo.Save(ctx, e1); err != nil {
+		t.Fatalf("Save e1: %v", err)
+	}
+
+	m := &event.Match{
+		ID:        uuid.NewString(),
+		EventID:   e1.ID,
+		MatchType: "singles",
+		TeamA:     []*player.Player{p1},
+		TeamB:     []*player.Player{p2},
+		Status:    "finished",
+	}
+	winner := "B"
+	if err := matchRepo.Save(ctx, m); err != nil {
+		t.Fatalf("Save match: %v", err)
+	}
+	if err := matchRepo.FinishMatch(ctx, event.FinishMatchCommand{MatchID: m.ID, WinnerTeam: winner}); err != nil {
+		t.Fatalf("FinishMatch: %v", err)
+	}
+
+	got, err := eventRepo.GetByParticipantID(ctx, p1.ID)
+	if err != nil {
+		t.Fatalf("GetByParticipantID: %v", err)
+	}
+	if len(got) != 1 || len(got[0].Matches) != 1 {
+		t.Fatalf("expected 1 event with 1 match, got %+v", got)
+	}
+	hydrated := got[0].Matches[0]
+	if len(hydrated.TeamA) != 1 || hydrated.TeamA[0].SinglesElo != 2163 {
+		t.Errorf("expected TeamA[0].SinglesElo 2163, got %+v", hydrated.TeamA)
+	}
+	if len(hydrated.TeamB) != 1 || hydrated.TeamB[0].SinglesElo != 1907 {
+		t.Errorf("expected TeamB[0].SinglesElo 1907, got %+v", hydrated.TeamB)
+	}
+}
+
 func TestEventRepository_TeamLifecycle(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)

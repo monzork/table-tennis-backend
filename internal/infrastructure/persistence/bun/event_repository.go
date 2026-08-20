@@ -655,21 +655,29 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 			} else if mm.TeamAPlayer1 != nil {
 				teamAPlayer.FirstName = mm.TeamAPlayer1.FirstName
 				teamAPlayer.LastName = mm.TeamAPlayer1.LastName
+				teamAPlayer.SinglesElo = mm.TeamAPlayer1.SinglesElo
+				teamAPlayer.DoublesElo = mm.TeamAPlayer1.DoublesElo
 			}
 			if tm, ok := teamMapDomain[teamBID]; ok {
 				teamBPlayer.FirstName = tm.Name
 			} else if mm.TeamBPlayer1 != nil {
 				teamBPlayer.FirstName = mm.TeamBPlayer1.FirstName
 				teamBPlayer.LastName = mm.TeamBPlayer1.LastName
+				teamBPlayer.SinglesElo = mm.TeamBPlayer1.SinglesElo
+				teamBPlayer.DoublesElo = mm.TeamBPlayer1.DoublesElo
 			}
 		} else {
 			if mm.TeamAPlayer1 != nil {
 				teamAPlayer.FirstName = mm.TeamAPlayer1.FirstName
 				teamAPlayer.LastName = mm.TeamAPlayer1.LastName
+				teamAPlayer.SinglesElo = mm.TeamAPlayer1.SinglesElo
+				teamAPlayer.DoublesElo = mm.TeamAPlayer1.DoublesElo
 			}
 			if mm.TeamBPlayer1 != nil {
 				teamBPlayer.FirstName = mm.TeamBPlayer1.FirstName
 				teamBPlayer.LastName = mm.TeamBPlayer1.LastName
+				teamBPlayer.SinglesElo = mm.TeamBPlayer1.SinglesElo
+				teamBPlayer.DoublesElo = mm.TeamBPlayer1.DoublesElo
 			}
 		}
 
@@ -1276,21 +1284,29 @@ func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel
 				} else if pm, ok := playerCache[teamAID]; ok {
 					teamAPlayer.FirstName = pm.FirstName
 					teamAPlayer.LastName = pm.LastName
+					teamAPlayer.SinglesElo = pm.SinglesElo
+					teamAPlayer.DoublesElo = pm.DoublesElo
 				}
 				if tm, ok := teamMap[teamBID]; ok {
 					teamBPlayer.FirstName = tm.Name
 				} else if pm, ok := playerCache[teamBID]; ok {
 					teamBPlayer.FirstName = pm.FirstName
 					teamBPlayer.LastName = pm.LastName
+					teamBPlayer.SinglesElo = pm.SinglesElo
+					teamBPlayer.DoublesElo = pm.DoublesElo
 				}
 			} else {
 				if pm, ok := playerCache[teamAID]; ok {
 					teamAPlayer.FirstName = pm.FirstName
 					teamAPlayer.LastName = pm.LastName
+					teamAPlayer.SinglesElo = pm.SinglesElo
+					teamAPlayer.DoublesElo = pm.DoublesElo
 				}
 				if pm, ok := playerCache[teamBID]; ok {
 					teamBPlayer.FirstName = pm.FirstName
 					teamBPlayer.LastName = pm.LastName
+					teamBPlayer.SinglesElo = pm.SinglesElo
+					teamBPlayer.DoublesElo = pm.DoublesElo
 				}
 			}
 
