@@ -29,7 +29,8 @@
                    hx-trigger="keyup changed delay:300ms"
                    hx-target="#rankings-container"
                    hx-include="#division-filter, #sort-order"
-                   hx-push-url="true">
+                   hx-push-url="true"
+                   hx-indicator="#rankings-container">
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full md:flex md:w-auto md:gap-4 items-end">
             {{if gt (len .Divisions) 0}}
@@ -42,7 +43,8 @@
                             hx-get="{{.CurrentPath}}"
                             hx-target="#rankings-container"
                             hx-include="[name='q'], #sort-order"
-                            hx-push-url="true">
+                            hx-push-url="true"
+                            hx-indicator="#rankings-container">
                         <option value="all" {{if eq .Division "all"}}selected{{end}}>{{t .T "rankings.all_divisions"}}</option>
                         {{range .Divisions}}
                         <option value="{{.Name}}" {{if eq .Name $.Division}}selected{{end}}>{{.Name}}</option>
@@ -62,7 +64,8 @@
                         hx-get="{{.CurrentPath}}"
                         hx-target="#rankings-container"
                         hx-include="[name='q'], #division-filter"
-                        hx-push-url="true">
+                        hx-push-url="true"
+                        hx-indicator="#rankings-container">
                     <option value="points_desc" {{if eq .Sort "points_desc"}}selected{{end}}>{{t .T "rankings.sort_pts_desc"}}</option>
                     <option value="points_asc" {{if eq .Sort "points_asc"}}selected{{end}}>{{t .T "rankings.sort_pts_asc"}}</option>
                     <option value="name_asc" {{if eq .Sort "name_asc"}}selected{{end}}>{{t .T "rankings.sort_name_asc"}}</option>
