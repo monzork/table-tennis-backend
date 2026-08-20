@@ -208,6 +208,7 @@ type mockMatchRepo struct {
 	deleteByTournErr   error
 	saveErr            error
 	savedMatches       []*tournamentDomain.Match
+	eloDeltas          map[string][2]*float64
 }
 
 func (m *mockMatchRepo) Save(ctx context.Context, match *tournamentDomain.Match) error {
@@ -272,6 +273,10 @@ func (m *mockMatchRepo) FinishMatch(ctx context.Context, cmd tournamentDomain.Fi
 	return nil
 }
 func (m *mockMatchRepo) UpdateEloDelta(ctx context.Context, matchID string, deltaA, deltaB *float64) error {
+	if m.eloDeltas == nil {
+		m.eloDeltas = make(map[string][2]*float64)
+	}
+	m.eloDeltas[matchID] = [2]*float64{deltaA, deltaB}
 	return nil
 }
 func (m *mockMatchRepo) FindOrCreateMatch(ctx context.Context, tournamentID, p1ID, p2ID, stage, matchType string) (string, error) {

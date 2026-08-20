@@ -17,6 +17,13 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 		uc := NewRecalculateTournamentEloUseCase(repo, &mockMatchRepo{}, playerRepo)
 		return uc, repo, playerRepo
 	}
+	newUCWithMatchRepo := func() (*RecalculateTournamentEloUseCase, *mockRepo, *mockMatchRepo, *mockPlayerRepo) {
+		repo := newMockRepo()
+		matchRepo := &mockMatchRepo{}
+		playerRepo := newMockPlayerRepo()
+		uc := NewRecalculateTournamentEloUseCase(repo, matchRepo, playerRepo)
+		return uc, repo, matchRepo, playerRepo
+	}
 
 	t.Run("get error propagates", func(t *testing.T) {
 		uc, repo, _ := newUC()
@@ -126,6 +133,59 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 
 		if err := uc.Execute(context.Background(), "t1"); err != nil {
 			t.Fatalf("expected no error, got %v", err)
+		}
+	})
+
+	t.Run("FIDE-style: each match uses the start-of-event rating, not a compounding one", func(t *testing.T) {
+		uc, repo, matchRepo, playerRepo := newUCWithMatchRepo()
+		p1 := &playerDomain.Player{ID: "p1", FirstName: "Alice", LastName: "A", SinglesElo: 1234}
+		p2 := &playerDomain.Player{ID: "p2", FirstName: "Bob", LastName: "B", SinglesElo: 1234}
+		p3 := &playerDomain.Player{ID: "p3", FirstName: "Carl", LastName: "C", SinglesElo: 1234}
+		playerRepo.players["p1"] = p1
+		playerRepo.players["p2"] = p2
+		playerRepo.players["p3"] = p3
+
+		startElo := int16(1000)
+		repo.snapshots = []tournamentDomain.ParticipantSnapshot{
+			{PlayerID: "p1", EloBeforeSingles: &startElo},
+			{PlayerID: "p2", EloBeforeSingles: &startElo},
+			{PlayerID: "p3", EloBeforeSingles: &startElo},
+		}
+
+		t1 := time.Now()
+		t2 := t1.Add(time.Minute)
+		m1 := tournamentDomain.Match{
+			ID: "m1", MatchType: "singles", Stage: "group",
+			TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2},
+			Status: "finished", WinnerTeam: "A", UpdatedAt: &t1,
+		}
+		m2 := tournamentDomain.Match{
+			ID: "m2", MatchType: "singles", Stage: "group",
+			TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p3},
+			Status: "finished", WinnerTeam: "A", UpdatedAt: &t2,
+		}
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID:           "t1",
+			Participants: []*playerDomain.Player{p1, p2, p3},
+			Matches:      []tournamentDomain.Match{m1, m2},
+		}
+
+		if err := uc.Execute(context.Background(), "t1"); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		d1 := matchRepo.eloDeltas["m1"]
+		d2 := matchRepo.eloDeltas["m2"]
+		if d1[0] == nil || d2[0] == nil {
+			t.Fatalf("expected both matches to have a recorded Elo delta, got %+v / %+v", d1, d2)
+		}
+		if *d1[0] != *d2[0] {
+			t.Errorf("expected identical deltas for two matches played from the same starting rating against equally-rated opponents, got m1=%v m2=%v", *d1[0], *d2[0])
+		}
+
+		wantFinal := startElo + int16(*d1[0]) + int16(*d2[0])
+		if p1.SinglesElo != wantFinal {
+			t.Errorf("expected p1's final Elo to be start (%d) + both match deltas = %d, got %d", startElo, wantFinal, p1.SinglesElo)
 		}
 	})
 }

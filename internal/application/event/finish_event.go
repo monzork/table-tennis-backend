@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"sort"
 	"time"
 
@@ -72,10 +73,19 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 			return err
 		}
 
+		// FIDE-style batch rating period: every match in this event is
+		// calculated against the Elo each player started the event with
+		// (StartSingles/StartDoubles, frozen for the whole loop below), and
+		// per-match deltas accumulate in DeltaSingles/DeltaDoubles rather
+		// than compounding match-to-match -- matching how FIDE processes an
+		// over-the-board tournament as one rating period instead of live,
+		// game-by-game updates.
 		type eloState struct {
-			Singles int16
-			Doubles int16
-			Player  *player.Player
+			StartSingles int16
+			StartDoubles int16
+			DeltaSingles float64
+			DeltaDoubles float64
+			Player       *player.Player
 		}
 		playerElos := make(map[string]*eloState)
 
@@ -106,9 +116,9 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 			)
 
 			playerElos[snap.PlayerID] = &eloState{
-				Singles: singlesElo,
-				Doubles: doublesElo,
-				Player:  p,
+				StartSingles: singlesElo,
+				StartDoubles: doublesElo,
+				Player:       p,
 			}
 		}
 
@@ -135,21 +145,23 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 			for _, p := range m.TeamA {
 				state, ok := playerElos[p.ID]
 				if !ok {
-					state = &eloState{Singles: p.SinglesElo, Doubles: p.DoublesElo, Player: p}
+					state = &eloState{StartSingles: p.SinglesElo, StartDoubles: p.DoublesElo, Player: p}
 					playerElos[p.ID] = state
 				}
-				p.SinglesElo = state.Singles
-				p.DoublesElo = state.Doubles
+				// Always compute against the frozen start-of-event rating,
+				// not an evolving in-event value.
+				p.SinglesElo = state.StartSingles
+				p.DoublesElo = state.StartDoubles
 				resolvedA = append(resolvedA, p)
 			}
 			for _, p := range m.TeamB {
 				state, ok := playerElos[p.ID]
 				if !ok {
-					state = &eloState{Singles: p.SinglesElo, Doubles: p.DoublesElo, Player: p}
+					state = &eloState{StartSingles: p.SinglesElo, StartDoubles: p.DoublesElo, Player: p}
 					playerElos[p.ID] = state
 				}
-				p.SinglesElo = state.Singles
-				p.DoublesElo = state.Doubles
+				p.SinglesElo = state.StartSingles
+				p.DoublesElo = state.StartDoubles
 				resolvedB = append(resolvedB, p)
 			}
 
@@ -218,13 +230,21 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 					slog.Warn("failed to persist match Elo delta", "matchID", m.ID, "error", err)
 				}
 
+				// Accumulate this match's contribution rather than letting it
+				// compound into the rating the next match calculates against.
 				for _, p := range resolvedA {
-					playerElos[p.ID].Singles = p.SinglesElo
-					playerElos[p.ID].Doubles = p.DoublesElo
+					if m.MatchType == "doubles" {
+						playerElos[p.ID].DeltaDoubles += deltaA
+					} else {
+						playerElos[p.ID].DeltaSingles += deltaA
+					}
 				}
 				for _, p := range resolvedB {
-					playerElos[p.ID].Singles = p.SinglesElo
-					playerElos[p.ID].Doubles = p.DoublesElo
+					if m.MatchType == "doubles" {
+						playerElos[p.ID].DeltaDoubles += deltaB
+					} else {
+						playerElos[p.ID].DeltaSingles += deltaB
+					}
 				}
 			}
 		}
@@ -239,8 +259,8 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 		if err == nil && len(dbPlayers) > 0 {
 			for _, dbP := range dbPlayers {
 				if state, ok := playerElos[dbP.ID]; ok {
-					dbP.UpdateSinglesElo(state.Singles)
-					dbP.UpdateDoublesElo(state.Doubles)
+					dbP.UpdateSinglesElo(int16(math.Round(float64(state.StartSingles) + state.DeltaSingles)))
+					dbP.UpdateDoublesElo(int16(math.Round(float64(state.StartDoubles) + state.DeltaDoubles)))
 				}
 			}
 			_ = uc.playerRepo.SaveMultiple(ctx, dbPlayers)

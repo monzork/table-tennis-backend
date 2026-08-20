@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"sort"
 	"time"
 
@@ -43,10 +44,15 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 		return err
 	}
 
+	// FIDE-style batch rating period: see the identical comment in
+	// finish_event.go -- every match is calculated against the Elo each
+	// player started the event with, not an evolving in-event value.
 	type eloState struct {
-		Singles int16
-		Doubles int16
-		Player  *player.Player
+		StartSingles int16
+		StartDoubles int16
+		DeltaSingles float64
+		DeltaDoubles float64
+		Player       *player.Player
 	}
 	playerElos := make(map[string]*eloState)
 
@@ -77,9 +83,9 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 		)
 
 		playerElos[snap.PlayerID] = &eloState{
-			Singles: singlesElo,
-			Doubles: doublesElo,
-			Player:  p,
+			StartSingles: singlesElo,
+			StartDoubles: doublesElo,
+			Player:       p,
 		}
 	}
 
@@ -106,21 +112,21 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 		for _, p := range m.TeamA {
 			state, ok := playerElos[p.ID]
 			if !ok {
-				state = &eloState{Singles: p.SinglesElo, Doubles: p.DoublesElo, Player: p}
+				state = &eloState{StartSingles: p.SinglesElo, StartDoubles: p.DoublesElo, Player: p}
 				playerElos[p.ID] = state
 			}
-			p.SinglesElo = state.Singles
-			p.DoublesElo = state.Doubles
+			p.SinglesElo = state.StartSingles
+			p.DoublesElo = state.StartDoubles
 			resolvedA = append(resolvedA, p)
 		}
 		for _, p := range m.TeamB {
 			state, ok := playerElos[p.ID]
 			if !ok {
-				state = &eloState{Singles: p.SinglesElo, Doubles: p.DoublesElo, Player: p}
+				state = &eloState{StartSingles: p.SinglesElo, StartDoubles: p.DoublesElo, Player: p}
 				playerElos[p.ID] = state
 			}
-			p.SinglesElo = state.Singles
-			p.DoublesElo = state.Doubles
+			p.SinglesElo = state.StartSingles
+			p.DoublesElo = state.StartDoubles
 			resolvedB = append(resolvedB, p)
 		}
 
@@ -190,12 +196,18 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 			}
 
 			for _, p := range resolvedA {
-				playerElos[p.ID].Singles = p.SinglesElo
-				playerElos[p.ID].Doubles = p.DoublesElo
+				if m.MatchType == "doubles" {
+					playerElos[p.ID].DeltaDoubles += deltaA
+				} else {
+					playerElos[p.ID].DeltaSingles += deltaA
+				}
 			}
 			for _, p := range resolvedB {
-				playerElos[p.ID].Singles = p.SinglesElo
-				playerElos[p.ID].Doubles = p.DoublesElo
+				if m.MatchType == "doubles" {
+					playerElos[p.ID].DeltaDoubles += deltaB
+				} else {
+					playerElos[p.ID].DeltaSingles += deltaB
+				}
 			}
 		}
 	}
@@ -210,8 +222,8 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 	if err == nil && len(dbPlayers) > 0 {
 		for _, dbP := range dbPlayers {
 			if state, ok := playerElos[dbP.ID]; ok {
-				dbP.UpdateSinglesElo(state.Singles)
-				dbP.UpdateDoublesElo(state.Doubles)
+				dbP.UpdateSinglesElo(int16(math.Round(float64(state.StartSingles) + state.DeltaSingles)))
+				dbP.UpdateDoublesElo(int16(math.Round(float64(state.StartDoubles) + state.DeltaDoubles)))
 			}
 		}
 		_ = uc.playerRepo.SaveMultiple(ctx, dbPlayers)
