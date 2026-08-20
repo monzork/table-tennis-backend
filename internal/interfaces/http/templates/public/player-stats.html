@@ -6,8 +6,8 @@
         </h1>
         <div class="flex items-center justify-center gap-3 text-xs sm:text-sm text-gray-400 font-light tracking-wide">
             {{if .Player.Country}}<span class="px-3 py-1 rounded-lg bg-black/50 border border-white/10 font-bold tracking-widest">{{.Player.Country}}</span>{{end}}
-            <span>{{t .T "player_stats.elo_singles"}}: <span class="text-white font-bold">{{.Player.SinglesElo}}</span></span>
-            <span>{{t .T "player_stats.elo_doubles"}}: <span class="text-white font-bold">{{.Player.DoublesElo}}</span></span>
+            <span>{{t .T "player_stats.elo_singles"}}: <span class="text-white font-bold">{{.Player.SinglesElo}}</span>{{if .SinglesRank}} <span class="text-gray-500">(#{{.SinglesRank}}{{if .TotalRanked}}/{{.TotalRanked}}{{end}})</span>{{end}}</span>
+            <span>{{t .T "player_stats.elo_doubles"}}: <span class="text-white font-bold">{{.Player.DoublesElo}}</span>{{if .DoublesRank}} <span class="text-gray-500">(#{{.DoublesRank}}{{if .TotalRanked}}/{{.TotalRanked}}{{end}})</span>{{end}}</span>
         </div>
         <a href="javascript:history.back()" class="inline-block text-[11px] sm:text-sm text-gray-500 hover:text-white transition-colors">{{t .T "player_stats.back"}}</a>
     </header>

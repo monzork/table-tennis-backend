@@ -119,30 +119,9 @@ func BuildRanking(players []*player.Player, divisions []*division.Division, para
 		return ptsA > ptsB // default points_desc
 	})
 
-	// 4. Group by division, unless a search/sort/filter is active.
-	isDivisional := params.SortOrder == "points_desc" && params.Query == "" &&
-		(params.DivisionFilter == "" || params.DivisionFilter == "all") && len(divisions) > 0
-
-	result := RankingResult{IsDivisional: isDivisional}
-	result.Groups = groupPlayers(final, params.RankType, isDivisional, divisions)
-	return result
-}
-
-func groupPlayers(players []RankedPlayer, rankType string, isDivisional bool, divisions []*division.Division) []DivisionGroupView {
-	if !isDivisional {
-		return []DivisionGroupView{{Division: nil, Players: players}}
+	// The public ranking page shows one flat list -- no division grouping.
+	return RankingResult{
+		IsDivisional: false,
+		Groups:       []DivisionGroupView{{Division: nil, Players: final}},
 	}
-	var groups []DivisionGroupView
-	for _, div := range divisions {
-		var divPlayers []RankedPlayer
-		for _, rp := range players {
-			if div.MatchesGender(rp.Gender) && div.ContainsElo(eloOf(rp.Player, rankType)) {
-				divPlayers = append(divPlayers, rp)
-			}
-		}
-		if len(divPlayers) > 0 {
-			groups = append(groups, DivisionGroupView{Division: div, Players: divPlayers})
-		}
-	}
-	return groups
 }

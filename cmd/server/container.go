@@ -218,6 +218,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		rejectMatchScoreProposalUC,
 	)
 	playerHandler.WithAssignPlayerToAccountUseCase(assignPlayerToAccountUC)
+	playerHandler.WithGetPlayerRankUseCase(player.NewGetPlayerRankUseCase(playerRepo))
 
 	return &Container{
 		PlayerHandler:       playerHandler,

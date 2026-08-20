@@ -30,6 +30,9 @@ type PlayerHandler struct {
 	// leaves the rest of the handler fully functional, only the admin
 	// link/unlink-to-account actions become unavailable.
 	assignPlayerToAccountUC *accountApp.AssignPlayerToAccountUseCase
+	// getPlayerRankUC is optional: nil in older callers/tests just leaves
+	// the rank/place field unset on the public stats page.
+	getPlayerRankUC *player.GetPlayerRankUseCase
 }
 
 func NewPlayerHandler(
@@ -66,6 +69,14 @@ func NewPlayerHandler(
 // site keeps compiling unchanged.
 func (h *PlayerHandler) WithAssignPlayerToAccountUseCase(uc *accountApp.AssignPlayerToAccountUseCase) *PlayerHandler {
 	h.assignPlayerToAccountUC = uc
+	return h
+}
+
+// WithGetPlayerRankUseCase wires the player-rank lookup into an
+// already-constructed PlayerHandler, same rationale as
+// WithAssignPlayerToAccountUseCase above.
+func (h *PlayerHandler) WithGetPlayerRankUseCase(uc *player.GetPlayerRankUseCase) *PlayerHandler {
+	h.getPlayerRankUC = uc
 	return h
 }
 
@@ -233,11 +244,20 @@ func (h *PlayerHandler) PublicStats(c *fiber.Ctx) error {
 	singlesSVG, _ := h.getEloTrendUC.Execute(history, "singles")
 	doublesSVG, _ := h.getEloTrendUC.Execute(history, "doubles")
 
+	var singlesRank, doublesRank, totalRanked int
+	if h.getPlayerRankUC != nil {
+		singlesRank, totalRanked, _ = h.getPlayerRankUC.Execute(c.Context(), id, "singles")
+		doublesRank, _, _ = h.getPlayerRankUC.Execute(c.Context(), id, "doubles")
+	}
+
 	return c.Render("public/player-stats", merge(tMap(lang), fiber.Map{
 		"Player":          p,
 		"Tournaments":     history,
 		"EloTrendSingles": template.HTML(singlesSVG),
 		"EloTrendDoubles": template.HTML(doublesSVG),
+		"SinglesRank":     singlesRank,
+		"DoublesRank":     doublesRank,
+		"TotalRanked":     totalRanked,
 		"Type":            "Rankings",
 		"CanonicalURL":    c.BaseURL() + c.Path(),
 	}), "layouts/public")
