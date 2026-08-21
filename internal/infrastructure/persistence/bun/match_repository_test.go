@@ -191,6 +191,58 @@ func TestMatchRepository_UpdateScore_InvalidID(t *testing.T) {
 	}
 }
 
+func TestMatchRepository_DoubleForfeit(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	m := f.newMatch(t, "final")
+	if err := f.matchRepo.Save(ctx, m); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	stageRule := event.StageRule{BestOf: 5, PointsToWin: 11, PointsMargin: 2}
+	sets := []event.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}}
+	if err := f.matchRepo.UpdateScore(ctx, m.ID, sets, stageRule); err != nil {
+		t.Fatalf("UpdateScore: %v", err)
+	}
+
+	if err := f.matchRepo.DoubleForfeit(ctx, m.ID); err != nil {
+		t.Fatalf("DoubleForfeit: %v", err)
+	}
+
+	got, err := f.matchRepo.GetByID(ctx, m.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.Status != "double_forfeit" {
+		t.Fatalf("expected status double_forfeit, got %q", got.Status)
+	}
+	if got.WinnerTeam != "" {
+		t.Fatalf("expected no winner, got %q", got.WinnerTeam)
+	}
+	if len(got.Sets) != 0 {
+		t.Fatalf("expected sets to be cleared, got %d", len(got.Sets))
+	}
+}
+
+func TestMatchRepository_DoubleForfeit_InvalidID(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	if err := f.matchRepo.DoubleForfeit(ctx, "bad-id"); err == nil {
+		t.Fatal("expected error for invalid UUID, got nil")
+	}
+}
+
+func TestMatchRepository_DoubleForfeit_NotFound(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	if err := f.matchRepo.DoubleForfeit(ctx, uuid.NewString()); err == nil {
+		t.Fatal("expected error for missing match, got nil")
+	}
+}
+
 func TestMatchRepository_CountUnfinishedAndFinishedMatches(t *testing.T) {
 	f := newMatchTestFixture(t)
 	ctx := context.Background()

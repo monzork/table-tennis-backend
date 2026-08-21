@@ -239,6 +239,9 @@ func (m *mockMatchRepo) GetMatchByParticipants(ctx context.Context, tournamentID
 func (m *mockMatchRepo) UpdateScore(ctx context.Context, id string, sets []tournamentDomain.MatchSet, stageRule tournamentDomain.StageRule) error {
 	return nil
 }
+func (m *mockMatchRepo) DoubleForfeit(ctx context.Context, id string) error {
+	return nil
+}
 func (m *mockMatchRepo) ProposeScore(ctx context.Context, matchID string, sets []tournamentDomain.MatchSet, proposedByPlayerID string, stageRule tournamentDomain.StageRule) error {
 	return nil
 }

@@ -31,6 +31,8 @@
             <span class="px-2 py-1 rounded bg-white/10 text-white text-xs font-bold uppercase tracking-wider border border-white/20">{{t .T "status.finished"}}</span>
         {{else if eq .Match.Status "in_progress"}}
             <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-wider border border-blue-500/20">{{t .T "status.in_progress"}}</span>
+        {{else if eq .Match.Status "double_forfeit"}}
+            <span class="px-2 py-1 rounded bg-red-500/10 text-red-400 text-xs font-bold uppercase tracking-wider border border-red-500/20">{{t .T "status.double_forfeit"}}</span>
         {{else}}
             <span class="px-2 py-1 rounded bg-white/5 text-gray-500 text-xs font-bold uppercase tracking-wider border border-white/10">{{t .T "status.scheduled"}}</span>
         {{end}}
@@ -66,7 +68,7 @@
                     class="w-full sm:w-auto bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
                 {{t .T "admin.match_row.start_match_btn"}}
             </button>
-        {{else if eq .Match.Status "finished"}}
+        {{else if or (eq .Match.Status "finished") (eq .Match.Status "double_forfeit")}}
             <button hx-post="/matches/{{.Match.ID}}/reset" hx-swap="outerHTML focus-scroll:false scroll:none" hx-target="#match-row-{{.Match.ID}}" hx-confirm="{{t .T "admin.match_row.undo_confirm"}}" class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 font-bold py-2 sm:py-1.5 px-3.5 rounded transition-all uppercase tracking-wider text-[10px]">
                 {{t .T "admin.match_row.undo_btn"}}
             </button>

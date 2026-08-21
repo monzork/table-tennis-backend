@@ -495,6 +495,29 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		return h.renderTeamMatchForm(c, matchID, c.FormValue("tournamentId"), parent.Stage)
 	}
 
+	if c.FormValue("doubleForfeit") == "true" {
+		matchID := c.Params("id")
+		if matchID == "" {
+			matchID = c.FormValue("matchId")
+		}
+		eventID := c.FormValue("tournamentId")
+
+		if err := h.updateScoreUC.ExecuteDoubleForfeit(c.Context(), matchID, eventID); err != nil {
+			return ErrorHandler(err)
+		}
+
+		h.broadcastToTournamentOrEvent(c, eventID, map[string]string{
+			"tournament":   "score_updated",
+			"tournamentId": eventID,
+			"matchId":      matchID,
+		})
+
+		if c.Get("HX-Request") != "" {
+			c.Set("HX-Refresh", "true")
+		}
+		return c.SendStatus(fiber.StatusOK)
+	}
+
 	matchID := c.Params("id")
 	var body struct {
 		EventID string   `json:"tournamentId" form:"tournamentId"`

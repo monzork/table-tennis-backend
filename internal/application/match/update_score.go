@@ -77,3 +77,23 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 
 	return uc.matchRepo.UpdateScore(ctx, matchIDStr, sets, stageRule)
 }
+
+// ExecuteDoubleForfeit records a match as a no-contest: both sides
+// defaulted, so it finishes with no winner, no Elo, and no bracket
+// advancement.
+func (uc *UpdateMatchScoreUseCase) ExecuteDoubleForfeit(
+	ctx context.Context,
+	matchIDStr string,
+	tournamentIDStr string,
+) error {
+	t, err := uc.tournamentRepo.GetByID(ctx, tournamentIDStr)
+	if err != nil {
+		return fmt.Errorf("event not found: %w", err)
+	}
+
+	if t.Status == "finished" {
+		return fmt.Errorf("cannot update score of a finished event")
+	}
+
+	return uc.matchRepo.DoubleForfeit(ctx, matchIDStr)
+}

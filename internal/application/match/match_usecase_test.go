@@ -89,6 +89,13 @@ func (m *mockMatchRepo) UpdateScore(ctx context.Context, id string, sets []event
 	}
 	return nil
 }
+func (m *mockMatchRepo) DoubleForfeit(ctx context.Context, id string) error {
+	if match, ok := m.matches[id]; ok {
+		match.Status = "double_forfeit"
+		match.WinnerTeam = ""
+	}
+	return nil
+}
 func (m *mockMatchRepo) ProposeScore(ctx context.Context, matchID string, sets []eventDomain.MatchSet, proposedByPlayerID string, stageRule eventDomain.StageRule) error {
 	if match, ok := m.matches[matchID]; ok {
 		match.ProposedSets = sets
@@ -865,9 +872,36 @@ func TestUpdateMatchScoreUseCase(t *testing.T) {
 		}
 	})
 
+	t.Run("execute double forfeit", func(t *testing.T) {
+		err := uc.ExecuteDoubleForfeit(ctx, "m1", "e1")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if m.Status != "double_forfeit" {
+			t.Errorf("expected status double_forfeit, got %q", m.Status)
+		}
+		if m.WinnerTeam != "" {
+			t.Errorf("expected no winner, got %q", m.WinnerTeam)
+		}
+	})
+
+	t.Run("execute double forfeit on nonexistent tournament", func(t *testing.T) {
+		err := uc.ExecuteDoubleForfeit(ctx, "m1", "nonexistent")
+		if err == nil {
+			t.Fatal("expected error for nonexistent tournament")
+		}
+	})
+
 	t.Run("execute on finished tournament error", func(t *testing.T) {
 		e.Status = "finished"
 		err := uc.Execute(ctx, "m1", []string{"11-9"}, "e1", "group")
+		if err == nil {
+			t.Fatal("expected error on finished tournament")
+		}
+	})
+
+	t.Run("execute double forfeit on finished tournament error", func(t *testing.T) {
+		err := uc.ExecuteDoubleForfeit(ctx, "m1", "e1")
 		if err == nil {
 			t.Fatal("expected error on finished tournament")
 		}

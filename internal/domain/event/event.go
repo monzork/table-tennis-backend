@@ -495,6 +495,9 @@ type MatchRepository interface {
 	GetMatchByParticipants(ctx context.Context, eventID, p1ID, p2ID, stage string) (*Match, error)
 	GetInProgressMatchOnTable(ctx context.Context, tableNumber int, eventID, tournamentID string) (*Match, error)
 	UpdateScore(ctx context.Context, id string, sets []MatchSet, stageRule StageRule) error
+	// DoubleForfeit marks a match as a no-contest: both sides defaulted, so
+	// neither wins, no Elo is applied, and no one advances in the bracket.
+	DoubleForfeit(ctx context.Context, id string) error
 	ProposeScore(ctx context.Context, matchID string, sets []MatchSet, proposedByPlayerID string, stageRule StageRule) error
 	ClearScoreProposal(ctx context.Context, matchID string) error
 	GetOccupiedTablesByEvent(ctx context.Context, eventID string) ([]int, error)

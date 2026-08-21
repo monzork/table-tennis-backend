@@ -422,6 +422,37 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []
 	})
 }
 
+// DoubleForfeit marks a match as a no-contest: both sides defaulted, so the
+// match is finalized with no winner, no sets, no Elo, and no bracket
+// advancement. Existing consumers only branch on WinnerTeam once they've
+// already confirmed Status == "finished", so a distinct "double_forfeit"
+// status keeps this outcome invisible to standings/Elo/bracket logic
+// without needing to touch each of them.
+func (r *MatchRepository) DoubleForfeit(ctx context.Context, idStr string) error {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return err
+	}
+
+	m, err := r.GetModelByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
+		if _, err := tx.NewDelete().TableExpr("match_sets").Where("match_id = ?", id).Exec(ctx); err != nil {
+			return err
+		}
+
+		m.Status = "double_forfeit"
+		m.WinnerTeam = nil
+		now := time.Now()
+		m.UpdatedAt = &now
+		_, err = tx.NewUpdate().Model(m).WherePK().Column("status", "winner_team", "updated_at").Exec(ctx)
+		return err
+	})
+}
+
 func containsMatch(matches []MatchModel, id uuid.UUID) bool {
 	for _, m := range matches {
 		if m.ID == id {

@@ -72,6 +72,58 @@ func TestMatchHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("Double Forfeit", func(t *testing.T) {
+		data := url.Values{}
+		data.Set("tournamentId", tourney.ID)
+		data.Set("doubleForfeit", "true")
+
+		req := httptest.NewRequest("PUT", fmt.Sprintf("/matches/%s/score", m.ID), strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+
+		got, err := matchRepo.GetByID(ctx, m.ID)
+		if err != nil {
+			t.Fatalf("GetByID: %v", err)
+		}
+		if got.Status != "double_forfeit" {
+			t.Fatalf("expected status double_forfeit, got %q", got.Status)
+		}
+		if got.WinnerTeam != "" {
+			t.Fatalf("expected no winner, got %q", got.WinnerTeam)
+		}
+
+		// Reset it back to scheduled so the following subtests get a clean match.
+		if err := matchRepo.ResetMatch(ctx, m.ID); err != nil {
+			t.Fatalf("ResetMatch: %v", err)
+		}
+	})
+
+	t.Run("Double Forfeit nonexistent tournament", func(t *testing.T) {
+		data := url.Values{}
+		data.Set("tournamentId", uuid.New().String())
+		data.Set("doubleForfeit", "true")
+
+		req := httptest.NewRequest("PUT", fmt.Sprintf("/matches/%s/score", m.ID), strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode == 200 {
+			t.Error("expected error status for nonexistent tournament")
+		}
+	})
+
 	t.Run("Finish Match", func(t *testing.T) {
 		data := url.Values{}
 		data.Set("matchId", m.ID)

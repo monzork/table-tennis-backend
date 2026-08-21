@@ -115,10 +115,11 @@ var Translations = map[string]map[string]string{
 		"tourney_reg.view_bracket":     "View Rankings",
 
 		// Status
-		"status.all":         "All Matches",
-		"status.scheduled":   "Waiting",
-		"status.in_progress": "In Progress",
-		"status.finished":    "Finished",
+		"status.all":            "All Matches",
+		"status.scheduled":      "Waiting",
+		"status.in_progress":    "In Progress",
+		"status.finished":       "Finished",
+		"status.double_forfeit": "Double Forfeit",
 
 		// Events List
 		"tourneys.title":        "Tournaments",
@@ -551,7 +552,8 @@ var Translations = map[string]map[string]string{
 		"board.custom_stage":     "custom",
 
 		// Score Form (additions)
-		"score_form.forfeit": "Forfeit",
+		"score_form.forfeit":      "Forfeit",
+		"score_form.forfeit_both": "Both Forfeit (No Contest)",
 
 		// Bracket (additions)
 		"bracket.sets_wl":                "Sets (W/L)",
@@ -1007,10 +1009,11 @@ var Translations = map[string]map[string]string{
 		"tourney_reg.view_bracket":     "Ver Ranking",
 
 		// Status
-		"status.all":         "Todos los Partidos",
-		"status.scheduled":   "En Espera",
-		"status.in_progress": "En Progreso",
-		"status.finished":    "Finalizado",
+		"status.all":            "Todos los Partidos",
+		"status.scheduled":      "En Espera",
+		"status.in_progress":    "En Progreso",
+		"status.finished":       "Finalizado",
+		"status.double_forfeit": "Doble Abandono",
 
 		// Events List
 		"tourneys.title":        "Torneos",
@@ -1443,7 +1446,8 @@ var Translations = map[string]map[string]string{
 		"board.custom_stage":     "personalizado",
 
 		// Score Form (additions)
-		"score_form.forfeit": "Abandono",
+		"score_form.forfeit":      "Abandono",
+		"score_form.forfeit_both": "Doble Abandono (Sin Contienda)",
 
 		// Bracket (additions)
 		"bracket.sets_wl":                "Sets (G/P)",

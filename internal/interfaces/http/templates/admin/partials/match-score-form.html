@@ -105,6 +105,14 @@
         </button>
     </div>
 
+    {{if .MatchID}}
+    <button type="button"
+        onclick="applyDoubleForfeit()"
+        class="w-full mb-4 bg-red-500/5 hover:bg-red-500/15 border border-red-500/10 text-red-400/80 font-bold py-2 rounded-xl transition-all uppercase tracking-widest text-[10px]">
+        {{t $.T "score_form.forfeit_both"}}
+    </button>
+    {{end}}
+
     <div class="flex gap-3">
         <button type="button"
             onclick="document.getElementById('score-modal').classList.add('hidden')"
@@ -148,6 +156,24 @@ function applyForfeit(forfeitingTeam) {
 
     // Filling the inputs alone doesn't persist anything - actually submit the form
     // so the forfeit result is saved, matching what clicking "Forfeit" implies.
+    form.requestSubmit();
+}
+
+function applyDoubleForfeit() {
+    const scope = document.getElementById('score-modal-body') || document;
+    const form = scope.querySelector('form[hx-put], form[hx-post]');
+
+    // No-contest: both sides defaulted, so there's no score to fill in -
+    // just flag the submission and let the backend record it with no winner.
+    let flag = form.querySelector('input[name="doubleForfeit"]');
+    if (!flag) {
+        flag = document.createElement('input');
+        flag.type = 'hidden';
+        flag.name = 'doubleForfeit';
+        form.appendChild(flag);
+    }
+    flag.value = 'true';
+
     form.requestSubmit();
 }
 </script>
