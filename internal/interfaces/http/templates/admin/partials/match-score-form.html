@@ -144,5 +144,9 @@ function applyForfeit(forfeitingTeam) {
             inputsB[i].value = '0';
         }
     }
+
+    // Filling the inputs alone doesn't persist anything - actually submit the form
+    // so the forfeit result is saved, matching what clicking "Forfeit" implies.
+    form.requestSubmit();
 }
 </script>
