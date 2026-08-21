@@ -729,15 +729,35 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 			pdf.Ln(8)
 			writeHeader("TABLAS DE POSICIONES DE GRUPOS")
 
+			// Large round-robin groups (many teams -> many cross-table columns) don't
+			// fit the schedule + matrix + points layout within an A4 portrait page's
+			// printable width (~180mm: 210 - 15 left margin - 15 right margin). Switch
+			// those specific groups to a landscape page (~267mm printable), which fits
+			// roughly up to 15 teams; small groups stay portrait as before.
+			curOrientation := "P"
+			const portraitPrintableWidth = 180.0
+
 			for _, gs := range groupStages {
-				// Check if there is enough space on the page for this group table
-				_, pageHeight := pdf.GetPageSize()
-				_, _, _, bottomMargin := pdf.GetMargins()
+				n := len(gs.Players)
+				// Schedule (42) + gap (3) + matrix name col (48) + n matrix cols (n*8) + gap (3) + points cols (8+14+16+8=46)
+				contentWidth := 142.0 + float64(n)*8.0
+				wantOrientation := "P"
+				if contentWidth > portraitPrintableWidth {
+					wantOrientation = "L"
+				}
+
 				// Title (8) + Ln(2) = 10
 				// Header row (5) + n rows (n*5) = (n+1)*5
 				// Bottom margin padding (10)
 				reqHeight := 10.0 + float64(len(gs.Players)+1)*5.0 + 10.0
-				if pdf.GetY()+reqHeight > pageHeight-bottomMargin {
+				_, pageHeight := pdf.GetPageSize()
+				_, _, _, bottomMargin := pdf.GetMargins()
+
+				if wantOrientation != curOrientation {
+					pdf.AddPageFormat(wantOrientation, fpdf.SizeType{Wd: 210, Ht: 297})
+					pdf.SetMargins(15, 52, 15)
+					curOrientation = wantOrientation
+				} else if pdf.GetY()+reqHeight > pageHeight-bottomMargin {
 					pdf.AddPage()
 				}
 
@@ -827,7 +847,6 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				pdf.SetTextColor(0, 0, 0)
 
 				// --- PART B: Cross-Table Matrix ---
-				n := len(gs.Players)
 				pdf.SetXY(15+42+3, startY)
 				pdf.SetFont("Arial", "B", 7)
 				pdf.SetFillColor(254, 254, 212)
@@ -922,6 +941,13 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 
 				pdf.SetXY(15, startY+float64(n+1)*5+3)
 				pdf.Ln(6)
+			}
+
+			// Later sections assume a portrait page; switch back if the last
+			// group table forced a landscape page.
+			if curOrientation != "P" {
+				pdf.AddPageFormat("P", fpdf.SizeType{Wd: 210, Ht: 297})
+				pdf.SetMargins(15, 52, 15)
 			}
 		}
 	}
