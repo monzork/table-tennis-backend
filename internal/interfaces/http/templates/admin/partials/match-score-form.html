@@ -130,7 +130,8 @@
 
 <script>
 function applyForfeit(forfeitingTeam) {
-    const form = document.querySelector('form[hx-put], form[hx-post]');
+    const scope = document.getElementById('score-modal-body') || document;
+    const form = scope.querySelector('form[hx-put], form[hx-post]');
     const inputsA = form.querySelectorAll('input[name="scores[]_a"]');
     const inputsB = form.querySelectorAll('input[name="scores[]_b"]');
     
