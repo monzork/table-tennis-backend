@@ -732,18 +732,41 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 			// Large round-robin groups (many teams -> many cross-table columns) don't
 			// fit the schedule + matrix + points layout within an A4 portrait page's
 			// printable width (~180mm: 210 - 15 left margin - 15 right margin). Switch
-			// those specific groups to a landscape page (~267mm printable), which fits
-			// roughly up to 15 teams; small groups stay portrait as before.
+			// those specific groups to a landscape page (~267mm printable, fits up to
+			// ~15 teams at the normal column width) and, for groups too large even for
+			// that, shrink the matrix column width (and its font) so the whole table -
+			// including the trailing Sets/Points/Pos columns - still lands on one page
+			// instead of running off the right edge.
 			curOrientation := "P"
-			const portraitPrintableWidth = 180.0
+			const (
+				portraitPrintableWidth  = 180.0
+				landscapePrintableWidth = 267.0
+				// Schedule (42) + gap (3) + matrix name col (48) + gap (3) + points cols (8+14+16+8=46)
+				fixedTableWidth = 142.0
+				defaultColWidth = 8.0
+				minColWidth     = 5.0
+			)
 
 			for _, gs := range groupStages {
 				n := len(gs.Players)
-				// Schedule (42) + gap (3) + matrix name col (48) + n matrix cols (n*8) + gap (3) + points cols (8+14+16+8=46)
-				contentWidth := 142.0 + float64(n)*8.0
+				colW := defaultColWidth
 				wantOrientation := "P"
-				if contentWidth > portraitPrintableWidth {
+				if fixedTableWidth+float64(n)*colW > portraitPrintableWidth {
 					wantOrientation = "L"
+				}
+				availWidth := portraitPrintableWidth
+				if wantOrientation == "L" {
+					availWidth = landscapePrintableWidth
+				}
+				if fixedTableWidth+float64(n)*colW > availWidth {
+					colW = (availWidth - fixedTableWidth) / float64(n)
+					if colW < minColWidth {
+						colW = minColWidth
+					}
+				}
+				matrixFontSize := 7.0
+				if colW < 6.5 {
+					matrixFontSize = 5.5
 				}
 
 				// Title (8) + Ln(2) = 10
@@ -851,8 +874,9 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				pdf.SetFont("Arial", "B", 7)
 				pdf.SetFillColor(254, 254, 212)
 				pdf.CellFormat(48, 5, tr("   ")+tr(strings.ToUpper(gs.GroupName)), "1", 0, "L", true, 0, "")
+				pdf.SetFont("Arial", "B", matrixFontSize)
 				for col := 1; col <= n; col++ {
-					pdf.CellFormat(8, 5, fmt.Sprintf("%d", col), "1", 0, "C", true, 0, "")
+					pdf.CellFormat(colW, 5, fmt.Sprintf("%d", col), "1", 0, "C", true, 0, "")
 				}
 				pdf.Ln(5)
 
@@ -876,11 +900,11 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 					pdf.SetXY(startX+48, currY)
 
 					// Draw columns
-					pdf.SetFont("Arial", "", 7)
+					pdf.SetFont("Arial", "", matrixFontSize)
 					for colIdx, p2 := range gs.Players {
 						if rowIdx == colIdx {
 							pdf.SetFillColor(220, 220, 220) // gray diagonal
-							pdf.CellFormat(8, 5, "", "1", 0, "C", true, 0, "")
+							pdf.CellFormat(colW, 5, "", "1", 0, "C", true, 0, "")
 						} else {
 							// Find match between p1 and p2
 							var mVal = "-"
@@ -896,14 +920,14 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 									break
 								}
 							}
-							pdf.CellFormat(8, 5, mVal, "1", 0, "C", false, 0, "")
+							pdf.CellFormat(colW, 5, mVal, "1", 0, "C", false, 0, "")
 						}
 					}
 					pdf.Ln(5)
 				}
 
 				// --- PART C: Points & Positions ---
-				pdf.SetXY(15+42+3+48+float64(n)*8+3, startY)
+				pdf.SetXY(15+42+3+48+float64(n)*colW+3, startY)
 				pdf.SetFont("Arial", "B", 7)
 				pdf.SetFillColor(254, 254, 212)
 				pdf.CellFormat(8, 5, tr("Pts"), "1", 0, "C", true, 0, "")
@@ -912,7 +936,7 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				pdf.CellFormat(8, 5, "Pos.", "1", 1, "C", true, 0, "")
 
 				for _, p := range gs.Players {
-					pdf.SetX(15 + 42 + 3 + 48 + float64(n)*8 + 3)
+					pdf.SetX(15 + 42 + 3 + 48 + float64(n)*colW + 3)
 
 					var wins, losses, setsW, setsL, ptsW, ptsL int
 					for _, std := range gs.Standings {
