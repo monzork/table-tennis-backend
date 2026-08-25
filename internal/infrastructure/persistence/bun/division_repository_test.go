@@ -47,7 +47,7 @@ func TestDivisionRepository_SaveGetAllGetByIdDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetById: %v", err)
 	}
-	if got.Name != "Division 1" || got.Color != "#ff0000" || *got.MaxElo != 1500 {
+	if got.Name != "Division 1" || got.Color != "#ff0000" || *got.MaxElo != 1500 || got.Gender != "both" {
 		t.Fatalf("unexpected division: %+v", got)
 	}
 
@@ -61,6 +61,29 @@ func TestDivisionRepository_SaveGetAllGetByIdDelete(t *testing.T) {
 	}
 	if len(all) != 1 {
 		t.Fatalf("expected 1 division after delete, got %d", len(all))
+	}
+}
+
+func TestDivisionRepository_GetById_RoundTripsGender(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewDivisionRepository(db)
+	ctx := context.Background()
+
+	d, err := division.NewDivision(uuid.NewString(), "1st Division (Men)", 10, 2000, nil, "both", "#000")
+	if err != nil {
+		t.Fatalf("NewDivision: %v", err)
+	}
+	d.Gender = "M"
+	if err := repo.Save(ctx, d); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	got, err := repo.GetById(ctx, d.ID)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.Gender != "M" {
+		t.Fatalf("expected GetById to round-trip Gender=%q, got %q", "M", got.Gender)
 	}
 }
 

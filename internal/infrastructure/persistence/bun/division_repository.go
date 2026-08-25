@@ -76,6 +76,7 @@ func (r *DivisionRepository) GetById(ctx context.Context, id string) (*division.
 		MinElo:       m.MinElo,
 		MaxElo:       m.MaxElo,
 		Category:     m.Category,
+		Gender:       m.Gender,
 		Color:        m.Color,
 	}, nil
 }
