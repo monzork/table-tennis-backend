@@ -36,6 +36,12 @@
                class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/30 transition-colors">
       </div>
 
+      <div class="flex items-center gap-2 sm:col-span-2">
+        <input type="checkbox" id="federationEndorsed" name="federationEndorsed" {{if .Tournament.FederationEndorsed}}checked{{end}}
+               class="accent-white h-4 w-4 bg-black/30 border border-white/10 rounded cursor-pointer">
+        <label for="federationEndorsed" class="text-[10px] font-bold uppercase tracking-widest text-gray-400 cursor-pointer">{{t .T "admin.tournament_edit_form.federation_endorsed_label"}}</label>
+      </div>
+
       <div class="sm:col-span-2">
         <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2 mt-2 border-b border-white/10 pb-1">{{t .T "admin.tournament_edit_form.priorities_label"}}</label>
         <div class="space-y-2">

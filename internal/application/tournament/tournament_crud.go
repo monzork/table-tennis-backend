@@ -322,7 +322,7 @@ func NewUpdateEventUseCase(tournamentRepo tournamentDomain.Repository) *UpdateEv
 	return &UpdateEventUseCase{tournamentRepo: tournamentRepo}
 }
 
-func (uc *UpdateEventUseCase) Execute(ctx context.Context, idStr, name, startDateStr, endDateStr string, numTables int, tablePriorities map[string][]int) (*tournamentDomain.Tournament, error) {
+func (uc *UpdateEventUseCase) Execute(ctx context.Context, idStr, name, startDateStr, endDateStr string, numTables int, tablePriorities map[string][]int, federationEndorsed bool) (*tournamentDomain.Tournament, error) {
 	e, err := uc.tournamentRepo.GetByID(ctx, idStr)
 	if err != nil {
 		return nil, err
@@ -346,6 +346,7 @@ func (uc *UpdateEventUseCase) Execute(ctx context.Context, idStr, name, startDat
 	if tablePriorities != nil {
 		e.TablePriorities = tablePriorities
 	}
+	e.FederationEndorsed = federationEndorsed
 	if err := uc.tournamentRepo.Update(ctx, e); err != nil {
 		return nil, fmt.Errorf("failed to update tournament: %w", err)
 	}

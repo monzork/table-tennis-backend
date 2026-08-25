@@ -15,6 +15,9 @@
                 {{else}}
                 <span class="text-[8px] font-black uppercase tracking-tighter text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded w-fit border border-blue-500/20">{{t .T "admin.tournament_row.rated"}}</span>
                 {{end}}
+                {{if .Tournament.FederationEndorsed}}
+                <span class="text-[8px] font-black uppercase tracking-tighter text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded w-fit border border-purple-500/20">{{t .T "admin.tournament_row.federation_endorsed"}}</span>
+                {{end}}
             </div>
         </div>
     </td>

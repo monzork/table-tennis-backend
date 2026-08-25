@@ -677,6 +677,8 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 	endDate := c.FormValue("endDate")
 	var numTables int
 	fmt.Sscanf(c.FormValue("numTables"), "%d", &numTables)
+	federationEndorsedVal := c.FormValue("federationEndorsed")
+	federationEndorsed := federationEndorsedVal == "on" || federationEndorsedVal == "true"
 
 	tablePriorities := make(map[string][]int)
 	c.Request().PostArgs().VisitAll(func(key, value []byte) {
@@ -700,7 +702,7 @@ func (h *TournamentHandler) Update(c *fiber.Ctx) error {
 		}
 	})
 
-	e, err := h.updateUC.Execute(c.Context(), id, name, startDate, endDate, numTables, tablePriorities)
+	e, err := h.updateUC.Execute(c.Context(), id, name, startDate, endDate, numTables, tablePriorities, federationEndorsed)
 	if err != nil {
 		return ErrorHandler(err)
 	}

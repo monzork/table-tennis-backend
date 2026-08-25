@@ -8,7 +8,14 @@
         </div>
         <div class="flex justify-between items-start">
             <div>
-                <h1 class="text-4xl font-extrabold tracking-tight uppercase">{{.Tournament.Name}} <span class="text-white">.</span></h1>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h1 class="text-4xl font-extrabold tracking-tight uppercase">{{.Tournament.Name}} <span class="text-white">.</span></h1>
+                    {{if .Tournament.FederationEndorsed}}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 font-bold text-xs uppercase tracking-wide">
+                        {{t .T "admin.tournament_detail.federation_endorsed_badge"}}
+                    </span>
+                    {{end}}
+                </div>
                 <p class="text-gray-400 mt-1">{{t .T "admin.tournament_detail.subtitle"}}</p>
             </div>
             <!-- Action Buttons -->

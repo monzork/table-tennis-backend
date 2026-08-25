@@ -170,6 +170,7 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS use_gender_divisions BOOLEAN NOT NUL
 -- Alter table tournaments to add new features
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS num_tables INT NOT NULL DEFAULT 4;
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS table_priorities JSONB;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS federation_endorsed BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Guardian accounts (Google OAuth) + player self-service score confirmation
 CREATE TABLE IF NOT EXISTS accounts (

@@ -98,6 +98,7 @@ func TestTournamentRepository_GetByIDDeep(t *testing.T) {
 	ctx := context.Background()
 
 	tr := newTestTournament(t, "Deep Cup")
+	tr.FederationEndorsed = true
 	attachEvent(tr, newTestEvent(t, "Deep Singles"))
 	if err := repo.Save(ctx, tr); err != nil {
 		t.Fatalf("Save: %v", err)
@@ -109,6 +110,9 @@ func TestTournamentRepository_GetByIDDeep(t *testing.T) {
 	}
 	if len(got.Events) != 1 {
 		t.Fatalf("expected 1 nested event, got %d", len(got.Events))
+	}
+	if !got.FederationEndorsed {
+		t.Fatalf("expected FederationEndorsed set at Save to round-trip through GetByIDDeep")
 	}
 }
 
@@ -147,6 +151,7 @@ func TestTournamentRepository_Update(t *testing.T) {
 
 	tr.Name = "After Rename"
 	tr.NumTables = 8
+	tr.FederationEndorsed = true
 	if err := repo.Update(ctx, tr); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
@@ -157,6 +162,21 @@ func TestTournamentRepository_Update(t *testing.T) {
 	}
 	if got.Name != "After Rename" || got.NumTables != 8 {
 		t.Fatalf("expected updated tournament, got %+v", got)
+	}
+	if !got.FederationEndorsed {
+		t.Fatalf("expected FederationEndorsed to round-trip as true, got false")
+	}
+
+	tr.FederationEndorsed = false
+	if err := repo.Update(ctx, tr); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	got, err = repo.GetByID(ctx, tr.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.FederationEndorsed {
+		t.Fatalf("expected FederationEndorsed to round-trip back to false")
 	}
 }
 
@@ -179,6 +199,7 @@ func TestTournamentRepository_GetAll(t *testing.T) {
 	p2 := savePlayer(t, playerRepo, "GetAll", "Two", "M")
 
 	tr1 := newTestTournament(t, "Tournament A")
+	tr1.FederationEndorsed = true
 	ev1 := newBareEvent(t, "Event A1", []*player.Player{p1})
 	attachEvent(tr1, ev1)
 	if err := repo.Save(ctx, tr1); err != nil {
@@ -219,6 +240,9 @@ func TestTournamentRepository_GetAll(t *testing.T) {
 	}
 	if gotTr1 == nil || len(gotTr1.Events) != 1 {
 		t.Fatalf("expected tr1 with 1 event, got %+v", gotTr1)
+	}
+	if !gotTr1.FederationEndorsed {
+		t.Fatalf("expected tr1's FederationEndorsed to round-trip through GetAll")
 	}
 	if len(gotTr1.Events[0].Participants) != 1 {
 		t.Fatalf("expected 1 participant on event A1, got %+v", gotTr1.Events[0].Participants)

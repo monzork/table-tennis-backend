@@ -219,18 +219,29 @@ func TestUpdateEventUseCase_Execute(t *testing.T) {
 	e, _ := eventDomain.NewTournament("e1", "Event 1", nil, true, now, now)
 	eventRepo.Save(ctx, e)
 
-	_, err := uc.Execute(ctx, "e1", "Updated Name", "2026-10-10", "2026-10-12", 5, map[string][]int{"t": {1}})
+	updated, err := uc.Execute(ctx, "e1", "Updated Name", "2026-10-10", "2026-10-12", 5, map[string][]int{"t": {1}}, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if !updated.FederationEndorsed {
+		t.Errorf("expected FederationEndorsed to be set to true")
+	}
 
-	_, err = uc.Execute(ctx, "invalid", "", "", "", 0, nil)
+	updated, err = uc.Execute(ctx, "e1", "", "", "", 0, nil, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if updated.FederationEndorsed {
+		t.Errorf("expected FederationEndorsed to be cleared back to false")
+	}
+
+	_, err = uc.Execute(ctx, "invalid", "", "", "", 0, nil, false)
 	if err == nil {
 		t.Errorf("expected error for invalid id")
 	}
 
 	eventRepo.updateErr = errors.New("update failed")
-	_, err = uc.Execute(ctx, "e1", "Another Name", "", "", 0, nil)
+	_, err = uc.Execute(ctx, "e1", "Another Name", "", "", 0, nil, false)
 	if err == nil {
 		t.Errorf("expected error when repo Update fails")
 	}

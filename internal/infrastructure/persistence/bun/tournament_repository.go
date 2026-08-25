@@ -33,13 +33,14 @@ func (r *TournamentRepository) Save(ctx context.Context, e *tournament.Tournamen
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
 
 		model := &TournamentModel{
-			ID:          id,
-			Name:        e.Name,
-			DivisionIDs: e.DivisionIDs,
-			SkipElo:     e.SkipElo,
-			StartDate:   e.StartDate,
-			EndDate:     e.EndDate,
-			NumTables:   e.NumTables,
+			ID:                 id,
+			Name:               e.Name,
+			DivisionIDs:        e.DivisionIDs,
+			SkipElo:            e.SkipElo,
+			StartDate:          e.StartDate,
+			EndDate:            e.EndDate,
+			NumTables:          e.NumTables,
+			FederationEndorsed: e.FederationEndorsed,
 		}
 
 		_, err := tx.NewInsert().Model(model).Exec(ctx)
@@ -72,14 +73,15 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 	tourneys, _ := r.tournamentRepo.GetByTournamentID(ctx, id, false)
 
 	return &tournament.Tournament{
-		ID:          model.ID.String(),
-		Name:        model.Name,
-		DivisionIDs: model.DivisionIDs,
-		SkipElo:     model.SkipElo,
-		StartDate:   model.StartDate,
-		EndDate:     model.EndDate,
-		NumTables:   model.NumTables,
-		Events:      tourneys,
+		ID:                 model.ID.String(),
+		Name:               model.Name,
+		DivisionIDs:        model.DivisionIDs,
+		SkipElo:            model.SkipElo,
+		StartDate:          model.StartDate,
+		EndDate:            model.EndDate,
+		NumTables:          model.NumTables,
+		FederationEndorsed: model.FederationEndorsed,
+		Events:             tourneys,
 	}, nil
 }
 
@@ -98,14 +100,15 @@ func (r *TournamentRepository) GetByIDDeep(ctx context.Context, idStr string) (*
 	tourneys, _ := r.tournamentRepo.GetByTournamentID(ctx, id, true)
 
 	return &tournament.Tournament{
-		ID:          model.ID.String(),
-		Name:        model.Name,
-		DivisionIDs: model.DivisionIDs,
-		SkipElo:     model.SkipElo,
-		StartDate:   model.StartDate,
-		EndDate:     model.EndDate,
-		NumTables:   model.NumTables,
-		Events:      tourneys,
+		ID:                 model.ID.String(),
+		Name:               model.Name,
+		DivisionIDs:        model.DivisionIDs,
+		SkipElo:            model.SkipElo,
+		StartDate:          model.StartDate,
+		EndDate:            model.EndDate,
+		NumTables:          model.NumTables,
+		FederationEndorsed: model.FederationEndorsed,
+		Events:             tourneys,
 	}, nil
 }
 
@@ -272,14 +275,15 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 	tournaments := make([]*tournament.Tournament, len(models))
 	for i, m := range models {
 		tournaments[i] = &tournament.Tournament{
-			ID:          m.ID.String(),
-			Name:        m.Name,
-			DivisionIDs: m.DivisionIDs,
-			SkipElo:     m.SkipElo,
-			StartDate:   m.StartDate,
-			EndDate:     m.EndDate,
-			NumTables:   m.NumTables,
-			Events:      tournamentsByEvent[m.ID.String()],
+			ID:                 m.ID.String(),
+			Name:               m.Name,
+			DivisionIDs:        m.DivisionIDs,
+			SkipElo:            m.SkipElo,
+			StartDate:          m.StartDate,
+			EndDate:            m.EndDate,
+			NumTables:          m.NumTables,
+			FederationEndorsed: m.FederationEndorsed,
+			Events:             tournamentsByEvent[m.ID.String()],
 		}
 	}
 	return tournaments, nil
@@ -291,15 +295,16 @@ func (r *TournamentRepository) Update(ctx context.Context, e *tournament.Tournam
 		return err
 	}
 	model := &TournamentModel{
-		ID:          id,
-		Name:        e.Name,
-		DivisionIDs: e.DivisionIDs,
-		SkipElo:     e.SkipElo,
-		StartDate:   e.StartDate,
-		EndDate:     e.EndDate,
-		NumTables:   e.NumTables,
+		ID:                 id,
+		Name:               e.Name,
+		DivisionIDs:        e.DivisionIDs,
+		SkipElo:            e.SkipElo,
+		StartDate:          e.StartDate,
+		EndDate:            e.EndDate,
+		NumTables:          e.NumTables,
+		FederationEndorsed: e.FederationEndorsed,
 	}
-	_, err = ExtractDB(ctx, r.db).NewUpdate().Model(model).WherePK().Column("name", "division_ids", "skip_elo", "start_date", "end_date", "num_tables").Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewUpdate().Model(model).WherePK().Column("name", "division_ids", "skip_elo", "start_date", "end_date", "num_tables", "federation_endorsed").Exec(ctx)
 	return err
 }
 

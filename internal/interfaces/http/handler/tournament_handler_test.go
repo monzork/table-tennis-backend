@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -205,6 +206,53 @@ func TestEventHandler(t *testing.T) {
 		}
 		if resp.StatusCode != 302 && resp.StatusCode != 200 {
 			t.Errorf("expected redirect or 200 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Update Tournament sets federation endorsed flag", func(t *testing.T) {
+		data := url.Values{}
+		data.Set("name", "Endorsed Cup")
+		data.Set("federationEndorsed", "on")
+
+		req := httptest.NewRequest("PUT", fmt.Sprintf("/tournaments/%s", eventID), strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("HX-Request", "true")
+		req.Header.Set("Cookie", sessionCookie)
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Fatalf("expected 200 OK, got %v", resp.StatusCode)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("failed to read response body: %v", err)
+		}
+		if !strings.Contains(string(body), `id="federationEndorsed" name="federationEndorsed" checked`) {
+			t.Errorf("expected the federationEndorsed checkbox to render checked, got: %s", string(body))
+		}
+
+		// Unchecking (the checkbox is simply absent from the submitted form)
+		// must clear the flag back to false.
+		data2 := url.Values{}
+		data2.Set("name", "Endorsed Cup")
+		req2 := httptest.NewRequest("PUT", fmt.Sprintf("/tournaments/%s", eventID), strings.NewReader(data2.Encode()))
+		req2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req2.Header.Set("HX-Request", "true")
+		req2.Header.Set("Cookie", sessionCookie)
+
+		resp2, err := app.Test(req2)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		body2, err := io.ReadAll(resp2.Body)
+		if err != nil {
+			t.Fatalf("failed to read response body: %v", err)
+		}
+		if strings.Contains(string(body2), `id="federationEndorsed" name="federationEndorsed" checked`) {
+			t.Errorf("expected the federationEndorsed checkbox to be unchecked after omitting it, got: %s", string(body2))
 		}
 	})
 

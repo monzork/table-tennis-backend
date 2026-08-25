@@ -365,7 +365,7 @@ func TestTournamentCRUDUseCases(t *testing.T) {
 
 	t.Run("UpdateEventUseCase", func(t *testing.T) {
 		uc := tournament.NewUpdateEventUseCase(eventRepo)
-		updated, err := uc.Execute(ctx, "t1", "Updated Tourney 1", "2026-09-01", "2026-09-05", 8, map[string][]int{"d1": {1, 2}})
+		updated, err := uc.Execute(ctx, "t1", "Updated Tourney 1", "2026-09-01", "2026-09-05", 8, map[string][]int{"d1": {1, 2}}, false)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
