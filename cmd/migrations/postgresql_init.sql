@@ -141,9 +141,10 @@ ON CONFLICT (id) DO NOTHING;
 -- Only used by events with use_gender_divisions = true (see below).
 INSERT INTO divisions (id, name, display_order, min_elo, max_elo, category, gender, color) VALUES
     ('div-first-male',    '1st Division (Men)',   10, 2000, NULL, 'both', 'M', '#C0C0C0'),
-    ('div-second-male',   '2nd Division (Men)',   11, 0,    2000, 'both', 'M', '#7B8794'),
-    ('div-first-female',  '1st Division (Women)', 12, 1300, NULL, 'both', 'F', '#C0C0C0'),
-    ('div-second-female', '2nd Division (Women)', 13, 0,    1300, 'both', 'F', '#7B8794')
+    ('div-second-male',   '2nd Division (Men)',   11, 1300, 2000, 'both', 'M', '#7B8794'),
+    ('div-third-male',    '3rd Division (Men)',   12, 0,    1300, 'both', 'M', '#4A90D9'),
+    ('div-first-female',  '1st Division (Women)', 13, 1300, NULL, 'both', 'F', '#C0C0C0'),
+    ('div-second-female', '2nd Division (Women)', 14, 0,    1300, 'both', 'F', '#7B8794')
 ON CONFLICT (id) DO NOTHING;
 
 -- 12. Table: tournaments
