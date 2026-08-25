@@ -11,8 +11,6 @@ import (
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/infrastructure/identity"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
-
-	"github.com/google/uuid"
 )
 
 // TestCreateEventUseCase_RealDB_GenderedDivisionsDoNotCrossOver is a
@@ -64,7 +62,7 @@ func TestCreateEventUseCase_RealDB_GenderedDivisionsDoNotCrossOver(t *testing.T)
 		divIDs = append(divIDs, f.id)
 	}
 
-	p, _ := player.NewPlayer(uuid.New().String(), "Solo", "Male", time.Now(), "M", "", "", "")
+	p, _ := player.NewPlayer(idgen.Generate(), "Solo", "Male", time.Now(), "M", "", "", "")
 	p.SinglesElo = 1500 // falls in 2nd Division (Men): 1300-1999
 	if err := playerRepo.Save(ctx, p); err != nil {
 		t.Fatalf("Save player: %v", err)
