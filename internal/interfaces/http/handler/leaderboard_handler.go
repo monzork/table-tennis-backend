@@ -215,7 +215,10 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		return c.Render("partials/rankings-container", data)
 	}
 
-	distSVG, _ := h.getDistributionUC.Execute(players, divisions, rankType)
+	// The distribution chart only shows the gender-specific bands -- the
+	// legacy gender-agnostic bands stay in the DB for existing tournaments'
+	// bracket rendering, but are retired from every new-facing display.
+	distSVG, _ := h.getDistributionUC.Execute(players, divisionDomain.OnlyGendered(divisions), rankType)
 	data["DistributionSVG"] = template.HTML(distSVG)
 
 	return c.Render("rankings", data, "layouts/public")

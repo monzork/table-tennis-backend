@@ -65,6 +65,23 @@ func (d *Division) MatchesGender(playerGender string) bool {
 	return strings.EqualFold(d.Gender, playerGender)
 }
 
+// OnlyGendered returns just the divisions explicitly scoped to a single
+// gender (Gender == "M" or "F"), dropping the legacy gender-agnostic
+// ("both") bands. Used wherever only the newer per-gender division scheme
+// should be shown (e.g. the new-tournament division picker, the public
+// rankings distribution chart) -- the legacy rows are never deleted, since
+// bracket rendering for tournaments already built against them still looks
+// them up by name, so this filters display only, not the underlying data.
+func OnlyGendered(divisions []*Division) []*Division {
+	var out []*Division
+	for _, d := range divisions {
+		if strings.EqualFold(d.Gender, "M") || strings.EqualFold(d.Gender, "F") {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
 // ContainsElo checks if a given ELO rating falls within this division's range.
 // MinElo is inclusive, MaxElo is exclusive — so a player at exactly MaxElo
 // belongs to the next (higher) division whose MinElo equals this MaxElo.

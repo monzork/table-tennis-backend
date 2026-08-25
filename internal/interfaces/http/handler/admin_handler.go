@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"strings"
 	"sync"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
@@ -199,12 +198,7 @@ func (h *AdminHandler) DivisionSelect(c *fiber.Ctx) error {
 	// for every existing tournament still built against them looks them up
 	// by name (see bracket.BuildBracket), so removing the rows would break
 	// those tournaments' displays.
-	var selectable []*divisionDomain.Division
-	for _, d := range divisions {
-		if strings.EqualFold(d.Gender, "M") || strings.EqualFold(d.Gender, "F") {
-			selectable = append(selectable, d)
-		}
-	}
+	selectable := divisionDomain.OnlyGendered(divisions)
 
 	lang := getLang(c)
 	return c.Render("admin/partials/division-select-options", merge(tMap(lang), fiber.Map{

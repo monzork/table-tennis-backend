@@ -147,3 +147,24 @@ func TestDivision_MatchesGender(t *testing.T) {
 		})
 	}
 }
+
+func TestOnlyGendered(t *testing.T) {
+	both, _ := division.NewDivision("d1", "Both", 1, 0, nil, "singles", "#000000")
+
+	mens, _ := division.NewDivision("d2", "Men's 1st", 1, 1600, nil, "singles", "#000000")
+	mens.Gender = "M"
+
+	womens, _ := division.NewDivision("d3", "Women's 1st", 1, 900, nil, "singles", "#000000")
+	womens.Gender = "F"
+
+	unset := &division.Division{ID: "d4", Name: "Legacy", MinElo: 0}
+
+	got := division.OnlyGendered([]*division.Division{both, mens, womens, unset})
+
+	if len(got) != 2 {
+		t.Fatalf("expected only the 2 gender-specific divisions to survive, got %d: %+v", len(got), got)
+	}
+	if got[0].ID != "d2" || got[1].ID != "d3" {
+		t.Errorf("expected [mens, womens] in order, got %+v", got)
+	}
+}
