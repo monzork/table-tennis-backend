@@ -210,6 +210,54 @@ func TestCreateEventUseCase_Execute_GenderDivisions(t *testing.T) {
 	}
 }
 
+func TestCreateEventUseCase_Execute_ZeroPlayerCategoryStillCreatesEvent(t *testing.T) {
+	eventRepo := newMockEventRepo()
+	subTourneyRepo := newMockSubTourneyRepo()
+	playerRepo := newMockPlayerRepo()
+	divRepo := newMockDivisionRepo()
+
+	uc := tournament.NewCreateEventUseCase(eventRepo, subTourneyRepo, playerRepo, divRepo)
+	ctx := context.Background()
+
+	div1, _ := divisionDomain.NewDivision("d1", "Div 1", 1, 1200, nil, "singles", "#000")
+	divRepo.divisions["d1"] = div1
+
+	// singlesMen is enabled but has no player IDs at all -- this used to be
+	// silently skipped, leaving no event to add players to later.
+	res, err := uc.Execute(
+		ctx,
+		"Empty Category Tournament",
+		[]string{"d1"},
+		false,
+		"2026-10-01",
+		"2026-10-02",
+		tournament.CategoryConfig{Auto: true, Format: "elimination", PlayerIDs: nil},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		[]tournament.CustomEventConfig{
+			{Name: "Wildcard Bracket", Format: "elimination", PlayerIDs: nil},
+		},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(res.Events) != 2 {
+		t.Fatalf("expected 2 events (empty Men's Singles + empty custom event), got %d: %+v", len(res.Events), res.Events)
+	}
+	for _, ev := range res.Events {
+		if len(ev.Participants) != 0 {
+			t.Errorf("expected event %q to start with 0 participants, got %d", ev.Name, len(ev.Participants))
+		}
+	}
+}
+
 func TestUpdateEventUseCase_Execute(t *testing.T) {
 	eventRepo := newMockEventRepo()
 	uc := tournament.NewUpdateEventUseCase(eventRepo)

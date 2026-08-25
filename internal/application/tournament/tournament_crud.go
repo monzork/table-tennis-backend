@@ -172,15 +172,13 @@ func (uc *CreateEventUseCase) Execute(
 		}
 
 		allCatPlayers := getPlayers(cfg.PlayerIDs, categoryGender, isDoubles)
-		if len(allCatPlayers) == 0 {
-			return
-		}
 
-		if skipElo || len(divs) == 0 {
+		if skipElo || len(divs) == 0 || len(allCatPlayers) == 0 {
+			// A category with no players selected yet still gets its event
+			// created (empty) rather than being skipped entirely -- an admin
+			// needs an existing event to add players to later via the event
+			// edit form; there was previously nothing to add players to.
 			tName := fmt.Sprintf("%s - %s", e.Name, suffix)
-			if categoryGender == "men" || categoryGender == "women" {
-				// fallback in case I used lowercase men/women instead of M/F, wait, categoryGender is M/F, but for category we pass men/women, wait!
-			}
 			catArg := categoryGender
 			if categoryGender == "M" {
 				catArg = "men"
@@ -189,7 +187,21 @@ func (uc *CreateEventUseCase) Execute(
 			} else {
 				catArg = "open"
 			}
-			_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, allCatPlayers, len(divs) == 0, false)
+			// If this category has no players yet but the tournament has
+			// gender-specific divisions selected for its gender, mark it so
+			// that once players are added, the bracket view auto-classifies
+			// them into those bands (see bracket.BuildBracket) instead of
+			// silently falling back to the gender-agnostic ones.
+			useGenderDivisions := false
+			if len(allCatPlayers) == 0 {
+				for _, div := range divs {
+					if div.Gender != "" && !strings.EqualFold(div.Gender, "both") && div.MatchesGender(categoryGender) {
+						useGenderDivisions = true
+						break
+					}
+				}
+			}
+			_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, allCatPlayers, len(divs) == 0, useGenderDivisions)
 		} else {
 			// Group by division
 			for _, div := range divs {
@@ -247,7 +259,7 @@ func (uc *CreateEventUseCase) Execute(
 				players = append(players, p)
 			}
 		}
-		if len(players) == 0 || cfg.Name == "" {
+		if cfg.Name == "" {
 			continue
 		}
 		tName := fmt.Sprintf("%s - %s", e.Name, cfg.Name)
