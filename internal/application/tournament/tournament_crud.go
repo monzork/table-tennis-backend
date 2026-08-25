@@ -3,6 +3,7 @@ package tournament
 import (
 	"context"
 	"fmt"
+	"strings"
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	eventDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
@@ -119,7 +120,7 @@ func (uc *CreateEventUseCase) Execute(
 	}
 
 	// Helper to create a event under this tournament
-	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player, skipDivisionSplit bool) error {
+	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player, skipDivisionSplit bool, useGenderDivisions bool) error {
 		t, err := eventDomain.NewEvent(idgen.Generate(), tName, tType, tFormat, category, start, end, []eventDomain.Rule{}, groupPassCount, players, false)
 		if err != nil {
 			return err
@@ -128,6 +129,7 @@ func (uc *CreateEventUseCase) Execute(
 		t.SkipElo = skipElo
 		t.NumTables = e.NumTables
 		t.SkipDivisionSplit = skipDivisionSplit
+		t.UseGenderDivisions = useGenderDivisions
 		e.Events = append(e.Events, t)
 		return nil
 	}
@@ -187,10 +189,20 @@ func (uc *CreateEventUseCase) Execute(
 			} else {
 				catArg = "open"
 			}
-			_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, allCatPlayers, len(divs) == 0)
+			_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, allCatPlayers, len(divs) == 0, false)
 		} else {
 			// Group by division
 			for _, div := range divs {
+				// A division only applies to categories of its own gender --
+				// Gender=="both" divisions apply to every category, but a
+				// gender-specific division (e.g. a new "1st Division (Men)"
+				// band) must not also pull players into a differently-
+				// gendered category just because their Elo happens to fall
+				// in that band's numeric range too.
+				if !div.MatchesGender(categoryGender) {
+					continue
+				}
+
 				var divPlayers []*playerDomain.Player
 				for _, p := range allCatPlayers {
 					eloVal := p.SinglesElo
@@ -212,7 +224,8 @@ func (uc *CreateEventUseCase) Execute(
 					} else {
 						catArg = "open"
 					}
-					_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, divPlayers, false)
+					useGenderDivisions := div.Gender != "" && !strings.EqualFold(div.Gender, "both")
+					_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, divPlayers, false, useGenderDivisions)
 				}
 			}
 		}
@@ -238,7 +251,7 @@ func (uc *CreateEventUseCase) Execute(
 			continue
 		}
 		tName := fmt.Sprintf("%s - %s", e.Name, cfg.Name)
-		_ = createSubTourney(tName, "singles", cfg.Format, "open", cfg.GroupPassCount, players, true)
+		_ = createSubTourney(tName, "singles", cfg.Format, "open", cfg.GroupPassCount, players, true, false)
 	}
 
 	if err := uc.tournamentRepo.Save(ctx, e); err != nil {

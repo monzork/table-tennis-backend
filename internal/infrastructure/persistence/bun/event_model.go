@@ -34,6 +34,7 @@ type EventModel struct {
 	Metrics               *event.TournamentMetrics `bun:"metrics,type:jsonb"`
 	ManualSeedingLocked   bool                     `bun:"manual_seeding_locked,notnull,default:false"`
 	SkipDivisionSplit     bool                     `bun:"skip_division_split,notnull,default:false"`
+	UseGenderDivisions    bool                     `bun:"use_gender_divisions,notnull,default:false"`
 	CreatedAt             time.Time                `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt             *time.Time               `bun:"updated_at,nullzero"`
 

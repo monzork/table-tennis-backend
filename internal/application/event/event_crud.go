@@ -175,6 +175,7 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 	if existing, err := uc.repo.GetByID(ctx, cmd.ID); err == nil {
 		t.Teams = existing.Teams
 		t.SkipDivisionSplit = existing.SkipDivisionSplit
+		t.UseGenderDivisions = existing.UseGenderDivisions
 		t.ManualSeedingLocked = existing.ManualSeedingLocked
 
 		// Check if participants, cmd.Format, type, or cmd.Category changed

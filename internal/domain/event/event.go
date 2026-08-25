@@ -225,6 +225,12 @@ type Event struct {
 	// bands (e.g. an "Open" tournament category) so the bracket view must not
 	// re-bucket participants into per-division sub-brackets by their live Elo.
 	SkipDivisionSplit bool
+	// UseGenderDivisions marks events whose bracket should use gender-specific
+	// division Elo bands (e.g. div-first-male/div-first-female) instead of the
+	// shared gender-agnostic bands (div-first/div-second/...). Defaults false
+	// so every event created before this field existed keeps its exact
+	// existing bracket grouping.
+	UseGenderDivisions bool
 	// ParticipantSnapshots carries each participant's Elo before/after this
 	// event. It is only populated by callers that need it (e.g. PDF export);
 	// nil elsewhere.

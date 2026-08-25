@@ -62,6 +62,29 @@ func TestEventRepository_SaveAndGetByID(t *testing.T) {
 	}
 }
 
+func TestEventRepository_SaveAndGetByID_UseGenderDivisions(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	playerRepo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	p1 := savePlayer(t, playerRepo, "P", "One", "M")
+
+	e := newBareEvent(t, "Gendered Event", []*player.Player{p1})
+	e.UseGenderDivisions = true
+	if err := eventRepo.Save(ctx, e); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	got, err := eventRepo.GetByID(ctx, e.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if !got.UseGenderDivisions {
+		t.Fatalf("expected UseGenderDivisions to round-trip as true, got false")
+	}
+}
+
 func TestEventRepository_GetByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)

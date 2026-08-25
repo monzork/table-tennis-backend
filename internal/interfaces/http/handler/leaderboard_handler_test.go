@@ -215,3 +215,41 @@ func TestLeaderboardHandler_SortingAndFiltering(t *testing.T) {
 		})
 	}
 }
+
+func TestLeaderboardHandler_ViewByGender(t *testing.T) {
+	app := createTestLeaderboardApp(t)
+
+	testCases := []struct {
+		name string
+		url  string
+	}{
+		{"Singles by gender, full page", "/rankings/singles?view=gender"},
+		{"Doubles by gender, full page", "/rankings/doubles?view=gender"},
+		{"By gender with search query", "/rankings/singles?view=gender&q=Alice"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tc.url, nil)
+			resp, err := app.Test(req)
+			if err != nil {
+				t.Fatalf("unexpected error for %s: %v", tc.name, err)
+			}
+			if resp.StatusCode != http.StatusOK {
+				t.Errorf("%s: expected status 200, got %d", tc.name, resp.StatusCode)
+			}
+		})
+	}
+
+	t.Run("By gender HTMX partial request", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/rankings/singles?view=gender&sort=points_asc", nil)
+		req.Header.Set("HX-Request", "true")
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+	})
+}

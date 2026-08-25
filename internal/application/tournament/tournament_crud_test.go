@@ -142,6 +142,74 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 	}
 }
 
+func TestCreateEventUseCase_Execute_GenderDivisions(t *testing.T) {
+	eventRepo := newMockEventRepo()
+	subTourneyRepo := newMockSubTourneyRepo()
+	playerRepo := newMockPlayerRepo()
+	divRepo := newMockDivisionRepo()
+
+	uc := tournament.NewCreateEventUseCase(eventRepo, subTourneyRepo, playerRepo, divRepo)
+	ctx := context.Background()
+
+	// A man just above the male 1st-division threshold and a woman just
+	// above the (much lower) female 1st-division threshold -- if gender
+	// isn't checked when grouping by division, the man's Elo would also
+	// satisfy the female band's numeric range, and vice versa is possible
+	// too depending on the bands, so this must not leak across categories.
+	pMale := &playerDomain.Player{ID: "pm", Gender: "M", SinglesElo: 2100}
+	pFemale := &playerDomain.Player{ID: "pf", Gender: "F", SinglesElo: 1400}
+	playerRepo.players["pm"] = pMale
+	playerRepo.players["pf"] = pFemale
+
+	divMale := &divisionDomain.Division{ID: "div-first-male", Name: "1st Division (Men)", DisplayOrder: 10, MinElo: 2000, MaxElo: nil, Category: "both", Gender: "M", Color: "#000"}
+	divFemale := &divisionDomain.Division{ID: "div-first-female", Name: "1st Division (Women)", DisplayOrder: 12, MinElo: 1300, MaxElo: nil, Category: "both", Gender: "F", Color: "#000"}
+	divRepo.divisions["div-first-male"] = divMale
+	divRepo.divisions["div-first-female"] = divFemale
+
+	res, err := uc.Execute(
+		ctx,
+		"Gendered Tournament",
+		[]string{"div-first-male", "div-first-female"},
+		false,
+		"2026-10-01",
+		"2026-10-02",
+		tournament.CategoryConfig{Auto: true, Format: "single", PlayerIDs: []string{"pm"}},
+		tournament.CategoryConfig{Auto: true, Format: "single", PlayerIDs: []string{"pf"}},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		nil,
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(res.Events) != 2 {
+		t.Fatalf("expected exactly 2 sub-events (one per gender), got %d: %+v", len(res.Events), res.Events)
+	}
+
+	for _, ev := range res.Events {
+		if !ev.UseGenderDivisions {
+			t.Errorf("expected sub-event %q created from a gender-specific division to have UseGenderDivisions=true", ev.Name)
+		}
+		switch ev.EventCategory {
+		case "men":
+			if len(ev.Participants) != 1 || ev.Participants[0].ID != "pm" {
+				t.Errorf("expected men's sub-event to contain only the male player, got %+v", ev.Participants)
+			}
+		case "women":
+			if len(ev.Participants) != 1 || ev.Participants[0].ID != "pf" {
+				t.Errorf("expected women's sub-event to contain only the female player, got %+v", ev.Participants)
+			}
+		default:
+			t.Errorf("unexpected event category %q for event %q", ev.EventCategory, ev.Name)
+		}
+	}
+}
+
 func TestUpdateEventUseCase_Execute(t *testing.T) {
 	eventRepo := newMockEventRepo()
 	uc := tournament.NewUpdateEventUseCase(eventRepo)

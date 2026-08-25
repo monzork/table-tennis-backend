@@ -137,6 +137,15 @@ INSERT INTO divisions (id, name, display_order, min_elo, max_elo, category, colo
     ('none', 'No Division', 99, 0, 9999, 'both', '#7B8794')
 ON CONFLICT (id) DO NOTHING;
 
+-- Gender-specific division bands, additive to the gender-agnostic set above.
+-- Only used by events with use_gender_divisions = true (see below).
+INSERT INTO divisions (id, name, display_order, min_elo, max_elo, category, gender, color) VALUES
+    ('div-first-male',    '1st Division (Men)',   10, 2000, NULL, 'both', 'M', '#C0C0C0'),
+    ('div-second-male',   '2nd Division (Men)',   11, 0,    2000, 'both', 'M', '#7B8794'),
+    ('div-first-female',  '1st Division (Women)', 12, 1300, NULL, 'both', 'F', '#C0C0C0'),
+    ('div-second-female', '2nd Division (Women)', 13, 0,    1300, 'both', 'F', '#7B8794')
+ON CONFLICT (id) DO NOTHING;
+
 -- 12. Table: tournaments
 CREATE TABLE IF NOT EXISTS tournaments (
     id UUID PRIMARY KEY,
@@ -155,6 +164,7 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS skip_elo BOOLEAN NOT NULL DEFAULT FA
 ALTER TABLE events ADD COLUMN IF NOT EXISTS knockout_stage_started BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS manual_seeding_locked BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS skip_division_split BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS use_gender_divisions BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Alter table tournaments to add new features
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS num_tables INT NOT NULL DEFAULT 4;
@@ -178,3 +188,9 @@ ALTER TABLE matches ADD COLUMN IF NOT EXISTS proposed_by_player_id UUID REFERENC
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS proposed_at TIMESTAMP;
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS elo_delta_a DOUBLE PRECISION;
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS elo_delta_b DOUBLE PRECISION;
+
+-- Spindex data import mapping (cmd/import_spindex.go)
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS spindex_tournament_id TEXT UNIQUE;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS spindex_event_id TEXT UNIQUE;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS spindex_player_id TEXT UNIQUE;
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS spindex_match_id TEXT UNIQUE;

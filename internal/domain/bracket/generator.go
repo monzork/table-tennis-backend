@@ -149,22 +149,31 @@ func (bm BracketMatch) Player2Won() bool {
 }
 
 // divisionMatchesEventCategory reports whether a division's gender band applies
-// to an event's category. Gender-agnostic ("both") divisions always apply.
-// Gender-specific divisions only apply to single-gender ("men"/"women")
-// events -- a "mixed"/"open" event has no single gender for its Elo bands to
-// be scaled against, so only "both" divisions are valid there.
-func divisionMatchesEventCategory(d *division.Division, eventCategory string) bool {
-	if d.Gender == "" || strings.EqualFold(d.Gender, "both") {
-		return true
+// to an event's category. By default (useGenderDivisions=false, which is every
+// event created before that flag existed) only gender-agnostic ("both")
+// divisions apply, exactly as before this flag was introduced -- gender-
+// specific divisions stay completely invisible to those events. Events that
+// opt in (useGenderDivisions=true) flip this: only the gender-specific
+// division matching their own single-gender ("men"/"women") category applies,
+// and the shared "both" bands are hidden instead, so the two schemes never mix
+// within one event. A "mixed"/"open" event has no single gender for gendered
+// bands to be scaled against, so it never sees gender-specific divisions.
+func divisionMatchesEventCategory(d *division.Division, eventCategory string, useGenderDivisions bool) bool {
+	isGenderSpecific := d.Gender != "" && !strings.EqualFold(d.Gender, "both")
+	if useGenderDivisions {
+		if !isGenderSpecific {
+			return false
+		}
+		switch eventCategory {
+		case "men":
+			return strings.EqualFold(d.Gender, "M")
+		case "women":
+			return strings.EqualFold(d.Gender, "F")
+		default:
+			return false
+		}
 	}
-	switch eventCategory {
-	case "men":
-		return strings.EqualFold(d.Gender, "M")
-	case "women":
-		return strings.EqualFold(d.Gender, "F")
-	default:
-		return false
-	}
+	return !isGenderSpecific
 }
 
 func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]string) *Bracket {
@@ -242,7 +251,7 @@ func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]str
 			// Skip "0-infinite" divisions (like 'No Division') for Elo events
 			continue
 		}
-		if (d.Category == "both" || d.Category == t.Type) && divisionMatchesEventCategory(d, t.EventCategory) {
+		if (d.Category == "both" || d.Category == t.Type) && divisionMatchesEventCategory(d, t.EventCategory, t.UseGenderDivisions) {
 			validDivs = append(validDivs, d)
 		}
 	}

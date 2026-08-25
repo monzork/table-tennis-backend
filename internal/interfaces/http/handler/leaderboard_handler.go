@@ -142,6 +142,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 	query := c.Query("q")
 	divFilter := c.Query("division")
 	sortOrder := c.Query("sort", "points_desc")
+	view := c.Query("view", "overall")
 
 	var players []*player.Player
 	var divisions []*divisionDomain.Division
@@ -166,12 +167,19 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		return ErrorHandler(dErr)
 	}
 
-	result := leaderboard.BuildRanking(players, divisions, leaderboard.RankingParams{
+	rankingParams := leaderboard.RankingParams{
 		RankType:       rankType,
 		Query:          query,
 		DivisionFilter: divFilter,
 		SortOrder:      sortOrder,
-	})
+	}
+
+	var result leaderboard.RankingResult
+	if view == "gender" {
+		result = leaderboard.BuildGenderRanking(players, divisions, rankingParams)
+	} else {
+		result = leaderboard.BuildRanking(players, divisions, rankingParams)
+	}
 
 	lang := getLang(c)
 	tMap := i18n.PrecomputedMaps[lang]
@@ -184,6 +192,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		"Query":        query,
 		"Division":     divFilter,
 		"Sort":         sortOrder,
+		"View":         view,
 		"IsDivisional": result.IsDivisional,
 		"Divisions":    divisions,
 		"CurrentPath":  c.Path(),

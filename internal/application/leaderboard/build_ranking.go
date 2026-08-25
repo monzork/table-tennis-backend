@@ -50,14 +50,16 @@ func filterRankableDivisions(divisions []*division.Division) []*division.Divisio
 	return out
 }
 
-// BuildRanking applies search filtering, division filtering, Elo-based
-// ranking/sorting, and division grouping to a player list.
-func BuildRanking(players []*player.Player, divisions []*division.Division, params RankingParams) RankingResult {
-	divisions = filterRankableDivisions(divisions)
-
-	// 0. Pre-rank all players by absolute Elo -- one combined ranking
-	// regardless of gender, since both singles and doubles Elo are each a
-	// single shared pool.
+// rankAndFilter runs the shared pipeline both BuildRanking and
+// BuildGenderRanking need: pre-rank all players by absolute Elo (one combined
+// ranking regardless of gender, since both singles and doubles Elo are each a
+// single shared pool), then apply search filtering, optional division
+// filtering, and the requested sort order. The returned rank numbers always
+// reflect the full combined pool, even when the result is later narrowed or
+// grouped -- e.g. a division-filtered or gender-grouped subset keeps each
+// player's original global rank rather than being renumbered 1..N.
+func rankAndFilter(players []*player.Player, divisions []*division.Division, params RankingParams) []RankedPlayer {
+	// 0. Pre-rank all players by absolute Elo.
 	var preRanked []RankedPlayer
 	sorted := append([]*player.Player{}, players...)
 	sort.Slice(sorted, func(i, j int) bool { return eloOf(sorted[i], params.RankType) > eloOf(sorted[j], params.RankType) })
@@ -119,9 +121,60 @@ func BuildRanking(players []*player.Player, divisions []*division.Division, para
 		return ptsA > ptsB // default points_desc
 	})
 
+	return final
+}
+
+// BuildRanking applies search filtering, division filtering, Elo-based
+// ranking/sorting, and division grouping to a player list.
+func BuildRanking(players []*player.Player, divisions []*division.Division, params RankingParams) RankingResult {
+	divisions = filterRankableDivisions(divisions)
+	final := rankAndFilter(players, divisions, params)
+
 	// The public ranking page shows one flat list -- no division grouping.
 	return RankingResult{
 		IsDivisional: false,
 		Groups:       []DivisionGroupView{{Division: nil, Players: final}},
+	}
+}
+
+// BuildGenderRanking applies the same search/sort pipeline as BuildRanking,
+// but groups the result into a Men section and a Women section, each split
+// into that gender's own division bands (Division.Gender == "M"/"F") -- e.g.
+// "1st Division (Men)" / "2nd Division (Men)" and their women's counterparts.
+// Unlike BuildRanking's gender-agnostic bands, only divisions explicitly
+// tagged for a gender are used here; empty groups are omitted.
+func BuildGenderRanking(players []*player.Player, divisions []*division.Division, params RankingParams) RankingResult {
+	divisions = filterRankableDivisions(divisions)
+	final := rankAndFilter(players, divisions, params)
+
+	genderDivisions := func(gender string) []*division.Division {
+		var out []*division.Division
+		for _, d := range divisions {
+			if strings.EqualFold(d.Gender, gender) {
+				out = append(out, d)
+			}
+		}
+		sort.Slice(out, func(i, j int) bool { return out[i].DisplayOrder < out[j].DisplayOrder })
+		return out
+	}
+
+	var groups []DivisionGroupView
+	for _, gender := range []string{"M", "F"} {
+		for _, d := range genderDivisions(gender) {
+			var divPlayers []RankedPlayer
+			for _, rp := range final {
+				if strings.EqualFold(rp.Gender, gender) && d.ContainsElo(eloOf(rp.Player, params.RankType)) {
+					divPlayers = append(divPlayers, rp)
+				}
+			}
+			if len(divPlayers) > 0 {
+				groups = append(groups, DivisionGroupView{Division: d, Players: divPlayers})
+			}
+		}
+	}
+
+	return RankingResult{
+		IsDivisional: true,
+		Groups:       groups,
 	}
 }
