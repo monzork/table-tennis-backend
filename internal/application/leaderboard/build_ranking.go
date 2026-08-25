@@ -23,6 +23,7 @@ type RankingParams struct {
 	Query          string
 	DivisionFilter string
 	SortOrder      string // "points_desc" | "points_asc" | "name_asc"
+	GenderFilter   string // "M" | "F" -- only consulted by BuildGenderRanking
 }
 
 type RankingResult struct {
@@ -51,13 +52,12 @@ func filterRankableDivisions(divisions []*division.Division) []*division.Divisio
 }
 
 // rankAndFilter runs the shared pipeline both BuildRanking and
-// BuildGenderRanking need: pre-rank all players by absolute Elo (one combined
-// ranking regardless of gender, since both singles and doubles Elo are each a
-// single shared pool), then apply search filtering, optional division
-// filtering, and the requested sort order. The returned rank numbers always
-// reflect the full combined pool, even when the result is later narrowed or
-// grouped -- e.g. a division-filtered or gender-grouped subset keeps each
-// player's original global rank rather than being renumbered 1..N.
+// BuildGenderRanking need: pre-rank the given players by absolute Elo, then
+// apply search filtering, optional division filtering, and the requested
+// sort order. Rank numbers are 1..N over whatever slice is passed in --
+// BuildRanking passes the full combined pool (one shared ranking regardless
+// of gender, since Elo is a single shared pool), while BuildGenderRanking
+// pre-filters to one gender first so that gender gets its own enumeration.
 func rankAndFilter(players []*player.Player, divisions []*division.Division, params RankingParams) []RankedPlayer {
 	// 0. Pre-rank all players by absolute Elo.
 	var preRanked []RankedPlayer
@@ -137,39 +137,46 @@ func BuildRanking(players []*player.Player, divisions []*division.Division, para
 	}
 }
 
-// BuildGenderRanking applies the same search/sort pipeline as BuildRanking,
-// but groups the result into a Men section and a Women section, each split
-// into that gender's own division bands (Division.Gender == "M"/"F") -- e.g.
-// "1st Division (Men)" / "2nd Division (Men)" and their women's counterparts.
-// Unlike BuildRanking's gender-agnostic bands, only divisions explicitly
-// tagged for a gender are used here; empty groups are omitted.
+// BuildGenderRanking narrows the pool to one gender (params.GenderFilter,
+// defaulting to "M") *before* ranking, so each gender gets its own 1..N
+// enumeration instead of keeping its slice of the combined pool's rank
+// numbers. The result is grouped into that gender's own division bands
+// (Division.Gender matching the filter) -- e.g. "1st Division (Men)" /
+// "2nd Division (Men)" -- with empty groups omitted.
 func BuildGenderRanking(players []*player.Player, divisions []*division.Division, params RankingParams) RankingResult {
 	divisions = filterRankableDivisions(divisions)
-	final := rankAndFilter(players, divisions, params)
 
-	genderDivisions := func(gender string) []*division.Division {
-		var out []*division.Division
-		for _, d := range divisions {
-			if strings.EqualFold(d.Gender, gender) {
-				out = append(out, d)
-			}
-		}
-		sort.Slice(out, func(i, j int) bool { return out[i].DisplayOrder < out[j].DisplayOrder })
-		return out
+	gender := strings.ToUpper(params.GenderFilter)
+	if gender != "M" && gender != "F" {
+		gender = "M"
 	}
 
+	var genderPlayers []*player.Player
+	for _, p := range players {
+		if strings.EqualFold(p.Gender, gender) {
+			genderPlayers = append(genderPlayers, p)
+		}
+	}
+	final := rankAndFilter(genderPlayers, divisions, params)
+
+	var genderDivs []*division.Division
+	for _, d := range divisions {
+		if strings.EqualFold(d.Gender, gender) {
+			genderDivs = append(genderDivs, d)
+		}
+	}
+	sort.Slice(genderDivs, func(i, j int) bool { return genderDivs[i].DisplayOrder < genderDivs[j].DisplayOrder })
+
 	var groups []DivisionGroupView
-	for _, gender := range []string{"M", "F"} {
-		for _, d := range genderDivisions(gender) {
-			var divPlayers []RankedPlayer
-			for _, rp := range final {
-				if strings.EqualFold(rp.Gender, gender) && d.ContainsElo(eloOf(rp.Player, params.RankType)) {
-					divPlayers = append(divPlayers, rp)
-				}
+	for _, d := range genderDivs {
+		var divPlayers []RankedPlayer
+		for _, rp := range final {
+			if d.ContainsElo(eloOf(rp.Player, params.RankType)) {
+				divPlayers = append(divPlayers, rp)
 			}
-			if len(divPlayers) > 0 {
-				groups = append(groups, DivisionGroupView{Division: d, Players: divPlayers})
-			}
+		}
+		if len(divPlayers) > 0 {
+			groups = append(groups, DivisionGroupView{Division: d, Players: divPlayers})
 		}
 	}
 

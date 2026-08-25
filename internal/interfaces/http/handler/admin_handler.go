@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"strings"
 	"sync"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
 	"table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/application/player"
+	divisionDomain "table-tennis-backend/internal/domain/division"
 
 	"github.com/gofiber/fiber/v2"
 	eventUC "table-tennis-backend/internal/application/tournament"
@@ -188,8 +190,24 @@ func (h *AdminHandler) DivisionSelect(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
+
+	// New tournaments can only be created against gender-specific division
+	// bands (or no division at all, via the "none" option hardcoded in the
+	// template) -- the old gender-agnostic bands (Champion/First/Second/
+	// Third/Fourth) are retired from selection for new tournaments, but are
+	// intentionally NOT deleted from the divisions table: bracket rendering
+	// for every existing tournament still built against them looks them up
+	// by name (see bracket.BuildBracket), so removing the rows would break
+	// those tournaments' displays.
+	var selectable []*divisionDomain.Division
+	for _, d := range divisions {
+		if strings.EqualFold(d.Gender, "M") || strings.EqualFold(d.Gender, "F") {
+			selectable = append(selectable, d)
+		}
+	}
+
 	lang := getLang(c)
 	return c.Render("admin/partials/division-select-options", merge(tMap(lang), fiber.Map{
-		"Divisions": divisions,
+		"Divisions": selectable,
 	}))
 }

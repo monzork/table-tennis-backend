@@ -195,12 +195,15 @@ func genderDivisionFixture() []*division.Division {
 	}
 }
 
-func TestBuildGenderRanking_SplitsByGenderAndDivision(t *testing.T) {
+func TestBuildGenderRanking_DefaultsToMaleWithOwnEnumeration(t *testing.T) {
+	// A female player outranks every male by absolute Elo, but the dropdown
+	// defaults to Male when no GenderFilter is given, and that gender's
+	// ranks must start fresh at 1 -- not reflect its slice of the combined
+	// pool (which would start at 2, since the female player is #1 overall).
 	players := []*player.Player{
+		{ID: "f1", FirstName: "Female", LastName: "Top", Gender: "F", SinglesElo: 2500},
 		{ID: "m1", FirstName: "Male", LastName: "High", Gender: "M", SinglesElo: 2100},
 		{ID: "m2", FirstName: "Male", LastName: "Low", Gender: "M", SinglesElo: 1800},
-		{ID: "f1", FirstName: "Female", LastName: "High", Gender: "F", SinglesElo: 1400},
-		{ID: "f2", FirstName: "Female", LastName: "Low", Gender: "F", SinglesElo: 1200},
 	}
 
 	result := leaderboard.BuildGenderRanking(players, genderDivisionFixture(), leaderboard.RankingParams{
@@ -210,27 +213,44 @@ func TestBuildGenderRanking_SplitsByGenderAndDivision(t *testing.T) {
 	if !result.IsDivisional {
 		t.Fatalf("expected BuildGenderRanking to return a divisional result")
 	}
-	if len(result.Groups) != 4 {
-		t.Fatalf("expected 4 non-empty groups (1st/2nd x M/F), got %d: %+v", len(result.Groups), result.Groups)
+	if len(result.Groups) != 2 {
+		t.Fatalf("expected only the two men's groups (1st/2nd) when defaulting to Male, got %d: %+v", len(result.Groups), result.Groups)
 	}
 
-	wantOrder := []struct {
-		divisionName string
-		playerID     string
-	}{
-		{"1st Division (Men)", "m1"},
-		{"2nd Division (Men)", "m2"},
-		{"1st Division (Women)", "f1"},
-		{"2nd Division (Women)", "f2"},
+	firstDiv, secondDiv := result.Groups[0], result.Groups[1]
+	if firstDiv.Division.Name != "1st Division (Men)" || len(firstDiv.Players) != 1 || firstDiv.Players[0].ID != "m1" {
+		t.Fatalf("expected 1st Division (Men) to contain only m1, got %+v", firstDiv)
 	}
-	for i, want := range wantOrder {
-		g := result.Groups[i]
-		if g.Division == nil || g.Division.Name != want.divisionName {
-			t.Fatalf("group %d: expected division %q, got %+v", i, want.divisionName, g.Division)
-		}
-		if len(g.Players) != 1 || g.Players[0].ID != want.playerID {
-			t.Fatalf("group %d (%s): expected only player %q, got %+v", i, want.divisionName, want.playerID, g.Players)
-		}
+	if firstDiv.Players[0].Rank != 1 {
+		t.Errorf("expected m1's own enumeration to start at rank 1, got %d", firstDiv.Players[0].Rank)
+	}
+	if secondDiv.Division.Name != "2nd Division (Men)" || len(secondDiv.Players) != 1 || secondDiv.Players[0].ID != "m2" {
+		t.Fatalf("expected 2nd Division (Men) to contain only m2, got %+v", secondDiv)
+	}
+	if secondDiv.Players[0].Rank != 2 {
+		t.Errorf("expected m2's own enumeration to be rank 2 (not 3, its combined-pool rank), got %d", secondDiv.Players[0].Rank)
+	}
+}
+
+func TestBuildGenderRanking_FemaleFilter(t *testing.T) {
+	players := []*player.Player{
+		{ID: "m1", FirstName: "Male", Gender: "M", SinglesElo: 2100},
+		{ID: "f1", FirstName: "Female", LastName: "High", Gender: "F", SinglesElo: 1400},
+		{ID: "f2", FirstName: "Female", LastName: "Low", Gender: "F", SinglesElo: 1200},
+	}
+
+	result := leaderboard.BuildGenderRanking(players, genderDivisionFixture(), leaderboard.RankingParams{
+		RankType: "singles", SortOrder: "points_desc", GenderFilter: "F",
+	})
+
+	if len(result.Groups) != 2 {
+		t.Fatalf("expected only the two women's groups (1st/2nd), got %d: %+v", len(result.Groups), result.Groups)
+	}
+	if result.Groups[0].Division.Name != "1st Division (Women)" || result.Groups[0].Players[0].ID != "f1" {
+		t.Fatalf("expected 1st Division (Women) to contain only f1, got %+v", result.Groups[0])
+	}
+	if result.Groups[1].Division.Name != "2nd Division (Women)" || result.Groups[1].Players[0].ID != "f2" {
+		t.Fatalf("expected 2nd Division (Women) to contain only f2, got %+v", result.Groups[1])
 	}
 }
 
@@ -240,7 +260,7 @@ func TestBuildGenderRanking_OmitsEmptyGroups(t *testing.T) {
 	}
 
 	result := leaderboard.BuildGenderRanking(players, genderDivisionFixture(), leaderboard.RankingParams{
-		RankType: "singles", SortOrder: "points_desc",
+		RankType: "singles", SortOrder: "points_desc", GenderFilter: "M",
 	})
 
 	if len(result.Groups) != 1 {
@@ -258,7 +278,7 @@ func TestBuildGenderRanking_SearchAndSortStillApply(t *testing.T) {
 	}
 
 	result := leaderboard.BuildGenderRanking(players, genderDivisionFixture(), leaderboard.RankingParams{
-		RankType: "singles", SortOrder: "points_desc", Query: "cub",
+		RankType: "singles", SortOrder: "points_desc", Query: "cub", GenderFilter: "M",
 	})
 
 	if len(result.Groups) != 1 || len(result.Groups[0].Players) != 1 || result.Groups[0].Players[0].ID != "m2" {

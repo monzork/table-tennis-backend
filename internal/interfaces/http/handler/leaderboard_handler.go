@@ -2,6 +2,7 @@ package handler
 
 import (
 	"html/template"
+	"strings"
 	"sync"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/leaderboard"
@@ -143,6 +144,10 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 	divFilter := c.Query("division")
 	sortOrder := c.Query("sort", "points_desc")
 	view := c.Query("view", "overall")
+	genderFilter := strings.ToUpper(c.Query("gender", "M"))
+	if genderFilter != "M" && genderFilter != "F" {
+		genderFilter = "M"
+	}
 
 	var players []*player.Player
 	var divisions []*divisionDomain.Division
@@ -172,6 +177,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		Query:          query,
 		DivisionFilter: divFilter,
 		SortOrder:      sortOrder,
+		GenderFilter:   genderFilter,
 	}
 
 	var result leaderboard.RankingResult
@@ -193,6 +199,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		"Division":     divFilter,
 		"Sort":         sortOrder,
 		"View":         view,
+		"Gender":       genderFilter,
 		"IsDivisional": result.IsDivisional,
 		"Divisions":    divisions,
 		"CurrentPath":  c.Path(),

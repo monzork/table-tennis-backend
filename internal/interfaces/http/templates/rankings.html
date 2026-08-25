@@ -6,14 +6,14 @@
 
     <!-- Format Navigation Tabs -->
     <div class="flex overflow-x-auto gap-2 pb-2 sm:flex-wrap sm:justify-center sm:pb-0 snap-x snap-mandatory px-1 sm:px-0" style="scrollbar-width: none;">
-        <a href="/rankings/singles{{if eq .View "gender"}}?view=gender{{end}}" class="shrink-0 snap-center tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{t .T "rankings.singles"}}</a>
-        <a href="/rankings/doubles{{if eq .View "gender"}}?view=gender{{end}}" class="shrink-0 snap-center tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{t .T "rankings.doubles"}}</a>
+        <a href="/rankings/singles{{if eq .View "gender"}}?view=gender&gender={{.Gender}}{{end}}" class="shrink-0 snap-center tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "singles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{t .T "rankings.singles"}}</a>
+        <a href="/rankings/doubles{{if eq .View "gender"}}?view=gender&gender={{.Gender}}{{end}}" class="shrink-0 snap-center tab-btn px-3 py-1.5 sm:px-5 sm:py-2 rounded-full border text-[11px] sm:text-sm font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .ActiveTab "doubles"}}bg-white text-black border-white{{else}}bg-transparent text-gray-400 border-white/20 hover:border-white/50 hover:text-white{{end}}">{{t .T "rankings.doubles"}}</a>
     </div>
 
     <!-- View Navigation Tabs (flat vs. split by gender) -->
     <div class="flex overflow-x-auto gap-2 pb-2 sm:flex-wrap sm:justify-center sm:pb-0 snap-x snap-mandatory px-1 sm:px-0" style="scrollbar-width: none;">
         <a href="/rankings/{{.RankType}}" class="shrink-0 snap-center tab-btn px-3 py-1 sm:px-4 sm:py-1.5 rounded-full border text-[10px] sm:text-xs font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if ne .View "gender"}}bg-white/90 text-black border-white/90{{else}}bg-transparent text-gray-500 border-white/10 hover:border-white/40 hover:text-white{{end}}">{{t .T "rankings.view_overall"}}</a>
-        <a href="/rankings/{{.RankType}}?view=gender" class="shrink-0 snap-center tab-btn px-3 py-1 sm:px-4 sm:py-1.5 rounded-full border text-[10px] sm:text-xs font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .View "gender"}}bg-white/90 text-black border-white/90{{else}}bg-transparent text-gray-500 border-white/10 hover:border-white/40 hover:text-white{{end}}">{{t .T "rankings.view_by_gender"}}</a>
+        <a href="/rankings/{{.RankType}}?view=gender&gender={{.Gender}}" class="shrink-0 snap-center tab-btn px-3 py-1 sm:px-4 sm:py-1.5 rounded-full border text-[10px] sm:text-xs font-bold tracking-wider sm:tracking-widest uppercase transition-all duration-200 {{if eq .View "gender"}}bg-white/90 text-black border-white/90{{else}}bg-transparent text-gray-500 border-white/10 hover:border-white/40 hover:text-white{{end}}">{{t .T "rankings.view_by_gender"}}</a>
     </div>
 
     {{if .DistributionSVG}}
@@ -35,12 +35,27 @@
                    hx-get="{{.CurrentPath}}"
                    hx-trigger="keyup changed delay:300ms"
                    hx-target="#rankings-container"
-                   hx-include="#division-filter, #sort-order, #view-input"
+                   hx-include="#division-filter, #gender-filter, #sort-order, #view-input"
                    hx-push-url="true"
                    hx-indicator="#rankings-container">
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full md:flex md:w-auto md:gap-4 items-end">
-            {{if and (gt (len .Divisions) 0) (ne .View "gender")}}
+            {{if eq .View "gender"}}
+            <div class="w-full md:w-48">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">{{t .T "rankings.gender_label"}}</label>
+                <select id="gender-filter"
+                        name="gender"
+                        class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
+                        hx-get="{{.CurrentPath}}"
+                        hx-target="#rankings-container"
+                        hx-include="[name='q'], #sort-order, #view-input"
+                        hx-push-url="true"
+                        hx-indicator="#rankings-container">
+                    <option value="M" {{if eq .Gender "M"}}selected{{end}}>{{t .T "rankings.gender_male"}}</option>
+                    <option value="F" {{if eq .Gender "F"}}selected{{end}}>{{t .T "rankings.gender_female"}}</option>
+                </select>
+            </div>
+            {{else if gt (len .Divisions) 0}}
             <div class="w-full md:w-48">
                 <label class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2 block">{{t .T "rankings.filter_label"}}</label>
                 <div class="flex gap-2">
@@ -70,7 +85,7 @@
                         class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
                         hx-get="{{.CurrentPath}}"
                         hx-target="#rankings-container"
-                        hx-include="[name='q'], #division-filter, #view-input"
+                        hx-include="[name='q'], #division-filter, #gender-filter, #view-input"
                         hx-push-url="true"
                         hx-indicator="#rankings-container">
                     <option value="points_desc" {{if eq .Sort "points_desc"}}selected{{end}}>{{t .T "rankings.sort_pts_desc"}}</option>
