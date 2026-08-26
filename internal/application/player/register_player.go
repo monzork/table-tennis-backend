@@ -16,7 +16,7 @@ func NewRegisterPlayerUseCase(repo playerDomain.Repository) *RegisterPlayerUseCa
 	return &RegisterPlayerUseCase{repo: repo}
 }
 
-func (uc *RegisterPlayerUseCase) Execute(ctx context.Context, firstName, secondName, lastName, secondLastName string, birthdate, gender, country, department, whatsAppNumber, nationalID string, singlesElo, doublesElo int16) (*playerDomain.Player, error) {
+func (uc *RegisterPlayerUseCase) Execute(ctx context.Context, firstName, secondName, lastName, secondLastName string, birthdate, gender, country, department, whatsAppNumber, nationalID, idFrontURL, idBackURL string, singlesElo, doublesElo int16) (*playerDomain.Player, error) {
 	bd, err := time.Parse("2006-01-02", birthdate)
 	if err != nil {
 		return nil, err
@@ -31,6 +31,8 @@ func (uc *RegisterPlayerUseCase) Execute(ctx context.Context, firstName, secondN
 	p.SecondLastName = secondLastName
 
 	p.WhatsAppNumber = whatsAppNumber
+	p.IDFrontPath = idFrontURL
+	p.IDBackPath = idBackURL
 
 	if singlesElo > 0 {
 		p.UpdateSinglesElo(singlesElo)

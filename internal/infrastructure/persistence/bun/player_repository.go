@@ -128,12 +128,14 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 		Department:        p.Department,
 		WhatsAppNumber:    p.WhatsAppNumber,
 		NationalID:        p.NationalID,
+		IDFrontPath:       p.IDFrontPath,
+		IDBackPath:        p.IDBackPath,
 		GuardianAccountID: guardianID,
 	}
 
 	_, err = ExtractDB(ctx, r.db).NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, guardian_account_id = EXCLUDED.guardian_account_id").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id").
 		Exec(ctx)
 
 	return err
@@ -215,6 +217,8 @@ func modelToPlayer(m *PlayerModel) *player.Player {
 		Department:        m.Department,
 		WhatsAppNumber:    m.WhatsAppNumber,
 		NationalID:        m.NationalID,
+		IDFrontPath:       m.IDFrontPath,
+		IDBackPath:        m.IDBackPath,
 		GuardianAccountID: guardianID,
 	}
 }
@@ -318,13 +322,15 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 			Department:        p.Department,
 			WhatsAppNumber:    p.WhatsAppNumber,
 			NationalID:        p.NationalID,
+			IDFrontPath:       p.IDFrontPath,
+			IDBackPath:        p.IDBackPath,
 			GuardianAccountID: guardianID,
 		}
 	}
 
 	_, err := ExtractDB(ctx, r.db).NewInsert().Model(&models).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, guardian_account_id = EXCLUDED.guardian_account_id").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id").
 		Exec(ctx)
 	return err
 }

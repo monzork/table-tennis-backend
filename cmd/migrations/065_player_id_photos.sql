@@ -1,0 +1,2 @@
+ALTER TABLE players ADD COLUMN IF NOT EXISTS id_front_path TEXT;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS id_back_path TEXT;

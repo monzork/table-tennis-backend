@@ -20,6 +20,7 @@ import (
 	"table-tennis-backend/internal/infrastructure/persistence/bun"
 	qrinfra "table-tennis-backend/internal/infrastructure/qrcode"
 	"table-tennis-backend/internal/infrastructure/security"
+	storageinfra "table-tennis-backend/internal/infrastructure/storage"
 	svgchartinfra "table-tennis-backend/internal/infrastructure/svgchart"
 	"table-tennis-backend/internal/interfaces/http/handler"
 
@@ -91,6 +92,9 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	getPlayerStatsUC := player.NewGetPlayerTournamentStatsUseCase(playerRepo, eventRepo, tournamentRepo)
 	getEloTrendUC := player.NewGetPlayerEloTrendUseCase(chartGenerator)
 	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC, getPlayerStatsUC, getEloTrendUC)
+	if cfg.SupabaseURL != "" && cfg.SupabaseKey != "" {
+		playerHandler = playerHandler.WithUploader(storageinfra.NewSupabaseStorage(cfg.SupabaseURL, cfg.SupabaseKey, cfg.SupabaseBucket))
+	}
 
 	tournamentHandler := handler.NewEventHandler(
 		createTournamentUC,

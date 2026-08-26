@@ -140,7 +140,7 @@ func TestRegisterPlayerUseCase(t *testing.T) {
 			ctx,
 			"John", "David", "Doe", "Smith",
 			"1995-05-15", "M", "USA", "Dept1",
-			"+1234567890", "ID123", 1250, 1150,
+			"+1234567890", "ID123", "", "", 1250, 1150,
 		)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -161,7 +161,7 @@ func TestRegisterPlayerUseCase(t *testing.T) {
 			ctx,
 			"Jane", "", "Doe", "",
 			"invalid-date", "F", "USA", "",
-			"", "", 0, 0,
+			"", "", "", "", 0, 0,
 		)
 		if err == nil {
 			t.Fatal("expected error for invalid birthdate, got nil")
@@ -173,7 +173,7 @@ func TestRegisterPlayerUseCase(t *testing.T) {
 			ctx,
 			"", "", "", "",
 			"2000-01-01", "M", "USA", "",
-			"", "", 0, 0,
+			"", "", "", "", 0, 0,
 		)
 		if err == nil {
 			t.Fatal("expected error for empty name, got nil")
@@ -222,7 +222,7 @@ func TestUpdatePlayerUseCase(t *testing.T) {
 		"p1",
 		"Robert", "Bobby", "Jones", "Jr",
 		"1990-10-20", "M", "Canada", "Ontario",
-		"+987654321", "ID999", 1400, 1300,
+		"+987654321", "ID999", "", "", 1400, 1300,
 	)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

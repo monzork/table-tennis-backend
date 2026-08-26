@@ -74,7 +74,7 @@
     <div class="bg-club-panel border border-white/10 p-8 rounded-2xl max-w-md w-full relative">
         <button hx-on:click="document.getElementById('add-player-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
         <h2 class="text-2xl font-bold uppercase mb-6 tracking-wide">{{t .T "admin.players.new_athlete_title"}}</h2>
-        <form hx-post="/players" hx-target="#player-list" hx-swap="beforeend" hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-player-modal').classList.add('hidden'); this.reset(); document.getElementById('add-country').dispatchEvent(new Event('change')); }" class="space-y-4">
+        <form hx-post="/players" hx-encoding="multipart/form-data" hx-target="#player-list" hx-swap="beforeend" hx-on::after-request="if(event.target === this && event.detail.successful) { document.getElementById('add-player-modal').classList.add('hidden'); this.reset(); document.getElementById('add-country').dispatchEvent(new Event('change')); }" class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <input type="text" name="firstName" placeholder="{{t .T "register.first_name"}}" required class="bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
                 <input type="text" name="secondName" placeholder="{{t .T "admin.players.second_name_opt"}}" class="bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
@@ -127,6 +127,18 @@
                 <div class="flex-1">
                     <label class="text-[9px] font-bold uppercase text-gray-500 mb-1 block">{{t .T "admin.players.national_id_label"}}</label>
                     <input type="text" name="nationalID" placeholder="{{t .T "admin.player_form.national_id_ph"}}" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-white transition-colors">
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="text-[9px] font-bold uppercase text-gray-500 mb-1 block">{{t .T "admin.player_form.id_front"}}</label>
+                    <img class="w-full h-24 object-cover rounded-lg border border-white/10 hidden mb-1">
+                    <input type="file" name="id_front" accept="image/*" onchange="this.previousElementSibling.src = URL.createObjectURL(this.files[0]); this.previousElementSibling.classList.remove('hidden')" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:bg-white/10 file:text-white">
+                </div>
+                <div class="flex-1">
+                    <label class="text-[9px] font-bold uppercase text-gray-500 mb-1 block">{{t .T "admin.player_form.id_back"}}</label>
+                    <img class="w-full h-24 object-cover rounded-lg border border-white/10 hidden mb-1">
+                    <input type="file" name="id_back" accept="image/*" onchange="this.previousElementSibling.src = URL.createObjectURL(this.files[0]); this.previousElementSibling.classList.remove('hidden')" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:bg-white/10 file:text-white">
                 </div>
             </div>
             <div>

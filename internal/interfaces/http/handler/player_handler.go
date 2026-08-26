@@ -2,17 +2,34 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html/template"
+	"io"
 	"log/slog"
+	"path/filepath"
 	"strconv"
 	accountApp "table-tennis-backend/internal/application/account"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/player"
+	"table-tennis-backend/internal/domain/idgen"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/xuri/excelize/v2"
 )
+
+// Uploader stores a file in a private bucket and returns its object path,
+// and can mint a temporary signed URL to view an object by that path.
+// Satisfied by internal/infrastructure/storage.SupabaseStorage.
+type Uploader interface {
+	Upload(ctx context.Context, path string, data io.Reader, contentType string) (string, error)
+	SignedURL(ctx context.Context, path string, expiresInSeconds int) (string, error)
+}
+
+// idPhotoSignedURLTTL is how long an admin's view link for an ID photo
+// stays valid — long enough to view it in the edit modal, short enough that
+// a leaked link doesn't stay live.
+const idPhotoSignedURLTTL = 300
 
 type PlayerHandler struct {
 	registerPlayerUC        *player.RegisterPlayerUseCase
@@ -33,6 +50,9 @@ type PlayerHandler struct {
 	// getPlayerRankUC is optional: nil in older callers/tests just leaves
 	// the rank/place field unset on the public stats page.
 	getPlayerRankUC *player.GetPlayerRankUseCase
+	// uploader is optional: nil in older callers/tests just leaves the
+	// id_front/id_back file inputs silently ignored.
+	uploader Uploader
 }
 
 func NewPlayerHandler(
@@ -80,6 +100,35 @@ func (h *PlayerHandler) WithGetPlayerRankUseCase(uc *player.GetPlayerRankUseCase
 	return h
 }
 
+// WithUploader wires an Uploader into an already-constructed PlayerHandler,
+// enabling the id_front/id_back photo upload fields on the create/edit
+// player forms. Same rationale as the other With* setters above.
+func (h *PlayerHandler) WithUploader(u Uploader) *PlayerHandler {
+	h.uploader = u
+	return h
+}
+
+// uploadIDPhoto reads the multipart file at fieldName (e.g. "id_front"), if
+// present, and uploads it to the "player-ids" bucket under a random name.
+// Returns "" with no error when the field wasn't provided.
+func (h *PlayerHandler) uploadIDPhoto(c *fiber.Ctx, fieldName string) (string, error) {
+	if h.uploader == nil {
+		return "", nil
+	}
+	fh, err := c.FormFile(fieldName)
+	if err != nil {
+		return "", nil
+	}
+	f, err := fh.Open()
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	path := fieldName + "/" + idgen.Generate() + filepath.Ext(fh.Filename)
+	return h.uploader.Upload(c.Context(), path, f, fh.Header.Get("Content-Type"))
+}
+
 func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 	var body struct {
 		FirstName      string `json:"firstName" form:"firstName"`
@@ -101,7 +150,16 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Invalid request body")
 	}
 
-	player, err := h.registerPlayerUC.Execute(c.Context(), body.FirstName, body.SecondName, body.LastName, body.SecondLastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, body.SinglesElo, body.DoublesElo)
+	idFrontURL, err := h.uploadIDPhoto(c, "id_front")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Failed to upload ID front photo")
+	}
+	idBackURL, err := h.uploadIDPhoto(c, "id_back")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Failed to upload ID back photo")
+	}
+
+	player, err := h.registerPlayerUC.Execute(c.Context(), body.FirstName, body.SecondName, body.LastName, body.SecondLastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, idFrontURL, idBackURL, body.SinglesElo, body.DoublesElo)
 
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
@@ -139,7 +197,16 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Invalid request body")
 	}
 
-	player, err := h.updatePlayerUC.Execute(c.Context(), id, body.FirstName, body.SecondName, body.LastName, body.SecondLastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, body.SinglesElo, body.DoublesElo)
+	idFrontURL, err := h.uploadIDPhoto(c, "id_front")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Failed to upload ID front photo")
+	}
+	idBackURL, err := h.uploadIDPhoto(c, "id_back")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Failed to upload ID back photo")
+	}
+
+	player, err := h.updatePlayerUC.Execute(c.Context(), id, body.FirstName, body.SecondName, body.LastName, body.SecondLastName, body.Birthdate, body.Gender, body.Country, body.Department, body.WhatsAppNumber, body.NationalID, idFrontURL, idBackURL, body.SinglesElo, body.DoublesElo)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
 	}
@@ -222,10 +289,18 @@ func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
 		}
 	}
 
+	var idFrontURL, idBackURL string
+	if h.uploader != nil {
+		idFrontURL, _ = h.uploader.SignedURL(c.Context(), p.IDFrontPath, idPhotoSignedURLTTL)
+		idBackURL, _ = h.uploader.SignedURL(c.Context(), p.IDBackPath, idPhotoSignedURLTTL)
+	}
+
 	lang := getLang(c)
 	return c.Render("admin/partials/player-edit-form", merge(tMap(lang), fiber.Map{
-		"Player": p,
-		"Events": activeTournaments,
+		"Player":     p,
+		"Events":     activeTournaments,
+		"IDFrontURL": idFrontURL,
+		"IDBackURL":  idBackURL,
 	}))
 }
 

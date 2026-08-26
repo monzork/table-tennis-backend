@@ -1,6 +1,6 @@
 <h2 class="text-2xl font-extrabold uppercase mb-8 tracking-tighter">{{t .T "admin.common.edit"}} <span class="text-white">{{t .T "admin.player_form.athlete_word"}}</span>.</h2>
 
-<form hx-put="/players/{{.Player.ID}}" hx-target="#player-{{.Player.ID}}" hx-swap="outerHTML" class="space-y-4" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('edit-player-modal').classList.add('hidden')">
+<form hx-put="/players/{{.Player.ID}}" hx-encoding="multipart/form-data" hx-target="#player-{{.Player.ID}}" hx-swap="outerHTML" class="space-y-4" hx-on::after-request="if(event.target === this && event.detail.successful) document.getElementById('edit-player-modal').classList.add('hidden')">
     <div class="grid grid-cols-2 gap-4">
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "register.first_name"}}</label>
@@ -75,6 +75,19 @@
         <div class="space-y-1">
             <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.common.doubles_elo"}}</label>
             <input type="number" name="doublesElo" value="{{.Player.DoublesElo}}" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 pt-2 border-t border-white/5 mt-4">
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.player_form.id_front"}}</label>
+            <img src="{{.IDFrontURL}}" class="w-full h-28 object-cover rounded-xl border border-white/5 {{if not .IDFrontURL}}hidden{{end}}">
+            <input type="file" name="id_front" accept="image/*" onchange="this.previousElementSibling.src = URL.createObjectURL(this.files[0]); this.previousElementSibling.classList.remove('hidden')" class="w-full bg-black/40 border border-white/5 rounded-xl p-2 text-xs text-white file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:bg-white/10 file:text-white">
+        </div>
+        <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{{t .T "admin.player_form.id_back"}}</label>
+            <img src="{{.IDBackURL}}" class="w-full h-28 object-cover rounded-xl border border-white/5 {{if not .IDBackURL}}hidden{{end}}">
+            <input type="file" name="id_back" accept="image/*" onchange="this.previousElementSibling.src = URL.createObjectURL(this.files[0]); this.previousElementSibling.classList.remove('hidden')" class="w-full bg-black/40 border border-white/5 rounded-xl p-2 text-xs text-white file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:bg-white/10 file:text-white">
         </div>
     </div>
 

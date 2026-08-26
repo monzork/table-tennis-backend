@@ -196,3 +196,7 @@ ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS spindex_tournament_id TEXT UNIQ
 ALTER TABLE events ADD COLUMN IF NOT EXISTS spindex_event_id TEXT UNIQUE;
 ALTER TABLE players ADD COLUMN IF NOT EXISTS spindex_player_id TEXT UNIQUE;
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS spindex_match_id TEXT UNIQUE;
+
+-- Player ID card photos (Supabase Storage URLs)
+ALTER TABLE players ADD COLUMN IF NOT EXISTS id_front_path TEXT;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS id_back_path TEXT;

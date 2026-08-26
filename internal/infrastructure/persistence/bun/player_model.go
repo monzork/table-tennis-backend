@@ -23,6 +23,8 @@ type PlayerModel struct {
 	Department        string     `bun:"department,nullzero"`
 	WhatsAppNumber    string     `bun:"whatsapp_number,nullzero"`
 	NationalID        string     `bun:"national_id,nullzero"`
+	IDFrontPath       string     `bun:"id_front_path,nullzero"`
+	IDBackPath        string     `bun:"id_back_path,nullzero"`
 	GuardianAccountID *uuid.UUID `bun:"guardian_account_id,type:uuid"`
 	CreatedAt         time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt         *time.Time `bun:"updated_at,nullzero"`

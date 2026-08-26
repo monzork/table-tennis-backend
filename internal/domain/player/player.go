@@ -38,6 +38,8 @@ type Player struct {
 	Department     string
 	WhatsAppNumber string
 	NationalID     string
+	IDFrontPath    string
+	IDBackPath     string
 	// GuardianAccountID links this player to the Account (parent/guardian)
 	// responsible for it. Nil for every admin-created/self-registered player
 	// that hasn't been linked by an admin — see NewGuardianChildPlayer and

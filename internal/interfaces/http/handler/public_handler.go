@@ -156,6 +156,7 @@ func (h *PublicHandler) Register(c *fiber.Ctx) error {
 		body.Department,
 		body.WhatsAppNumber,
 		body.NationalID,
+		"", "",
 		500, // Default starting elo
 		500,
 	)

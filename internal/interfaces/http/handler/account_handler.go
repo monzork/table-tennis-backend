@@ -372,6 +372,7 @@ func (h *AccountHandler) UpdatePlayer(c *fiber.Ctx) error {
 
 	p, err := h.updatePlayerUC.Execute(c.Context(), playerID, body.FirstName, "", body.LastName, "",
 		body.Birthdate, body.Gender, body.Country, body.Department, "", "",
+		"", "",
 		existing.SinglesElo, existing.DoublesElo)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())

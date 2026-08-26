@@ -29,6 +29,11 @@ type Config struct {
 	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleRedirectURL  string
+
+	// Supabase Storage (player ID card photo uploads)
+	SupabaseURL    string
+	SupabaseKey    string
+	SupabaseBucket string
 }
 
 // LoadConfig reads configuration from environment variables and applies defaults.
@@ -46,6 +51,10 @@ func LoadConfig() Config {
 		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		GoogleRedirectURL:  getEnvOrDefault("GOOGLE_REDIRECT_URL", "http://localhost:8080/account/google/callback"),
+
+		SupabaseURL:    os.Getenv("SUPABASE_URL"),
+		SupabaseKey:    os.Getenv("SUPABASE_SERVICE_ROLE_KEY"),
+		SupabaseBucket: getEnvOrDefault("SUPABASE_STORAGE_BUCKET", "player-ids"),
 	}
 
 	if cfg.SessionSecret == "" {
