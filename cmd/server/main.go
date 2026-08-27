@@ -92,8 +92,13 @@ func main() {
 		},
 	})
 
-	// Enable Security Headers
-	app.Use(helmet.New())
+	// Enable Security Headers.
+	// CrossOriginEmbedderPolicy is left at "unsafe-none" (helmet's default of
+	// "require-corp" would block <img> loads of Supabase-signed ID photo URLs,
+	// which don't send a Cross-Origin-Resource-Policy header).
+	app.Use(helmet.New(helmet.Config{
+		CrossOriginEmbedderPolicy: "unsafe-none",
+	}))
 
 	// Enable CORS
 	allowedOrigins := os.Getenv("CORS_ORIGIN")
