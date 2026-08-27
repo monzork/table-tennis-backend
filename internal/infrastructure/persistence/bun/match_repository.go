@@ -47,7 +47,7 @@ type MatchModel struct {
 	// ProposedSets/ProposedByPlayerID/ProposedAt stage a player-submitted
 	// score awaiting confirmation (opposing player or admin) — see
 	// MatchRepository.ProposeScore/ClearScoreProposal.
-	ProposedSets       []event.MatchSet `bun:"proposed_sets,type:jsonb"`
+	ProposedSets       []event.MatchSet `bun:"proposed_sets,type:jsonb,nullzero"`
 	ProposedByPlayerID *uuid.UUID       `bun:"proposed_by_player_id,type:uuid"`
 	ProposedAt         *time.Time       `bun:"proposed_at"`
 
