@@ -105,6 +105,13 @@ CREATE TABLE IF NOT EXISTS event_stage_rules (
     points_to_win INTEGER NOT NULL DEFAULT 11,
     points_margin INTEGER NOT NULL DEFAULT 2
 );
+-- 9b. Table: event_officials
+CREATE TABLE IF NOT EXISTS event_officials (
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    pin TEXT NOT NULL,
+    PRIMARY KEY (event_id, player_id)
+);
 -- 10. Table: admins
 CREATE TABLE IF NOT EXISTS admins (
     id UUID PRIMARY KEY,
