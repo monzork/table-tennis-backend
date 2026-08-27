@@ -45,6 +45,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	bunorm "github.com/uptrace/bun"
 
 	matchApp "table-tennis-backend/internal/application/match"
 	"table-tennis-backend/internal/domain/idgen"
@@ -217,6 +218,66 @@ func normalizeName(s string) string {
 		"á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ñ", "n", "ü", "u",
 	)
 	return replacer.Replace(s)
+}
+
+// findDuplicateByScore returns the id of an already Spindex-tagged group
+// match between pAID and pBID in internalEventID whose set scores exactly
+// match gameScores (accounting for team_a/team_b orientation), or "" if
+// none exists. Untagged (pre-Spindex) matches are left alone -- those are
+// handled by the separate legacy-match adoption path.
+func findDuplicateByScore(ctx context.Context, db *bunorm.DB, internalEventID, pAID, pBID string, gameScores []gameScore) (string, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT m.id, m.team_a_player_1_id, ms.set_number, ms.score_a, ms.score_b
+		FROM matches m
+		JOIN match_sets ms ON ms.match_id = m.id
+		WHERE m.event_id = ? AND m.stage = 'group'
+		  AND m.spindex_match_id IS NOT NULL AND m.spindex_match_id != ''
+		  AND ((m.team_a_player_1_id = ? AND m.team_b_player_1_id = ?)
+		    OR (m.team_a_player_1_id = ? AND m.team_b_player_1_id = ?))
+		ORDER BY m.id, ms.set_number`,
+		internalEventID, pAID, pBID, pBID, pAID)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	type setScore struct{ a, b int }
+	candidates := make(map[string][]setScore)
+	teamAOf := make(map[string]string)
+	for rows.Next() {
+		var matchID, teamA string
+		var setNum, a, b int
+		if err := rows.Scan(&matchID, &teamA, &setNum, &a, &b); err != nil {
+			return "", err
+		}
+		teamAOf[matchID] = teamA
+		candidates[matchID] = append(candidates[matchID], setScore{a, b})
+	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	for matchID, sets := range candidates {
+		if len(sets) != len(gameScores) {
+			continue
+		}
+		swapped := teamAOf[matchID] == pBID
+		match := true
+		for i, g := range gameScores {
+			want := setScore{g.ScoreA, g.ScoreB}
+			if swapped {
+				want = setScore{g.ScoreB, g.ScoreA}
+			}
+			if sets[i] != want {
+				match = false
+				break
+			}
+		}
+		if match {
+			return matchID, nil
+		}
+	}
+	return "", nil
 }
 
 func main() {
@@ -542,6 +603,22 @@ func main() {
 		if hasExisting && !*repair {
 			skippedDup++
 			continue
+		}
+
+		// Spindex's own match "id" field isn't stable across captures --
+		// the same real match can show up with a different id each time
+		// (observed 2026-08-27: same pair, identical set scores, 2-4
+		// distinct spindex_match_id values). The spindex_match_id lookup
+		// above can't catch that, so also check by exact score match
+		// against any already-tagged match for this pair before creating
+		// a new row, or every re-capture duplicates it.
+		if !hasExisting {
+			if dupID, err := findDuplicateByScore(ctx, bun.DB, internalEventID, pAID, pBID, sm.GameScores); err != nil {
+				log.Printf("duplicate-by-score check failed for %s vs %s: %v", pAID, pBID, err)
+			} else if dupID != "" {
+				skippedDup++
+				continue
+			}
 		}
 
 		// The match's team_a/team_b order may be the reverse of Spindex's
