@@ -152,10 +152,12 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 
 	idFrontURL, err := h.uploadIDPhoto(c, "id_front")
 	if err != nil {
+		slog.Error("failed to upload id_front photo", "err", err)
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Failed to upload ID front photo")
 	}
 	idBackURL, err := h.uploadIDPhoto(c, "id_back")
 	if err != nil {
+		slog.Error("failed to upload id_back photo", "err", err)
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Failed to upload ID back photo")
 	}
 
@@ -199,10 +201,12 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 
 	idFrontURL, err := h.uploadIDPhoto(c, "id_front")
 	if err != nil {
+		slog.Error("failed to upload id_front photo", "err", err)
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Failed to upload ID front photo")
 	}
 	idBackURL, err := h.uploadIDPhoto(c, "id_back")
 	if err != nil {
+		slog.Error("failed to upload id_back photo", "err", err)
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "Failed to upload ID back photo")
 	}
 
