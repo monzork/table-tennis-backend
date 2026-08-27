@@ -8,6 +8,7 @@ import (
 	accountApp "table-tennis-backend/internal/application/account"
 	matchApp "table-tennis-backend/internal/application/match"
 	playerApp "table-tennis-backend/internal/application/player"
+	playerDomain "table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/infrastructure/oauth"
 	"table-tennis-backend/internal/interfaces/http/i18n"
 
@@ -41,6 +42,20 @@ type AccountHandler struct {
 	// getPlayerStatsUC is optional: nil in older callers/tests just leaves
 	// the finished-match history off the player detail page.
 	getPlayerStatsUC *playerApp.GetPlayerTournamentStatsUseCase
+
+	// claimPlayerUC/searchClaimableUC are optional: nil in older callers/tests
+	// just leaves the player-claim flow unavailable. See WithClaimUseCases.
+	claimPlayerUC     *accountApp.ClaimPlayerUseCase
+	searchClaimableUC *accountApp.SearchClaimablePlayersUseCase
+}
+
+// WithClaimUseCases wires the guardian-self-claim flow into an
+// already-constructed AccountHandler, same rationale as the other With*
+// setters in this file — every existing call site keeps compiling unchanged.
+func (h *AccountHandler) WithClaimUseCases(claimUC *accountApp.ClaimPlayerUseCase, searchUC *accountApp.SearchClaimablePlayersUseCase) *AccountHandler {
+	h.claimPlayerUC = claimUC
+	h.searchClaimableUC = searchUC
+	return h
 }
 
 // WithGetPlayerStatsUseCase wires finished-match history into an
@@ -300,6 +315,44 @@ func (h *AccountHandler) CreateChild(c *fiber.Ctx) error {
 		return c.SendStatus(200)
 	}
 	return c.Redirect("/account")
+}
+
+// ── Claim an existing player ────────────────────────────────────────────
+
+func (h *AccountHandler) ShowClaimForm(c *fiber.Ctx) error {
+	lang := getLang(c)
+	return c.Render("account/claim-player", merge(tMap(lang), fiber.Map{
+		"Title": i18n.T(lang, "account.claim.title"),
+	}), "layouts/public")
+}
+
+func (h *AccountHandler) SearchClaimable(c *fiber.Ctx) error {
+	lang := getLang(c)
+	query := c.Query("q")
+
+	var results []*playerDomain.Player
+	if h.searchClaimableUC != nil && query != "" {
+		players, err := h.searchClaimableUC.Execute(c.Context(), query)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+		results = players
+	}
+	return c.Render("account/partials/claim-results", merge(tMap(lang), fiber.Map{
+		"Players": results,
+	}))
+}
+
+func (h *AccountHandler) ClaimPlayer(c *fiber.Ctx) error {
+	if h.claimPlayerUC == nil {
+		return fiber.NewError(fiber.StatusBadRequest, "not available")
+	}
+	playerID := c.Params("id")
+	if err := h.claimPlayerUC.Execute(c.Context(), h.accountID(c), playerID); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	lang := getLang(c)
+	return c.Render("account/partials/claim-pending", merge(tMap(lang), fiber.Map{}))
 }
 
 func (h *AccountHandler) PlayerDetail(c *fiber.Ctx) error {

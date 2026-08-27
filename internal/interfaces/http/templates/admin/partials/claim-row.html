@@ -1,0 +1,25 @@
+{{define "admin/partials/claim-row"}}
+<div class="flex items-center justify-between gap-3 bg-black/30 border border-white/5 rounded-xl p-4" id="claim-{{.Claim.Player.ID}}">
+    <div>
+        <p class="font-semibold">{{.Claim.Player.FirstNameWithSecond}} <span class="uppercase font-bold">{{.Claim.Player.LastNameWithSecond}}</span></p>
+        <p class="text-xs text-gray-500">{{t .T "admin.players.claims_by"}} {{.Claim.AccountEmail}}</p>
+    </div>
+    <div class="flex gap-2">
+        <button
+            hx-post="/players/{{.Claim.Player.ID}}/approve-claim"
+            hx-target="#claim-{{.Claim.Player.ID}}"
+            hx-swap="outerHTML swap:0.5s"
+            class="text-[10px] font-bold uppercase tracking-widest text-green-400 hover:text-white border border-green-900/50 hover:bg-green-700 px-3 py-2 rounded-lg transition-all">
+            {{t .T "admin.players.claims_approve"}}
+        </button>
+        <button
+            hx-post="/players/{{.Claim.Player.ID}}/reject-claim"
+            hx-confirm="{{t .T "admin.players.claims_reject_confirm"}}"
+            hx-target="#claim-{{.Claim.Player.ID}}"
+            hx-swap="outerHTML swap:0.5s"
+            class="text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white border border-red-900/50 hover:bg-red-700 px-3 py-2 rounded-lg transition-all">
+            {{t .T "admin.players.claims_reject"}}
+        </button>
+    </div>
+</div>
+{{end}}

@@ -92,17 +92,17 @@ func NewPlayerRepository(db *bun.DB) *PlayerRepository {
 	return &PlayerRepository{db: db}
 }
 
-// guardianUUID parses a Player's optional guardian account ID into the
-// nullable *uuid.UUID the model layer stores.
-func guardianUUID(guardianAccountID *string) (*uuid.UUID, error) {
-	if guardianAccountID == nil || *guardianAccountID == "" {
+// parseNullableUUID parses an optional account-ID string (guardian or
+// claimant) into the nullable *uuid.UUID the model layer stores.
+func parseNullableUUID(id *string) (*uuid.UUID, error) {
+	if id == nil || *id == "" {
 		return nil, nil
 	}
-	gid, err := uuid.Parse(*guardianAccountID)
+	uid, err := uuid.Parse(*id)
 	if err != nil {
 		return nil, err
 	}
-	return &gid, nil
+	return &uid, nil
 }
 
 func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
@@ -110,32 +110,37 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 	if err != nil {
 		return err
 	}
-	guardianID, err := guardianUUID(p.GuardianAccountID)
+	guardianID, err := parseNullableUUID(p.GuardianAccountID)
+	if err != nil {
+		return err
+	}
+	claimedByID, err := parseNullableUUID(p.ClaimedByAccountID)
 	if err != nil {
 		return err
 	}
 	model := &PlayerModel{
-		ID:                id,
-		FirstName:         p.FirstName,
-		SecondName:        p.SecondName,
-		LastName:          p.LastName,
-		SecondLastName:    p.SecondLastName,
-		Birthdate:         p.Birthdate,
-		Gender:            p.Gender,
-		SinglesElo:        p.SinglesElo,
-		DoublesElo:        p.DoublesElo,
-		Country:           p.Country,
-		Department:        p.Department,
-		WhatsAppNumber:    p.WhatsAppNumber,
-		NationalID:        p.NationalID,
-		IDFrontPath:       p.IDFrontPath,
-		IDBackPath:        p.IDBackPath,
-		GuardianAccountID: guardianID,
+		ID:                 id,
+		FirstName:          p.FirstName,
+		SecondName:         p.SecondName,
+		LastName:           p.LastName,
+		SecondLastName:     p.SecondLastName,
+		Birthdate:          p.Birthdate,
+		Gender:             p.Gender,
+		SinglesElo:         p.SinglesElo,
+		DoublesElo:         p.DoublesElo,
+		Country:            p.Country,
+		Department:         p.Department,
+		WhatsAppNumber:     p.WhatsAppNumber,
+		NationalID:         p.NationalID,
+		IDFrontPath:        p.IDFrontPath,
+		IDBackPath:         p.IDBackPath,
+		GuardianAccountID:  guardianID,
+		ClaimedByAccountID: claimedByID,
 	}
 
 	_, err = ExtractDB(ctx, r.db).NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id, claimed_by_account_id = EXCLUDED.claimed_by_account_id").
 		Exec(ctx)
 
 	return err
@@ -203,23 +208,29 @@ func modelToPlayer(m *PlayerModel) *player.Player {
 		s := m.GuardianAccountID.String()
 		guardianID = &s
 	}
+	var claimedByID *string
+	if m.ClaimedByAccountID != nil {
+		s := m.ClaimedByAccountID.String()
+		claimedByID = &s
+	}
 	return &player.Player{
-		ID:                m.ID.String(),
-		FirstName:         m.FirstName,
-		SecondName:        m.SecondName,
-		LastName:          m.LastName,
-		SecondLastName:    m.SecondLastName,
-		Birthdate:         m.Birthdate,
-		Gender:            m.Gender,
-		SinglesElo:        m.SinglesElo,
-		DoublesElo:        m.DoublesElo,
-		Country:           m.Country,
-		Department:        m.Department,
-		WhatsAppNumber:    m.WhatsAppNumber,
-		NationalID:        m.NationalID,
-		IDFrontPath:       m.IDFrontPath,
-		IDBackPath:        m.IDBackPath,
-		GuardianAccountID: guardianID,
+		ID:                 m.ID.String(),
+		FirstName:          m.FirstName,
+		SecondName:         m.SecondName,
+		LastName:           m.LastName,
+		SecondLastName:     m.SecondLastName,
+		Birthdate:          m.Birthdate,
+		Gender:             m.Gender,
+		SinglesElo:         m.SinglesElo,
+		DoublesElo:         m.DoublesElo,
+		Country:            m.Country,
+		Department:         m.Department,
+		WhatsAppNumber:     m.WhatsAppNumber,
+		NationalID:         m.NationalID,
+		IDFrontPath:        m.IDFrontPath,
+		IDBackPath:         m.IDBackPath,
+		GuardianAccountID:  guardianID,
+		ClaimedByAccountID: claimedByID,
 	}
 }
 
@@ -278,12 +289,14 @@ func (r *PlayerRepository) Search(ctx context.Context, query string) ([]*player.
 }
 
 // SearchForSelection is a lighter-weight variant of Search for the participant
-// selection cards UI, which only ever renders name, gender and singles Elo.
+// selection cards UI, which only ever renders name, gender and singles Elo —
+// it also carries guardian_account_id/claimed_by_account_id so callers (e.g.
+// the guardian claim-search flow) can filter out already-linked players.
 func (r *PlayerRepository) SearchForSelection(ctx context.Context, query, gender string) ([]*player.Player, error) {
 	var models []PlayerModel
 	q := r.applyNameSearch(ExtractDB(ctx, r.db).NewSelect().
 		Model(&models).
-		Column("id", "first_name", "second_name", "last_name", "second_last_name", "gender", "singles_elo").
+		Column("id", "first_name", "second_name", "last_name", "second_last_name", "gender", "singles_elo", "guardian_account_id", "claimed_by_account_id").
 		OrderBy("singles_elo", bun.OrderDesc), query)
 	if gender != "" {
 		q = q.Where("gender = ?", gender)
@@ -304,33 +317,38 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 		if err != nil {
 			return err
 		}
-		guardianID, err := guardianUUID(p.GuardianAccountID)
+		guardianID, err := parseNullableUUID(p.GuardianAccountID)
+		if err != nil {
+			return err
+		}
+		claimedByID, err := parseNullableUUID(p.ClaimedByAccountID)
 		if err != nil {
 			return err
 		}
 		models[i] = PlayerModel{
-			ID:                id,
-			FirstName:         p.FirstName,
-			SecondName:        p.SecondName,
-			LastName:          p.LastName,
-			SecondLastName:    p.SecondLastName,
-			Birthdate:         p.Birthdate,
-			Gender:            p.Gender,
-			SinglesElo:        p.SinglesElo,
-			DoublesElo:        p.DoublesElo,
-			Country:           p.Country,
-			Department:        p.Department,
-			WhatsAppNumber:    p.WhatsAppNumber,
-			NationalID:        p.NationalID,
-			IDFrontPath:       p.IDFrontPath,
-			IDBackPath:        p.IDBackPath,
-			GuardianAccountID: guardianID,
+			ID:                 id,
+			FirstName:          p.FirstName,
+			SecondName:         p.SecondName,
+			LastName:           p.LastName,
+			SecondLastName:     p.SecondLastName,
+			Birthdate:          p.Birthdate,
+			Gender:             p.Gender,
+			SinglesElo:         p.SinglesElo,
+			DoublesElo:         p.DoublesElo,
+			Country:            p.Country,
+			Department:         p.Department,
+			WhatsAppNumber:     p.WhatsAppNumber,
+			NationalID:         p.NationalID,
+			IDFrontPath:        p.IDFrontPath,
+			IDBackPath:         p.IDBackPath,
+			GuardianAccountID:  guardianID,
+			ClaimedByAccountID: claimedByID,
 		}
 	}
 
 	_, err := ExtractDB(ctx, r.db).NewInsert().Model(&models).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id, claimed_by_account_id = EXCLUDED.claimed_by_account_id").
 		Exec(ctx)
 	return err
 }

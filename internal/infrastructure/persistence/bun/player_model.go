@@ -10,24 +10,25 @@ import (
 type PlayerModel struct {
 	bun.BaseModel `bun:"table:players"`
 
-	ID                uuid.UUID  `bun:"id,pk,type:uuid"`
-	FirstName         string     `bun:"first_name,notnull"`
-	SecondName        string     `bun:"second_name,nullzero"`
-	LastName          string     `bun:"last_name,notnull"`
-	SecondLastName    string     `bun:"second_last_name,nullzero"`
-	Birthdate         time.Time  `bun:"birthdate,notnull"`
-	Gender            string     `bun:"gender,notnull,default:'M'"`
-	SinglesElo        int16      `bun:"singles_elo,notnull,default:1000"`
-	DoublesElo        int16      `bun:"doubles_elo,notnull,default:1000"`
-	Country           string     `bun:"country,notnull"`
-	Department        string     `bun:"department,nullzero"`
-	WhatsAppNumber    string     `bun:"whatsapp_number,nullzero"`
-	NationalID        string     `bun:"national_id,nullzero"`
-	IDFrontPath       string     `bun:"id_front_path,nullzero"`
-	IDBackPath        string     `bun:"id_back_path,nullzero"`
-	GuardianAccountID *uuid.UUID `bun:"guardian_account_id,type:uuid"`
-	CreatedAt         time.Time  `bun:"created_at,notnull,default:current_timestamp"`
-	UpdatedAt         *time.Time `bun:"updated_at,nullzero"`
+	ID                 uuid.UUID  `bun:"id,pk,type:uuid"`
+	FirstName          string     `bun:"first_name,notnull"`
+	SecondName         string     `bun:"second_name,nullzero"`
+	LastName           string     `bun:"last_name,notnull"`
+	SecondLastName     string     `bun:"second_last_name,nullzero"`
+	Birthdate          time.Time  `bun:"birthdate,notnull"`
+	Gender             string     `bun:"gender,notnull,default:'M'"`
+	SinglesElo         int16      `bun:"singles_elo,notnull,default:1000"`
+	DoublesElo         int16      `bun:"doubles_elo,notnull,default:1000"`
+	Country            string     `bun:"country,notnull"`
+	Department         string     `bun:"department,nullzero"`
+	WhatsAppNumber     string     `bun:"whatsapp_number,nullzero"`
+	NationalID         string     `bun:"national_id,nullzero"`
+	IDFrontPath        string     `bun:"id_front_path,nullzero"`
+	IDBackPath         string     `bun:"id_back_path,nullzero"`
+	GuardianAccountID  *uuid.UUID `bun:"guardian_account_id,type:uuid"`
+	ClaimedByAccountID *uuid.UUID `bun:"claimed_by_account_id,type:uuid"`
+	CreatedAt          time.Time  `bun:"created_at,notnull,default:current_timestamp"`
+	UpdatedAt          *time.Time `bun:"updated_at,nullzero"`
 }
 
 func (m *PlayerModel) FullName() string {

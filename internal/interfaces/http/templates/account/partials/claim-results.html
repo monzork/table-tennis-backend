@@ -1,0 +1,18 @@
+{{define "account/partials/claim-results"}}
+{{if not .Players}}
+<p class="text-sm text-gray-500 italic">{{t .T "account.claim.no_results"}}</p>
+{{else}}
+{{range .Players}}
+<div class="flex items-center justify-between bg-black/30 border border-white/5 rounded-xl p-4" id="claim-search-{{.ID}}">
+    <span class="font-semibold">{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+    <button
+        hx-post="/account/players/{{.ID}}/claim"
+        hx-target="#claim-search-{{.ID}}"
+        hx-swap="outerHTML"
+        class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-xs">
+        {{t $.T "account.claim.claim_btn"}}
+    </button>
+</div>
+{{end}}
+{{end}}
+{{end}}

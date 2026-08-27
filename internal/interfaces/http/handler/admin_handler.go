@@ -2,6 +2,7 @@ package handler
 
 import (
 	"sync"
+	accountApp "table-tennis-backend/internal/application/account"
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
@@ -22,6 +23,24 @@ type AdminHandler struct {
 	getTournaments *event.GetTournamentsUseCase
 	divisionUC     *division.DivisionUseCase
 	eventGetAll    *eventUC.GetAllEventsUseCase
+
+	// getPendingClaimsUC/approveClaimUC/rejectClaimUC are optional: nil in
+	// older callers/tests just leaves the player-claim review queue empty
+	// and its actions unavailable. See WithClaimReviewUseCases.
+	getPendingClaimsUC *accountApp.GetPendingPlayerClaimsUseCase
+	approveClaimUC     *accountApp.ApprovePlayerClaimUseCase
+	rejectClaimUC      *accountApp.RejectPlayerClaimUseCase
+}
+
+// WithClaimReviewUseCases wires the admin player-claim review queue into an
+// already-constructed AdminHandler, same rationale as the other With*
+// setters in this package — every existing call site keeps compiling
+// unchanged.
+func (h *AdminHandler) WithClaimReviewUseCases(getPending *accountApp.GetPendingPlayerClaimsUseCase, approve *accountApp.ApprovePlayerClaimUseCase, reject *accountApp.RejectPlayerClaimUseCase) *AdminHandler {
+	h.getPendingClaimsUC = getPending
+	h.approveClaimUC = approve
+	h.rejectClaimUC = reject
+	return h
 }
 
 func NewAdminHandler(
@@ -103,11 +122,40 @@ func (h *AdminHandler) Players(c *fiber.Ctx) error {
 			}
 		}
 	}
+	var pendingClaims []accountApp.PendingClaim
+	if h.getPendingClaimsUC != nil {
+		pendingClaims, _ = h.getPendingClaimsUC.Execute(c.Context())
+	}
+
 	lang := getLang(c)
 	return c.Render("admin/players", merge(tMap(lang), fiber.Map{
-		"Players": board,
-		"Events":  activeTournaments,
+		"Players":       board,
+		"Events":        activeTournaments,
+		"PendingClaims": pendingClaims,
 	}), "layouts/admin")
+}
+
+// ApproveClaim approves a pending player-claim, linking the claiming account
+// as the player's guardian.
+func (h *AdminHandler) ApproveClaim(c *fiber.Ctx) error {
+	if h.approveClaimUC == nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "not available")
+	}
+	if err := h.approveClaimUC.Execute(c.Context(), c.Params("id")); err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
+	}
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// RejectClaim rejects a pending player-claim without linking any account.
+func (h *AdminHandler) RejectClaim(c *fiber.Ctx) error {
+	if h.rejectClaimUC == nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "not available")
+	}
+	if err := h.rejectClaimUC.Execute(c.Context(), c.Params("id")); err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
+	}
+	return c.SendStatus(fiber.StatusOK)
 }
 
 func (h *AdminHandler) Tournaments(c *fiber.Ctx) error {

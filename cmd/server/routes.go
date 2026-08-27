@@ -134,6 +134,9 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler, acc
 	accountGroup.Put("/me", c.AccountHandler.UpdateMyInfo)
 	accountGroup.Get("/players/new", c.AccountHandler.ShowAddChildForm)
 	accountGroup.Post("/players", c.AccountHandler.CreateChild)
+	accountGroup.Get("/players/claim", c.AccountHandler.ShowClaimForm)
+	accountGroup.Get("/players/claim/search", c.AccountHandler.SearchClaimable)
+	accountGroup.Post("/players/:id/claim", c.AccountHandler.ClaimPlayer)
 	accountGroup.Get("/players/:id", c.AccountHandler.PlayerDetail)
 	accountGroup.Get("/players/:id/edit", c.AccountHandler.EditPlayer)
 	accountGroup.Put("/players/:id", c.AccountHandler.UpdatePlayer)
@@ -171,6 +174,8 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler, acc
 	api.Put("/players/:id", c.PlayerHandler.Update)
 	api.Post("/players/:id/link-account", c.PlayerHandler.LinkAccount)
 	api.Post("/players/:id/unlink-account", c.PlayerHandler.UnlinkAccount)
+	api.Post("/players/:id/approve-claim", c.AdminHandler.ApproveClaim)
+	api.Post("/players/:id/reject-claim", c.AdminHandler.RejectClaim)
 	api.Delete("/players/:id", c.PlayerHandler.Delete)
 	api.Post("/players/import", c.PlayerHandler.Import)
 

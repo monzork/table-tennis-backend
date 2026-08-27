@@ -21,6 +21,17 @@
         </div>
     </header>
 
+    {{if .PendingClaims}}
+    <div class="glass rounded-2xl border border-white/10 p-6">
+        <h2 class="text-lg font-extrabold uppercase tracking-wide mb-4">{{t .T "admin.players.claims_title"}}</h2>
+        <div id="claim-list" class="space-y-2">
+            {{range .PendingClaims}}
+                {{template "admin/partials/claim-row" (dict "Claim" . "T" $.T)}}
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+
     <div class="glass rounded-2xl overflow-hidden border border-white/10">
         <table class="w-full text-left border-collapse block sm:table sm:whitespace-nowrap">
             <thead class="hidden sm:table-header-group">

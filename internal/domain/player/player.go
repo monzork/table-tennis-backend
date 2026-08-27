@@ -45,6 +45,10 @@ type Player struct {
 	// that hasn't been linked by an admin — see NewGuardianChildPlayer and
 	// the admin-assisted linking flow.
 	GuardianAccountID *string
+	// ClaimedByAccountID is set when an Account requests to be linked to this
+	// player (self-claim) and cleared once an admin approves (promoting it to
+	// GuardianAccountID) or rejects it. Nil means no claim is pending.
+	ClaimedByAccountID *string
 }
 
 func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, country, department, nationalID string) (*Player, error) {

@@ -4,7 +4,10 @@
 
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-extrabold uppercase tracking-tighter">{{t .T "account.dashboard.my_players"}}</h1>
-        <a href="/account/players/new" class="bg-white hover:bg-gray-200 text-black font-black py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-xs">{{t .T "account.dashboard.add_player"}}</a>
+        <div class="flex gap-2">
+            <a href="/account/players/claim" class="border border-white/20 hover:border-white/40 text-white font-black py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-xs">{{t .T "account.dashboard.claim_player"}}</a>
+            <a href="/account/players/new" class="bg-white hover:bg-gray-200 text-black font-black py-2 px-4 rounded-xl transition-all uppercase tracking-widest text-xs">{{t .T "account.dashboard.add_player"}}</a>
+        </div>
     </div>
 
     <div class="glass rounded-3xl border border-white/10 p-6 mb-10">

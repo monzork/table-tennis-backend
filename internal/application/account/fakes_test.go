@@ -98,6 +98,18 @@ func (f *fakePlayerRepo) Save(ctx context.Context, p *player.Player) error {
 	return nil
 }
 
+func (f *fakePlayerRepo) GetAll(ctx context.Context) ([]*player.Player, error) {
+	var result []*player.Player
+	for _, p := range f.players {
+		result = append(result, p)
+	}
+	return result, nil
+}
+
+func (f *fakePlayerRepo) SearchForSelection(ctx context.Context, query, gender string) ([]*player.Player, error) {
+	return f.GetAll(ctx)
+}
+
 func (f *fakePlayerRepo) GetByGuardianAccountID(ctx context.Context, accountID string) ([]*player.Player, error) {
 	var result []*player.Player
 	for _, p := range f.players {

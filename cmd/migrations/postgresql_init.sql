@@ -191,6 +191,8 @@ CREATE TABLE IF NOT EXISTS accounts (
 );
 ALTER TABLE players ADD COLUMN IF NOT EXISTS guardian_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_players_guardian_account_id ON players(guardian_account_id);
+ALTER TABLE players ADD COLUMN IF NOT EXISTS claimed_by_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_players_claimed_by_account_id ON players(claimed_by_account_id);
 
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS proposed_sets JSONB;
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS proposed_by_player_id UUID REFERENCES players(id) ON DELETE SET NULL;

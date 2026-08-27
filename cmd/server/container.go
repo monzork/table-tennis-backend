@@ -199,6 +199,11 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	getPlayerPendingMatchesUC := player.NewGetPlayerPendingMatchesUseCase(eventRepo, divisionRepo)
 	getGuardianPendingMatchesUC := accountApp.NewGetGuardianPendingMatchesUseCase(getLinkedPlayersUC, getPlayerPendingMatchesUC)
 	assignPlayerToAccountUC := accountApp.NewAssignPlayerToAccountUseCase(playerRepo, accountRepo)
+	claimPlayerUC := accountApp.NewClaimPlayerUseCase(playerRepo)
+	searchClaimableUC := accountApp.NewSearchClaimablePlayersUseCase(playerRepo)
+	getPendingClaimsUC := accountApp.NewGetPendingPlayerClaimsUseCase(playerRepo, accountRepo)
+	approveClaimUC := accountApp.NewApprovePlayerClaimUseCase(playerRepo)
+	rejectClaimUC := accountApp.NewRejectPlayerClaimUseCase(playerRepo)
 
 	proposeMatchScoreUC := match.NewProposeMatchScoreUseCase(matchRepo, eventRepo, playerRepo)
 	confirmMatchScoreUC := match.NewConfirmMatchScoreUseCase(matchRepo, eventRepo, updateScoreUC)
@@ -224,6 +229,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	playerHandler.WithAssignPlayerToAccountUseCase(assignPlayerToAccountUC)
 	playerHandler.WithGetPlayerRankUseCase(player.NewGetPlayerRankUseCase(playerRepo))
 	accountHandler.WithGetPlayerStatsUseCase(getPlayerStatsUC)
+	accountHandler.WithClaimUseCases(claimPlayerUC, searchClaimableUC)
+	adminHandler.WithClaimReviewUseCases(getPendingClaimsUC, approveClaimUC, rejectClaimUC)
 
 	return &Container{
 		PlayerHandler:       playerHandler,
