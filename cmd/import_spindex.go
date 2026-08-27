@@ -56,18 +56,18 @@ import (
 // ---- Firestore Listen-stream parsing ----
 
 type fsDoc struct {
-	Name       string                 `json:"name"`
-	Fields     map[string]fsValue     `json:"fields"`
-	CreateTime string                 `json:"createTime"`
-	UpdateTime string                 `json:"updateTime"`
+	Name       string             `json:"name"`
+	Fields     map[string]fsValue `json:"fields"`
+	CreateTime string             `json:"createTime"`
+	UpdateTime string             `json:"updateTime"`
 }
 
 type fsValue struct {
-	StringValue  *string             `json:"stringValue"`
-	IntegerValue *string             `json:"integerValue"`
-	DoubleValue  *float64            `json:"doubleValue"`
-	BooleanValue *bool               `json:"booleanValue"`
-	NullValue    json.RawMessage     `json:"nullValue"`
+	StringValue  *string         `json:"stringValue"`
+	IntegerValue *string         `json:"integerValue"`
+	DoubleValue  *float64        `json:"doubleValue"`
+	BooleanValue *bool           `json:"booleanValue"`
+	NullValue    json.RawMessage `json:"nullValue"`
 	ArrayValue   *struct {
 		Values []fsValue `json:"values"`
 	} `json:"arrayValue"`
@@ -339,9 +339,9 @@ func main() {
 		log.Fatalf("failed to load internal events: %v", err)
 	}
 	type internalEvent struct {
-		ID              string
-		Name            string
-		SpindexEventID  sql.NullString
+		ID             string
+		Name           string
+		SpindexEventID sql.NullString
 	}
 	var internalEvents []internalEvent
 	for rows.Next() {
@@ -503,6 +503,14 @@ func main() {
 
 	created, skippedDup, skippedNoMapping := 0, 0, 0
 	touchedEvents := make(map[string]bool)
+	// This is a running league, not a single round-robin -- the same pair
+	// can legitimately meet more than once, so a participant-pair lookup
+	// must never be used to dedup across distinct Spindex matches (that
+	// silently collapsed repeat matches into one row, overwriting earlier
+	// results). claimedThisRun ensures the one legitimate reuse case --
+	// adopting a pre-Spindex, never-tagged match for this pair -- happens
+	// at most once per pair per run.
+	claimedThisRun := make(map[string]bool)
 
 	for _, sm := range matches {
 		internalEventID, ok := eventMapping[sm.SpindexEventID]
@@ -552,11 +560,26 @@ func main() {
 			matchID = existing.ID
 			swapped = len(existing.TeamA) > 0 && existing.TeamA[0].ID == pBID
 		} else {
-			// round-robin dedup: at most one match per pair per event/stage
-			existingMatch, _ := matchRepo.GetMatchByParticipants(ctx, internalEventID, pAID, pBID, "group")
-			swapped = existingMatch != nil && len(existingMatch.TeamA) > 0 && existingMatch.TeamA[0].ID == pBID
-			if existingMatch != nil {
-				matchID = existingMatch.ID
+			// Adopt an existing match for this pair only if it's a
+			// pre-Spindex row nobody has tagged yet, and only once per run
+			// -- otherwise every Spindex match between these two players
+			// gets its own row (see claimedThisRun comment above).
+			reusable, _ := matchRepo.GetMatchByParticipants(ctx, internalEventID, pAID, pBID, "group")
+			if reusable != nil {
+				if claimedThisRun[reusable.ID] {
+					reusable = nil
+				} else {
+					var taggedSpindexID sql.NullString
+					_ = bun.DB.QueryRowContext(ctx, `SELECT spindex_match_id FROM matches WHERE id = ?`, reusable.ID).Scan(&taggedSpindexID)
+					if taggedSpindexID.Valid && taggedSpindexID.String != "" {
+						reusable = nil
+					}
+				}
+			}
+			swapped = reusable != nil && len(reusable.TeamA) > 0 && reusable.TeamA[0].ID == pBID
+			if reusable != nil {
+				matchID = reusable.ID
+				claimedThisRun[matchID] = true
 			} else {
 				m, err := createMatchUC.Execute(ctx, internalEventID, "singles", []string{pAID}, []string{pBID}, "group")
 				if err != nil {
