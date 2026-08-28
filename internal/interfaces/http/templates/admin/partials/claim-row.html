@@ -2,7 +2,7 @@
 <div class="flex items-center justify-between gap-3 bg-black/30 border border-white/5 rounded-xl p-4" id="claim-{{.Claim.Player.ID}}">
     <div>
         <p class="font-semibold">{{.Claim.Player.FirstNameWithSecond}} <span class="uppercase font-bold">{{.Claim.Player.LastNameWithSecond}}</span></p>
-        <p class="text-xs text-gray-500">{{t .T "admin.players.claims_by"}} {{.Claim.AccountEmail}}</p>
+        <p class="text-xs text-gray-500">{{t .T "admin.players.claims_by"}} {{if .Claim.AccountName}}{{.Claim.AccountName}} &lt;{{.Claim.AccountEmail}}&gt;{{else}}{{.Claim.AccountEmail}}{{end}}</p>
     </div>
     <div class="flex gap-2">
         <button

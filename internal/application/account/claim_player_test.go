@@ -65,7 +65,7 @@ func TestSearchClaimablePlayersUseCase(t *testing.T) {
 func TestGetPendingPlayerClaimsUseCase(t *testing.T) {
 	playerRepo := newFakePlayerRepo()
 	accountRepo := newFakeAccountRepo()
-	acc, _ := accountApp.NewLoginWithGoogleUseCase(accountRepo).Execute(context.Background(), accountApp.LoginWithGoogleCommand{GoogleSub: "s", Email: "claimant@x.com"})
+	acc, _ := accountApp.NewLoginWithGoogleUseCase(accountRepo).Execute(context.Background(), accountApp.LoginWithGoogleCommand{GoogleSub: "s", Email: "claimant@x.com", Name: "Claimant Name"})
 
 	playerRepo.players["p1"] = &player.Player{ID: "p1", FirstName: "Kid", ClaimedByAccountID: &acc.ID}
 	playerRepo.players["p2"] = &player.Player{ID: "p2", FirstName: "Other"}
@@ -78,7 +78,7 @@ func TestGetPendingPlayerClaimsUseCase(t *testing.T) {
 	if len(claims) != 1 {
 		t.Fatalf("expected exactly 1 pending claim, got %d", len(claims))
 	}
-	if claims[0].Player.ID != "p1" || claims[0].AccountEmail != "claimant@x.com" {
+	if claims[0].Player.ID != "p1" || claims[0].AccountEmail != "claimant@x.com" || claims[0].AccountName != "Claimant Name" {
 		t.Fatalf("unexpected claim: %+v", claims[0])
 	}
 }

@@ -2,7 +2,9 @@ package handler_test
 
 import (
 	"context"
+	"io"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -101,6 +103,13 @@ func TestAccountHandler_ClaimFlow(t *testing.T) {
 		}
 		if resp.StatusCode != 200 {
 			t.Fatalf("expected 200, got %v", resp.StatusCode)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("read body: %v", err)
+		}
+		if !strings.Contains(string(body), "Claimant") || !strings.Contains(string(body), "claimant@x.com") {
+			t.Errorf("expected pending claim to show claimant name and email, got: %s", body)
 		}
 	})
 

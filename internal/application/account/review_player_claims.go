@@ -12,10 +12,11 @@ import (
 // player claim that isn't actually pending.
 var ErrNoPendingClaim = errors.New("player has no pending claim")
 
-// PendingClaim pairs a claimed Player with the email of the account that
-// claimed it, for the admin review queue.
+// PendingClaim pairs a claimed Player with the name and email of the
+// account that claimed it, for the admin review queue.
 type PendingClaim struct {
 	Player       *player.Player
+	AccountName  string
 	AccountEmail string
 }
 
@@ -40,11 +41,12 @@ func (uc *GetPendingPlayerClaimsUseCase) Execute(ctx context.Context) ([]Pending
 		if p.ClaimedByAccountID == nil {
 			continue
 		}
-		email := ""
+		var name, email string
 		if a, err := uc.accountRepo.GetByID(ctx, *p.ClaimedByAccountID); err == nil && a != nil {
+			name = a.Name
 			email = a.Email
 		}
-		claims = append(claims, PendingClaim{Player: p, AccountEmail: email})
+		claims = append(claims, PendingClaim{Player: p, AccountName: name, AccountEmail: email})
 	}
 	return claims, nil
 }
