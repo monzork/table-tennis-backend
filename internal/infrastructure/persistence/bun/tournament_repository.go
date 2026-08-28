@@ -40,6 +40,7 @@ func (r *TournamentRepository) Save(ctx context.Context, e *tournament.Tournamen
 			StartDate:          e.StartDate,
 			EndDate:            e.EndDate,
 			NumTables:          e.NumTables,
+			TablePriorities:    e.TablePriorities,
 			FederationEndorsed: e.FederationEndorsed,
 		}
 
@@ -80,6 +81,7 @@ func (r *TournamentRepository) GetByID(ctx context.Context, idStr string) (*tour
 		StartDate:          model.StartDate,
 		EndDate:            model.EndDate,
 		NumTables:          model.NumTables,
+		TablePriorities:    model.TablePriorities,
 		FederationEndorsed: model.FederationEndorsed,
 		Events:             tourneys,
 	}, nil
@@ -107,6 +109,7 @@ func (r *TournamentRepository) GetByIDDeep(ctx context.Context, idStr string) (*
 		StartDate:          model.StartDate,
 		EndDate:            model.EndDate,
 		NumTables:          model.NumTables,
+		TablePriorities:    model.TablePriorities,
 		FederationEndorsed: model.FederationEndorsed,
 		Events:             tourneys,
 	}, nil
@@ -282,6 +285,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			StartDate:          m.StartDate,
 			EndDate:            m.EndDate,
 			NumTables:          m.NumTables,
+			TablePriorities:    m.TablePriorities,
 			FederationEndorsed: m.FederationEndorsed,
 			Events:             tournamentsByEvent[m.ID.String()],
 		}
@@ -302,9 +306,10 @@ func (r *TournamentRepository) Update(ctx context.Context, e *tournament.Tournam
 		StartDate:          e.StartDate,
 		EndDate:            e.EndDate,
 		NumTables:          e.NumTables,
+		TablePriorities:    e.TablePriorities,
 		FederationEndorsed: e.FederationEndorsed,
 	}
-	_, err = ExtractDB(ctx, r.db).NewUpdate().Model(model).WherePK().Column("name", "division_ids", "skip_elo", "start_date", "end_date", "num_tables", "federation_endorsed").Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewUpdate().Model(model).WherePK().Column("name", "division_ids", "skip_elo", "start_date", "end_date", "num_tables", "table_priorities", "federation_endorsed").Exec(ctx)
 	return err
 }
 

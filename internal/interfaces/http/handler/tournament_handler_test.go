@@ -567,16 +567,24 @@ func TestEventHandler(t *testing.T) {
 	})
 
 	t.Run("Show Edit Form With Priorities", func(t *testing.T) {
-		// DB already has priorities from Update HX request.
-		// NOTE: TournamentRepository.GetByID never maps table_priorities back into the domain
-		// Tournament (and TournamentModel has no such column at all), so the "TablePriorities != nil"
-		// branch in ShowEditForm can't actually be exercised until that persistence gap is fixed -
-		// that's outside this package's scope.
+		// DB already has priorities from the "Update Tournament" subtest above
+		// (priority_div-champ=1,2), which should round-trip through
+		// TournamentRepository into the rendered form.
 		req := httptest.NewRequest("GET", fmt.Sprintf("/admin/tournaments/%s/edit", eventID), nil)
 		req.Header.Set("Cookie", sessionCookie)
-		resp, _ := app.Test(req)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
 		if resp.StatusCode != 200 {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("read body: %v", err)
+		}
+		if !strings.Contains(string(body), `name="priority_div-champ" value="1,2"`) {
+			t.Errorf("expected saved table priorities to round-trip into the edit form, got: %s", body)
 		}
 	})
 
