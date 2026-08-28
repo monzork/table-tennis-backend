@@ -309,23 +309,7 @@ func (r *EventRepository) GetByIDLite(ctx context.Context, idStr string) (*event
 		}
 	}
 
-	toPlayer := func(pm *PlayerModel) *player.Player {
-		if pm == nil {
-			return &player.Player{}
-		}
-		return &player.Player{
-			ID:             pm.ID.String(),
-			FirstName:      pm.FirstName,
-			SecondName:     pm.SecondName,
-			LastName:       pm.LastName,
-			SecondLastName: pm.SecondLastName,
-			Gender:         pm.Gender,
-			SinglesElo:     pm.SinglesElo,
-			DoublesElo:     pm.DoublesElo,
-			Country:        pm.Country,
-			Department:     pm.Department,
-		}
-	}
+	toPlayer := modelToPlayerOrEmpty
 
 	var participantPlayers []*player.Player
 	for _, pt := range model.Participants {
@@ -491,23 +475,7 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 	// -----------------------------------------------------------------------------------------
 
 	// Helper to convert PlayerModel to domain player
-	toPlayer := func(pm *PlayerModel) *player.Player {
-		if pm == nil {
-			return &player.Player{}
-		}
-		return &player.Player{
-			ID:             pm.ID.String(),
-			FirstName:      pm.FirstName,
-			SecondName:     pm.SecondName,
-			LastName:       pm.LastName,
-			SecondLastName: pm.SecondLastName,
-			Gender:         pm.Gender,
-			SinglesElo:     pm.SinglesElo,
-			DoublesElo:     pm.DoublesElo,
-			Country:        pm.Country,
-			Department:     pm.Department,
-		}
-	}
+	toPlayer := modelToPlayerOrEmpty
 
 	// ── 1. Assemble participants ────────────────────────────────────────────
 	var participantPlayers []*player.Player
@@ -1196,20 +1164,7 @@ func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel
 		}
 	}
 
-	toPlayer := func(pm *PlayerModel) *player.Player {
-		return &player.Player{
-			ID:             pm.ID.String(),
-			FirstName:      pm.FirstName,
-			SecondName:     pm.SecondName,
-			LastName:       pm.LastName,
-			SecondLastName: pm.SecondLastName,
-			Gender:         pm.Gender,
-			SinglesElo:     pm.SinglesElo,
-			DoublesElo:     pm.DoublesElo,
-			Country:        pm.Country,
-			Department:     pm.Department,
-		}
-	}
+	toPlayer := modelToPlayer
 
 	// Index participants by event
 	partsByTournament := make(map[uuid.UUID][]EventParticipantModel)

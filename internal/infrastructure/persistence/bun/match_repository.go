@@ -569,22 +569,8 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*event.Match, error) {
 	if len(playerIDs) > 0 {
 		var playerModels []PlayerModel
 		if err := ExtractDB(ctx, r.db).NewSelect().Model(&playerModels).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx); err == nil {
-			for _, pm := range playerModels {
-				playerCache[pm.ID] = &player.Player{
-					ID:             pm.ID.String(),
-					FirstName:      pm.FirstName,
-					SecondName:     pm.SecondName,
-					LastName:       pm.LastName,
-					SecondLastName: pm.SecondLastName,
-					Birthdate:      pm.Birthdate,
-					Gender:         pm.Gender,
-					SinglesElo:     pm.SinglesElo,
-					DoublesElo:     pm.DoublesElo,
-					Country:        pm.Country,
-					Department:     pm.Department,
-					WhatsAppNumber: pm.WhatsAppNumber,
-					NationalID:     pm.NationalID,
-				}
+			for i := range playerModels {
+				playerCache[playerModels[i].ID] = modelToPlayer(&playerModels[i])
 			}
 		}
 	}
@@ -745,19 +731,8 @@ func (r *MatchRepository) mapModelsToEntities(ctx context.Context, models []Matc
 	if len(playerIDs) > 0 {
 		var playerModels []PlayerModel
 		if err := ExtractDB(ctx, r.db).NewSelect().Model(&playerModels).Where("id IN (?)", bun.List(playerIDs)).Scan(ctx); err == nil {
-			for _, pm := range playerModels {
-				playerCache[pm.ID] = &player.Player{
-					ID:             pm.ID.String(),
-					FirstName:      pm.FirstName,
-					SecondName:     pm.SecondName,
-					LastName:       pm.LastName,
-					SecondLastName: pm.SecondLastName,
-					Birthdate:      pm.Birthdate,
-					Gender:         pm.Gender,
-					SinglesElo:     pm.SinglesElo,
-					DoublesElo:     pm.DoublesElo,
-					Department:     pm.Department,
-				}
+			for i := range playerModels {
+				playerCache[playerModels[i].ID] = modelToPlayer(&playerModels[i])
 			}
 		}
 	}

@@ -234,6 +234,16 @@ func modelToPlayer(m *PlayerModel) *player.Player {
 	}
 }
 
+// modelToPlayerOrEmpty is modelToPlayer but returns an empty Player instead
+// of panicking when pm is nil, for join queries where the player row may be
+// absent (e.g. a team slot with no player assigned yet).
+func modelToPlayerOrEmpty(pm *PlayerModel) *player.Player {
+	if pm == nil {
+		return &player.Player{}
+	}
+	return modelToPlayer(pm)
+}
+
 func (r *PlayerRepository) GetById(ctx context.Context, id string) (*player.Player, error) {
 	uid, err := uuid.Parse(id)
 	if err != nil {

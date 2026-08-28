@@ -185,20 +185,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 		}
 	}
 
-	toPlayer := func(pm *PlayerModel) *player.Player {
-		return &player.Player{
-			ID:             pm.ID.String(),
-			FirstName:      pm.FirstName,
-			SecondName:     pm.SecondName,
-			LastName:       pm.LastName,
-			SecondLastName: pm.SecondLastName,
-			Gender:         pm.Gender,
-			SinglesElo:     pm.SinglesElo,
-			DoublesElo:     pm.DoublesElo,
-			Country:        pm.Country,
-			Department:     pm.Department,
-		}
-	}
+	toPlayer := modelToPlayer
 
 	// Index everything
 	partsByTournament := make(map[uuid.UUID][]EventParticipantModel)
