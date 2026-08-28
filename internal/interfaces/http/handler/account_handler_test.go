@@ -963,6 +963,63 @@ func TestAccountHandler_EditAndUpdatePlayer_OwnershipAndNotFound(t *testing.T) {
 	})
 }
 
+// TestAccountHandler_UpdatePlayer_PreservesFieldsNotOnTheForm guards against
+// the guardian "edit player" form -- which has no secondName, secondLastName,
+// whatsAppNumber, or nationalID inputs -- silently wiping those fields when
+// a guardian saves an otherwise-unrelated change (e.g. birthdate).
+func TestAccountHandler_UpdatePlayer_PreservesFieldsNotOnTheForm(t *testing.T) {
+	app, db, _, err := SetupTestApp()
+	if err != nil {
+		t.Fatalf("failed to setup test app: %v", err)
+	}
+
+	accountA := seedTestAccount(t, db, "sub-preserve", "preserve@x.com", "")
+	p := seedLinkedPlayer(t, db, accountA, "Kid")
+
+	repo := bunRepo.NewPlayerRepository(db)
+	p.SecondName = "Middle"
+	p.SecondLastName = "Second"
+	p.WhatsAppNumber = "+15551234567"
+	p.NationalID = "ID999"
+	if err := repo.Save(context.Background(), p); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	cookieA := accountLogin(t, app, accountA)
+
+	data := url.Values{}
+	data.Set("firstName", "Kid")
+	data.Set("lastName", "Test")
+	data.Set("birthdate", "2011-02-03")
+	data.Set("gender", "M")
+	data.Set("country", "NIC")
+	data.Set("department", "Managua")
+	req := httptest.NewRequest("PUT", "/account/players/"+p.ID, strings.NewReader(data.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Cookie", cookieA)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("test request failed: %v", err)
+	}
+	if resp.StatusCode != 200 && resp.StatusCode != 302 {
+		t.Fatalf("expected 200 or 302, got %v", resp.StatusCode)
+	}
+
+	got, err := repo.GetById(context.Background(), p.ID)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.SecondName != "Middle" || got.SecondLastName != "Second" {
+		t.Errorf("expected second name/last name preserved, got %q %q", got.SecondName, got.SecondLastName)
+	}
+	if got.WhatsAppNumber != "+15551234567" || got.NationalID != "ID999" {
+		t.Errorf("expected whatsapp/nationalID preserved, got %q %q", got.WhatsAppNumber, got.NationalID)
+	}
+	if got.Birthdate.Format("2006-01-02") != "2011-02-03" {
+		t.Errorf("expected birthdate actually updated, got %v", got.Birthdate)
+	}
+}
+
 func TestAccountHandler_ConfirmAndRejectScore_ErrorPaths(t *testing.T) {
 	app, db, _, err := SetupTestApp()
 	if err != nil {

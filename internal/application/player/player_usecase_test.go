@@ -250,6 +250,45 @@ func TestUpdatePlayerUseCase(t *testing.T) {
 	}
 }
 
+// TestUpdatePlayerUseCase_PartialUpdatePreservesOptionalFields guards
+// against the guardian/account edit flow (which has no secondName,
+// secondLastName, whatsAppNumber, or nationalID inputs and so always
+// submits "" for them) silently wiping those fields on an existing player.
+func TestUpdatePlayerUseCase_PartialUpdatePreservesOptionalFields(t *testing.T) {
+	repo := newMockPlayerRepo()
+	ctx := context.Background()
+
+	p, _ := playerDomain.NewPlayer("p1", "Bob", "Jones", time.Now(), "M", "USA", "", "123")
+	p.SecondName = "Middle"
+	p.SecondLastName = "Second"
+	p.WhatsAppNumber = "+15551234567"
+	p.NationalID = "ID999"
+	p.Department = "Managua"
+	_ = repo.Save(ctx, p)
+
+	uc := player.NewUpdatePlayerUseCase(repo)
+
+	updated, err := uc.Execute(
+		ctx,
+		"p1",
+		"Robert", "", "Jones", "",
+		"", "", "", "",
+		"", "", "", "", 1400, 1300,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if updated.SecondName != "Middle" || updated.SecondLastName != "Second" {
+		t.Errorf("expected second name/last name preserved, got %q %q", updated.SecondName, updated.SecondLastName)
+	}
+	if updated.WhatsAppNumber != "+15551234567" || updated.NationalID != "ID999" {
+		t.Errorf("expected whatsapp/nationalID preserved, got %q %q", updated.WhatsAppNumber, updated.NationalID)
+	}
+	if updated.Department != "Managua" {
+		t.Errorf("expected department preserved, got %q", updated.Department)
+	}
+}
+
 func TestDeletePlayerUseCase(t *testing.T) {
 	repo := newMockPlayerRepo()
 	ctx := context.Background()

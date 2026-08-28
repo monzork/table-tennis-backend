@@ -35,11 +35,15 @@ func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, se
 	if firstName != "" {
 		p.FirstName = firstName
 	}
-	p.SecondName = secondName
+	if secondName != "" {
+		p.SecondName = secondName
+	}
 	if lastName != "" {
 		p.LastName = lastName
 	}
-	p.SecondLastName = secondLastName
+	if secondLastName != "" {
+		p.SecondLastName = secondLastName
+	}
 	if birthdate != "" {
 		if bd, err := time.Parse("2006-01-02", birthdate); err == nil {
 			p.Birthdate = bd
@@ -51,9 +55,15 @@ func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, se
 	if country != "" {
 		p.Country = country
 	}
-	p.Department = department
-	p.WhatsAppNumber = whatsAppNumber
-	p.NationalID = nationalID
+	if department != "" {
+		p.Department = department
+	}
+	if whatsAppNumber != "" {
+		p.WhatsAppNumber = whatsAppNumber
+	}
+	if nationalID != "" {
+		p.NationalID = nationalID
+	}
 	if idFrontURL != "" {
 		p.IDFrontPath = idFrontURL
 	}
