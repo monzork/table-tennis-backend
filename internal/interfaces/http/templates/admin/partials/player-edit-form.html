@@ -95,7 +95,14 @@
         <label class="text-[10px] font-bold uppercase text-gray-500 mb-1 block">{{t .T "admin.player_form.link_account_label"}}</label>
         {{if .Player.GuardianAccountID}}
         <div class="flex items-center justify-between gap-2 bg-black/40 border border-white/5 rounded-xl p-3">
+            {{if .LinkedAccount}}
+            <div class="text-xs text-gray-400 min-w-0">
+                <div class="text-white font-semibold truncate">{{.LinkedAccount.Name}}</div>
+                <div class="truncate">{{.LinkedAccount.Email}}</div>
+            </div>
+            {{else}}
             <span class="text-xs text-gray-400">{{t .T "admin.player_form.linked_badge"}}</span>
+            {{end}}
             <button type="button"
                 hx-post="/players/{{.Player.ID}}/unlink-account"
                 hx-target="#player-{{.Player.ID}}"

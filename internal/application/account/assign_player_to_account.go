@@ -46,6 +46,19 @@ func (uc *AssignPlayerToAccountUseCase) Execute(ctx context.Context, playerID, a
 	return uc.playerRepo.Save(ctx, p)
 }
 
+// GetLinkedAccount returns the guardian Account currently linked to
+// playerID, or nil if the player has no linked account.
+func (uc *AssignPlayerToAccountUseCase) GetLinkedAccount(ctx context.Context, playerID string) (*account.Account, error) {
+	p, err := uc.playerRepo.GetById(ctx, playerID)
+	if err != nil {
+		return nil, err
+	}
+	if p.GuardianAccountID == nil {
+		return nil, nil
+	}
+	return uc.accountRepo.GetByID(ctx, *p.GuardianAccountID)
+}
+
 // Unlink clears a player's guardian account link, correcting a mistaken link.
 func (uc *AssignPlayerToAccountUseCase) Unlink(ctx context.Context, playerID string) error {
 	p, err := uc.playerRepo.GetById(ctx, playerID)

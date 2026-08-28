@@ -12,6 +12,7 @@ import (
 	accountApp "table-tennis-backend/internal/application/account"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/player"
+	"table-tennis-backend/internal/domain/account"
 	"table-tennis-backend/internal/domain/idgen"
 
 	"github.com/gofiber/fiber/v2"
@@ -299,12 +300,18 @@ func (h *PlayerHandler) ShowEditForm(c *fiber.Ctx) error {
 		idBackURL, _ = h.uploader.SignedURL(c.Context(), p.IDBackPath, idPhotoSignedURLTTL)
 	}
 
+	var linkedAccount *account.Account
+	if h.assignPlayerToAccountUC != nil && p.GuardianAccountID != nil {
+		linkedAccount, _ = h.assignPlayerToAccountUC.GetLinkedAccount(c.Context(), id)
+	}
+
 	lang := getLang(c)
 	return c.Render("admin/partials/player-edit-form", merge(tMap(lang), fiber.Map{
-		"Player":     p,
-		"Events":     activeTournaments,
-		"IDFrontURL": idFrontURL,
-		"IDBackURL":  idBackURL,
+		"Player":        p,
+		"Events":        activeTournaments,
+		"IDFrontURL":    idFrontURL,
+		"IDBackURL":     idBackURL,
+		"LinkedAccount": linkedAccount,
 	}))
 }
 

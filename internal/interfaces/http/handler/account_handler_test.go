@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -716,6 +717,25 @@ func TestPlayerHandler_LinkAndUnlinkAccount(t *testing.T) {
 		}
 		if got.GuardianAccountID == nil || *got.GuardianAccountID != accountID {
 			t.Fatalf("expected player linked, got %+v", got.GuardianAccountID)
+		}
+	})
+
+	t.Run("edit form shows linked account name and email", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/players/"+p.ID+"/edit", nil)
+		req.Header.Set("Cookie", adminCookie)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Fatalf("expected 200, got %v", resp.StatusCode)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("read body: %v", err)
+		}
+		if !strings.Contains(string(body), "Guardian") || !strings.Contains(string(body), "link@x.com") {
+			t.Errorf("expected edit form to show linked account name and email, got: %s", body)
 		}
 	})
 

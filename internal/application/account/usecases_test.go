@@ -315,6 +315,44 @@ func TestAssignPlayerToAccountUseCase_ErrorPaths(t *testing.T) {
 	})
 }
 
+func TestAssignPlayerToAccountUseCase_GetLinkedAccount(t *testing.T) {
+	playerRepo := newFakePlayerRepo()
+	accountRepo := newFakeAccountRepo()
+	playerRepo.players["p1"] = &player.Player{ID: "p1", FirstName: "Kid", LastName: "Smith"}
+	acc, _ := accountApp.NewLoginWithGoogleUseCase(accountRepo).Execute(context.Background(), accountApp.LoginWithGoogleCommand{GoogleSub: "s3", Email: "guardian3@x.com", Name: "Guardian Three"})
+
+	uc := accountApp.NewAssignPlayerToAccountUseCase(playerRepo, accountRepo)
+
+	t.Run("unlinked player returns nil account", func(t *testing.T) {
+		got, err := uc.GetLinkedAccount(context.Background(), "p1")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got != nil {
+			t.Fatalf("expected nil account, got %+v", got)
+		}
+	})
+
+	t.Run("linked player returns its account", func(t *testing.T) {
+		if err := uc.Execute(context.Background(), "p1", "guardian3@x.com"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		got, err := uc.GetLinkedAccount(context.Background(), "p1")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got == nil || got.ID != acc.ID {
+			t.Fatalf("expected account %q, got %+v", acc.ID, got)
+		}
+	})
+
+	t.Run("unknown player propagates error", func(t *testing.T) {
+		if _, err := uc.GetLinkedAccount(context.Background(), "missing"); err == nil {
+			t.Fatal("expected error for missing player")
+		}
+	})
+}
+
 func TestGetGuardianPendingMatchesUseCase_EventRepoError(t *testing.T) {
 	playerRepo := newFakePlayerRepo()
 	eventRepo := newFakeEventRepo()
