@@ -61,12 +61,15 @@ type EventParticipantModel struct {
 	Player *PlayerModel `bun:"rel:belongs-to,join:player_id=id"`
 }
 
+// EventOfficialModel rows are keyed by the parent tournament's ID (or the
+// event's own ID when it has no parent), so an official is shared across all
+// sibling events/categories of the same tournament.
 type EventOfficialModel struct {
 	bun.BaseModel `bun:"table:event_officials"`
 
-	EventID  uuid.UUID `bun:"event_id,pk,type:uuid"`
-	PlayerID uuid.UUID `bun:"player_id,pk,type:uuid"`
-	Pin      string    `bun:"pin,notnull"`
+	TournamentID uuid.UUID `bun:"tournament_id,pk,type:uuid"`
+	PlayerID     uuid.UUID `bun:"player_id,pk,type:uuid"`
+	Pin          string    `bun:"pin,notnull"`
 }
 
 type GroupModel struct {

@@ -204,9 +204,9 @@ func TestMatchHandlerExtra(t *testing.T) {
 
 	t.Run("ValidateMatchPIN Valid", func(t *testing.T) {
 		officialModel := &bunRepo.EventOfficialModel{
-			EventID:  uuid.MustParse(tourney.ID),
-			PlayerID: uuid.MustParse(p1.ID),
-			Pin:      "1234",
+			TournamentID: uuid.MustParse(*tourney.TournamentID),
+			PlayerID:     uuid.MustParse(p1.ID),
+			Pin:          "1234",
 		}
 		matchRepo.DB().NewInsert().Model(officialModel).Exec(ctx)
 

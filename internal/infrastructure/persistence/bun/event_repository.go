@@ -1853,7 +1853,23 @@ func (r *EventRepository) GetParticipantPINsByTournament(ctx context.Context, to
 	return result, nil
 }
 
-// GetParticipantOrOfficialByPIN checks both event participants and officials for a matching PIN.
+// resolveTournamentGroupID maps an event ID to the officials scope it belongs to:
+// the parent tournament's ID, or the event's own ID when it has no parent.
+func (r *EventRepository) resolveTournamentGroupID(ctx context.Context, eventID string) (uuid.UUID, error) {
+	eID, err := uuid.Parse(eventID)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	var groupID uuid.UUID
+	err = ExtractDB(ctx, r.db).NewSelect().Table("events").ColumnExpr("COALESCE(tournament_id, id)").
+		Where("id = ?", eID).Scan(ctx, &groupID)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	return groupID, nil
+}
+
+// GetParticipantOrOfficialByPIN checks both event participants and tournament officials for a matching PIN.
 func (r *EventRepository) GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error) {
 	if pin == "" {
 		return "", fmt.Errorf("empty pin")
@@ -1868,18 +1884,21 @@ func (r *EventRepository) GetParticipantOrOfficialByPIN(ctx context.Context, tou
 		return playerID, nil
 	}
 
-	// Check officials
-	err = ExtractDB(ctx, r.db).NewSelect().Table("event_officials").Column("player_id").
-		Where("event_id = ? AND pin = ?", tournamentID, pin).Scan(ctx, &playerID)
-	if err == nil && playerID != "" {
-		return playerID, nil
+	// Check officials, scoped to the whole tournament rather than this one event
+	groupID, err := r.resolveTournamentGroupID(ctx, tournamentID)
+	if err == nil {
+		err = ExtractDB(ctx, r.db).NewSelect().Table("event_officials").Column("player_id").
+			Where("tournament_id = ? AND pin = ?", groupID, pin).Scan(ctx, &playerID)
+		if err == nil && playerID != "" {
+			return playerID, nil
+		}
 	}
 
 	return "", fmt.Errorf("no participant or official found with the given PIN")
 }
 
 func (r *EventRepository) AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error {
-	tID, err := uuid.Parse(tournamentID)
+	groupID, err := r.resolveTournamentGroupID(ctx, tournamentID)
 	if err != nil {
 		return err
 	}
@@ -1888,16 +1907,16 @@ func (r *EventRepository) AddOfficial(ctx context.Context, tournamentID string, 
 		return err
 	}
 	official := &EventOfficialModel{
-		EventID:  tID,
-		PlayerID: pID,
-		Pin:      pin,
+		TournamentID: groupID,
+		PlayerID:     pID,
+		Pin:          pin,
 	}
-	_, err = ExtractDB(ctx, r.db).NewInsert().Model(official).On("CONFLICT (event_id, player_id) DO UPDATE").Set("pin = EXCLUDED.pin").Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewInsert().Model(official).On("CONFLICT (tournament_id, player_id) DO UPDATE").Set("pin = EXCLUDED.pin").Exec(ctx)
 	return err
 }
 
 func (r *EventRepository) RemoveOfficial(ctx context.Context, tournamentID string, playerID string) error {
-	tID, err := uuid.Parse(tournamentID)
+	groupID, err := r.resolveTournamentGroupID(ctx, tournamentID)
 	if err != nil {
 		return err
 	}
@@ -1905,17 +1924,17 @@ func (r *EventRepository) RemoveOfficial(ctx context.Context, tournamentID strin
 	if err != nil {
 		return err
 	}
-	_, err = ExtractDB(ctx, r.db).NewDelete().Model((*EventOfficialModel)(nil)).Where("event_id = ? AND player_id = ?", tID, pID).Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewDelete().Model((*EventOfficialModel)(nil)).Where("tournament_id = ? AND player_id = ?", groupID, pID).Exec(ctx)
 	return err
 }
 
 func (r *EventRepository) GetOfficials(ctx context.Context, tournamentID string) ([]event.ParticipantSnapshot, error) {
-	tID, err := uuid.Parse(tournamentID)
+	groupID, err := r.resolveTournamentGroupID(ctx, tournamentID)
 	if err != nil {
 		return nil, err
 	}
 	var officials []EventOfficialModel
-	if err := ExtractDB(ctx, r.db).NewSelect().Model(&officials).Where("event_id = ?", tID).Scan(ctx); err != nil {
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&officials).Where("tournament_id = ?", groupID).Scan(ctx); err != nil {
 		return nil, err
 	}
 	var snapshots []event.ParticipantSnapshot

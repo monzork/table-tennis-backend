@@ -704,6 +704,61 @@ func TestEventRepository_OfficialLifecycle(t *testing.T) {
 	}
 }
 
+func TestEventRepository_OfficialLifecycle_SharedAcrossTournament(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	playerRepo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	tournamentID := uuid.NewString()
+
+	e1 := newBareEvent(t, "Men's Singles", nil)
+	e1.TournamentID = &tournamentID
+	if err := eventRepo.Save(ctx, e1); err != nil {
+		t.Fatalf("Save e1: %v", err)
+	}
+
+	e2 := newBareEvent(t, "Women's Singles", nil)
+	e2.TournamentID = &tournamentID
+	if err := eventRepo.Save(ctx, e2); err != nil {
+		t.Fatalf("Save e2: %v", err)
+	}
+
+	ref := savePlayer(t, playerRepo, "Ref", "Eree", "M")
+	if err := eventRepo.AddOfficial(ctx, e1.ID, ref.ID, "1234"); err != nil {
+		t.Fatalf("AddOfficial: %v", err)
+	}
+
+	// The official was added via e1 but should be visible from sibling event e2,
+	// since both share the same parent tournament.
+	officials, err := eventRepo.GetOfficials(ctx, e2.ID)
+	if err != nil {
+		t.Fatalf("GetOfficials: %v", err)
+	}
+	if len(officials) != 1 || officials[0].PlayerID != ref.ID {
+		t.Fatalf("expected official shared across sibling events, got %+v", officials)
+	}
+
+	foundID, err := eventRepo.GetParticipantOrOfficialByPIN(ctx, e2.ID, "1234")
+	if err != nil {
+		t.Fatalf("GetParticipantOrOfficialByPIN: %v", err)
+	}
+	if foundID != ref.ID {
+		t.Fatalf("expected to resolve official by PIN via sibling event, got %q", foundID)
+	}
+
+	if err := eventRepo.RemoveOfficial(ctx, e2.ID, ref.ID); err != nil {
+		t.Fatalf("RemoveOfficial: %v", err)
+	}
+	officials, err = eventRepo.GetOfficials(ctx, e1.ID)
+	if err != nil {
+		t.Fatalf("GetOfficials (after remove via sibling): %v", err)
+	}
+	if len(officials) != 0 {
+		t.Fatalf("expected removal via sibling event to clear official for both, got %d", len(officials))
+	}
+}
+
 func TestEventRepository_GetTournamentNumTables(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)

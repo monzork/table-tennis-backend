@@ -473,7 +473,10 @@ type TeamRepository interface {
 	RemovePlayerFromTeam(ctx context.Context, teamID string, playerID string) error
 }
 
-// OfficialRepository manages referees/officials assigned to an event.
+// OfficialRepository manages referees/officials assigned to a tournament. An
+// official is scoped to the whole parent tournament (shared across all its
+// child events/categories), not just the single event ID passed in — the
+// implementation resolves that event's parent tournament internally.
 type OfficialRepository interface {
 	AddOfficial(ctx context.Context, eventID string, playerID string, pin string) error
 	RemoveOfficial(ctx context.Context, eventID string, playerID string) error

@@ -113,3 +113,52 @@ jobs:
             echo "::error::Could not fast-forward production to ${GITHUB_SHA}. It has probably been pushed to directly and diverged from master; reconcile it by hand (git push origin master:production --force-with-lease) and re-run."
             exit 1
           fi
+
+  # Migrations aren't tracked in a table (see CLAUDE.md) - each cmd/migrate_0NN.go
+  # is a one-off `//go:build ignore` script, so the only safe thing to run
+  # automatically is whichever of those files this push actually *added*. A
+  # modified/re-pushed one is never re-run here - fix forward with a new
+  # migration instead.
+  migrate:
+    name: Run new migrations
+    needs: deploy
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run newly added migration scripts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          before="${{ github.event.before }}"
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            before=$(git rev-parse "${GITHUB_SHA}^" 2>/dev/null || echo "")
+          fi
+          if [ -z "$before" ]; then
+            echo "No previous commit to diff against; skipping."
+            exit 0
+          fi
+
+          added=$(git diff --name-status --diff-filter=A "$before" "${GITHUB_SHA}" -- 'cmd/migrate_*.go' | cut -f2 | sort)
+          if [ -z "$added" ]; then
+            echo "No new migration scripts in this push."
+            exit 0
+          fi
+
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::New migration script(s) found but the DATABASE_URL secret is not set:"
+            echo "$added"
+            exit 1
+          fi
+
+          echo "$added" | while read -r script; do
+            echo "▶ go run $script"
+            go run "$script"
+          done
