@@ -226,7 +226,7 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 				dbP.UpdateDoublesElo(int16(math.Round(float64(state.StartDoubles) + state.DeltaDoubles)))
 			}
 		}
-		_ = uc.playerRepo.SaveMultiple(ctx, dbPlayers)
+		_ = uc.playerRepo.UpdateElo(ctx, dbPlayers)
 	}
 
 	// 4. Update event_participants final Elo snapshots

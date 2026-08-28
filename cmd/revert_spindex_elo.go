@@ -118,7 +118,7 @@ func main() {
 		}
 
 		if *commit && len(toSave) > 0 {
-			if err := playerRepo.SaveMultiple(ctx, toSave); err != nil {
+			if err := playerRepo.UpdateElo(ctx, toSave); err != nil {
 				log.Fatalf("failed to save reverted players for event %s: %v", ev.Name, err)
 			}
 			// Clear the after-snapshot too, since it no longer reflects live Elo.

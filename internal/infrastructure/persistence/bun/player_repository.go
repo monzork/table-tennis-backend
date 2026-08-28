@@ -353,6 +353,32 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 	return err
 }
 
+// UpdateElo writes only singles_elo/doubles_elo for each player, leaving
+// every other column alone — unlike Save/SaveMultiple's full-row upsert,
+// which silently blanks out any field the caller's Player struct didn't
+// have populated (e.g. second_name, second_last_name).
+func (r *PlayerRepository) UpdateElo(ctx context.Context, players []*player.Player) error {
+	if len(players) == 0 {
+		return nil
+	}
+	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
+		for _, p := range players {
+			id, err := uuid.Parse(p.ID)
+			if err != nil {
+				return err
+			}
+			if _, err := tx.NewUpdate().
+				Model((*PlayerModel)(nil)).
+				Set("singles_elo = ?, doubles_elo = ?", p.SinglesElo, p.DoublesElo).
+				Where("id = ?", id).
+				Exec(ctx); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // GetByGuardianAccountID returns every player linked to the given guardian
 // Account (a parent's children plus any adult players an admin has linked
 // directly to their own account).

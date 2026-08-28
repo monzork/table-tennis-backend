@@ -11,6 +11,12 @@ type Repository interface {
 	GetByIDs(ctx context.Context, ids []string) ([]*Player, error)
 	Save(ctx context.Context, p *Player) error
 	SaveMultiple(ctx context.Context, players []*Player) error
+	// UpdateElo writes only the singles_elo/doubles_elo columns for each
+	// given player, leaving every other field untouched — unlike
+	// Save/SaveMultiple, which rewrite the whole row and so require a
+	// fully-hydrated Player or they'll blank out fields the caller didn't
+	// set.
+	UpdateElo(ctx context.Context, players []*Player) error
 	Delete(ctx context.Context, id string) error
 	Search(ctx context.Context, query string) ([]*Player, error)
 	SearchForSelection(ctx context.Context, query, gender string) ([]*Player, error)

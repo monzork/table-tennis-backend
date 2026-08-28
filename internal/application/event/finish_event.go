@@ -263,7 +263,7 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 					dbP.UpdateDoublesElo(int16(math.Round(float64(state.StartDoubles) + state.DeltaDoubles)))
 				}
 			}
-			_ = uc.playerRepo.SaveMultiple(ctx, dbPlayers)
+			_ = uc.playerRepo.UpdateElo(ctx, dbPlayers)
 		}
 	}
 

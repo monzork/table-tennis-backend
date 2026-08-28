@@ -40,6 +40,10 @@ func (m *mockPlayerRepo) SaveMultiple(ctx context.Context, players []*player.Pla
 	return nil
 }
 
+func (m *mockPlayerRepo) UpdateElo(ctx context.Context, players []*player.Player) error {
+	return nil
+}
+
 func (m *mockPlayerRepo) Delete(ctx context.Context, id string) error {
 	return nil
 }

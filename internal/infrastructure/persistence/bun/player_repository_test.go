@@ -365,6 +365,54 @@ func TestPlayerRepository_SaveMultiple(t *testing.T) {
 	}
 }
 
+func TestPlayerRepository_UpdateElo(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	if err := repo.UpdateElo(ctx, nil); err != nil {
+		t.Fatalf("UpdateElo (empty): %v", err)
+	}
+
+	p := newTestPlayer(t, "Elo", "Player", "M")
+	p.SecondName = "Middle"
+	p.SecondLastName = "Second"
+	p.WhatsAppNumber = "5555551234"
+	p.NationalID = "001-123456-0001A"
+	if err := repo.Save(ctx, p); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	// Simulate the Elo-update path: mutate only Elo on an otherwise-fresh
+	// Player struct that doesn't carry the rest of the row's data.
+	eloOnly := &player.Player{ID: p.ID, SinglesElo: 1234, DoublesElo: 1456}
+	if err := repo.UpdateElo(ctx, []*player.Player{eloOnly}); err != nil {
+		t.Fatalf("UpdateElo: %v", err)
+	}
+
+	got, err := repo.GetById(ctx, p.ID)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.SinglesElo != 1234 || got.DoublesElo != 1456 {
+		t.Fatalf("expected Elo updated, got singles=%d doubles=%d", got.SinglesElo, got.DoublesElo)
+	}
+	if got.SecondName != "Middle" || got.SecondLastName != "Second" || got.WhatsAppNumber != "5555551234" || got.NationalID != "001-123456-0001A" {
+		t.Fatalf("expected non-Elo fields preserved by UpdateElo, got %+v", got)
+	}
+}
+
+func TestPlayerRepository_UpdateElo_InvalidID(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	bad := &player.Player{ID: "not-a-uuid", SinglesElo: 1000, DoublesElo: 1000}
+	if err := repo.UpdateElo(ctx, []*player.Player{bad}); err == nil {
+		t.Fatal("expected error for invalid UUID, got nil")
+	}
+}
+
 func TestPlayerRepository_SaveMultiple_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
 	repo := bunRepo.NewPlayerRepository(db)
