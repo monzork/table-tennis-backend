@@ -73,7 +73,7 @@ func TestStartKnockoutStageUseCase_Execute(t *testing.T) {
 			Matches:      []tournamentDomain.Match{m},
 		}
 
-		if err := uc.Execute(context.Background(), "t1", ""); err != nil {
+		if err := uc.Execute(context.Background(), "t1", "open"); err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 		if len(matchRepo.savedMatches) == 0 {
@@ -98,7 +98,7 @@ func TestStartKnockoutStageUseCase_Execute(t *testing.T) {
 		}
 		matchRepo.saveErr = errors.New("boom")
 
-		if err := uc.Execute(context.Background(), "t1", ""); err == nil {
+		if err := uc.Execute(context.Background(), "t1", "open"); err == nil {
 			t.Fatal("expected error, got nil")
 		}
 	})

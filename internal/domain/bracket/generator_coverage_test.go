@@ -37,6 +37,12 @@ func TestGeneratorCoverage_SkipEloGroups(t *testing.T) {
 		if br.Divisions[0].GroupID != "g1" {
 			t.Errorf("expected GroupID g1, got %q", br.Divisions[0].GroupID)
 		}
+		// Regression: an empty division ID here collapses the "Start Knockout"
+		// button's URL (/admin/events/:id/divisions/:divId/start-knockout) to a
+		// double slash and 404s for every SkipElo/SkipDivisionSplit event.
+		if br.Divisions[0].ID == "" {
+			t.Error("expected a non-empty division ID for the Open Bracket view")
+		}
 	})
 
 	t.Run("no group matches skip-elo participants", func(t *testing.T) {

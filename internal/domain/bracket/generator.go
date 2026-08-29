@@ -254,7 +254,14 @@ func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]str
 				}
 			}
 		}
-		dv := buildDivisionView(t, "", "Open Bracket", "", 0, nil, false, openPlayers)
+		// A non-empty, stable division ID is required here even though there's
+		// no real division row backing it: the "Start Knockout" button posts to
+		// /admin/events/:id/divisions/:divId/start-knockout using this exact ID,
+		// and StartKnockoutStageUseCase matches it back against a fresh
+		// BuildBracket call — an empty ID collapsed that URL to a double slash
+		// and 404'd for every SkipElo/SkipDivisionSplit/single_division_multiple
+		// _brackets event (e.g. every hand-picked "Open" category tournament).
+		dv := buildDivisionView(t, "open", "Open Bracket", "", 0, nil, false, openPlayers)
 		dv.GroupID = openGroupID
 		vm.Divisions = append(vm.Divisions, dv)
 		return vm
