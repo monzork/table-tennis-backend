@@ -321,7 +321,11 @@
         oscillator.stop(audioCtx.currentTime + 0.5);
     }
 
-    const STAGE_LABELS_ES = {
+    // hx-boost="true" on <body> swaps this whole script back in on every
+    // boosted navigation between admin pages, re-executing it — a plain
+    // `const` here would throw "redeclaration of const STAGE_LABELS_ES" on
+    // the second navigation. window.* assignment is safely re-runnable.
+    window.STAGE_LABELS_ES = window.STAGE_LABELS_ES || {
         group: 'Fase de grupos',
         r32: 'Dieciseisavos de final',
         r16: 'Octavos de final',

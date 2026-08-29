@@ -125,7 +125,7 @@ func (h *EventHandler) StartKnockout(c *fiber.Ctx) error {
 		return ErrorHandler(err)
 	}
 
-	c.Set("HX-Trigger", `{"show-toast": {"message": "Knockout matches created and scheduled!", "type": "success"}}`)
+	c.Set("HX-Trigger", `{"show-toast": {"message": "Knockout matches created and scheduled!", "type": "success"}, "reload-bracket": true}`)
 	return c.SendString("")
 }
 
