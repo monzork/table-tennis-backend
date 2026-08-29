@@ -214,7 +214,15 @@ func TestOrlandoJoseSecondDivisionReplay(t *testing.T) {
 		time.Now(), time.Now(), []tournamentDomain.Rule{}, orig.GroupPassCount, players, orig.HasThirdPlaceMatch,
 	)
 	require.NoError(t, err)
-	clone.SkipElo = true
+	// SkipElo=false so the bracket view resolves a real division ("2nd
+	// Division") instead of the generic "Open Bracket" fallback (BuildBracket
+	// treats SkipElo alone as "no division concept applies"). This is safe:
+	// Elo is only ever actually computed and written to players inside
+	// FinishTournamentUseCase/RecalculateTournamentEloUseCase, and this test
+	// never calls either — only per-match UpdateMatchScoreUseCase, which
+	// never touches Elo. No player rating is at risk as long as the clone is
+	// never finished.
+	clone.SkipElo = false
 	clone.TournamentID = &parentID
 	clone.LosersGroupPassCount = orig.LosersGroupPassCount
 	// The original group matches were actually played best-of-3 (every
