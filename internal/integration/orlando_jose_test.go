@@ -36,6 +36,11 @@ const (
 	secondDivisionID         = "div-second"
 	// Confirmed champion of the 2nd division based on original tournament results
 	expectedChampion2ndDiv = "Mario Espinoza"
+	// The original event actually used GroupPassCount=2. Overridden to 3 on
+	// the clone to exercise the N-region same-group-separation fix
+	// (buildITTFKnockoutSeeds/ValidateSameGroupSeparation) against this real
+	// dataset's uneven group sizes (5,5,5,6,6) once knockout is started.
+	cloneGroupPassCount = 3
 )
 
 // TestOrlandoJoseKnockoutResults is a non-destructive read-only test that verifies the
@@ -211,7 +216,7 @@ func TestOrlandoJoseSecondDivisionReplay(t *testing.T) {
 
 	clone, err := tournamentDomain.NewEvent(
 		idgen.Generate(), "Men's Singles — 2nd Division", orig.Type, orig.Format, "men",
-		time.Now(), time.Now(), []tournamentDomain.Rule{}, orig.GroupPassCount, players, orig.HasThirdPlaceMatch,
+		time.Now(), time.Now(), []tournamentDomain.Rule{}, cloneGroupPassCount, players, orig.HasThirdPlaceMatch,
 	)
 	require.NoError(t, err)
 	// SkipElo=false so the bracket view resolves a real division ("2nd
