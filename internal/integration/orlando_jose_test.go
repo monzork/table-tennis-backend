@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	appEvent "table-tennis-backend/internal/application/event"
 	appMatch "table-tennis-backend/internal/application/match"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/idgen"
@@ -187,41 +186,55 @@ func TestOrlandoJoseSecondDivisionReplay(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, tournamentRepo.Save(ctx, parentTournament))
 
-	// 2. Create the clone child event under that parent. Category "open"
-	// (rather than "men") avoids CreateTournamentUseCase's side effect of
-	// auto-creating an empty paired event for the opposite gender, keeping
-	// cleanup to a single child event.
-	createUC := appEvent.NewCreateTournamentUseCase(eventRepo, playerRepo)
-	clone, err := createUC.Execute(ctx, appEvent.CreateEventCommand{
-		Name:                 "Men's Singles — 2nd Division",
-		Type:                 orig.Type,
-		Format:               orig.Format,
-		Category:             "open",
-		StartDate:            today,
-		EndDate:              today,
-		ParticipantIDs:       participantIDs,
-		GroupPassCount:       orig.GroupPassCount,
-		LosersGroupPassCount: orig.LosersGroupPassCount,
-		SkipElo:              true,
-		HasThirdPlaceMatch:   orig.HasThirdPlaceMatch,
-		TournamentID:         &parentID,
-		// The original group matches were actually played best-of-3 (every
-		// recorded match has 2 or 3 sets, and winners never reach 3 set-wins)
-		// even though this event's own StageRules table declares group=BestOf
-		// 5 — an inconsistency in the historical/imported data, not something
-		// to reproduce. Overriding to what was truly played is what lets
-		// UpdateScore mark these matches "finished" during replay.
-		StageRuleOverrides: []appEvent.StageRuleOverride{
-			{Stage: "group", BestOf: 3, PointsToWin: 11, PointsMargin: 2},
-		},
-	})
+	// 2. Create the clone child event directly (bypassing CreateTournamentUseCase,
+	// which always sets SkipDivisionSplit=true and would auto-create an empty
+	// paired event for the opposite gender). We want the clone to actually
+	// resolve as "2nd Division" via the normal live Elo-based bracket-view
+	// logic — not a generic "Open Bracket" — so it behaves like a real
+	// division-scoped event (matching orig.SkipDivisionSplit=false).
+	//
+	// Real current Elo for these 27 players now spans 1365-1924 (checked
+	// directly against the dev DB) — well past the 2nd division's 1300-1599
+	// band for several of them, since their rating has moved on in the years
+	// since this tournament was actually played. Naively reusing their live
+	// Elo would scatter them across 1st and 2nd division in the bracket view.
+	// Since Elo here is used only to bucket players into a division (their
+	// real ratings are never touched — SkipElo=true and we never call
+	// UpdateElo), clamping every participant's in-memory SinglesElo to the
+	// middle of the 2nd division band keeps the whole clone in one division,
+	// which is all this replay is testing.
+	players, err := playerRepo.GetByIDs(ctx, participantIDs)
 	require.NoError(t, err)
+	for _, p := range players {
+		p.SinglesElo = 1500
+	}
+
+	clone, err := tournamentDomain.NewEvent(
+		idgen.Generate(), "Men's Singles — 2nd Division", orig.Type, orig.Format, "men",
+		time.Now(), time.Now(), []tournamentDomain.Rule{}, orig.GroupPassCount, players, orig.HasThirdPlaceMatch,
+	)
+	require.NoError(t, err)
+	clone.SkipElo = true
+	clone.TournamentID = &parentID
+	clone.LosersGroupPassCount = orig.LosersGroupPassCount
+	// The original group matches were actually played best-of-3 (every
+	// recorded match has 2 or 3 sets, and winners never reach 3 set-wins)
+	// even though this event's own StageRules table declares group=BestOf 5
+	// — an inconsistency in the historical/imported data, not something to
+	// reproduce. Overriding to what was truly played is what lets
+	// UpdateScore mark these matches "finished" during replay.
+	for i := range clone.StageRules {
+		if clone.StageRules[i].Stage == "group" {
+			clone.StageRules[i].BestOf = 3
+		}
+	}
+	require.NoError(t, eventRepo.Save(ctx, clone))
 	t.Logf("Created clone tournament %s / event %s (SkipElo=%v) — inspect via the admin UI (/admin/tournaments/%s) before it is deleted",
 		parentID, clone.ID, clone.SkipElo, parentID)
 
-	// 2. Overwrite the auto-seeded groups (based on today's live Elo, which
-	// would not reproduce the original grouping) with the original historical
-	// grouping, so the replay is apples-to-apples.
+	// 2b. Overwrite the auto-seeded groups (based on the clamped Elo above,
+	// which would not reproduce the original grouping) with the original
+	// historical grouping, so the replay is apples-to-apples.
 	clonePlayerByID := make(map[string]*player.Player)
 	for _, p := range clone.Participants {
 		clonePlayerByID[p.ID] = p
