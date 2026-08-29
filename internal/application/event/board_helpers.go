@@ -203,6 +203,14 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 				}
 				if dv.AllGroupsFinished {
 					for _, bracket := range dv.KnockoutBrackets {
+						if !bracket.Started {
+							// Don't show this tier's projected pairings on the board at
+							// all until an admin has actually clicked "Start Bracket" —
+							// before that it's only a live-recomputed preview that can
+							// still change (and, prior to the same-group-separation fix,
+							// could even show an invalid pairing).
+							continue
+						}
 						for _, round := range bracket.Rounds {
 							for _, bmv := range round.Matches {
 								if bmv.Player1 != nil && bmv.Player2 != nil && bmv.Player1.Player != nil && bmv.Player2.Player != nil {

@@ -1,6 +1,7 @@
 package bracket_test
 
 import (
+	"fmt"
 	"table-tennis-backend/internal/domain/bracket"
 	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/event"
@@ -102,6 +103,94 @@ func TestBracketGenerator_LosersGroupPassCount(t *testing.T) {
 
 	if len(tier2.Rounds[0].Matches) != 2 {
 		t.Errorf("With override, Tier 2 should have 2 matches in round 1, got %d (Rounds len: %d, tierAdvancing len: %d)", len(tier2.Rounds[0].Matches), len(tier2.Rounds), len(tier2.Advancing))
+	}
+}
+
+// TestBracketGenerator_SameGroupSeparationHoldsForHigherPassCounts reproduces
+// a real production bug: with GroupPassCount >= 3, the seeding used to only
+// separate advancing players into 2 bracket halves, which by the pigeonhole
+// principle can't keep 3+ same-group players apart — group-mates who already
+// played each other in the group stage could land on the bracket's fixed
+// first-round-adjacent seed pair (e.g. seeds 6 & 11 in a 16-bracket always
+// face each other in round 1). The fix spreads a group's players across as
+// many regions (quarters, eighths, ...) as its pass count needs.
+func TestBracketGenerator_SameGroupSeparationHoldsForHigherPassCounts(t *testing.T) {
+	// 5 groups of 4 players each, ranked p0 > p1 > p2 > p3 within every group
+	// (p0 beats everyone, p1 beats p2/p3, p2 beats p3) so group standings are
+	// unambiguous.
+	const numGroups = 5
+	const groupSize = 4
+
+	var allPlayers []*player.Player
+	var groups []event.Group
+	var allMatches []event.Match
+	for gi := 0; gi < numGroups; gi++ {
+		groupName := string(rune('A' + gi))
+		var gp []*player.Player
+		for pi := 0; pi < groupSize; pi++ {
+			gp = append(gp, &player.Player{
+				ID:         fmt.Sprintf("g%d-p%d", gi, pi),
+				FirstName:  fmt.Sprintf("G%dP%d", gi, pi),
+				LastName:   "Test",
+				SinglesElo: int16(2000 - gi*100 - pi*10),
+				Gender:     "M",
+			})
+		}
+		allPlayers = append(allPlayers, gp...)
+
+		g := event.Group{
+			ID:      fmt.Sprintf("g%d", gi),
+			EventID: "t1",
+			Name:    groupName,
+			Players: gp,
+		}
+		for i := 0; i < groupSize; i++ {
+			for j := i + 1; j < groupSize; j++ {
+				mID := fmt.Sprintf("g%d-m%d-%d", gi, i, j)
+				g.Matches = append(g.Matches, createFinishedMatch(mID, gp[i], gp[j], "A"))
+			}
+		}
+		groups = append(groups, g)
+		allMatches = append(allMatches, g.Matches...)
+	}
+
+	divs := []*division.Division{
+		{ID: "div1", Name: "Open", Category: "both", MinElo: 1, MaxElo: nil},
+	}
+
+	for _, passCount := range []int{2, 3, 4} {
+		t.Run(fmt.Sprintf("passCount=%d", passCount), func(t *testing.T) {
+			tourney := &event.Event{
+				ID:                    "t1",
+				Name:                  "Test Tournament",
+				Type:                  "singles",
+				Format:                "groups_elimination",
+				EventCategory:         "open",
+				KnockoutBracketsCount: 1,
+				GroupPassCount:        passCount,
+				Participants:          allPlayers,
+				Groups:                groups,
+				Matches:               allMatches,
+			}
+
+			br := bracket.BuildBracket(tourney, divs, map[string]string{})
+			if len(br.Divisions) != 1 {
+				t.Fatalf("expected 1 division view, got %d", len(br.Divisions))
+			}
+			dv := br.Divisions[0]
+			if len(dv.KnockoutBrackets) != 1 {
+				t.Fatalf("expected 1 bracket tier, got %d", len(dv.KnockoutBrackets))
+			}
+
+			advancing := dv.KnockoutBrackets[0].Advancing
+			if len(advancing) != numGroups*passCount {
+				t.Fatalf("expected %d advancing players, got %d", numGroups*passCount, len(advancing))
+			}
+
+			if err := bracket.ValidateSameGroupSeparation(dv.Groups, advancing); err != nil {
+				t.Errorf("same-group separation violated: %v", err)
+			}
+		})
 	}
 }
 

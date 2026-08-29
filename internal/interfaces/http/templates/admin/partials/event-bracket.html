@@ -233,13 +233,19 @@
         <div class="w-full mt-8 border-t border-white/10 pt-10">
           <h3 class="proj-section-title text-lg font-black uppercase text-white tracking-widest mb-8 text-center flex justify-center items-center gap-4">
             {{t $.T "bracket.knockout_phase"}}
-            {{if and .AllGroupsFinished (gt (len .Groups) 0) (not $.IsPublic)}}
-              <button hx-post="/admin/events/{{$t.ID}}/divisions/{{.ID}}/start-knockout"
-                      hx-swap="none"
-                      hx-confirm="{{t $.T "bracket.confirm_start_knockout"}}"
-                      class="px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">
-                {{t $.T "bracket.start_knockout_btn"}}
-              </button>
+            {{if and .AllGroupsFinished (gt (len .Groups) 0)}}
+              {{if and (gt (len .KnockoutBrackets) 0) (index .KnockoutBrackets 0).Started}}
+                <span class="px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1.5">
+                  ✓ {{t $.T "bracket.knockout_started_badge"}}
+                </span>
+              {{else if not $.IsPublic}}
+                <button hx-post="/admin/events/{{$t.ID}}/divisions/{{.ID}}/start-knockout"
+                        hx-swap="none"
+                        hx-confirm="{{t $.T "bracket.confirm_start_knockout"}}"
+                        class="px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">
+                  {{t $.T "bracket.start_knockout_btn"}}
+                </button>
+              {{end}}
             {{end}}
           </h3>
           {{if and .AllGroupsFinished (gt (len .Groups) 0)}}
@@ -311,6 +317,7 @@
               </div>
             </div>
 
+            {{if .Started}}
             <div class="block sm:hidden mb-8 text-center glass rounded-2xl p-6 border border-white/5">
                <div class="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2">{{t $.T "bracket.mobile_title"}}</div>
                <p class="text-xs text-gray-400">{{t $.T "bracket.mobile_desc_pre"}} <strong class="text-white">{{t $.T "bracket.match_list"}}</strong> {{t $.T "bracket.mobile_desc_suffix"}}</p>
@@ -596,6 +603,7 @@
               </div>
               {{end}}
             </div>
+            {{end}}
             <div class="mt-8 border-t border-white/5 pt-8"></div>
             {{end}}
           {{else}}

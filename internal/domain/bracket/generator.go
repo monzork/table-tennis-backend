@@ -55,6 +55,24 @@ type KnockoutBracket struct {
 	RoundsLeft   []Round
 	RoundsRight  []Round
 	RoundsCenter []Round
+	// Started is true once this tier's first round has at least one real,
+	// persisted Match (i.e. StartKnockoutStageUseCase has actually run for
+	// it) rather than only the live-computed seeding preview. Formats with
+	// no separate "Start Bracket" step (elimination, double_elimination) are
+	// always Started — there's nothing to gate.
+	Started bool
+}
+
+// roundHasRealMatch reports whether any match slot in the round already has
+// a persisted event.Match backing it (as opposed to being purely a
+// projected pairing computed from seeding/standings).
+func roundHasRealMatch(round Round) bool {
+	for _, m := range round.Matches {
+		if m.Match != nil {
+			return true
+		}
+	}
+	return false
 }
 
 type PlayerStanding = event.PlayerStanding
@@ -555,6 +573,7 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 					RoundsLeft:   left,
 					RoundsRight:  right,
 					RoundsCenter: center,
+					Started:      len(tierRounds) > 0 && roundHasRealMatch(tierRounds[0]),
 				})
 			}
 		}
@@ -570,6 +589,7 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 			RoundsLeft:   leftW,
 			RoundsRight:  rightW,
 			RoundsCenter: centerW,
+			Started:      true, // double_elimination has no separate "Start Bracket" step
 		})
 
 		// Generate full dynamic losers bracket using winners rounds outcomes
@@ -584,6 +604,7 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 			RoundsLeft:   leftL,
 			RoundsRight:  rightL,
 			RoundsCenter: centerL,
+			Started:      true, // double_elimination has no separate "Start Bracket" step
 		})
 	} else {
 		tierRounds := buildBracketRounds(t, divID, players, 0)
@@ -597,6 +618,7 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 			RoundsLeft:   left,
 			RoundsRight:  right,
 			RoundsCenter: center,
+			Started:      true, // plain elimination format has no separate "Start Bracket" step
 		})
 	}
 
@@ -816,9 +838,14 @@ func nextPow2(n int) int {
 
 // buildITTFKnockoutSeeds arranges advancing players per ITTF rules:
 //   - Group winners occupy seeds 1..numGroups (in group order).
-//   - Each subsequent layer (runners-up, etc.) is placed into the OPPOSITE
-//     bracket half from that group's winner, ensuring same-group players
-//     cannot meet before the final/semi-final.
+//   - Each subsequent layer (runners-up, 3rd-place, etc.) is placed into
+//     whichever bracket region that group has used the least so far,
+//     spreading a group's players across as many of the bracket's regions
+//     as it has (see regionsBySeed) — ensuring same-group players cannot
+//     meet before as late a round as the region count allows (the final
+//     when passCount<=2 and there are only 2 regions/halves, no earlier
+//     than the semifinal when passCount is 3 or 4 and there are 4
+//     regions/quarters, and so on).
 func buildITTFKnockoutSeeds(groups []Group, passCount int) []*player.Player {
 	numGroups := len(groups)
 	if numGroups == 0 || passCount == 0 {
@@ -840,69 +867,78 @@ func buildITTFKnockoutSeeds(groups []Group, passCount int) []*player.Player {
 	bracketSize := nextPow2(totalAdvancing)
 	arrangement := getSeedingArrangement(bracketSize)
 
-	// Determine which seed numbers fall in the top half of the bracket.
-	halfSize := len(arrangement) / 2
-	topHalfSeeds := make(map[int]bool, halfSize)
-	for _, s := range arrangement[:halfSize] {
-		topHalfSeeds[s] = true
+	numRegions := nextPow2(passCount)
+	if numRegions < 2 {
+		numRegions = 2
 	}
+	if numRegions > bracketSize {
+		numRegions = bracketSize
+	}
+	seedRegion := regionsBySeed(arrangement, numRegions)
 
 	// Result slice: index i → player with seed (i+1).
 	result := make([]*player.Player, totalAdvancing)
 
 	// Layer 0: place group winners at seeds 1..numGroups.
-	winnerInTop := make([]bool, numGroups)
+	winnerRegion := make([]int, numGroups)
+	// usedRegions[gi][r] counts how many of group gi's players have already
+	// landed in region r, so later layers can prefer whichever region that
+	// group hasn't used yet instead of only ever alternating between two.
+	usedRegions := make([][]int, numGroups)
+	for gi := range usedRegions {
+		usedRegions[gi] = make([]int, numRegions)
+	}
 	for gi, g := range groups {
 		if len(g.Standings) == 0 {
 			continue
 		}
 		result[gi] = g.Standings[0].Player
-		winnerInTop[gi] = topHalfSeeds[gi+1]
+		winnerRegion[gi] = seedRegion[gi+1]
+		usedRegions[gi][winnerRegion[gi]]++
 	}
 
 	// Layers 1+: runners-up, 3rd-place, etc.
-	// For each layer, groups whose winner is in the top half send their
-	// player to a bottom-half slot, and vice versa.
 	nextSlot := numGroups // first available seed index after layer 0
 
 	for layer := 1; layer < passCount; layer++ {
-		// Collect open top and bottom slots for this layer.
 		layerSize := numGroups
-		var topSlots, bottomSlots []int
+		// Collect this layer's open slots, bucketed by region.
+		regionSlots := make([][]int, numRegions)
 		for i := nextSlot; i < nextSlot+layerSize && i < totalAdvancing; i++ {
 			seedNum := i + 1
-			if topHalfSeeds[seedNum] {
-				topSlots = append(topSlots, i)
-			} else {
-				bottomSlots = append(bottomSlots, i)
+			r, ok := seedRegion[seedNum]
+			if !ok {
+				r = numRegions - 1
 			}
+			regionSlots[r] = append(regionSlots[r], i)
 		}
+		regionCursor := make([]int, numRegions)
 
-		tsi, bsi := 0, 0
 		for gi, g := range groups {
 			if layer >= len(g.Standings) {
 				continue
 			}
 			p := g.Standings[layer].Player
-			if winnerInTop[gi] {
-				// Winner is in top half → this layer player goes to bottom.
-				if bsi < len(bottomSlots) {
-					result[bottomSlots[bsi]] = p
-					bsi++
-				} else if tsi < len(topSlots) {
-					result[topSlots[tsi]] = p
-					tsi++
+
+			// Prefer whichever region this group has used the fewest times
+			// so far (ties broken by region order, for determinism), among
+			// regions that still have an open slot this layer.
+			pref := -1
+			for r := 0; r < numRegions; r++ {
+				if regionCursor[r] >= len(regionSlots[r]) {
+					continue
 				}
-			} else {
-				// Winner is in bottom half → this layer player goes to top.
-				if tsi < len(topSlots) {
-					result[topSlots[tsi]] = p
-					tsi++
-				} else if bsi < len(bottomSlots) {
-					result[bottomSlots[bsi]] = p
-					bsi++
+				if pref == -1 || usedRegions[gi][r] < usedRegions[gi][pref] {
+					pref = r
 				}
 			}
+			if pref == -1 {
+				continue // no open slot anywhere this layer (shouldn't happen)
+			}
+			slotIdx := regionSlots[pref][regionCursor[pref]]
+			regionCursor[pref]++
+			result[slotIdx] = p
+			usedRegions[gi][pref]++
 		}
 
 		nextSlot += layerSize
@@ -1409,7 +1445,11 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player, 
 
 // ValidateSameGroupSeparation checks whether a proposed seed ordering (players[0] = seed 1,
 // players[1] = seed 2, …) ensures that no two players from the same source group are
-// placed in the same bracket half.
+// placed in the same bracket region. The number of regions matches
+// bracketRegionCount(groups, players): 2 (halves) when at most 2 players advance
+// from any one group, 4 (quarters) when up to 4 do, and so on — the same
+// derivation buildITTFKnockoutSeeds uses when constructing the arrangement, so a
+// seed order it produces always validates here.
 //
 // groups is the list of group-stage groups (each with its Players field).
 // players is the ordered list of advancing players in the proposed seed order.
@@ -1434,26 +1474,15 @@ func ValidateSameGroupSeparation(groups []Group, players []*player.Player) error
 	}
 	arrangement := getSeedingArrangement(bracketSize)
 
-	// Build match-up tree for the first round to determine which seeds land in each half.
-	// The top half is slots 0 .. halfSize-1 of the arrangement; bottom half is the rest.
-	halfSize := len(arrangement) / 2
+	numRegions := bracketRegionCount(playerGroup, players, bracketSize)
+	seedRegion := regionsBySeed(arrangement, numRegions)
 
-	// Map seed number → bracket half (0 = top, 1 = bottom).
-	seedHalf := make(map[int]int, len(arrangement))
-	for i, s := range arrangement {
-		if i < halfSize {
-			seedHalf[s] = 0
-		} else {
-			seedHalf[s] = 1
-		}
-	}
-
-	// For each advancing player, record their proposed seed (1-indexed) and the half they'd land in.
+	// For each advancing player, record their proposed seed (1-indexed) and the region they'd land in.
 	type entry struct {
-		name  string
-		seed  int
-		half  int
-		group string
+		name   string
+		seed   int
+		region int
+		group  string
 	}
 	entries := make([]entry, 0, len(players))
 	for i, p := range players {
@@ -1461,40 +1490,36 @@ func ValidateSameGroupSeparation(groups []Group, players []*player.Player) error
 			continue
 		}
 		seed := i + 1
-		half, ok := seedHalf[seed]
+		region, ok := seedRegion[seed]
 		if !ok {
-			// Seeds beyond the bracket size go to the bottom half (they are byes).
-			half = 1
+			// Seeds beyond the bracket size go to the last region (they are byes).
+			region = numRegions - 1
 		}
 		entries = append(entries, entry{
-			name:  p.FirstNameWithSecond() + " " + p.LastNameWithSecond(),
-			seed:  seed,
-			half:  half,
-			group: playerGroup[p.ID],
+			name:   p.FirstNameWithSecond() + " " + p.LastNameWithSecond(),
+			seed:   seed,
+			region: region,
+			group:  playerGroup[p.ID],
 		})
 	}
 
-	// Detect same-group players landing in the same half.
-	type halfGroup struct {
-		group string
-		half  int
+	// Detect same-group players landing in the same region.
+	type regionGroup struct {
+		group  string
+		region int
 	}
-	seen := make(map[halfGroup]entry)
+	seen := make(map[regionGroup]entry)
 	var conflicts []string
 
 	for _, e := range entries {
 		if e.group == "" {
 			continue // player not in any tracked group — skip
 		}
-		key := halfGroup{group: e.group, half: e.half}
+		key := regionGroup{group: e.group, region: e.region}
 		if prev, exists := seen[key]; exists {
-			halfName := "top"
-			if e.half == 1 {
-				halfName = "bottom"
-			}
 			conflicts = append(conflicts,
-				fmt.Sprintf("'%s' (seed %d) and '%s' (seed %d) are from the same group '%s' and are both in the %s half of the bracket",
-					prev.name, prev.seed, e.name, e.seed, e.group, halfName,
+				fmt.Sprintf("'%s' (seed %d) and '%s' (seed %d) are from the same group '%s' and are both in region %d of %d of the bracket",
+					prev.name, prev.seed, e.name, e.seed, e.group, e.region+1, numRegions,
 				),
 			)
 		} else {
@@ -1504,9 +1529,69 @@ func ValidateSameGroupSeparation(groups []Group, players []*player.Player) error
 
 	if len(conflicts) > 0 {
 		return fmt.Errorf(
-			"ITTF rule violation: same-group players must be separated into opposite bracket halves.\n%s",
+			"ITTF rule violation: same-group players must be separated into distinct bracket regions.\n%s",
 			strings.Join(conflicts, "\n"),
 		)
 	}
 	return nil
+}
+
+// bracketRegionCount returns how many equal regions the bracket should be
+// divided into so that every group's advancing players can occupy distinct
+// regions: the smallest power of 2 that is >= the largest number of
+// advancing players from any single group, clamped to [2, bracketSize].
+// With at most 2 advancing per group this is 2 (halves, same-group players
+// can only meet in the final); with 3 or 4 it's 4 (quarters, at earliest the
+// semifinal); and so on. Once a group's count exceeds bracketSize, full
+// separation is no longer achievable and this returns bracketSize (the
+// finest regions the bracket has), so validation still checks the best
+// achievable separation rather than skipping.
+func bracketRegionCount(playerGroup map[string]string, players []*player.Player, bracketSize int) int {
+	counts := make(map[string]int, len(playerGroup))
+	maxCount := 0
+	for _, p := range players {
+		if p == nil {
+			continue
+		}
+		g := playerGroup[p.ID]
+		if g == "" {
+			continue
+		}
+		counts[g]++
+		if counts[g] > maxCount {
+			maxCount = counts[g]
+		}
+	}
+	regions := nextPow2(maxCount)
+	if regions < 2 {
+		regions = 2
+	}
+	if regions > bracketSize {
+		regions = bracketSize
+	}
+	return regions
+}
+
+// regionsBySeed divides a seeding arrangement into numRegions equal,
+// contiguous chunks (in arrangement order) and returns a map from seed
+// number to its region index (0-indexed). Region 0 is the traditional "top
+// half" when numRegions is 2; with more regions, region 0 is the first
+// quarter/eighth/etc., and so on.
+func regionsBySeed(arrangement []int, numRegions int) map[int]int {
+	seedRegion := make(map[int]int, len(arrangement))
+	if numRegions <= 0 {
+		return seedRegion
+	}
+	regionSize := len(arrangement) / numRegions
+	if regionSize <= 0 {
+		regionSize = 1
+	}
+	for i, s := range arrangement {
+		region := i / regionSize
+		if region >= numRegions {
+			region = numRegions - 1
+		}
+		seedRegion[s] = region
+	}
+	return seedRegion
 }
