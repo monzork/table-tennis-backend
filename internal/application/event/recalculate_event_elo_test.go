@@ -64,7 +64,7 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 			Status: "finished", Stage: "final", WinnerTeam: "A", UpdatedAt: &now,
 		}
 		repo.events["t1"] = &tournamentDomain.Event{
-			ID: "t1", Participants: []*playerDomain.Player{p1, p2},
+			ID: "t1", Format: "elimination", Participants: []*playerDomain.Player{p1, p2},
 			Matches: []tournamentDomain.Match{m},
 		}
 		repo.snapshots = []tournamentDomain.ParticipantSnapshot{
@@ -79,6 +79,15 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 		}
 		if repo.events["t1"].Metrics == nil {
 			t.Errorf("expected metrics recalculated")
+		}
+		// Champion (p1) gets the normal match delta (+16) plus the flat
+		// 1st-place bonus (+64); runner-up (p2) gets the normal match delta
+		// (-16) plus the flat 2nd-place bonus (+32).
+		if p1.SinglesElo != 1080 {
+			t.Errorf("expected champion elo 1000+16+64=1080, got %d", p1.SinglesElo)
+		}
+		if p2.SinglesElo != 1016 {
+			t.Errorf("expected runner-up elo 1000-16+32=1016, got %d", p2.SinglesElo)
 		}
 	})
 

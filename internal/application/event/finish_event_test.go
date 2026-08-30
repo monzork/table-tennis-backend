@@ -120,6 +120,16 @@ func TestFinishTournamentUseCase_Execute(t *testing.T) {
 		if got.Metrics == nil {
 			t.Errorf("expected metrics to be calculated")
 		}
+		// Champion (p1) gets the normal match delta (+16 for a 1000-vs-1000
+		// win at K=32) plus the flat 1st-place bonus (+64); runner-up (p2)
+		// gets the normal match delta (-16) plus the flat 2nd-place bonus
+		// (+32). See tournamentDomain.PlacementEloBonus.
+		if p1.SinglesElo != 1080 {
+			t.Errorf("expected champion elo 1000+16+64=1080, got %d", p1.SinglesElo)
+		}
+		if p2.SinglesElo != 1016 {
+			t.Errorf("expected runner-up elo 1000-16+32=1016, got %d", p2.SinglesElo)
+		}
 	})
 
 	t.Run("skip elo events do not touch elo but still finish", func(t *testing.T) {

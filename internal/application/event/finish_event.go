@@ -249,6 +249,22 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 			}
 		}
 
+		// 2b. Podium finishers earn a flat Elo bonus besides whatever they
+		// gained or lost from the matches they actually played: champion
+		// +2xK, runner-up +1xK, (up to two) 3rd-place +0.5xK. See
+		// tournamentDomain.PlacementEloBonus.
+		for playerID, bonus := range tournamentDomain.PlacementEloBonus(t) {
+			state, ok := playerElos[playerID]
+			if !ok {
+				continue
+			}
+			if t.Type == "doubles" || t.Type == "mixed_doubles" {
+				state.DeltaDoubles += bonus
+			} else {
+				state.DeltaSingles += bonus
+			}
+		}
+
 		// 3. Save final updated Elos to database
 		var pids []string
 		for id := range playerElos {
