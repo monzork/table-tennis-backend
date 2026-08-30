@@ -1,6 +1,6 @@
 <h2 class="text-xl font-extrabold uppercase mb-1 tracking-tighter">{{t .T "score_pub.title"}} <span class="text-white">{{t .T "score_pub.score"}}</span></h2>
 <p class="text-xs text-gray-500 mb-4 font-mono">
-    {{.PlayerA}} vs {{.PlayerB}} · Bo{{.BestOf}}
+    {{.PlayerA}} <span class="text-white/40">(A)</span> vs {{.PlayerB}} <span class="text-white/40">(B)</span> · Bo{{.BestOf}}
     {{if .IsDoubles}}
     <br/>
     <span class="text-gray-400 font-sans mt-1.5 block leading-relaxed">
