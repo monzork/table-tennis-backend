@@ -213,12 +213,13 @@ var Translations = map[string]map[string]string{
 		"table.refresh_btn":          "Check Again",
 
 		// Score form (public)
-		"score_pub.title":   "Update",
-		"score_pub.score":   "Score",
-		"score_pub.players": "Players:",
-		"score_pub.set":     "Set",
-		"score_pub.cancel":  "Cancel",
-		"score_pub.submit":  "Submit Scores",
+		"score_pub.title":       "Update",
+		"score_pub.score":       "Score",
+		"score_pub.players":     "Players:",
+		"score_pub.set":         "Set",
+		"score_pub.cancel":      "Cancel",
+		"score_pub.submit":      "Submit Scores",
+		"score_pub.invalid_set": "A set must reach {points} points and be won by at least {margin}.",
 
 		// Public event detail
 		"pub_detail.draw_title":   "Event Draw",
@@ -1133,12 +1134,13 @@ var Translations = map[string]map[string]string{
 		"table.refresh_btn":          "Verificar de Nuevo",
 
 		// Score form (public)
-		"score_pub.title":   "Actualizar",
-		"score_pub.score":   "Resultado",
-		"score_pub.players": "Jugadores:",
-		"score_pub.set":     "Set",
-		"score_pub.cancel":  "Cancelar",
-		"score_pub.submit":  "Enviar Resultado",
+		"score_pub.title":       "Actualizar",
+		"score_pub.score":       "Resultado",
+		"score_pub.players":     "Jugadores:",
+		"score_pub.set":         "Set",
+		"score_pub.cancel":      "Cancelar",
+		"score_pub.submit":      "Enviar Resultado",
+		"score_pub.invalid_set": "Un set debe llegar a {points} puntos y ganarse por al menos {margin}.",
 
 		// Public event detail
 		"pub_detail.draw_title":   "Sorteo del Torneo",

@@ -13,6 +13,8 @@
     id="public-score-form"
     data-player-a="{{.PlayerA}}"
     data-player-b="{{.PlayerB}}"
+    data-points-to-win="{{.PointsToWin}}"
+    data-points-margin="{{.PointsMargin}}"
     hx-post="/public/matches/score/update"
     hx-trigger="confirmed"
     hx-target="#public-score-result"
@@ -42,15 +44,16 @@
         {{end}}
     </div>
 
+    <div id="public-score-set-error" class="hidden text-[11px] text-red-400 mb-2 font-mono text-center"></div>
     <div id="public-score-result" class="hidden text-sm text-red-400 mb-2 font-mono text-center"></div>
 
     <div class="flex gap-3">
-        <button type="button" 
+        <button type="button"
             onclick="document.getElementById('public-score-modal').classList.add('hidden')"
             class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-bold py-4 rounded-2xl transition-all uppercase tracking-widest text-xs">
             {{t .T "score_pub.cancel"}}
         </button>
-        <button type="submit" 
+        <button type="submit" id="public-score-submit-btn"
             class="flex-[2] bg-white hover:bg-gray-100 text-black font-black py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg text-xs">
             {{t .T "score_pub.submit"}}
         </button>
@@ -77,15 +80,31 @@
 // the first two sets are split 1-1, not enterable after a 2-0 sweep. Rows stay
 // visible (just grayed out) rather than hidden, so players can see up front
 // how many sets the match could go to.
+//
+// A set only counts as "complete" once it actually satisfies the stage's win
+// condition (reach the points target, win by the configured margin) — the
+// same rule the backend uses to decide set winners — not just "whichever
+// number is higher". An entered-but-invalid set (e.g. 5-3) blocks submission
+// and is shown with an error instead of being silently treated as a win.
+function isValidPublicSet(a, b, pointsToWin, margin) {
+    if (isNaN(a) || isNaN(b)) return null;
+    const diff = Math.abs(a - b);
+    return (a >= pointsToWin || b >= pointsToWin) && diff >= margin;
+}
+
 function updatePublicSetVisibility() {
+    const form = document.getElementById('public-score-form');
     const container = document.getElementById('public-score-sets');
-    if (!container) return;
+    if (!container || !form) return;
+    const pointsToWin = parseInt(form.getAttribute('data-points-to-win')) || 11;
+    const margin = parseInt(form.getAttribute('data-points-margin')) || 2;
     const rows = Array.from(container.querySelectorAll('.set-row'));
     const bestOf = rows.length;
     const target = Math.ceil(bestOf / 2);
 
     let winsA = 0, winsB = 0;
     let priorComplete = true;
+    let hasInvalidSet = false;
 
     rows.forEach((row, idx) => {
         const setNumber = idx + 1;
@@ -102,10 +121,20 @@ function updatePublicSetVisibility() {
 
             const a = parseInt(inputA.value);
             const b = parseInt(inputB.value);
-            if (!isNaN(a) && !isNaN(b)) {
+            const valid = isValidPublicSet(a, b, pointsToWin, margin);
+            if (valid === true) {
+                inputA.classList.remove('border-red-500');
+                inputB.classList.remove('border-red-500');
                 if (a > b) winsA++;
                 else if (b > a) winsB++;
+            } else if (valid === false) {
+                inputA.classList.add('border-red-500');
+                inputB.classList.add('border-red-500');
+                hasInvalidSet = true;
+                priorComplete = false;
             } else {
+                inputA.classList.remove('border-red-500');
+                inputB.classList.remove('border-red-500');
                 priorComplete = false;
             }
         } else {
@@ -114,9 +143,24 @@ function updatePublicSetVisibility() {
             inputB.disabled = true;
             inputA.value = '';
             inputB.value = '';
+            inputA.classList.remove('border-red-500');
+            inputB.classList.remove('border-red-500');
             priorComplete = false;
         }
     });
+
+    const errorEl = document.getElementById('public-score-set-error');
+    const submitBtn = document.getElementById('public-score-submit-btn');
+    if (hasInvalidSet) {
+        errorEl.textContent = "{{t .T "score_pub.invalid_set"}}".replace('{points}', pointsToWin).replace('{margin}', margin);
+        errorEl.classList.remove('hidden');
+        if (submitBtn) submitBtn.disabled = true;
+    } else {
+        errorEl.classList.add('hidden');
+        if (submitBtn) submitBtn.disabled = false;
+    }
+
+    return !hasInvalidSet;
 }
 
 document.getElementById('public-score-sets').addEventListener('input', updatePublicSetVisibility);
@@ -124,11 +168,13 @@ updatePublicSetVisibility();
 
 document.getElementById('public-score-form').addEventListener('submit', function(e) {
     e.preventDefault();
+    if (!updatePublicSetVisibility()) return;
+
     let setsA = 0; let setsB = 0;
     let inputsA = this.querySelectorAll('input[name=\'scores[]_a\']');
     let inputsB = this.querySelectorAll('input[name=\'scores[]_b\']');
     let hasScores = false;
-    
+
     for (let i = 0; i < inputsA.length; i++) {
         let a = parseInt(inputsA[i].value);
         let b = parseInt(inputsB[i].value);
@@ -138,7 +184,7 @@ document.getElementById('public-score-form').addEventListener('submit', function
             else if (b > a) setsB++;
         }
     }
-    
+
     if (hasScores) {
         let pA = this.getAttribute('data-player-a');
         let pB = this.getAttribute('data-player-b');
@@ -151,7 +197,7 @@ document.getElementById('public-score-form').addEventListener('submit', function
         } else {
             msg += `{{t .T "confirm.js_tie"}} <span class="text-yellow-400 font-black">${setsA} - ${setsB}</span>`;
         }
-        
+
         document.getElementById('custom-confirm-msg').innerHTML = msg;
         document.getElementById('custom-confirm-modal').classList.remove('hidden');
     } else {

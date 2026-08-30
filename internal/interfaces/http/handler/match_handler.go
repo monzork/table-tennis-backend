@@ -1534,8 +1534,12 @@ func (h *MatchHandler) ShowTableScorePage(c *fiber.Ctx) error {
 	// Load full match data for score form
 	t, _ := h.tournamentRepo.GetByID(c.Context(), m.EventID)
 	bestOf := 5
+	pointsToWin, pointsMargin := 11, 2
 	if t != nil {
-		bestOf = t.GetEffectiveStageRule(m.Stage).BestOf
+		stageRule := t.GetEffectiveStageRule(m.Stage)
+		bestOf = stageRule.BestOf
+		pointsToWin = stageRule.PointsToWin
+		pointsMargin = stageRule.PointsMargin
 	}
 
 	type setVM struct {
@@ -1565,19 +1569,21 @@ func (h *MatchHandler) ShowTableScorePage(c *fiber.Ctx) error {
 	}
 
 	return c.Render("public/match-score-page", fiber.Map{
-		"MatchID":     matchIDStr,
-		"EventID":     eventID,
-		"Stage":       m.Stage,
-		"BestOf":      bestOf,
-		"PlayerA":     playerAName,
-		"PlayerB":     playerBName,
-		"Sets":        sets,
-		"P1Id":        playerIDOrEmpty(m.TeamA),
-		"P2Id":        playerIDOrEmpty(m.TeamB),
-		"IsDoubles":   m.MatchType == "doubles",
-		"TableNumber": m.TableNumber,
-		"T":           tMap,
-		"Lang":        lang,
+		"MatchID":      matchIDStr,
+		"EventID":      eventID,
+		"Stage":        m.Stage,
+		"BestOf":       bestOf,
+		"PointsToWin":  pointsToWin,
+		"PointsMargin": pointsMargin,
+		"PlayerA":      playerAName,
+		"PlayerB":      playerBName,
+		"Sets":         sets,
+		"P1Id":         playerIDOrEmpty(m.TeamA),
+		"P2Id":         playerIDOrEmpty(m.TeamB),
+		"IsDoubles":    m.MatchType == "doubles",
+		"TableNumber":  m.TableNumber,
+		"T":            tMap,
+		"Lang":         lang,
 	})
 }
 
@@ -1617,8 +1623,12 @@ func (h *MatchHandler) ValidateMatchPIN(c *fiber.Ctx) error {
 	// Load full match data for score form
 	t, _ := h.tournamentRepo.GetByID(c.Context(), m.EventID.String())
 	bestOf := 5
+	pointsToWin, pointsMargin := 11, 2
 	if t != nil {
-		bestOf = t.GetEffectiveStageRule(m.Stage).BestOf
+		stageRule := t.GetEffectiveStageRule(m.Stage)
+		bestOf = stageRule.BestOf
+		pointsToWin = stageRule.PointsToWin
+		pointsMargin = stageRule.PointsMargin
 	}
 
 	playerAName, playerBName := "Player A", "Player B"
@@ -1657,19 +1667,21 @@ func (h *MatchHandler) ValidateMatchPIN(c *fiber.Ctx) error {
 
 	lang := getLang(c)
 	return c.Render("public/match-score-form", fiber.Map{
-		"MatchID":     matchIDStr,
-		"EventID":     eventID,
-		"Stage":       m.Stage,
-		"BestOf":      bestOf,
-		"PlayerA":     playerAName,
-		"PlayerB":     playerBName,
-		"Sets":        sets,
-		"P1Id":        m.TeamAPlayer1ID.String(),
-		"P2Id":        m.TeamBPlayer1ID.String(),
-		"IsDoubles":   m.MatchType == "doubles",
-		"TableNumber": m.TableNumber,
-		"Pin":         submittedPin, // pass validated PIN so form can re-submit
-		"T":           i18n.PrecomputedMaps[lang],
-		"Lang":        lang,
+		"MatchID":      matchIDStr,
+		"EventID":      eventID,
+		"Stage":        m.Stage,
+		"BestOf":       bestOf,
+		"PointsToWin":  pointsToWin,
+		"PointsMargin": pointsMargin,
+		"PlayerA":      playerAName,
+		"PlayerB":      playerBName,
+		"Sets":         sets,
+		"P1Id":         m.TeamAPlayer1ID.String(),
+		"P2Id":         m.TeamBPlayer1ID.String(),
+		"IsDoubles":    m.MatchType == "doubles",
+		"TableNumber":  m.TableNumber,
+		"Pin":          submittedPin, // pass validated PIN so form can re-submit
+		"T":            i18n.PrecomputedMaps[lang],
+		"Lang":         lang,
 	})
 }

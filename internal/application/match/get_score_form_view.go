@@ -24,6 +24,8 @@ type ScoreFormView struct {
 	EventID        string
 	Stage          string
 	BestOf         int
+	PointsToWin    int
+	PointsMargin   int
 	PlayerA        string
 	PlayerB        string
 	Sets           []SetVM
@@ -100,6 +102,13 @@ func (uc *GetScoreFormViewUseCase) Execute(
 		if t, err := uc.tournamentRepo.GetByIDLite(ctx, tID); err == nil {
 			tourney = t
 		}
+	}
+
+	pointsToWin, pointsMargin := 11, 2
+	if tourney != nil {
+		stageRule := tourney.GetEffectiveStageRule(stage)
+		pointsToWin = stageRule.PointsToWin
+		pointsMargin = stageRule.PointsMargin
 	}
 
 	// Detect teams mode
@@ -334,6 +343,8 @@ func (uc *GetScoreFormViewUseCase) Execute(
 		EventID:        tID,
 		Stage:          stage,
 		BestOf:         bestOf,
+		PointsToWin:    pointsToWin,
+		PointsMargin:   pointsMargin,
 		PlayerA:        playerAName,
 		PlayerB:        playerBName,
 		Sets:           sets,
