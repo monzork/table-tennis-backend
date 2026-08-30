@@ -1070,7 +1070,7 @@ func (h *EventHandler) ToggleSeedingLock(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to toggle seeding lock")
 	}
 
-	c.Set("HX-Trigger", "reload-board")
+	c.Set("HX-Trigger", "reload-bracket")
 	return c.SendStatus(200)
 }
 
