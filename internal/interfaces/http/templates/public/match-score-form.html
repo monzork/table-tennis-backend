@@ -31,7 +31,7 @@
     <!-- Sets Scores -->
     <div class="space-y-2 mb-4" id="public-score-sets">
         {{range .Sets}}
-        <div class="set-row flex items-center gap-3">
+        <div class="set-row flex items-center gap-3 transition-opacity duration-200">
             <span class="text-[10px] font-bold text-gray-500 w-10 text-right uppercase tracking-widest">{{t $.T "score_pub.set"}} {{.Number}}</span>
             <input name="scores[]_a" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="99" placeholder="A" value="{{.ScoreA}}"
                 class="flex-1 bg-white/[0.04] border border-white/10 rounded-xl p-4 text-white text-center text-2xl font-black focus:outline-none focus:border-white/30 transition-colors shadow-inner">
@@ -73,8 +73,10 @@
 <script>
 // A "decider" set (beyond the guaranteed minimum of ceil(bestOf/2) sets) only
 // makes sense once the previous sets are tied with neither side one set away
-// from having already won the match — e.g. Bo3's 3rd set stays hidden until
-// the first two sets are split 1-1, not shown after a 2-0 sweep.
+// from having already won the match — e.g. Bo3's 3rd set stays disabled until
+// the first two sets are split 1-1, not enterable after a 2-0 sweep. Rows stay
+// visible (just grayed out) rather than hidden, so players can see up front
+// how many sets the match could go to.
 function updatePublicSetVisibility() {
     const container = document.getElementById('public-score-sets');
     if (!container) return;
@@ -94,7 +96,7 @@ function updatePublicSetVisibility() {
         const eligible = isCore || (priorComplete && !decided);
 
         if (eligible) {
-            row.classList.remove('hidden');
+            row.classList.remove('opacity-30', 'pointer-events-none');
             inputA.disabled = false;
             inputB.disabled = false;
 
@@ -107,7 +109,7 @@ function updatePublicSetVisibility() {
                 priorComplete = false;
             }
         } else {
-            row.classList.add('hidden');
+            row.classList.add('opacity-30', 'pointer-events-none');
             inputA.disabled = true;
             inputB.disabled = true;
             inputA.value = '';
