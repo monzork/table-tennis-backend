@@ -392,10 +392,10 @@ function onDrop(event, el) {
     const playerId = event.dataTransfer.getData('text/plain');
     if (!playerId) return;
 
-    const tournamentId = el.dataset.tournamentId;
+    const eventId = el.dataset.eventId;
     const targetGroupId = el.dataset.groupId || '';
 
-    htmx.ajax('POST', '/admin/events/' + tournamentId + '/move-player', {
+    htmx.ajax('POST', '/admin/events/' + eventId + '/move-player', {
         source: document.body,
         swap: 'none',
         values: { playerId, targetGroupId }
@@ -427,11 +427,11 @@ function onDropRow(event, el) {
     const playerId = event.dataTransfer.getData('text/plain');
     if (!playerId) return;
 
-    const tournamentId = el.dataset.tournamentId;
+    const eventId = el.dataset.eventId;
     const targetGroupId = el.dataset.groupId || '';
     const targetIndex   = parseInt(el.dataset.targetIndex ?? '-1', 10);
 
-    htmx.ajax('POST', '/admin/events/' + tournamentId + '/move-player', {
+    htmx.ajax('POST', '/admin/events/' + eventId + '/move-player', {
         source: document.body,
         swap: 'none',
         values: { playerId, targetGroupId, targetIndex }
@@ -446,7 +446,7 @@ function onDropKnockoutRow(event, el) {
     const playerId = event.dataTransfer.getData('text/plain');
     if (!playerId) return;
 
-    const tournamentId = el.dataset.tournamentId;
+    const eventId = el.dataset.eventId;
     const divId = el.dataset.divId;
     const targetIndex = parseInt(el.dataset.targetIndex ?? '-1', 10);
 
@@ -460,7 +460,7 @@ function onDropKnockoutRow(event, el) {
         playerIds.splice(targetIndex, 0, playerId);
     }
 
-    htmx.ajax('POST', '/admin/events/' + tournamentId + '/save-knockout-seeds', {
+    htmx.ajax('POST', '/admin/events/' + eventId + '/save-knockout-seeds', {
         source: document.body,
         swap: 'none',
         values: { divId: divId, playerIds: JSON.stringify(playerIds) }
