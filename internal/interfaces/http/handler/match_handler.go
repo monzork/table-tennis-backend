@@ -882,7 +882,12 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 		return c.SendString("<div class='text-red-400 font-mono text-sm'>Match not found</div>")
 	}
 
-	// Update table number if provided
+	// Update table number if provided. The public singles score form has no
+	// tableNumber field at all (unlike the admin form / team squad form), so
+	// an empty value here just means "not submitted" — leave m.TableNumber
+	// as loaded from the DB rather than clearing an existing assignment,
+	// otherwise every public score update (e.g. via the table-QR flow) would
+	// silently un-assign the match from its table.
 	tableNumberStr := c.FormValue("tableNumber")
 	if tableNumberStr != "" {
 		if tNum, err := strconv.Atoi(tableNumberStr); err == nil {
@@ -912,8 +917,6 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 			}
 			m.TableNumber = &tNum
 		}
-	} else {
-		m.TableNumber = nil
 	}
 
 	// Update and persist referee (leaving it unchanged if not provided) and table number
