@@ -62,9 +62,42 @@ func TestHasMatchesStarted(t *testing.T) {
 }
 
 func TestMovePlayer_Locked(t *testing.T) {
-	ev := &Event{ManualSeedingLocked: true}
-	if err := ev.MovePlayer("p1", "g1", 0); err == nil {
-		t.Errorf("Expected error when seeding locked")
+	// A player already seeded in a group cannot be reshuffled while locked.
+	p1 := &player.Player{ID: "p1"}
+	ev := &Event{
+		Type:                "singles",
+		ManualSeedingLocked: true,
+		Participants:        []*player.Player{p1},
+		Groups: []Group{
+			{ID: "g1", Players: []*player.Player{p1}},
+			{ID: "g2"},
+		},
+	}
+	if err := ev.MovePlayer("p1", "g2", 0); err == nil {
+		t.Errorf("Expected error when seeding locked and player already in a group")
+	}
+	if len(ev.Groups[0].Players) != 1 {
+		t.Errorf("Expected g1 to be untouched, got %d players", len(ev.Groups[0].Players))
+	}
+}
+
+func TestMovePlayer_LockedButUnassigned_Succeeds(t *testing.T) {
+	// A participant not yet placed in any group (e.g. enrolled after seeding
+	// was locked) can still be assigned into an existing group while locked.
+	p1 := &player.Player{ID: "p1"}
+	ev := &Event{
+		Type:                "singles",
+		ManualSeedingLocked: true,
+		Participants:        []*player.Player{p1},
+		Groups: []Group{
+			{ID: "g1"},
+		},
+	}
+	if err := ev.MovePlayer("p1", "g1", 0); err != nil {
+		t.Fatalf("Expected no error assigning unassigned player while locked, got %v", err)
+	}
+	if len(ev.Groups[0].Players) != 1 || ev.Groups[0].Players[0].ID != "p1" {
+		t.Errorf("Expected p1 assigned into g1, got %+v", ev.Groups[0].Players)
 	}
 }
 

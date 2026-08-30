@@ -468,3 +468,48 @@ func TestBracketMatch_ScoreAndWinner_NoMatch(t *testing.T) {
 		t.Error("expected no winner when Match is nil")
 	}
 }
+
+// TestBracketGenerator_UnassignedPlayers reproduces a real gap: a player
+// enrolled into an event after group seeding was generated (or after seeding
+// was locked) never lands in any event.Group, but still shows up as a
+// division participant via the Elo-band fallback. The bracket view must
+// surface them separately as UnassignedPlayers so the admin UI can offer a
+// way to drag them into an existing group.
+func TestBracketGenerator_UnassignedPlayers(t *testing.T) {
+	p1 := &player.Player{ID: "p1", FirstName: "Player", LastName: "1", SinglesElo: 1200}
+	p2 := &player.Player{ID: "p2", FirstName: "Player", LastName: "2", SinglesElo: 1100}
+	strayPlayer := &player.Player{ID: "stray", FirstName: "Stray", LastName: "Player", SinglesElo: 1000}
+
+	tourney := &event.Event{
+		ID:            "t1",
+		Type:          "singles",
+		Format:        "groups_elimination",
+		EventCategory: "open",
+		Participants:  []*player.Player{p1, p2, strayPlayer},
+		Groups: []event.Group{
+			{ID: "g1", EventID: "t1", Name: "Open - Group A", Players: []*player.Player{p1, p2}},
+		},
+	}
+
+	divs := []*division.Division{
+		{ID: "div1", Name: "Open", Category: "both", MinElo: 1, MaxElo: nil},
+	}
+
+	br := bracket.BuildBracket(tourney, divs, map[string]string{})
+	if len(br.Divisions) != 1 {
+		t.Fatalf("Expected 1 division view, got %d", len(br.Divisions))
+	}
+
+	divView := br.Divisions[0]
+	if len(divView.UnassignedPlayers) != 1 || divView.UnassignedPlayers[0].ID != "stray" {
+		t.Fatalf("Expected only 'stray' to be unassigned, got %+v", divView.UnassignedPlayers)
+	}
+
+	for _, g := range divView.Groups {
+		for _, p := range g.Players {
+			if p.ID == "stray" {
+				t.Errorf("stray player should not appear inside any group")
+			}
+		}
+	}
+}

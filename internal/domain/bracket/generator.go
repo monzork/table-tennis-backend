@@ -31,6 +31,13 @@ type Division struct {
 	IsUnclassified bool
 	Players        []*player.Player
 
+	// UnassignedPlayers are division participants not present in any of this
+	// division's Groups — e.g. someone enrolled after group seeding was
+	// already generated/locked. Only populated for groups_elimination /
+	// single_division_multiple_brackets formats, where group membership is
+	// meaningful.
+	UnassignedPlayers []*player.Player
+
 	// GroupID is the DB group ID for elimination-format seeding draw.
 	// Empty for rounds-robin / groups-elimination divisions.
 	GroupID string
@@ -433,6 +440,18 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 		dv.RoundRobinFinished = expectedMatches > 0 && finishedMatches >= expectedMatches
 	} else if divFormat == "groups_elimination" || divFormat == "single_division_multiple_brackets" {
 		dv.Groups, dv.AllGroupsFinished = buildGroupEliminationGroups(t, divID, name, players)
+
+		inAGroup := make(map[string]bool)
+		for _, g := range dv.Groups {
+			for _, p := range g.Players {
+				inAGroup[p.ID] = true
+			}
+		}
+		for _, p := range players {
+			if !inAGroup[p.ID] {
+				dv.UnassignedPlayers = append(dv.UnassignedPlayers, p)
+			}
+		}
 
 		if dv.AllGroupsFinished {
 			bracketsCount := t.KnockoutBracketsCount

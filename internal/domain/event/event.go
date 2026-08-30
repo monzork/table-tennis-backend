@@ -339,9 +339,6 @@ func (t *Event) RemoveMatch(matchID string) error {
 }
 
 func (t *Event) MovePlayer(playerID string, targetGroupID string, targetIndex int) error {
-	if t.ManualSeedingLocked {
-		return errors.New("cannot move player: seeding is locked")
-	}
 	var movingPlayer *player.Player
 	if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {
 		var foundTeam *Team
@@ -378,19 +375,38 @@ func (t *Event) MovePlayer(playerID string, targetGroupID string, targetIndex in
 	foundSource := false
 	var sourceGroupID string
 	for i := range t.Groups {
-		g := &t.Groups[i]
-		for j, p := range g.Players {
+		for _, p := range t.Groups[i].Players {
 			if p.ID == playerID {
-				newPlayers := make([]*player.Player, 0, len(g.Players)-1)
-				newPlayers = append(newPlayers, g.Players[:j]...)
-				newPlayers = append(newPlayers, g.Players[j+1:]...)
-				g.Players = newPlayers
 				foundSource = true
-				sourceGroupID = g.ID
+				sourceGroupID = t.Groups[i].ID
 				break
 			}
 		}
 		if foundSource {
+			break
+		}
+	}
+
+	// Seeding lock blocks reshuffling players already placed in a group, but
+	// never blocks placing a still-unassigned participant (e.g. one enrolled
+	// after the seeding was locked) into an existing group for the first time.
+	if t.ManualSeedingLocked && foundSource {
+		return errors.New("cannot move player: seeding is locked")
+	}
+
+	if foundSource {
+		for i := range t.Groups {
+			if t.Groups[i].ID != sourceGroupID {
+				continue
+			}
+			g := &t.Groups[i]
+			newPlayers := make([]*player.Player, 0, len(g.Players)-1)
+			for _, p := range g.Players {
+				if p.ID != playerID {
+					newPlayers = append(newPlayers, p)
+				}
+			}
+			g.Players = newPlayers
 			break
 		}
 	}

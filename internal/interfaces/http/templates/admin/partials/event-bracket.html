@@ -137,7 +137,31 @@
           </button>
           {{end}}
         </h3>
-        
+
+        {{if and (not $vm.IsPublic) (gt (len .UnassignedPlayers) 0)}}
+        <div class="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-xs font-black uppercase text-amber-400 tracking-widest">{{t $.T "bracket.unassigned_players"}}</h4>
+            <span class="text-[10px] text-amber-400/70 uppercase tracking-widest">{{len .UnassignedPlayers}} {{t $.T "bracket.players"}}</span>
+          </div>
+          <p class="text-[11px] text-gray-500 mb-4">{{t $.T "bracket.unassigned_players_hint"}}</p>
+          <div class="flex flex-wrap gap-2">
+            {{range .UnassignedPlayers}}
+            <div
+              draggable="true"
+              ondragstart="onDragStart(event, '{{.ID}}')"
+              ondragend="onDragEnd(event)"
+              class="cursor-grab active:cursor-grabbing px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-xs font-bold text-white whitespace-nowrap flex items-center gap-2">
+              <svg class="proj-hide w-3.5 h-3.5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 8h16M4 16h16" />
+              </svg>
+              <span>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</span>
+            </div>
+            {{end}}
+          </div>
+        </div>
+        {{end}}
+
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {{$divisionGroups := .Groups}}
           {{range .Groups}}
@@ -145,10 +169,12 @@
             {{$currentGroupID := .ID}}
             {{$canMove := true}}
             {{if or (eq $t.Status "finished") $vm.IsPublic $t.ManualSeedingLocked}}{{$canMove = false}}{{end}}
-            <div 
+            {{$canReceiveDrop := true}}
+            {{if or (eq $t.Status "finished") $vm.IsPublic}}{{$canReceiveDrop = false}}{{end}}
+            <div
               data-group-id="{{$currentGroupID}}"
               class="group-card bg-black/20 rounded-3xl p-4 sm:p-6 border border-white/5 shadow-lg relative transition-all duration-300"
-              {{if $canMove}}
+              {{if $canReceiveDrop}}
                 data-event-id="{{$t.ID}}"
                 ondragover="onDragOver(event)"
                 ondragenter="onDragEnter(event, this)"
