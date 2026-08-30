@@ -14,7 +14,6 @@ import (
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	playerDomain "table-tennis-backend/internal/domain/player"
-	parentDomain "table-tennis-backend/internal/domain/tournament"
 	bunRepo "table-tennis-backend/internal/infrastructure/persistence/bun"
 )
 
@@ -360,6 +359,76 @@ func TestMatchHandler(t *testing.T) {
 		app.Test(req)
 	})
 
+	t.Run("Start announces division name", func(t *testing.T) {
+		divisionRepo := bunRepo.NewDivisionRepository(db)
+		div, _ := divisionDomain.NewDivision(uuid.New().String(), "Open Division", 1, 0, nil, "both", "#fff")
+		if err := divisionRepo.Save(ctx, div); err != nil {
+			t.Fatalf("failed to save division: %v", err)
+		}
+
+		mWithDivision := &tournamentDomain.Match{ID: uuid.New().String(), EventID: tourney.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled", DivisionID: div.ID}
+		matchRepo.Save(ctx, mWithDivision)
+		req := httptest.NewRequest("POST", fmt.Sprintf("/matches/%s/start", mWithDivision.ID), strings.NewReader("tableNumber=201"))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+		app.Test(req)
+
+		// DivisionID pointing at a division that doesn't exist exercises divisionName()'s not-found fallback.
+		mWithMissingDivision := &tournamentDomain.Match{ID: uuid.New().String(), EventID: tourney.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled", DivisionID: uuid.New().String()}
+		matchRepo.Save(ctx, mWithMissingDivision)
+		reqMissing := httptest.NewRequest("POST", fmt.Sprintf("/matches/%s/start", mWithMissingDivision.ID), strings.NewReader("tableNumber=202"))
+		reqMissing.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		reqMissing.Header.Set("Cookie", sessionCookie)
+		app.Test(reqMissing)
+	})
+
+	t.Run("Admin score finish detects group stage completion", func(t *testing.T) {
+		p20, _ := playerDomain.NewPlayer(uuid.New().String(), "20A", "Player", time.Now(), "M", "", "", "")
+		p21, _ := playerDomain.NewPlayer(uuid.New().String(), "20B", "Player", time.Now(), "M", "", "", "")
+		playerRepo.Save(ctx, p20)
+		playerRepo.Save(ctx, p21)
+		eventGroup, _ := tournamentDomain.NewEvent(uuid.New().String(), "Group Event Admin", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p20, p21}, true)
+		tournamentRepo.Save(ctx, eventGroup)
+		mGroup := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventGroup.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p20}, TeamB: []*playerDomain.Player{p21}, Status: "scheduled", Stage: "group"}
+		matchRepo.Save(ctx, mGroup)
+
+		req := httptest.NewRequest("PUT", "/matches/"+mGroup.ID+"/score",
+			strings.NewReader("tournamentId="+eventGroup.ID+"&stage=group&scores[]=11-1&scores[]=11-2&scores[]=11-3"))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+	})
+
+	t.Run("Public referee score finish notifies admin and detects group stage completion", func(t *testing.T) {
+		p22, _ := playerDomain.NewPlayer(uuid.New().String(), "22A", "Player", time.Now(), "F", "", "", "")
+		p23, _ := playerDomain.NewPlayer(uuid.New().String(), "22B", "Player", time.Now(), "F", "", "", "")
+		playerRepo.Save(ctx, p22)
+		playerRepo.Save(ctx, p23)
+		eventGroupPub, _ := tournamentDomain.NewEvent(uuid.New().String(), "Group Event Public", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p22, p23}, true)
+		tournamentRepo.Save(ctx, eventGroupPub)
+		mGroupPub := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventGroupPub.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p22}, TeamB: []*playerDomain.Player{p23}, Status: "scheduled", Stage: "group"}
+		matchRepo.Save(ctx, mGroupPub)
+
+		req := httptest.NewRequest("POST", "/public/matches/score/update",
+			strings.NewReader("matchId="+mGroupPub.ID+"&tournamentId="+eventGroupPub.ID+"&stage=group"+
+				"&scores[]_a=11&scores[]_b=1&scores[]_a=11&scores[]_b=2&scores[]_a=11&scores[]_b=3&refereeId="+p22.ID))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("HX-Request", "true")
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+	})
+
 	t.Run("Update Public Score Success", func(t *testing.T) {
 		data := url.Values{}
 		data.Set("scores[]_a", "11")
@@ -492,142 +561,5 @@ func TestMatchHandler(t *testing.T) {
 		doReq("POST", "/matches/nil/start", "tournamentId="+doublesTourney.ID+"&p1Id="+p1.ID+"&p2Id="+p2.ID+"&stage=group", "application/x-www-form-urlencoded")
 		// UpdateScore on the fly doubles
 		doReq("PUT", "/matches//score", "p1Id="+p1.ID+"&p2Id="+p2.ID+"&tournamentId="+doublesTourney.ID+"&stage=group&scores[]=11-1", "application/x-www-form-urlencoded")
-	})
-
-	t.Run("Full match finish flow - auto-assign, group-stage-finished, referee notify", func(t *testing.T) {
-		// This exercises the branches only reachable once a match genuinely transitions to
-		// "finished" through the real UpdateScore/UpdatePublicScore endpoints with a valid
-		// tournamentId: broadcasting the finished message, auto-assigning tables to the next
-		// scheduled *group*-stage match once EventID is set (round16+ matches are left for a
-		// human to start manually once the group stage wraps up), detecting group-stage
-		// completion, and (for the public/referee flow) notifying admins.
-		parentID := uuid.New().String()
-		parentRepo := bunRepo.NewTournamentRepository(db, tournamentRepo)
-		now := time.Now()
-		if err := parentRepo.Save(ctx, &parentDomain.Tournament{
-			ID:        parentID,
-			Name:      "Parent For AutoAssign",
-			StartDate: now,
-			EndDate:   now.Add(24 * time.Hour),
-			NumTables: 6,
-		}); err != nil {
-			t.Fatalf("failed to save parent tournament: %v", err)
-		}
-
-		newPlayer := func(first, last, gender string) *playerDomain.Player {
-			p, _ := playerDomain.NewPlayer(uuid.New().String(), first, last, time.Now(), gender, "", "", "")
-			playerRepo.Save(ctx, p)
-			return p
-		}
-
-		divRepo := bunRepo.NewDivisionRepository(db)
-		div := &divisionDomain.Division{ID: uuid.New().String(), Name: "Open Division", DisplayOrder: 1, MinElo: 0, Category: "both", Color: "#fff"}
-		if err := divRepo.Save(ctx, div); err != nil {
-			t.Fatalf("failed to save division: %v", err)
-		}
-
-		// Admin (UpdateScore) side: child event A with a group match to finish, a sibling
-		// group match auto-assign should pick up (announcing its division), and a round16
-		// match that must stay untouched until the group stage wraps up.
-		p5 := newPlayer("5A", "Player", "M")
-		p6 := newPlayer("6B", "Player", "M")
-		p7 := newPlayer("7C", "Player", "M")
-		p8 := newPlayer("8D", "Player", "M")
-		p13 := newPlayer("13I", "Player", "M")
-		p14 := newPlayer("14J", "Player", "M")
-		p17 := newPlayer("17M", "Player", "M")
-		p18 := newPlayer("18N", "Player", "M")
-
-		eventA, _ := tournamentDomain.NewEvent(uuid.New().String(), "Child A", "singles", "elimination", "open", now, now.Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p5, p6, p7, p8, p13, p14, p17, p18}, true)
-		eventA.TournamentID = &parentID
-		if err := tournamentRepo.Save(ctx, eventA); err != nil {
-			t.Fatalf("failed to save child event A: %v", err)
-		}
-
-		matchToFinishA := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventA.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p5}, TeamB: []*playerDomain.Player{p6}, Status: "scheduled", Stage: "group"}
-		matchRepo.Save(ctx, matchToFinishA)
-		matchAutoAssignA := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventA.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p7}, TeamB: []*playerDomain.Player{p8}, Status: "scheduled", Stage: "round16"}
-		matchRepo.Save(ctx, matchAutoAssignA)
-		matchGroupSiblingA := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventA.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p13}, TeamB: []*playerDomain.Player{p14}, Status: "scheduled", Stage: "group", DivisionID: div.ID}
-		matchRepo.Save(ctx, matchGroupSiblingA)
-		// DivisionID points at a division that doesn't exist, exercising divisionName()'s not-found fallback.
-		matchGroupSiblingA2 := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventA.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p17}, TeamB: []*playerDomain.Player{p18}, Status: "scheduled", Stage: "group", DivisionID: uuid.New().String()}
-		matchRepo.Save(ctx, matchGroupSiblingA2)
-
-		reqA := httptest.NewRequest("PUT", "/matches/"+matchToFinishA.ID+"/score",
-			strings.NewReader("tournamentId="+eventA.ID+"&stage=group&scores[]=11-1&scores[]=11-2&scores[]=11-3"))
-		reqA.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		reqA.Header.Set("Cookie", sessionCookie)
-		respA, err := app.Test(reqA)
-		if err != nil {
-			t.Fatalf("test request failed: %v", err)
-		}
-		if respA.StatusCode != 200 {
-			t.Errorf("expected 200 OK finishing match A, got %v", respA.StatusCode)
-		}
-
-		mAutoAssignAModel, _ := matchRepo.GetModelByID(ctx, uuid.MustParse(matchAutoAssignA.ID))
-		if mAutoAssignAModel.TableNumber != nil {
-			t.Errorf("expected round16 match to be left for manual start once the group stage is over, got a table assigned")
-		}
-
-		mGroupSiblingAModel, _ := matchRepo.GetModelByID(ctx, uuid.MustParse(matchGroupSiblingA.ID))
-		if mGroupSiblingAModel.TableNumber == nil {
-			t.Errorf("expected auto-assign to have given the sibling group match a table")
-		}
-
-		mGroupSiblingA2Model, _ := matchRepo.GetModelByID(ctx, uuid.MustParse(matchGroupSiblingA2.ID))
-		if mGroupSiblingA2Model.TableNumber == nil {
-			t.Errorf("expected auto-assign to have given the sibling group match (unknown division) a table")
-		}
-
-		// Public (UpdatePublicScore) side: child event B, referee submission finishing the group
-		// match (hits the referee-notification broadcast) plus its own auto-assign candidate.
-		p9 := newPlayer("9E", "Player", "F")
-		p10 := newPlayer("10F", "Player", "F")
-		p11 := newPlayer("11G", "Player", "F")
-		p12 := newPlayer("12H", "Player", "F")
-
-		p15 := newPlayer("15K", "Player", "F")
-		p16 := newPlayer("16L", "Player", "F")
-
-		eventB, _ := tournamentDomain.NewEvent(uuid.New().String(), "Child B", "singles", "elimination", "open", now, now.Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p9, p10, p11, p12, p15, p16}, true)
-		eventB.TournamentID = &parentID
-		if err := tournamentRepo.Save(ctx, eventB); err != nil {
-			t.Fatalf("failed to save child event B: %v", err)
-		}
-
-		matchToFinishB := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventB.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p9}, TeamB: []*playerDomain.Player{p10}, Status: "scheduled", Stage: "group"}
-		matchRepo.Save(ctx, matchToFinishB)
-		matchAutoAssignB := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventB.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p11}, TeamB: []*playerDomain.Player{p12}, Status: "scheduled", Stage: "round16"}
-		matchRepo.Save(ctx, matchAutoAssignB)
-		// No DivisionID set, exercising the divisionName() empty-ID fallback.
-		matchGroupSiblingB := &tournamentDomain.Match{ID: uuid.New().String(), EventID: eventB.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p15}, TeamB: []*playerDomain.Player{p16}, Status: "scheduled", Stage: "group"}
-		matchRepo.Save(ctx, matchGroupSiblingB)
-
-		// The public endpoint only accepts the split scores[]_a / scores[]_b form fields
-		// (no fallback for the combined "A-B" format the admin JSON API supports).
-		reqB := httptest.NewRequest("POST", "/public/matches/score/update",
-			strings.NewReader("matchId="+matchToFinishB.ID+"&tournamentId="+eventB.ID+"&stage=group"+
-				"&scores[]_a=11&scores[]_b=1&scores[]_a=11&scores[]_b=2&scores[]_a=11&scores[]_b=3&refereeId="+p9.ID))
-		reqB.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		reqB.Header.Set("HX-Request", "true")
-		respB, err := app.Test(reqB)
-		if err != nil {
-			t.Fatalf("test request failed: %v", err)
-		}
-		if respB.StatusCode != 200 {
-			t.Errorf("expected 200 OK finishing match B, got %v", respB.StatusCode)
-		}
-
-		mAutoAssignBModel, _ := matchRepo.GetModelByID(ctx, uuid.MustParse(matchAutoAssignB.ID))
-		if mAutoAssignBModel.TableNumber != nil {
-			t.Errorf("expected round16 match B to be left for manual start once the group stage is over, got a table assigned")
-		}
-
-		mGroupSiblingBModel, _ := matchRepo.GetModelByID(ctx, uuid.MustParse(matchGroupSiblingB.ID))
-		if mGroupSiblingBModel.TableNumber == nil {
-			t.Errorf("expected auto-assign to have given the sibling group match B a table")
-		}
 	})
 }

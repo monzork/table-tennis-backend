@@ -830,8 +830,6 @@ var Translations = map[string]map[string]string{
 		// Admin: tournament detail page
 		"admin.tournament_detail.back":                      "Back to Tournaments",
 		"admin.tournament_detail.subtitle":                  "Multi-Category Division Tournament Details",
-		"admin.tournament_detail.start_confirm":             "Call the first batch of scheduled matches onto all free tables?",
-		"admin.tournament_detail.start_btn":                 "Start Tournament",
 		"admin.tournament_detail.health_btn":                "Health",
 		"admin.tournament_detail.export_pdf_btn":            "Export to PDF",
 		"admin.tournament_detail.target_division_label":     "Target Division",
@@ -1753,8 +1751,6 @@ var Translations = map[string]map[string]string{
 		// Admin: tournament detail page
 		"admin.tournament_detail.back":                      "Volver a Torneos",
 		"admin.tournament_detail.subtitle":                  "Detalles del Torneo Multi-Categoría",
-		"admin.tournament_detail.start_confirm":             "¿Llamar el primer lote de partidos programados a todas las mesas libres?",
-		"admin.tournament_detail.start_btn":                 "Iniciar Torneo",
 		"admin.tournament_detail.health_btn":                "Salud",
 		"admin.tournament_detail.export_pdf_btn":            "Exportar a PDF",
 		"admin.tournament_detail.target_division_label":     "División Objetivo",

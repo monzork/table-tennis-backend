@@ -20,12 +20,6 @@
             </div>
             <!-- Action Buttons -->
             <div class="flex flex-wrap gap-3 w-full sm:w-auto">
-                <button hx-post="/admin/tournaments/{{.Tournament.ID}}/start"
-                   hx-confirm="{{t .T "admin.tournament_detail.start_confirm"}}"
-                   class="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_25px_rgba(34,197,94,0.5)]">
-                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                   {{t .T "admin.tournament_detail.start_btn"}}
-                </button>
                 <button
                    onclick="openEditEventModal('{{.Tournament.ID}}')"
                    class="flex-1 sm:flex-none flex justify-center items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all border border-white/20">

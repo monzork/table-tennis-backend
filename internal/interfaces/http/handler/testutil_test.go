@@ -175,8 +175,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	getAllEventsUC := tournament.NewGetAllEventsUseCase(eventRepo)
 	deleteEventUC := tournament.NewDeleteEventUseCase(eventRepo)
 	getBoardUC := tournament.NewGetBoardDataUseCase(eventRepo, divisionRepo)
-	autoAssignTablesUC := match.NewAutoAssignTablesUseCase(matchRepo, eventRepo)
-	eventHandler := handler.NewTournamentHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC, getBoardUC, autoAssignTablesUC)
+	eventHandler := handler.NewTournamentHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC, getBoardUC)
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 
 	createMatchUC := match.NewCreateMatchUseCase(matchRepo, playerRepo, tournamentRepo, divisionRepo)
@@ -497,7 +496,6 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	admin.Get("/tournaments/:id/health", eventHandler.TournamentHealth)
 	admin.Get("/tournaments/:id/health/metrics", eventHandler.TournamentHealthMetrics)
 	admin.Get("/tournaments/:id/edit", eventHandler.ShowEditForm)
-	admin.Post("/tournaments/:id/start", eventHandler.Start)
 	api.Post("/matches/create", matchHandler.Create)
 	api.Post("/matches/finish", matchHandler.Finish)
 	api.Post("/matches/:id/start", matchHandler.Start)

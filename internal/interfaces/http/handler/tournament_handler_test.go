@@ -282,46 +282,6 @@ func TestEventHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("Start Tournament", func(t *testing.T) {
-		req := httptest.NewRequest("POST", fmt.Sprintf("/admin/tournaments/%s/start", eventID), nil)
-		req.Header.Set("Cookie", sessionCookie)
-		req.Header.Set("HX-Request", "true")
-		resp, err := app.Test(req)
-		if err != nil {
-			t.Fatalf("test request failed: %v", err)
-		}
-		if resp.StatusCode != 200 {
-			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
-		}
-		if resp.Header.Get("HX-Refresh") != "true" {
-			t.Errorf("expected HX-Refresh header to be set")
-		}
-	})
-
-	t.Run("Start Tournament - non-HX request", func(t *testing.T) {
-		req := httptest.NewRequest("POST", fmt.Sprintf("/admin/tournaments/%s/start", eventID), nil)
-		req.Header.Set("Cookie", sessionCookie)
-		resp, err := app.Test(req)
-		if err != nil {
-			t.Fatalf("test request failed: %v", err)
-		}
-		if resp.StatusCode != 200 {
-			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
-		}
-	})
-
-	t.Run("Start Tournament - not found", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/admin/tournaments/nonexistent-id/start", nil)
-		req.Header.Set("Cookie", sessionCookie)
-		resp, err := app.Test(req)
-		if err != nil {
-			t.Fatalf("test request failed: %v", err)
-		}
-		if resp.StatusCode == 200 {
-			t.Errorf("expected non-200 for nonexistent tournament, got %v", resp.StatusCode)
-		}
-	})
-
 	t.Run("Public TV Dashboard", func(t *testing.T) {
 		req := httptest.NewRequest("GET", fmt.Sprintf("/tournaments/%s/tv", eventID), nil)
 		resp, _ := app.Test(req)

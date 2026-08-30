@@ -212,7 +212,6 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler, acc
 	admin.Get("/tournaments/:id/board", c.TournamentHandler.AdminBoard)
 	admin.Get("/tournaments/:id/board/columns", c.TournamentHandler.BoardColumns)
 	admin.Get("/tournaments/:id/edit", c.TournamentHandler.ShowEditForm)
-	admin.Post("/tournaments/:id/start", c.TournamentHandler.Start)
 	api.Post("/tournaments", c.TournamentHandler.Create)
 	api.Put("/tournaments/:id", c.TournamentHandler.Update)
 	api.Delete("/tournaments/:id", c.TournamentHandler.Delete)

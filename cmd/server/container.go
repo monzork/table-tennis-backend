@@ -134,8 +134,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	deleteEventUC := tournament.NewDeleteEventUseCase(tournamentRepo)
 	updateEventUC := tournament.NewUpdateEventUseCase(tournamentRepo)
 	getBoardUC := tournament.NewGetBoardDataUseCase(tournamentRepo, divisionRepo)
-	autoAssignTablesUC := match.NewAutoAssignTablesUseCase(matchRepo, tournamentRepo)
-	eventHandler := handler.NewTournamentHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC, getBoardUC, autoAssignTablesUC)
+	eventHandler := handler.NewTournamentHandler(createEventUC, updateEventUC, getEventByIDUC, getAllEventsUC, deleteEventUC, divisionUC, leaderboardUC, exportEventPdfUC, getBoardUC)
 
 	GetMatchesUC := match.NewGetMatchesUseCase(matchRepo)
 

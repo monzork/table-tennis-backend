@@ -25,7 +25,6 @@ type MatchHandler struct {
 	matchRepo           *bun.MatchRepository
 	tournamentRepo      *bun.EventRepository
 	containerRepo       *bun.TournamentRepository
-	autoAssignTablesUC  *match.AutoAssignTablesUseCase
 	createUC            *match.CreateMatchUseCase
 	finishUC            *match.FinishMatchUseCase
 	updateScoreUC       *match.UpdateMatchScoreUseCase
@@ -64,7 +63,6 @@ func NewMatchHandler(
 		matchRepo:           matchRepo,
 		tournamentRepo:      tournamentRepo,
 		containerRepo:       containerRepo,
-		autoAssignTablesUC:  match.NewAutoAssignTablesUseCase(matchRepo, containerRepo),
 		finishTournamentUC:  finishTournamentUC,
 		broadcastPushUC:     broadcastPushUC,
 		teamMatchUC:         teamMatchUC,
@@ -111,20 +109,6 @@ func (h *MatchHandler) divisionName(ctx context.Context, divisionID string) stri
 		return ""
 	}
 	return d.Name
-}
-
-// matchStartBroadcast builds the WS payload announcing a match has been called to a table.
-func (h *MatchHandler) matchStartBroadcast(ctx context.Context, m event.Match, p1, p2 string) map[string]string {
-	return map[string]string{
-		"event":        "start_match",
-		"tournamentId": m.EventID,
-		"matchId":      m.ID,
-		"tableNumber":  strconv.Itoa(*m.TableNumber),
-		"p1":           p1,
-		"p2":           p2,
-		"stage":        m.Stage,
-		"division":     h.divisionName(ctx, m.DivisionID),
-	}
 }
 
 func (h *MatchHandler) getOccupiedTables(ctx context.Context, t *event.Event) []int {
@@ -276,21 +260,6 @@ func (h *MatchHandler) Finish(c *fiber.Ctx) error {
 
 	// Apply Elo via domain service
 	_ = h.finishUC.Execute(matched, body.WinnerTeam)
-
-	if t.TournamentID != nil {
-		if assigned, err := h.autoAssignTablesUC.Execute(c.Context(), *t.TournamentID); err == nil {
-			for _, m := range assigned {
-				p1, p2 := "TBD", "TBD"
-				if len(m.TeamA) > 0 {
-					p1 = m.TeamA[0].FirstName + " " + m.TeamA[0].LastName
-				}
-				if len(m.TeamB) > 0 {
-					p2 = m.TeamB[0].FirstName + " " + m.TeamB[0].LastName
-				}
-				h.broadcastToTournamentOrEvent(c, mModel.EventID.String(), h.matchStartBroadcast(c.Context(), m, p1, p2))
-			}
-		}
-	}
 
 	var nameA, nameB string
 	if len(matched.TeamA) > 0 {
@@ -696,22 +665,6 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 
 	if scored != nil && scored.Status == "finished" && prevStatus != "finished" {
 		if t, err := h.tournamentRepo.GetByID(c.Context(), body.EventID); err == nil {
-			if t.TournamentID != nil {
-				assigned, err := h.autoAssignTablesUC.Execute(c.Context(), *t.TournamentID)
-				if err == nil && len(assigned) > 0 {
-					for _, m := range assigned {
-						p1 := "TBD"
-						p2 := "TBD"
-						if len(m.TeamA) > 0 {
-							p1 = m.TeamA[0].FirstName + " " + m.TeamA[0].LastName
-						}
-						if len(m.TeamB) > 0 {
-							p2 = m.TeamB[0].FirstName + " " + m.TeamB[0].LastName
-						}
-						h.broadcastToTournamentOrEvent(c, body.EventID, h.matchStartBroadcast(c.Context(), m, p1, p2))
-					}
-				}
-			}
 			if scored.Stage == "group" {
 				allDone := true
 				hasGroup := false
@@ -1046,22 +999,6 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 
 	if m.Status != "finished" && updatedMatch != nil && updatedMatch.Status == "finished" {
 		if t, err := h.tournamentRepo.GetByID(c.Context(), body.EventID); err == nil {
-			if t.TournamentID != nil {
-				assigned, err := h.autoAssignTablesUC.Execute(c.Context(), *t.TournamentID)
-				if err == nil && len(assigned) > 0 {
-					for _, am := range assigned {
-						p1 := "TBD"
-						p2 := "TBD"
-						if len(am.TeamA) > 0 {
-							p1 = am.TeamA[0].FirstName + " " + am.TeamA[0].LastName
-						}
-						if len(am.TeamB) > 0 {
-							p2 = am.TeamB[0].FirstName + " " + am.TeamB[0].LastName
-						}
-						h.broadcastToTournamentOrEvent(c, body.EventID, h.matchStartBroadcast(c.Context(), am, p1, p2))
-					}
-				}
-			}
 			if updatedMatch.Stage == "group" {
 				allDone := true
 				hasGroup := false
