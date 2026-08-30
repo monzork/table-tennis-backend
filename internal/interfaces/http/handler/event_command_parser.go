@@ -15,6 +15,7 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 		EventCategory         string `form:"eventCategory"`
 		StartDate             string `form:"startDate"`
 		EndDate               string `form:"endDate"`
+		GroupCount            int    `form:"groupCount"`
 		GroupPassCount        int    `form:"groupPassCount"`
 		LosersGroupPassCount  int    `form:"losersGroupPassCount"`
 		TeamFormat            string `form:"teamFormat"`
@@ -86,6 +87,7 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 		EndDate:              body.EndDate,
 		ParticipantIDs:       participantIDs,
 		NewPlayers:           newPlayers,
+		GroupCount:           body.GroupCount,
 		GroupPassCount:       body.GroupPassCount,
 		LosersGroupPassCount: body.LosersGroupPassCount,
 		StageRuleOverrides:   stageRules,
@@ -108,6 +110,7 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		EventCategory         string `form:"eventCategory"`
 		StartDate             string `form:"startDate"`
 		EndDate               string `form:"endDate"`
+		GroupCount            int    `form:"groupCount"`
 		GroupPassCount        int    `form:"groupPassCount"`
 		LosersGroupPassCount  int    `form:"losersGroupPassCount"`
 		RegistrationOpen      bool   `form:"registrationOpen"`
@@ -182,6 +185,7 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		RegistrationOpen:     body.RegistrationOpen,
 		ParticipantIDs:       participantIDs,
 		NewPlayers:           newPlayers,
+		GroupCount:           body.GroupCount,
 		GroupPassCount:       body.GroupPassCount,
 		LosersGroupPassCount: body.LosersGroupPassCount,
 		StageRuleOverrides:   stageRules,

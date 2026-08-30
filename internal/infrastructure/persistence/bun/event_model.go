@@ -20,6 +20,7 @@ type EventModel struct {
 	EventCategory        string     `bun:"event_category,notnull,default:'open'"`
 	StartDate            time.Time  `bun:"start_date,notnull"`
 	EndDate              time.Time  `bun:"end_date,notnull"`
+	GroupCount           int        `bun:"group_count,notnull,default:0"`
 	GroupPassCount       int        `bun:"group_pass_count,notnull,default:2"`
 	LosersGroupPassCount int        `bun:"losers_group_pass_count,notnull,default:0"`
 	RegistrationOpen     bool       `bun:"registration_open,notnull,default:false"`

@@ -108,6 +108,7 @@ type UpdateEventCommand struct {
 	RegistrationOpen     bool
 	ParticipantIDs       []string
 	NewPlayers           []NewPlayerData
+	GroupCount           int
 	GroupPassCount       int
 	LosersGroupPassCount int
 	StageRuleOverrides   []StageRuleOverride
@@ -170,6 +171,7 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 	t.NumTables = cmd.NumTables
 	t.HasThirdPlaceMatch = cmd.HasThirdPlaceMatch
 	t.KnockoutBracketsCount = cmd.KnockoutBracketsCount
+	t.GroupCount = cmd.GroupCount
 
 	// Preserve existing teams and conditionally preserve/regenerate groups
 	if existing, err := uc.repo.GetByID(ctx, cmd.ID); err == nil {
@@ -198,8 +200,9 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 		formatChanged := existing.Format != cmd.Format
 		typeChanged := existing.Type != cmd.Type
 		categoryChanged := existing.EventCategory != cmd.Category
+		groupCountChanged := existing.GroupCount != cmd.GroupCount
 
-		preserveGroups := !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && len(existing.Groups) > 0
+		preserveGroups := !participantsChanged && !formatChanged && !typeChanged && !categoryChanged && !groupCountChanged && len(existing.Groups) > 0
 		if existing.ManualSeedingLocked {
 			preserveGroups = true
 		}

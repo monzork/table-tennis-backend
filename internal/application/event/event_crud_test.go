@@ -277,6 +277,30 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("regenerates groups when GroupCount changed", func(t *testing.T) {
+		uc, repo, _ := newUC()
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID:            "t1",
+			Format:        "round_robin",
+			Type:          "singles",
+			EventCategory: "open",
+			GroupCount:    0,
+			Groups:        []tournamentDomain.Group{{ID: "g1", Name: "Old Group"}},
+		}
+		cmd := baseCmd()
+		cmd.GroupCount = 3
+
+		got, err := uc.Execute(context.Background(), cmd)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		for _, g := range got.Groups {
+			if g.ID == "g1" {
+				t.Errorf("expected old group to be replaced when GroupCount changed")
+			}
+		}
+	})
+
 	t.Run("preserves groups when manual seeding locked even if participants changed", func(t *testing.T) {
 		uc, repo, playerRepo := newUC()
 		existingGroups := []tournamentDomain.Group{{ID: "g1", Name: "Locked Group"}}

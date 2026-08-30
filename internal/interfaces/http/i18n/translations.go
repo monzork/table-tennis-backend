@@ -621,6 +621,8 @@ var Translations = map[string]map[string]string{
 		"admin.event_form.pts_to_win":          "Pts to Win",
 		"admin.event_form.search_players_ph":   "Search athletes by name...",
 		"admin.event_form.knockout_pass_label": "Knockout Pass Count",
+		"admin.event_form.group_count_label":   "Number of Groups",
+		"admin.event_form.group_count_ph":      "Auto",
 
 		// Admin: events page
 		"admin.events.header_title":         "Events",
@@ -655,6 +657,7 @@ var Translations = map[string]map[string]string{
 		"admin.events.skip_elo_label":       "Skip Elo Calculations",
 		"admin.events.skip_elo_desc":        "If checked, matches in this event will not update player rankings.",
 		"admin.events.knockout_pass_desc":   "Main bracket advancers.",
+		"admin.events.group_count_desc":     "How many groups to build (0 = auto, ~4 players per group).",
 		"admin.events.loser_pass_label":     "Loser Bracket Pass Count",
 		"admin.events.loser_pass_desc":      "Loser bracket advancers (0 to disable).",
 		"admin.events.match_rules_desc":     "Defaults follow WTT standard (Best of 5 for groups/early rounds, Best of 7 for QF onwards).",
@@ -1538,6 +1541,8 @@ var Translations = map[string]map[string]string{
 		"admin.event_form.pts_to_win":          "Pts para Ganar",
 		"admin.event_form.search_players_ph":   "Buscar atletas por nombre...",
 		"admin.event_form.knockout_pass_label": "Cantidad de Clasificados",
+		"admin.event_form.group_count_label":   "Número de Grupos",
+		"admin.event_form.group_count_ph":      "Auto",
 
 		// Admin: events page
 		"admin.events.header_title":         "Torneos",
@@ -1572,6 +1577,7 @@ var Translations = map[string]map[string]string{
 		"admin.events.skip_elo_label":       "Omitir Cálculo de Elo",
 		"admin.events.skip_elo_desc":        "Si se marca, los partidos de este torneo no actualizarán el ranking de los jugadores.",
 		"admin.events.knockout_pass_desc":   "Clasificados al bracket principal.",
+		"admin.events.group_count_desc":     "Cuántos grupos formar (0 = automático, ~4 jugadores por grupo).",
 		"admin.events.loser_pass_label":     "Clasificados al Bracket de Perdedores",
 		"admin.events.loser_pass_desc":      "Clasificados al bracket de perdedores (0 para deshabilitar).",
 		"admin.events.match_rules_desc":     "Los valores predeterminados siguen el estándar WTT (Mejor de 5 para grupos/rondas iniciales, Mejor de 7 desde cuartos de final).",

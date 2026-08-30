@@ -73,11 +73,19 @@ func (s *OpenBracketSnakeSeeder) AssignGroups(t *Event) error {
 		return nil
 	}
 
-	// WTT standard: groups of 3 or 4.
-	// Let's aim for groups of 4 if possible, otherwise 3.
-	numGroups := n / 4
-	if n%4 != 0 {
-		numGroups++
+	var numGroups int
+	if t.GroupCount > 0 {
+		numGroups = t.GroupCount
+		if numGroups > n {
+			numGroups = n
+		}
+	} else {
+		// WTT standard: groups of 3 or 4.
+		// Let's aim for groups of 4 if possible, otherwise 3.
+		numGroups = n / 4
+		if n%4 != 0 {
+			numGroups++
+		}
 	}
 
 	t.Groups = make([]Group, numGroups)

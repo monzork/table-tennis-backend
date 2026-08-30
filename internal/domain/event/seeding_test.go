@@ -89,6 +89,40 @@ func TestOpenBracketSnakeSeeder_AssignGroups_Teams(t *testing.T) {
 	}
 }
 
+func TestOpenBracketSnakeSeeder_AssignGroups_GroupCountOverride(t *testing.T) {
+	idgen.Register(dummyGen{})
+	seeder := &OpenBracketSnakeSeeder{}
+	players := []*player.Player{}
+	for i := 0; i < 8; i++ {
+		players = append(players, &player.Player{ID: string(rune('a' + i)), SinglesElo: int16(1500 - i*10)})
+	}
+
+	// Explicit override takes precedence over the groups-of-4 default.
+	ev := &Event{Format: "groups_elimination", Participants: players, GroupCount: 3}
+	if err := seeder.AssignGroups(ev); err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if len(ev.Groups) != 3 {
+		t.Fatalf("Expected 3 groups from override, got %d", len(ev.Groups))
+	}
+	total := 0
+	for _, g := range ev.Groups {
+		total += len(g.Players)
+	}
+	if total != 8 {
+		t.Errorf("Expected all 8 players distributed, got %d", total)
+	}
+
+	// Override larger than the participant count is clamped to participant count.
+	ev2 := &Event{Format: "groups_elimination", Participants: players, GroupCount: 20}
+	if err := seeder.AssignGroups(ev2); err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if len(ev2.Groups) != len(players) {
+		t.Fatalf("Expected %d groups (clamped), got %d", len(players), len(ev2.Groups))
+	}
+}
+
 func TestOpenBracketSnakeSeeder_AssignGroups_SnakeRows(t *testing.T) {
 	idgen.Register(dummyGen{})
 	seeder := &OpenBracketSnakeSeeder{}

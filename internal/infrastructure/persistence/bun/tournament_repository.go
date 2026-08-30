@@ -247,6 +247,7 @@ func (r *TournamentRepository) GetAll(ctx context.Context) ([]*tournament.Tourna
 			EventCategory:      m.EventCategory,
 			StartDate:          m.StartDate,
 			EndDate:            m.EndDate,
+			GroupCount:         m.GroupCount,
 			GroupPassCount:     m.GroupPassCount,
 			RegistrationOpen:   m.RegistrationOpen,
 			TournamentID:       tournamentIDPtr,

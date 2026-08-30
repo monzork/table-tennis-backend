@@ -32,6 +32,7 @@ type CreateEventCommand struct {
 	EndDate              string
 	ParticipantIDs       []string
 	NewPlayers           []NewPlayerData
+	GroupCount           int
 	GroupPassCount       int
 	LosersGroupPassCount int
 	StageRuleOverrides   []StageRuleOverride
@@ -111,6 +112,7 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 	t.TeamFormat = cmd.TeamFormat
 	t.NumTables = cmd.NumTables
 	t.KnockoutBracketsCount = cmd.KnockoutBracketsCount
+	t.GroupCount = cmd.GroupCount
 
 	if t.Format == "groups_elimination" || t.Format == "round_robin" || t.Format == "elimination" || t.Format == "single_division_multiple_brackets" {
 		if err := (&tournamentDomain.OpenBracketSnakeSeeder{}).AssignGroups(t); err != nil {
@@ -155,6 +157,7 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 
 			pairT.LosersGroupPassCount = cmd.LosersGroupPassCount
 			pairT.KnockoutBracketsCount = cmd.KnockoutBracketsCount
+			pairT.GroupCount = cmd.GroupCount
 			if pairT.Format == "groups_elimination" || pairT.Format == "round_robin" || pairT.Format == "elimination" {
 				(&tournamentDomain.OpenBracketSnakeSeeder{}).AssignGroups(pairT)
 			}

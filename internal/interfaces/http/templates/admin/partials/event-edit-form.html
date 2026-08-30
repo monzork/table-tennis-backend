@@ -22,7 +22,7 @@
         </div>
         <div class="space-y-2">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_edit_form.format_label"}}</label>
-            <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" hx-on:change="this.value === 'groups_elimination' ? (document.getElementById('edit-group-pass-count-container').classList.remove('hidden'), document.getElementById('edit-group-pass-count-input').disabled = false, document.getElementById('edit-losers-group-pass-count-input').disabled = false) : (document.getElementById('edit-group-pass-count-container').classList.add('hidden'), document.getElementById('edit-group-pass-count-input').disabled = true, document.getElementById('edit-losers-group-pass-count-input').disabled = true)">
+            <select name="format" id="edit-format-select" class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none" hx-on:change="this.value === 'groups_elimination' ? (document.getElementById('edit-group-pass-count-container').classList.remove('hidden'), document.getElementById('edit-group-count-input').disabled = false, document.getElementById('edit-group-pass-count-input').disabled = false, document.getElementById('edit-losers-group-pass-count-input').disabled = false) : (document.getElementById('edit-group-pass-count-container').classList.add('hidden'), document.getElementById('edit-group-count-input').disabled = true, document.getElementById('edit-group-pass-count-input').disabled = true, document.getElementById('edit-losers-group-pass-count-input').disabled = true)">
                 <option value="elimination" {{if eq .Event.Format "elimination"}}selected{{end}}>{{t .T "admin.event_form.fmt_elimination"}}</option>
                 <option value="double_elimination" {{if eq .Event.Format "double_elimination"}}selected{{end}}>{{t .T "admin.event_edit_form.fmt_double_elimination"}}</option>
                 <option value="groups_elimination" {{if eq .Event.Format "groups_elimination"}}selected{{end}}>{{t .T "admin.event_form.fmt_groups"}}</option>
@@ -69,7 +69,11 @@
         </div>
     </div>
 
-    <div id="edit-group-pass-count-container" class="grid grid-cols-2 gap-4 {{if ne .Event.Format "groups_elimination"}}hidden{{end}}">
+    <div id="edit-group-pass-count-container" class="grid grid-cols-3 gap-4 {{if ne .Event.Format "groups_elimination"}}hidden{{end}}">
+        <div class="space-y-2">
+            <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_form.group_count_label"}}</label>
+            <input type="number" id="edit-group-count-input" name="groupCount" value="{{.Event.GroupCount}}" min="0" placeholder="{{t .T "admin.event_form.group_count_ph"}}" {{if ne .Event.Format "groups_elimination"}}disabled{{end}} class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">
+        </div>
         <div class="space-y-2">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_form.knockout_pass_label"}}</label>
             <input type="number" id="edit-group-pass-count-input" name="groupPassCount" value="{{.Event.GroupPassCount}}" min="1" {{if ne .Event.Format "groups_elimination"}}disabled{{end}} class="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:ring-1 focus:ring-white">

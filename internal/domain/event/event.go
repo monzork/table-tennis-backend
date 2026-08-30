@@ -195,20 +195,23 @@ type TournamentMetrics struct {
 }
 
 type Event struct {
-	ID                    string
-	Name                  string
-	Type                  string // "singles", "doubles", "teams"
-	EventCategory         string // "men", "women", "mixed", "open"
-	Format                string // "elimination", "groups_elimination", "round_robin"
-	Status                string // "in_progress", "finished"
-	WinnerName            string // Name of the winner (player or team)
-	Participants          []*player.Player
-	StartDate             time.Time
-	EndDate               time.Time
-	Rules                 []Rule
-	StageRules            []StageRule
-	Matches               []Match
-	Groups                []Group
+	ID            string
+	Name          string
+	Type          string // "singles", "doubles", "teams"
+	EventCategory string // "men", "women", "mixed", "open"
+	Format        string // "elimination", "groups_elimination", "round_robin"
+	Status        string // "in_progress", "finished"
+	WinnerName    string // Name of the winner (player or team)
+	Participants  []*player.Player
+	StartDate     time.Time
+	EndDate       time.Time
+	Rules         []Rule
+	StageRules    []StageRule
+	Matches       []Match
+	Groups        []Group
+	// GroupCount is the admin-desired number of round-robin groups to build.
+	// 0 means auto (groups of ~4, the historical default).
+	GroupCount            int
 	GroupPassCount        int
 	LosersGroupPassCount  int
 	RegistrationOpen      bool

@@ -776,8 +776,14 @@ func buildGroupEliminationGroups(t *event.Event, divID string, divisionName stri
 	}
 
 	// Fallback to snake seeding
-	groupSize := 4
-	numGroups := int(math.Ceil(float64(len(players)) / float64(groupSize)))
+	numGroups := t.GroupCount
+	if numGroups <= 0 {
+		groupSize := 4
+		numGroups = int(math.Ceil(float64(len(players)) / float64(groupSize)))
+	}
+	if numGroups > len(players) {
+		numGroups = len(players)
+	}
 	if numGroups == 0 {
 		return []Group{}, true
 	}

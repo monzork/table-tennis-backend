@@ -78,6 +78,7 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 		EventCategory:         t.EventCategory,
 		StartDate:             t.StartDate,
 		EndDate:               t.EndDate,
+		GroupCount:            t.GroupCount,
 		GroupPassCount:        t.GroupPassCount,
 		LosersGroupPassCount:  t.LosersGroupPassCount,
 		RegistrationOpen:      t.RegistrationOpen,
@@ -245,6 +246,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 			EventCategory:         m.EventCategory,
 			StartDate:             m.StartDate,
 			EndDate:               m.EndDate,
+			GroupCount:            m.GroupCount,
 			GroupPassCount:        m.GroupPassCount,
 			LosersGroupPassCount:  m.LosersGroupPassCount,
 			RegistrationOpen:      m.RegistrationOpen,
@@ -362,6 +364,7 @@ func (r *EventRepository) GetByIDLite(ctx context.Context, idStr string) (*event
 		EventCategory:         model.EventCategory,
 		StartDate:             model.StartDate,
 		EndDate:               model.EndDate,
+		GroupCount:            model.GroupCount,
 		GroupPassCount:        model.GroupPassCount,
 		LosersGroupPassCount:  model.LosersGroupPassCount,
 		RegistrationOpen:      model.RegistrationOpen,
@@ -728,6 +731,7 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 		EventCategory:         model.EventCategory,
 		StartDate:             model.StartDate,
 		EndDate:               model.EndDate,
+		GroupCount:            model.GroupCount,
 		GroupPassCount:        model.GroupPassCount,
 		LosersGroupPassCount:  model.LosersGroupPassCount,
 		RegistrationOpen:      model.RegistrationOpen,
@@ -778,6 +782,7 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			EventCategory:         t.EventCategory,
 			StartDate:             t.StartDate,
 			EndDate:               t.EndDate,
+			GroupCount:            t.GroupCount,
 			GroupPassCount:        t.GroupPassCount,
 			LosersGroupPassCount:  t.LosersGroupPassCount,
 			RegistrationOpen:      t.RegistrationOpen,
@@ -794,7 +799,7 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			UseGenderDivisions:    t.UseGenderDivisions,
 		}
 
-		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked", "skip_division_split").Exec(ctx)
+		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_count", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked", "skip_division_split").Exec(ctx)
 		if err != nil {
 			return err
 		}
@@ -1501,6 +1506,7 @@ func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel
 			EventCategory:        m.EventCategory,
 			StartDate:            m.StartDate,
 			EndDate:              m.EndDate,
+			GroupCount:           m.GroupCount,
 			GroupPassCount:       m.GroupPassCount,
 			LosersGroupPassCount: m.LosersGroupPassCount,
 			RegistrationOpen:     m.RegistrationOpen,
