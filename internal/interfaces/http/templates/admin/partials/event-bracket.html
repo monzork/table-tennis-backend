@@ -150,10 +150,10 @@
               class="group-card bg-black/20 rounded-3xl p-4 sm:p-6 border border-white/5 shadow-lg relative transition-all duration-300"
               {{if $canMove}}
                 data-event-id="{{$t.ID}}"
-                ondragover="onDragOver(tournament)"
-                ondragenter="onDragEnter(tournament, this)"
-                ondragleave="onDragLeave(tournament, this)"
-                ondrop="onDrop(tournament, this)"
+                ondragover="onDragOver(event)"
+                ondragenter="onDragEnter(event, this)"
+                ondragleave="onDragLeave(event, this)"
+                ondrop="onDrop(event, this)"
               {{end}}>
               <div class="flex justify-between items-center border-b border-white/10 pb-4">
                 <div class="flex flex-col">
@@ -188,15 +188,15 @@
                     <tr 
                       {{if $canMove}}
                         draggable="true"
-                        ondragstart="onDragStart(tournament, '{{.Player.ID}}')"
-                        ondragend="onDragEnd(tournament)"
+                        ondragstart="onDragStart(event, '{{.Player.ID}}')"
+                        ondragend="onDragEnd(event)"
                         data-event-id="{{$t.ID}}"
                         data-group-id="{{$currentGroupID}}"
                         data-target-index="{{$idx}}"
-                        ondragover="onDragOverRow(tournament)"
-                        ondragenter="onDragEnterRow(tournament, this)"
-                        ondragleave="onDragLeaveRow(tournament, this)"
-                        ondrop="onDropRow(tournament, this)"
+                        ondragover="onDragOverRow(event)"
+                        ondragenter="onDragEnterRow(event, this)"
+                        ondragleave="onDragLeaveRow(event, this)"
+                        ondrop="onDropRow(event, this)"
                         class="cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all duration-200"
                       {{else}}
                         class="hover:bg-white/5 transition-all duration-200"
@@ -276,15 +276,15 @@
                       data-player-id="{{$p.ID}}"
                       {{if $canMoveKnockout}}
                         draggable="true"
-                        ondragstart="onDragStart(tournament, '{{$p.ID}}')"
-                        ondragend="onDragEnd(tournament)"
+                        ondragstart="onDragStart(event, '{{$p.ID}}')"
+                        ondragend="onDragEnd(event)"
                         data-event-id="{{$.Event.ID}}"
                         data-div-id="{{$divID}}"
                         data-target-index="{{$idx}}"
-                        ondragover="onDragOverRow(tournament)"
-                        ondragenter="onDragEnterRow(tournament, this)"
-                        ondragleave="onDragLeaveRow(tournament, this)"
-                        ondrop="onDropKnockoutRow(tournament, this)"
+                        ondragover="onDragOverRow(event)"
+                        ondragenter="onDragEnterRow(event, this)"
+                        ondragleave="onDragLeaveRow(event, this)"
+                        ondrop="onDropKnockoutRow(event, this)"
                         class="cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all duration-200"
                       {{else}}
                         class="hover:bg-white/5 transition-all duration-200"
@@ -631,10 +631,10 @@
           {{if $canMove}}
             data-event-id="{{$t.ID}}"
             data-group-id="{{$currentGroupID}}"
-            ondragover="onDragOver(tournament)"
-            ondragenter="onDragEnter(tournament, this)"
-            ondragleave="onDragLeave(tournament, this)"
-            ondrop="onDrop(tournament, this)"
+            ondragover="onDragOver(event)"
+            ondragenter="onDragEnter(event, this)"
+            ondragleave="onDragLeave(event, this)"
+            ondrop="onDrop(event, this)"
           {{end}}>
           <div class="bg-white/5 px-6 py-4 border-b border-white/10 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -658,15 +658,15 @@
               <tr 
                 {{if $canMove}}
                   draggable="true"
-                  ondragstart="onDragStart(tournament, '{{$p.ID}}')"
-                  ondragend="onDragEnd(tournament)"
+                  ondragstart="onDragStart(event, '{{$p.ID}}')"
+                  ondragend="onDragEnd(event)"
                   data-event-id="{{$t.ID}}"
                   data-group-id="{{$currentGroupID}}"
                   data-target-index="{{$idx}}"
-                  ondragover="onDragOverRow(tournament)"
-                  ondragenter="onDragEnterRow(tournament, this)"
-                  ondragleave="onDragLeaveRow(tournament, this)"
-                  ondrop="onDropRow(tournament, this)"
+                  ondragover="onDragOverRow(event)"
+                  ondragenter="onDragEnterRow(event, this)"
+                  ondragleave="onDragLeaveRow(event, this)"
+                  ondrop="onDropRow(event, this)"
                   class="cursor-grab active:cursor-grabbing hover:bg-white/5 transition-all duration-200"
                 {{else}}
                   class="opacity-75"

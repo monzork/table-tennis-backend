@@ -358,38 +358,38 @@ document.body.addEventListener('htmx:afterOnLoad', function(evt) {
 // ── Drag & Drop ── JS reads data-* attributes at drop time → htmx.ajax() POST.
 // Server responds with HX-Trigger: reload-bracket → bracket reloads automatically.
 
-function onDragStart(tournament, playerId) {
-    tournament.dataTransfer.setData('text/plain', playerId);
-    tournament.dataTransfer.effectAllowed = 'move';
-    tournament.currentTarget.classList.add('opacity-40');
+function onDragStart(event, playerId) {
+    event.dataTransfer.setData('text/plain', playerId);
+    event.dataTransfer.effectAllowed = 'move';
+    event.currentTarget.classList.add('opacity-40');
 }
 
-function onDragEnd(tournament) {
-    tournament.currentTarget.classList.remove('opacity-40');
+function onDragEnd(event) {
+    event.currentTarget.classList.remove('opacity-40');
 }
 
-function onDragOver(tournament) {
-    tournament.preventDefault();
-    tournament.dataTransfer.dropEffect = 'move';
+function onDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
 }
 
-function onDragEnter(tournament, el) {
-    tournament.preventDefault();
+function onDragEnter(event, el) {
+    event.preventDefault();
     el.classList.remove('border-white/5');
     el.classList.add('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
 }
 
-function onDragLeave(tournament, el) {
+function onDragLeave(event, el) {
     el.classList.add('border-white/5');
     el.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
 }
 
-function onDrop(tournament, el) {
-    tournament.preventDefault();
+function onDrop(event, el) {
+    event.preventDefault();
     el.classList.add('border-white/5');
     el.classList.remove('border-red-500/50', 'bg-red-500/5', 'scale-[1.01]');
 
-    const playerId = tournament.dataTransfer.getData('text/plain');
+    const playerId = event.dataTransfer.getData('text/plain');
     if (!playerId) return;
 
     const tournamentId = el.dataset.tournamentId;
@@ -402,29 +402,29 @@ function onDrop(tournament, el) {
     });
 }
 
-function onDragOverRow(tournament) {
-    tournament.preventDefault();
-    tournament.stopPropagation();
-    tournament.dataTransfer.dropEffect = 'move';
+function onDragOverRow(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'move';
 }
 
-function onDragEnterRow(tournament, el) {
-    tournament.preventDefault();
-    tournament.stopPropagation();
+function onDragEnterRow(event, el) {
+    event.preventDefault();
+    event.stopPropagation();
     el.classList.add('border-t-2', 'border-red-500/70', 'bg-red-500/5');
 }
 
-function onDragLeaveRow(tournament, el) {
-    tournament.stopPropagation();
+function onDragLeaveRow(event, el) {
+    event.stopPropagation();
     el.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
 }
 
-function onDropRow(tournament, el) {
-    tournament.preventDefault();
-    tournament.stopPropagation();
+function onDropRow(event, el) {
+    event.preventDefault();
+    event.stopPropagation();
     el.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
 
-    const playerId = tournament.dataTransfer.getData('text/plain');
+    const playerId = event.dataTransfer.getData('text/plain');
     if (!playerId) return;
 
     const tournamentId = el.dataset.tournamentId;
@@ -438,12 +438,12 @@ function onDropRow(tournament, el) {
     });
 }
 
-function onDropKnockoutRow(tournament, el) {
-    tournament.preventDefault();
-    tournament.stopPropagation();
+function onDropKnockoutRow(event, el) {
+    event.preventDefault();
+    event.stopPropagation();
     el.classList.remove('border-t-2', 'border-red-500/70', 'bg-red-500/5');
 
-    const playerId = tournament.dataTransfer.getData('text/plain');
+    const playerId = event.dataTransfer.getData('text/plain');
     if (!playerId) return;
 
     const tournamentId = el.dataset.tournamentId;
