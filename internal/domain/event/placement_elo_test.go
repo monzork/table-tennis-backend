@@ -251,6 +251,54 @@ func TestPlacementEloBonus_RoundRobinPerDivisionMultiplier(t *testing.T) {
 	}
 }
 
+// TestPlacementEloBonus_ResolvesDivisionWhenMatchesCarryNone is a regression
+// test: some tournaments create one whole event per division (e.g. "II
+// Ranking Nacional por Divisiones" makes a separate "...(1st Division
+// (Women))" event per division) and never stamp DivisionID on their
+// matches, since the division scoping already happened at event-creation
+// time. Without resolving the division from a representative participant's
+// Elo, the bonus silently fell back to the default 2x-K-factor multiplier
+// for every such event regardless of which division's own multiplier
+// (e.g. 0.5x for an elite division) was actually configured.
+func TestPlacementEloBonus_ResolvesDivisionWhenMatchesCarryNone(t *testing.T) {
+	champ := &player.Player{ID: "champ", SinglesElo: 1769}
+	runnerUp := &player.Player{ID: "runner", SinglesElo: 1700}
+	third := &player.Player{ID: "third", SinglesElo: 1650}
+	fourth := &player.Player{ID: "fourth", SinglesElo: 1600}
+
+	ev := &Event{
+		Format: "round_robin", Type: "singles",
+		EventCategory: "women", UseGenderDivisions: true,
+		Participants: []*player.Player{champ, runnerUp, third, fourth},
+		Matches: []Match{
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{champ}, TeamB: []*player.Player{runnerUp}},
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{champ}, TeamB: []*player.Player{third}},
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{champ}, TeamB: []*player.Player{fourth}},
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{runnerUp}, TeamB: []*player.Player{third}},
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{runnerUp}, TeamB: []*player.Player{fourth}},
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{third}, TeamB: []*player.Player{fourth}},
+		},
+	}
+
+	secondDivMax := int16(1300)
+	divisions := []*division.Division{
+		{ID: "div-first-female", MinElo: 1300, MaxElo: nil, Category: "both", Gender: "F", PlacementEloMultiplier: 0.5},
+		{ID: "div-second-female", MinElo: 0, MaxElo: &secondDivMax, Category: "both", Gender: "F", PlacementEloMultiplier: 1},
+		{ID: "div-first-male", MinElo: 1300, MaxElo: nil, Category: "both", Gender: "M", PlacementEloMultiplier: 2},
+	}
+
+	bonus := PlacementEloBonus(ev, divisions)
+	if bonus["champ"] != 16 { // 0.5 * 32
+		t.Errorf("expected champion bonus 16 (0.5x K-factor for div-first-female), got %v", bonus["champ"])
+	}
+	if bonus["runner"] != 8 {
+		t.Errorf("expected runner-up bonus 8, got %v", bonus["runner"])
+	}
+	if bonus["third"] != 4 {
+		t.Errorf("expected 3rd place bonus 4, got %v", bonus["third"])
+	}
+}
+
 func TestPlacementEloBonus_RoundRobinTeamsFormat(t *testing.T) {
 	john := &player.Player{ID: "john"}
 	jane := &player.Player{ID: "jane"}

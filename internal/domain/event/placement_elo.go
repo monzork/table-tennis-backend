@@ -2,6 +2,7 @@ package event
 
 import (
 	"math"
+	"strings"
 
 	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/match"
@@ -42,6 +43,69 @@ func placementBonusAmounts(divisions []*division.Division, divisionID string) (f
 	second = first / 2
 	third = math.Ceil(second / 2)
 	return
+}
+
+// resolveDivisionID returns divisionID unchanged if non-empty (the match
+// was already tagged, e.g. an event whose bracket splits multiple divisions
+// internally). Some tournaments instead create one whole event per division
+// with no per-match tagging at all (e.g. "II Ranking Nacional por
+// Divisiones" makes a separate "...(1st Division (Women))" event per
+// division) -- for those, resolve the division from a representative
+// participant's Elo, so the right PlacementEloMultiplier is used instead of
+// silently falling back to the default for every such event.
+func resolveDivisionID(t *Event, divisions []*division.Division, divisionID string, sample *player.Player) string {
+	if divisionID != "" || sample == nil {
+		return divisionID
+	}
+	elo := sample.SinglesElo
+	if t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams" {
+		elo = sample.DoublesElo
+	}
+	for _, d := range divisions {
+		if d.MinElo == 0 && d.MaxElo == nil {
+			continue // skip the catch-all "No Division" band
+		}
+		if d.Category != "both" && d.Category != t.Type {
+			continue
+		}
+		if !divisionMatchesEventCategoryForBonus(d, t) {
+			continue
+		}
+		if d.ContainsElo(elo) {
+			return d.ID
+		}
+	}
+	return divisionID
+}
+
+// divisionMatchesEventCategoryForBonus mirrors
+// bracket.divisionMatchesEventCategory -- domain/event can't import
+// domain/bracket (which itself imports domain/event) without a cycle.
+func divisionMatchesEventCategoryForBonus(d *division.Division, t *Event) bool {
+	isGenderSpecific := d.Gender != "" && !strings.EqualFold(d.Gender, "both")
+	if t.UseGenderDivisions {
+		if !isGenderSpecific {
+			return false
+		}
+		switch t.EventCategory {
+		case "men":
+			return strings.EqualFold(d.Gender, "M")
+		case "women":
+			return strings.EqualFold(d.Gender, "F")
+		default:
+			return false
+		}
+	}
+	return !isGenderSpecific
+}
+
+// firstPlayer returns the first player in a team slot, or nil for an empty
+// one.
+func firstPlayer(team []*player.Player) *player.Player {
+	if len(team) == 0 {
+		return nil
+	}
+	return team[0]
 }
 
 // PlacementEloBonus computes, for every player whose final placement in this
@@ -103,7 +167,8 @@ func knockoutPlacementBonus(t *Event, divisions []*division.Division) map[string
 		if m.Stage != "final" || m.Status != "finished" || m.TeamMatchID != nil || m.WinnerTeam == "" {
 			continue
 		}
-		first, second, _ := placementBonusAmounts(divisions, m.DivisionID)
+		divID := resolveDivisionID(t, divisions, m.DivisionID, firstPlayer(m.TeamA))
+		first, second, _ := placementBonusAmounts(divisions, divID)
 		winners, losers := m.TeamA, m.TeamB
 		if m.WinnerTeam == "B" {
 			winners, losers = m.TeamB, m.TeamA
@@ -121,7 +186,8 @@ func knockoutPlacementBonus(t *Event, divisions []*division.Division) map[string
 		if m.Stage != "semifinal" || m.Status != "finished" || m.TeamMatchID != nil || m.WinnerTeam == "" {
 			continue
 		}
-		_, _, third := placementBonusAmounts(divisions, m.DivisionID)
+		divID := resolveDivisionID(t, divisions, m.DivisionID, firstPlayer(m.TeamA))
+		_, _, third := placementBonusAmounts(divisions, divID)
 		loser := m.TeamA
 		if m.WinnerTeam == "A" {
 			loser = m.TeamB
@@ -176,7 +242,8 @@ func roundRobinPlacementBonus(t *Event, divisions []*division.Division) map[stri
 		}
 
 		standings := BuildStandings(participants, matches)
-		first, second, third := placementBonusAmounts(divisions, divID)
+		resolvedDivID := resolveDivisionID(t, divisions, divID, firstPlayer(participants))
+		first, second, third := placementBonusAmounts(divisions, resolvedDivID)
 		assign := func(rank int, amount float64) {
 			if len(standings) <= rank {
 				return
