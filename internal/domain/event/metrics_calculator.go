@@ -70,16 +70,14 @@ func (c *MetricsCalculator) Calculate(t *Event, snapshots []ParticipantSnapshot)
 			}
 			divisionStats[divID].matches++
 
-			if m.WinnerTeam != "" {
+			if m.WinnerTeam != "" && len(m.Sets) > 0 {
 				scoreA := m.ScoreA()
 				scoreB := m.ScoreB()
 				if scoreA == 0 || scoreB == 0 {
 					metrics.CleanSweeps++
 				}
-				if len(m.Sets) > 0 {
-					if scoreA > 0 && scoreB > 0 && (scoreA-scoreB == 1 || scoreB-scoreA == 1) {
-						metrics.DecidingSets++
-					}
+				if scoreA > 0 && scoreB > 0 && (scoreA-scoreB == 1 || scoreB-scoreA == 1) {
+					metrics.DecidingSets++
 				}
 			}
 			for _, s := range m.Sets {

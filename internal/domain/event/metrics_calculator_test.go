@@ -124,3 +124,37 @@ func TestMetricsCalculator_Calculate(t *testing.T) {
 		t.Errorf("Expected div metric average points 44.5, got %v", divMetric.AveragePointsPerMatch)
 	}
 }
+
+// A forfeit is persisted with no sets at all (see MatchRepository.UpdateScore),
+// so it still counts toward TotalMatchesPlayed but contributes no sets/points/
+// clean-sweeps -- nothing here needs to special-case IsForfeit. This also
+// guards the len(m.Sets) > 0 checks below: a finished match with zero real
+// sets (only possible for a forfeit) must not be misread as a 0-0 "clean sweep".
+func TestMetricsCalculator_ForfeitWithNoPersistedSets(t *testing.T) {
+	calc := NewMetricsCalculator()
+
+	event := &Event{
+		ID:   "tourney-2",
+		Type: "singles",
+		Matches: []Match{
+			{
+				Status:     "finished",
+				DivisionID: "div-1",
+				WinnerTeam: "A",
+				IsForfeit:  true,
+				TeamA:      []*player.Player{{ID: "p1"}},
+				TeamB:      []*player.Player{{ID: "p2"}},
+			},
+		},
+	}
+
+	metrics := calc.Calculate(event, nil)
+
+	if metrics.TotalMatchesPlayed != 1 {
+		t.Errorf("expected the forfeit to still count as a match played, got %d", metrics.TotalMatchesPlayed)
+	}
+	if metrics.TotalSetsPlayed != 0 || metrics.TotalPointsScored != 0 || metrics.CleanSweeps != 0 {
+		t.Errorf("expected no sets/points/clean-sweeps with none persisted, got sets=%d points=%d cleanSweeps=%d",
+			metrics.TotalSetsPlayed, metrics.TotalPointsScored, metrics.CleanSweeps)
+	}
+}

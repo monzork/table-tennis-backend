@@ -70,7 +70,7 @@ func TestMatchRepository_TeamMatch_UpdateScore_AggregatesAndAdvances(t *testing.
 
 	// Win 3 of 5 sub-matches for team A via UpdateScore; the 3rd should flip the parent.
 	for i := 0; i < 3; i++ {
-		if err := f.matchRepo.UpdateScore(ctx, subs[i].ID, winSets, stageRule); err != nil {
+		if err := f.matchRepo.UpdateScore(ctx, subs[i].ID, winSets, stageRule, false); err != nil {
 			t.Fatalf("UpdateScore sub[%d]: %v", i, err)
 		}
 	}

@@ -124,6 +124,7 @@ var Translations = map[string]map[string]string{
 		"status.scheduled":      "Waiting",
 		"status.in_progress":    "In Progress",
 		"status.finished":       "Finished",
+		"status.forfeit":        "Walkover",
 		"status.double_forfeit": "Double Forfeit",
 
 		// Events List
@@ -1047,6 +1048,7 @@ var Translations = map[string]map[string]string{
 		"status.scheduled":      "En Espera",
 		"status.in_progress":    "En Progreso",
 		"status.finished":       "Finalizado",
+		"status.forfeit":        "Abandono",
 		"status.double_forfeit": "Doble Abandono",
 
 		// Events List

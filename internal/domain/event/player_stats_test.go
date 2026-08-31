@@ -51,6 +51,33 @@ func TestBuildPlayerEventStats(t *testing.T) {
 			t.Errorf("expected zero stats, got %+v", stats)
 		}
 	})
+
+	// A forfeit is persisted with no sets at all (see MatchRepository.UpdateScore),
+	// so the win/loss above still counts but sets/points naturally read 0 --
+	// nothing here needs to special-case IsForfeit.
+	t.Run("forfeit with no persisted sets counts the win/loss but no sets/points", func(t *testing.T) {
+		matches := []Match{
+			{
+				Status: "finished", Stage: "group", WinnerTeam: "A", IsForfeit: true,
+				TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2},
+			},
+		}
+		winner := BuildPlayerEventStats("p1", matches)
+		if winner.Played != 1 || winner.Wins != 1 {
+			t.Errorf("expected the win to count, got %+v", winner)
+		}
+		if winner.SetsWon != 0 || winner.SetsLost != 0 || winner.PointsWon != 0 || winner.PointsLost != 0 {
+			t.Errorf("expected no sets/points with none persisted, got %+v", winner)
+		}
+
+		loser := BuildPlayerEventStats("p2", matches)
+		if loser.Played != 1 || loser.Losses != 1 {
+			t.Errorf("expected the loss to count, got %+v", loser)
+		}
+		if loser.SetsWon != 0 || loser.SetsLost != 0 || loser.PointsWon != 0 || loser.PointsLost != 0 {
+			t.Errorf("expected no sets/points with none persisted, got %+v", loser)
+		}
+	})
 }
 
 func TestBuildAllPlayerEventStats(t *testing.T) {

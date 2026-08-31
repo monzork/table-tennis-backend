@@ -164,6 +164,15 @@ function applyForfeit(forfeitingTeam) {
         }
     }
 
+    let flag = form.querySelector('input[name="forfeit"]');
+    if (!flag) {
+        flag = document.createElement('input');
+        flag.type = 'hidden';
+        flag.name = 'forfeit';
+        form.appendChild(flag);
+    }
+    flag.value = 'true';
+
     // Filling the inputs alone doesn't persist anything - actually submit the form
     // so the forfeit result is saved, matching what clicking "Forfeit" implies.
     form.requestSubmit();

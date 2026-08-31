@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS matches (
     team_b_player_1_id UUID NOT NULL REFERENCES players(id),
     team_b_player_2_id UUID REFERENCES players(id),
     status TEXT NOT NULL DEFAULT 'scheduled',
+    is_forfeit BOOLEAN NOT NULL DEFAULT FALSE,
     winner_team TEXT,
     -- 'A', 'B', or NULL
     stage TEXT NOT NULL DEFAULT 'final',

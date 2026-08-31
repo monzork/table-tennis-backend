@@ -27,7 +27,9 @@
 
     <td class="block sm:table-cell p-0 sm:p-4 mb-3 sm:mb-0">
         <span class="sm:hidden font-bold uppercase text-[9px] text-gray-500 mr-2">{{t .T "pub_detail.mob_status"}}</span>
-        {{if eq .Match.Status "finished"}}
+        {{if and (eq .Match.Status "finished") .Match.IsForfeit}}
+            <span class="px-2 py-1 rounded bg-orange-500/10 text-orange-400 text-xs font-bold uppercase tracking-wider border border-orange-500/20">{{t .T "status.forfeit"}}</span>
+        {{else if eq .Match.Status "finished"}}
             <span class="px-2 py-1 rounded bg-white/10 text-white text-xs font-bold uppercase tracking-wider border border-white/20">{{t .T "status.finished"}}</span>
         {{else if eq .Match.Status "in_progress"}}
             <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-wider border border-blue-500/20">{{t .T "status.in_progress"}}</span>

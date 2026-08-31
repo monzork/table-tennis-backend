@@ -25,6 +25,7 @@ type MatchModel struct {
 	TeamBPlayer1ID uuid.UUID  `bun:"team_b_player_1_id,notnull"`
 	TeamBPlayer2ID *uuid.UUID `bun:"team_b_player_2_id"`
 	Status         string     `bun:"status,notnull,default:'scheduled'"`
+	IsForfeit      bool       `bun:"is_forfeit,notnull,default:false"`
 	WinnerTeam     *string    `bun:"winner_team"`
 	Stage          string     `bun:"stage,notnull,default:'group'"`
 	DivisionID     string     `bun:"division_id"`
@@ -273,7 +274,7 @@ func (r *MatchRepository) ClearScoreProposal(ctx context.Context, matchID string
 
 // UpdateScore replaces all set scores, resolves winner, persists, updates players' Elo,
 // and advances the winner into the next match if configured.
-func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []event.MatchSet, stageRule event.StageRule) error {
+func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []event.MatchSet, stageRule event.StageRule, isForfeit bool) error {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return err
@@ -284,13 +285,20 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []
 		return err
 	}
 
+	m.IsForfeit = isForfeit
+
 	// Resolve winner count
 	needed, winsA, winsB := computeSetWins(sets, stageRule)
 
 	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
-		// Replace sets
+		// Replace sets. A forfeit's 11-0 sets only exist to pick a winner
+		// through the normal computeSetWins path above (so it advances the
+		// bracket like any other finish) -- they're fabricated, not real
+		// play, so nothing is persisted for them: no set rows means no fake
+		// score to show, and every set/point stat naturally reads 0 for this
+		// match without needing to special-case IsForfeit anywhere else.
 		tx.NewDelete().TableExpr("match_sets").Where("match_id = ?", id).Exec(ctx)
-		if len(sets) > 0 {
+		if len(sets) > 0 && !isForfeit {
 			setModels := make([]MatchSetModel, len(sets))
 			for i, s := range sets {
 				setModels[i] = MatchSetModel{
@@ -334,7 +342,7 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []
 
 		now := time.Now()
 		m.UpdatedAt = &now
-		_, err = tx.NewUpdate().Model(m).WherePK().Column("status", "winner_team", "updated_at").Exec(ctx)
+		_, err = tx.NewUpdate().Model(m).WherePK().Column("status", "winner_team", "is_forfeit", "updated_at").Exec(ctx)
 		if err != nil {
 			return err
 		}
@@ -636,6 +644,7 @@ func (r *MatchRepository) GetAll(ctx context.Context) ([]*event.Match, error) {
 			TeamA:       teamA,
 			TeamB:       teamB,
 			Status:      m.Status,
+			IsForfeit:   m.IsForfeit,
 			WinnerTeam:  wt,
 			Sets:        setsByMatch[m.ID.String()],
 			TeamMatchID: teamMatchIDPtr,
@@ -809,6 +818,7 @@ func (r *MatchRepository) mapModelsToEntities(ctx context.Context, models []Matc
 			TeamA:              teamA,
 			TeamB:              teamB,
 			Status:             m.Status,
+			IsForfeit:          m.IsForfeit,
 			WinnerTeam:         getString(m.WinnerTeam),
 			Stage:              m.Stage,
 			DivisionID:         m.DivisionID,

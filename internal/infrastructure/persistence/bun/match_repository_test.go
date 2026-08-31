@@ -141,7 +141,7 @@ func TestMatchRepository_UpdateScore_DecidesMatch(t *testing.T) {
 		{Number: 2, ScoreA: 11, ScoreB: 7},
 		{Number: 3, ScoreA: 11, ScoreB: 9},
 	}
-	if err := f.matchRepo.UpdateScore(ctx, m.ID, sets, stageRule); err != nil {
+	if err := f.matchRepo.UpdateScore(ctx, m.ID, sets, stageRule, false); err != nil {
 		t.Fatalf("UpdateScore: %v", err)
 	}
 
@@ -157,6 +157,40 @@ func TestMatchRepository_UpdateScore_DecidesMatch(t *testing.T) {
 	}
 }
 
+func TestMatchRepository_UpdateScore_Forfeit(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	m := f.newMatch(t, "final")
+	if err := f.matchRepo.Save(ctx, m); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	stageRule := event.StageRule{BestOf: 5, PointsToWin: 11, PointsMargin: 2}
+	sets := []event.MatchSet{
+		{Number: 1, ScoreA: 11, ScoreB: 0},
+		{Number: 2, ScoreA: 11, ScoreB: 0},
+		{Number: 3, ScoreA: 11, ScoreB: 0},
+	}
+	if err := f.matchRepo.UpdateScore(ctx, m.ID, sets, stageRule, true); err != nil {
+		t.Fatalf("UpdateScore: %v", err)
+	}
+
+	got, err := f.matchRepo.GetByID(ctx, m.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.Status != "finished" || got.WinnerTeam != "A" {
+		t.Fatalf("expected match A to have won and be finished, got %+v", got)
+	}
+	if !got.IsForfeit {
+		t.Fatalf("expected IsForfeit true, got %+v", got)
+	}
+	if len(got.Sets) != 0 {
+		t.Fatalf("expected the fabricated sets not to be persisted, got %d sets", len(got.Sets))
+	}
+}
+
 func TestMatchRepository_UpdateScore_InProgress(t *testing.T) {
 	f := newMatchTestFixture(t)
 	ctx := context.Background()
@@ -168,7 +202,7 @@ func TestMatchRepository_UpdateScore_InProgress(t *testing.T) {
 
 	stageRule := event.StageRule{BestOf: 5, PointsToWin: 11, PointsMargin: 2}
 	sets := []event.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}}
-	if err := f.matchRepo.UpdateScore(ctx, m.ID, sets, stageRule); err != nil {
+	if err := f.matchRepo.UpdateScore(ctx, m.ID, sets, stageRule, false); err != nil {
 		t.Fatalf("UpdateScore: %v", err)
 	}
 
@@ -185,7 +219,7 @@ func TestMatchRepository_UpdateScore_InvalidID(t *testing.T) {
 	f := newMatchTestFixture(t)
 	ctx := context.Background()
 
-	err := f.matchRepo.UpdateScore(ctx, "bad-id", nil, event.StageRule{})
+	err := f.matchRepo.UpdateScore(ctx, "bad-id", nil, event.StageRule{}, false)
 	if err == nil {
 		t.Fatal("expected error for invalid UUID, got nil")
 	}
@@ -202,7 +236,7 @@ func TestMatchRepository_DoubleForfeit(t *testing.T) {
 
 	stageRule := event.StageRule{BestOf: 5, PointsToWin: 11, PointsMargin: 2}
 	sets := []event.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}}
-	if err := f.matchRepo.UpdateScore(ctx, m.ID, sets, stageRule); err != nil {
+	if err := f.matchRepo.UpdateScore(ctx, m.ID, sets, stageRule, false); err != nil {
 		t.Fatalf("UpdateScore: %v", err)
 	}
 
@@ -779,7 +813,7 @@ func TestMatchRepository_GetSets_And_GetModelByID(t *testing.T) {
 
 	stageRule := event.StageRule{BestOf: 5, PointsToWin: 11, PointsMargin: 2}
 	sets := []event.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}}
-	if err := f.matchRepo.UpdateScore(ctx, m.ID, sets, stageRule); err != nil {
+	if err := f.matchRepo.UpdateScore(ctx, m.ID, sets, stageRule, false); err != nil {
 		t.Fatalf("UpdateScore: %v", err)
 	}
 

@@ -82,10 +82,11 @@ func (m *mockMatchRepo) GetSubMatches(ctx context.Context, parentMatchID string)
 func (m *mockMatchRepo) GetMatchByParticipants(ctx context.Context, tournamentID, p1ID, p2ID, stage string) (*eventDomain.Match, error) {
 	return nil, nil
 }
-func (m *mockMatchRepo) UpdateScore(ctx context.Context, id string, sets []eventDomain.MatchSet, stageRule eventDomain.StageRule) error {
+func (m *mockMatchRepo) UpdateScore(ctx context.Context, id string, sets []eventDomain.MatchSet, stageRule eventDomain.StageRule, isForfeit bool) error {
 	m.scoresUpdated = true
 	if match, ok := m.matches[id]; ok {
 		match.Sets = sets
+		match.IsForfeit = isForfeit
 	}
 	return nil
 }
@@ -844,7 +845,7 @@ func TestUpdateMatchScoreUseCase(t *testing.T) {
 	})
 
 	t.Run("execute update score", func(t *testing.T) {
-		err := uc.Execute(ctx, "m1", []string{"11-9", "11-7"}, "e1", "group")
+		err := uc.Execute(ctx, "m1", []string{"11-9", "11-7"}, "e1", "group", false)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -855,21 +856,21 @@ func TestUpdateMatchScoreUseCase(t *testing.T) {
 
 	t.Run("execute with divisioned match", func(t *testing.T) {
 		e.Matches = append(e.Matches, eventDomain.Match{ID: "m1", DivisionID: "div1"})
-		err := uc.Execute(ctx, "m1", []string{"11-9", "11-7"}, "e1", "group")
+		err := uc.Execute(ctx, "m1", []string{"11-9", "11-7"}, "e1", "group", false)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("execute with invalid raw scores", func(t *testing.T) {
-		err := uc.Execute(ctx, "m1", []string{"invalid"}, "e1", "group")
+		err := uc.Execute(ctx, "m1", []string{"invalid"}, "e1", "group", false)
 		if err == nil {
 			t.Fatal("expected error for invalid raw score")
 		}
 	})
 
 	t.Run("execute with nonexistent tournament", func(t *testing.T) {
-		err := uc.Execute(ctx, "m1", []string{"11-9"}, "nonexistent", "group")
+		err := uc.Execute(ctx, "m1", []string{"11-9"}, "nonexistent", "group", false)
 		if err == nil {
 			t.Fatal("expected error for nonexistent tournament")
 		}
@@ -897,7 +898,7 @@ func TestUpdateMatchScoreUseCase(t *testing.T) {
 
 	t.Run("execute on finished tournament error", func(t *testing.T) {
 		e.Status = "finished"
-		err := uc.Execute(ctx, "m1", []string{"11-9"}, "e1", "group")
+		err := uc.Execute(ctx, "m1", []string{"11-9"}, "e1", "group", false)
 		if err == nil {
 			t.Fatal("expected error on finished tournament")
 		}

@@ -58,6 +58,7 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 	rawScores []string,
 	tournamentIDStr string,
 	stage string,
+	isForfeit bool,
 ) error {
 	sets, err := ParseSetScores(rawScores)
 	if err != nil {
@@ -75,7 +76,7 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 
 	stageRule := t.GetEffectiveStageRule(stage)
 
-	return uc.matchRepo.UpdateScore(ctx, matchIDStr, sets, stageRule)
+	return uc.matchRepo.UpdateScore(ctx, matchIDStr, sets, stageRule, isForfeit)
 }
 
 // ExecuteDoubleForfeit records a match as a no-contest: both sides

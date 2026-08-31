@@ -60,6 +60,31 @@ func TestBuildStandings_Basic(t *testing.T) {
 	}
 }
 
+// A forfeit is persisted with no sets at all (see MatchRepository.UpdateScore),
+// so the win/loss still counts toward standings but sets/points naturally
+// read 0 -- nothing here needs to special-case IsForfeit.
+func TestBuildStandings_ForfeitWithNoPersistedSets(t *testing.T) {
+	p1 := &player.Player{ID: "p1"}
+	p2 := &player.Player{ID: "p2"}
+
+	matches := []Match{
+		{
+			Status: "finished", Stage: "group", WinnerTeam: "A", IsForfeit: true,
+			TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2},
+		},
+	}
+
+	standings := BuildStandings([]*player.Player{p1, p2}, matches)
+	for _, s := range standings {
+		if s.Wins+s.Losses != 1 {
+			t.Errorf("expected %s to have exactly 1 match played, got %+v", s.Player.ID, s)
+		}
+		if s.SetsWon != 0 || s.SetsLost != 0 || s.PointsWon != 0 || s.PointsLost != 0 {
+			t.Errorf("expected no sets/points with none persisted for %s, got %+v", s.Player.ID, s)
+		}
+	}
+}
+
 func TestBuildStandings_NoMatchesPlayed(t *testing.T) {
 	p1 := &player.Player{ID: "p1"}
 	standings := BuildStandings([]*player.Player{p1}, nil)

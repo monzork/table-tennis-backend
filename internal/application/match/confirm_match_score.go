@@ -67,7 +67,7 @@ func (uc *ConfirmMatchScoreUseCase) Execute(ctx context.Context, matchID string,
 		rawScores[i] = fmt.Sprintf("%d-%d", s.ScoreA, s.ScoreB)
 	}
 
-	if err := uc.updateScoreUC.Execute(ctx, matchID, rawScores, m.EventID, m.Stage); err != nil {
+	if err := uc.updateScoreUC.Execute(ctx, matchID, rawScores, m.EventID, m.Stage, false); err != nil {
 		return err
 	}
 

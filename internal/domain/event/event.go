@@ -46,7 +46,8 @@ type Match struct {
 	MatchType     string // 'singles' or 'doubles'
 	TeamA         []*player.Player
 	TeamB         []*player.Player
-	Status        string // scheduled, in_progress, finished
+	Status        string // scheduled, in_progress, finished, double_forfeit
+	IsForfeit     bool   // true when Status "finished" was reached via the Forfeit A/B button (a walkover), not real play
 	WinnerTeam    string // 'A', 'B'
 	Sets          []MatchSet
 	TeamMatchID   *string
@@ -522,7 +523,11 @@ type MatchRepository interface {
 	GetSubMatches(ctx context.Context, parentMatchID string) ([]*Match, error)
 	GetMatchByParticipants(ctx context.Context, eventID, p1ID, p2ID, stage string) (*Match, error)
 	GetInProgressMatchOnTable(ctx context.Context, tableNumber int, eventID, tournamentID string) (*Match, error)
-	UpdateScore(ctx context.Context, id string, sets []MatchSet, stageRule StageRule) error
+	// isForfeit marks the match as a walkover (one side defaulted) rather
+	// than real play, so it's flagged distinctly in the UI/history -- it
+	// still finishes normally otherwise (winner advances, both sides' Elo
+	// applies as usual).
+	UpdateScore(ctx context.Context, id string, sets []MatchSet, stageRule StageRule, isForfeit bool) error
 	// DoubleForfeit marks a match as a no-contest: both sides defaulted, so
 	// neither wins, both lose Elo (as if each lost to the other), and no one
 	// advances in the bracket.

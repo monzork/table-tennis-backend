@@ -608,7 +608,8 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		}
 	}
 
-	if err := h.updateScoreUC.Execute(c.Context(), matchID, body.Scores, body.EventID, body.Stage); err != nil {
+	isForfeit := c.FormValue("forfeit") == "true"
+	if err := h.updateScoreUC.Execute(c.Context(), matchID, body.Scores, body.EventID, body.Stage, isForfeit); err != nil {
 		return ErrorHandler(err)
 	}
 
@@ -898,7 +899,8 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 		body.Stage = "group"
 	}
 
-	if err := h.updateScoreUC.Execute(c.Context(), matchID, body.Scores, body.EventID, body.Stage); err != nil {
+	isForfeit := c.FormValue("forfeit") == "true"
+	if err := h.updateScoreUC.Execute(c.Context(), matchID, body.Scores, body.EventID, body.Stage, isForfeit); err != nil {
 		return c.SendString("<div class='text-red-400 font-mono text-sm'>" + err.Error() + "</div>")
 	}
 

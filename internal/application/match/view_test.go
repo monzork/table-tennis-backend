@@ -168,7 +168,7 @@ func TestGetScoreFormViewUseCase_ExistingMatchWithSets(t *testing.T) {
 	}
 	sets := []eventDomain.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 7}}
 	stageRule := eventDomain.StageRule{Stage: "group", BestOf: 5, PointsToWin: 11, PointsMargin: 2}
-	if err := f.matchRepo.UpdateScore(context.Background(), m.ID, sets, stageRule); err != nil {
+	if err := f.matchRepo.UpdateScore(context.Background(), m.ID, sets, stageRule, false); err != nil {
 		t.Fatalf("UpdateScore: %v", err)
 	}
 
