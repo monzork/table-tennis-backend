@@ -191,6 +191,7 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS group_count INTEGER NOT NULL DEFAULT
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS num_tables INT NOT NULL DEFAULT 4;
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS table_priorities JSONB;
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS federation_endorsed BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS include_id_photos_in_report BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Guardian accounts (Google OAuth) + player self-service score confirmation
 CREATE TABLE IF NOT EXISTS accounts (

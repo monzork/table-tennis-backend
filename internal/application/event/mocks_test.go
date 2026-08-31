@@ -477,7 +477,7 @@ func (m *mockPdfGenerator) GenerateTournamentReport(t *tournamentDomain.Event, d
 	return m.tournamentReportBytes, m.tournamentReportErr
 }
 
-func (m *mockPdfGenerator) GenerateEventReport(e *singleTournamentDomain.Tournament, divs []*divisionDomain.Division) ([]byte, error) {
+func (m *mockPdfGenerator) GenerateEventReport(e *singleTournamentDomain.Tournament, divs []*divisionDomain.Division, includeIDPhotos bool) ([]byte, error) {
 	return m.eventReportBytes, m.eventReportErr
 }
 

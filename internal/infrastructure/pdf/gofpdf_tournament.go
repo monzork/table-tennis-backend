@@ -13,7 +13,7 @@ import (
 	"github.com/go-pdf/fpdf"
 )
 
-func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*division.Division) ([]byte, error) {
+func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*division.Division, includeIDPhotos bool) ([]byte, error) {
 	tournamentsList := e.Events
 
 	pdf := fpdf.New("P", "mm", "A4", "")
@@ -69,11 +69,13 @@ func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*
 	}
 
 	// --- APPENDIX: PLAYER ID PHOTOS ---
-	var allParticipants []*player.Player
-	for _, t := range tournamentsList {
-		allParticipants = append(allParticipants, t.Participants...)
+	if includeIDPhotos {
+		var allParticipants []*player.Player
+		for _, t := range tournamentsList {
+			allParticipants = append(allParticipants, t.Participants...)
+		}
+		appendIDPhotos(pdf, allParticipants, g.photoDownloader, tr)
 	}
-	appendIDPhotos(pdf, allParticipants, g.photoDownloader, tr)
 
 	var buf bytes.Buffer
 	err := pdf.Output(&buf)

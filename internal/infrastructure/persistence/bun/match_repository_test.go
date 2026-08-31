@@ -319,6 +319,40 @@ func TestMatchRepository_CountUnfinishedAndFinishedMatches(t *testing.T) {
 	}
 }
 
+// TestMatchRepository_CountMatches_DoubleForfeitCountsAsDecided is a
+// regression test: a double-forfeit match is terminal (status
+// "double_forfeit", not "finished"), but was still being counted as
+// unfinished, permanently blocking FinishTournamentUseCase from finishing
+// any event with one anywhere in its bracket.
+func TestMatchRepository_CountMatches_DoubleForfeitCountsAsDecided(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	m1 := f.newMatch(t, "group")
+	if err := f.matchRepo.Save(ctx, m1); err != nil {
+		t.Fatalf("Save m1: %v", err)
+	}
+	if err := f.matchRepo.DoubleForfeit(ctx, m1.ID); err != nil {
+		t.Fatalf("DoubleForfeit: %v", err)
+	}
+
+	unfinished, err := f.matchRepo.CountUnfinishedMatches(ctx, f.tournament.ID)
+	if err != nil {
+		t.Fatalf("CountUnfinishedMatches: %v", err)
+	}
+	if unfinished != 0 {
+		t.Fatalf("expected a double-forfeit match to not count as unfinished, got %d", unfinished)
+	}
+
+	finished, err := f.matchRepo.CountFinishedMatches(ctx, f.tournament.ID)
+	if err != nil {
+		t.Fatalf("CountFinishedMatches: %v", err)
+	}
+	if finished != 1 {
+		t.Fatalf("expected a double-forfeit match to count as finished/decided, got %d", finished)
+	}
+}
+
 func TestMatchRepository_HasStartedOrFinishedMatches(t *testing.T) {
 	f := newMatchTestFixture(t)
 	ctx := context.Background()

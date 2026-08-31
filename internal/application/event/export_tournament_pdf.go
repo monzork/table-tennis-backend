@@ -48,5 +48,5 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 	}
 	_ = eg.Wait()
 
-	return uc.pdfGenerator.GenerateEventReport(e, divs)
+	return uc.pdfGenerator.GenerateEventReport(e, divs, e.IncludeIDPhotosInReport)
 }

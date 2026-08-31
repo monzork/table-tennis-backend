@@ -1,5 +1,10 @@
 package bracket
 
+import (
+	"table-tennis-backend/internal/domain/event"
+	"table-tennis-backend/internal/domain/player"
+)
+
 // Test-only exports for unexported helpers so external tests (package
 // bracket_test) can unit-test their branches directly. getMatchWinner in
 // particular is only ever invoked internally on losers-bracket rounds whose
@@ -12,4 +17,8 @@ func GetMatchWinnerForTest(m BracketMatch) *MatchSlot {
 
 func GetMatchLoserForTest(m BracketMatch) *MatchSlot {
 	return getMatchLoser(m)
+}
+
+func BuildBracketRoundsForTest(t *event.Event, divID string, players []*player.Player, tier int) []Round {
+	return buildBracketRounds(t, divID, players, tier)
 }

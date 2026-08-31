@@ -200,38 +200,247 @@ func getSeedingArrangement(size int) []int {
 	return bracket
 }
 
-func buildPdfBracketRounds(t *event.Event, players []*player.Player) []pdfRoundView {
+type pdfBracketPair struct {
+	P1 *pdfMatchSlot
+	P2 *pdfMatchSlot
+}
+
+// pdfEliminationStageOrder lists knockout stage names from the earliest
+// round to the final. The PDF report never renders tiered/losers brackets,
+// so unlike its domain/bracket counterpart this has no tier prefix.
+func pdfEliminationStageOrder() []string {
+	return []string{"r32", "r16", "quarterfinal", "semifinal", "final"}
+}
+
+// matchesForPdfDivisionStage returns every real (non-team-sub-match) match
+// for divID at the given stage, in t.Matches order.
+func matchesForPdfDivisionStage(t *event.Event, divID, stage string) []*event.Match {
+	var out []*event.Match
+	for i := range t.Matches {
+		m := &t.Matches[i]
+		if m.TeamMatchID != nil || m.DivisionID != divID || m.Stage != stage {
+			continue
+		}
+		if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
+			continue
+		}
+		out = append(out, m)
+	}
+	return out
+}
+
+// pdfStageNameForCount maps a round's pair count to its stage name, the same
+// convention buildPdfBracketRounds's stageNameCurrent uses.
+func pdfStageNameForCount(pairCount int) string {
+	switch pairCount {
+	case 8:
+		return "r16"
+	case 4:
+		return "quarterfinal"
+	case 2:
+		return "semifinal"
+	case 1:
+		return "final"
+	default:
+		return "r32"
+	}
+}
+
+// groupPdfSlotsByRealMatches groups a round's resolved winner slots two-at-
+// a-time using the next round's actual recorded matches, instead of pairing
+// them by position -- see domain/bracket.groupSlotsByRealMatches for why.
+func groupPdfSlotsByRealMatches(slots []*pdfMatchSlot, nextMatches []*event.Match) []pdfBracketPair {
+	idxByPlayer := make(map[string]int, len(slots))
+	for i, s := range slots {
+		if s != nil && s.Player != nil {
+			if _, exists := idxByPlayer[s.Player.ID]; !exists {
+				idxByPlayer[s.Player.ID] = i
+			}
+		}
+	}
+
+	used := make([]bool, len(slots))
+	pairs := make([]pdfBracketPair, 0, (len(slots)+1)/2)
+	for _, m := range nextMatches {
+		idxA, okA := idxByPlayer[m.TeamA[0].ID]
+		idxB, okB := idxByPlayer[m.TeamB[0].ID]
+		if !okA || !okB || idxA == idxB || used[idxA] || used[idxB] {
+			continue
+		}
+		used[idxA], used[idxB] = true, true
+		pairs = append(pairs, pdfBracketPair{P1: slots[idxA], P2: slots[idxB]})
+	}
+
+	var leftover []*pdfMatchSlot
+	for i, s := range slots {
+		if !used[i] {
+			leftover = append(leftover, s)
+		}
+	}
+	for i := 0; i < len(leftover); i += 2 {
+		var p2 *pdfMatchSlot
+		if i+1 < len(leftover) {
+			p2 = leftover[i+1]
+		}
+		pairs = append(pairs, pdfBracketPair{P1: leftover[i], P2: p2})
+	}
+	return pairs
+}
+
+// firstRoundPdfPairsFromRealMatches reconstructs round 1's pairing directly
+// from recorded matches instead of a hypothetical seeded arrangement, for a
+// division whose knockout bracket has actually started/finished but whose
+// seed order (from a saved "Bracket Draw"/"Knockout Seeds" group, or
+// recomputed via getITTFKnockoutSeeds when there's no saved group) doesn't
+// reproduce the pairing actually played -- recomputing from *current* group
+// standings/GroupPassCount can silently diverge from whatever seeding was
+// used at draw time. A seeded-arrangement pairing that doesn't match reality
+// makes every later round's "does a real match exist between these two
+// players" lookup fail, so the whole bracket beyond round 1 renders as
+// unresolved/BYE even though it's fully played with a real champion. See the
+// identical fix in domain/bracket.firstRoundPairsFromRealMatches.
+//
+// Returns nil (caller falls back to the projected/preview pairing) when
+// there's no real match yet for this division at any elimination stage --
+// nothing has actually been drawn/played, so a preview is exactly what
+// should be shown.
+func firstRoundPdfPairsFromRealMatches(t *event.Event, divID string, players []*player.Player) []pdfBracketPair {
+	stages := pdfEliminationStageOrder()
+
+	firstIdx := -1
+	var firstStageMatches []*event.Match
+	for i, stage := range stages {
+		if ms := matchesForPdfDivisionStage(t, divID, stage); len(ms) > 0 {
+			firstIdx, firstStageMatches = i, ms
+			break
+		}
+	}
+	if firstStageMatches == nil {
+		return nil
+	}
+
+	seedOf := make(map[string]int, len(players))
+	for i, p := range players {
+		if p != nil {
+			seedOf[p.ID] = i + 1
+		}
+	}
+
+	minSeed := func(m *event.Match) int {
+		a, b := seedOf[m.TeamA[0].ID], seedOf[m.TeamB[0].ID]
+		if a == 0 {
+			a = len(players) + 1
+		}
+		if b == 0 {
+			b = len(players) + 1
+		}
+		if a < b {
+			return a
+		}
+		return b
+	}
+	sort.SliceStable(firstStageMatches, func(i, j int) bool {
+		si, sj := minSeed(firstStageMatches[i]), minSeed(firstStageMatches[j])
+		if si != sj {
+			return si < sj
+		}
+		return firstStageMatches[i].ID < firstStageMatches[j].ID
+	})
+
+	// Each "provider" is one round-1 slot that will resolve to a single
+	// winner feeding round 2: either a real round-1 pair, or a solo bye
+	// (a player who skipped round 1 entirely -- e.g. an odd round-1 match
+	// count for this division). idxByPlayer maps every player who has a
+	// provider to that provider's index, for the round-2-based grouping
+	// below.
+	providers := make([]pdfBracketPair, 0, len(firstStageMatches))
+	idxByPlayer := make(map[string]int, len(firstStageMatches)*2)
+	for _, m := range firstStageMatches {
+		idx := len(providers)
+		providers = append(providers, pdfBracketPair{
+			P1: &pdfMatchSlot{Seed: seedOf[m.TeamA[0].ID], Player: m.TeamA[0]},
+			P2: &pdfMatchSlot{Seed: seedOf[m.TeamB[0].ID], Player: m.TeamB[0]},
+		})
+		idxByPlayer[m.TeamA[0].ID] = idx
+		idxByPlayer[m.TeamB[0].ID] = idx
+	}
+	var nextStageMatches []*event.Match
+	if firstIdx+1 < len(stages) {
+		nextStageMatches = matchesForPdfDivisionStage(t, divID, stages[firstIdx+1])
+		for _, m := range nextStageMatches {
+			for _, side := range [2]*player.Player{m.TeamA[0], m.TeamB[0]} {
+				if _, ok := idxByPlayer[side.ID]; !ok {
+					idxByPlayer[side.ID] = len(providers)
+					providers = append(providers, pdfBracketPair{P1: &pdfMatchSlot{Seed: seedOf[side.ID], Player: side}})
+				}
+			}
+		}
+	}
+
+	// Group providers two-at-a-time by round 2's real matches -- whichever
+	// two providers actually played each other next, per the recorded
+	// data, rather than by position -- since a bye's actual round-2
+	// opponent isn't necessarily adjacent in providers/minSeed order.
+	used := make([]bool, len(providers))
+	pairs := make([]pdfBracketPair, 0, len(providers))
+	for _, m := range nextStageMatches {
+		idxA, okA := idxByPlayer[m.TeamA[0].ID]
+		idxB, okB := idxByPlayer[m.TeamB[0].ID]
+		if !okA || !okB || idxA == idxB || used[idxA] || used[idxB] {
+			continue
+		}
+		used[idxA], used[idxB] = true, true
+		pairs = append(pairs, providers[idxA], providers[idxB])
+	}
+	// Providers with no (yet-played) round-2 match -- round 2 hasn't
+	// happened yet for them -- fall back to sequential minSeed-order
+	// pairing among themselves, same as when there's no round-2 data at
+	// all.
+	for i, pr := range providers {
+		if !used[i] {
+			pairs = append(pairs, pr)
+		}
+	}
+	if len(pairs) > 1 && len(pairs)%2 != 0 {
+		// Defensive: should be unreachable (an odd leftover count would
+		// mean a player has no recorded opponent anywhere), but pad
+		// rather than let the adjacent-pair indexing in the caller panic.
+		pairs = append(pairs, pdfBracketPair{})
+	}
+
+	return pairs
+}
+
+func buildPdfBracketRounds(t *event.Event, divID string, players []*player.Player) []pdfRoundView {
 	if len(players) == 0 {
 		return nil
 	}
 	unresolvedSlot := &pdfMatchSlot{Seed: 0, Player: nil}
-	size := nextPow2(len(players))
-	if size < 2 {
-		size = 2
-	}
-	arrangement := getSeedingArrangement(size)
 
-	type Pair struct {
-		P1 *pdfMatchSlot
-		P2 *pdfMatchSlot
-	}
+	current := firstRoundPdfPairsFromRealMatches(t, divID, players)
+	if current == nil {
+		size := nextPow2(len(players))
+		if size < 2 {
+			size = 2
+		}
+		arrangement := getSeedingArrangement(size)
 
-	var current []Pair
-	for i := 0; i < len(arrangement); i += 2 {
-		s1 := arrangement[i] - 1
-		s2 := -1
-		if i+1 < len(arrangement) {
-			s2 = arrangement[i+1] - 1
-		}
+		for i := 0; i < len(arrangement); i += 2 {
+			s1 := arrangement[i] - 1
+			s2 := -1
+			if i+1 < len(arrangement) {
+				s2 = arrangement[i+1] - 1
+			}
 
-		var p1, p2 *pdfMatchSlot
-		if s1 >= 0 && s1 < len(players) {
-			p1 = &pdfMatchSlot{Seed: s1 + 1, Player: players[s1]}
+			var p1, p2 *pdfMatchSlot
+			if s1 >= 0 && s1 < len(players) {
+				p1 = &pdfMatchSlot{Seed: s1 + 1, Player: players[s1]}
+			}
+			if s2 >= 0 && s2 < len(players) {
+				p2 = &pdfMatchSlot{Seed: s2 + 1, Player: players[s2]}
+			}
+			current = append(current, pdfBracketPair{P1: p1, P2: p2})
 		}
-		if s2 >= 0 && s2 < len(players) {
-			p2 = &pdfMatchSlot{Seed: s2 + 1, Player: players[s2]}
-		}
-		current = append(current, Pair{P1: p1, P2: p2})
 	}
 
 	var rounds []pdfRoundView
@@ -246,72 +455,60 @@ func buildPdfBracketRounds(t *event.Event, players []*player.Player) []pdfRoundV
 	}
 
 	for len(current) > 1 {
-		var next []Pair
 		var rvMatches []pdfBracketMatchView
 
-		stageNameCurrent := "r32"
 		rem := len(current)
-		if rem == 8 {
-			stageNameCurrent = "r16"
-		} else if rem == 4 {
-			stageNameCurrent = "quarterfinal"
-		} else if rem == 2 {
-			stageNameCurrent = "semifinal"
-		} else if rem == 1 {
-			stageNameCurrent = "final"
-		}
+		stageNameCurrent := pdfStageNameForCount(rem)
 
-		for i := 0; i < len(current); i += 2 {
-			mLeft := current[i]
-			mRight := current[i+1]
-
-			getWinner := func(m Pair) *pdfMatchSlot {
-				if m.P1 == unresolvedSlot || m.P2 == unresolvedSlot {
-					return unresolvedSlot
-				}
-
-				v1 := m.P1 != nil && m.P1.Player != nil
-				v2 := m.P2 != nil && m.P2.Player != nil
-
-				if !v1 && !v2 {
-					return nil
-				}
-				if v1 && !v2 {
-					return m.P1
-				}
-				if !v1 && v2 {
-					return m.P2
-				}
-
-				for k := range t.Matches {
-					tm := t.Matches[k]
-					if tm.TeamMatchID != nil {
-						continue
-					}
-					if tm.Stage != stageNameCurrent {
-						continue
-					}
-					if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
-						if tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID {
-							if tm.WinnerTeam == "A" {
-								return m.P1
-							} else {
-								return m.P2
-							}
-						}
-						if tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID {
-							if tm.WinnerTeam == "A" {
-								return m.P2
-							} else {
-								return m.P1
-							}
-						}
-					}
-				}
+		getWinner := func(m pdfBracketPair) *pdfMatchSlot {
+			if m.P1 == unresolvedSlot || m.P2 == unresolvedSlot {
 				return unresolvedSlot
 			}
 
-			next = append(next, Pair{P1: getWinner(mLeft), P2: getWinner(mRight)})
+			v1 := m.P1 != nil && m.P1.Player != nil
+			v2 := m.P2 != nil && m.P2.Player != nil
+
+			if !v1 && !v2 {
+				return nil
+			}
+			if v1 && !v2 {
+				return m.P1
+			}
+			if !v1 && v2 {
+				return m.P2
+			}
+
+			for k := range t.Matches {
+				tm := t.Matches[k]
+				if tm.TeamMatchID != nil {
+					continue
+				}
+				if tm.Stage != stageNameCurrent {
+					continue
+				}
+				if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
+					if tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID {
+						if tm.WinnerTeam == "A" {
+							return m.P1
+						} else {
+							return m.P2
+						}
+					}
+					if tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID {
+						if tm.WinnerTeam == "A" {
+							return m.P2
+						} else {
+							return m.P1
+						}
+					}
+				}
+			}
+			return unresolvedSlot
+		}
+
+		winners := make([]*pdfMatchSlot, len(current))
+		for i, pr := range current {
+			winners[i] = getWinner(pr)
 		}
 
 		for i := 0; i < len(current); i++ {
@@ -356,7 +553,11 @@ func buildPdfBracketRounds(t *event.Event, players []*player.Player) []pdfRoundV
 
 		rounds = append(rounds, pdfRoundView{Name: name, Matches: rvMatches})
 
-		current = next
+		// Group this round's winners into the next round's pairs using the
+		// next stage's actual recorded matches -- see
+		// groupPdfSlotsByRealMatches / firstRoundPdfPairsFromRealMatches.
+		nextStageName := pdfStageNameForCount(len(current) / 2)
+		current = groupPdfSlotsByRealMatches(winners, matchesForPdfDivisionStage(t, divID, nextStageName))
 	}
 
 	if len(current) > 0 {
@@ -1115,7 +1316,7 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 			}
 
 			if ok && len(bracketPlayers) > 0 {
-				rounds := buildPdfBracketRounds(t, bracketPlayers)
+				rounds := buildPdfBracketRounds(t, dt.ID, bracketPlayers)
 				if len(rounds) > 0 {
 					brackets = append(brackets, divisionBracket{
 						Name:   dt.Name,

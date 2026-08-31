@@ -470,6 +470,11 @@ func containsMatch(matches []MatchModel, id uuid.UUID) bool {
 	return false
 }
 
+// CountUnfinishedMatches counts matches still needing a result. A
+// double-forfeit match is terminal (no one can advance the outcome any
+// further) even though its status is "double_forfeit" rather than
+// "finished", so it doesn't count as unfinished -- otherwise a division
+// with a double forfeit anywhere in its bracket could never be finished.
 func (r *MatchRepository) CountUnfinishedMatches(ctx context.Context, eventID string) (int, error) {
 	tID, err := uuid.Parse(eventID)
 	if err != nil {
@@ -478,11 +483,14 @@ func (r *MatchRepository) CountUnfinishedMatches(ctx context.Context, eventID st
 	return ExtractDB(ctx, r.db).NewSelect().
 		Model((*MatchModel)(nil)).
 		Where("event_id = ?", tID).
-		Where("status != ?", "finished").
+		Where("status NOT IN (?)", bun.List([]string{"finished", "double_forfeit"})).
 		Where("team_match_id IS NULL").
 		Count(ctx)
 }
 
+// CountFinishedMatches counts decided matches, including double forfeits --
+// see CountUnfinishedMatches. Used to sanity-check that enough rounds have
+// been played for the bracket size before allowing an event to finish.
 func (r *MatchRepository) CountFinishedMatches(ctx context.Context, eventID string) (int, error) {
 	tID, err := uuid.Parse(eventID)
 	if err != nil {
@@ -491,7 +499,7 @@ func (r *MatchRepository) CountFinishedMatches(ctx context.Context, eventID stri
 	return ExtractDB(ctx, r.db).NewSelect().
 		Model((*MatchModel)(nil)).
 		Where("event_id = ?", tID).
-		Where("status = ?", "finished").
+		Where("status IN (?)", bun.List([]string{"finished", "double_forfeit"})).
 		Where("team_match_id IS NULL").
 		Count(ctx)
 }

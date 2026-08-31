@@ -98,7 +98,7 @@ func TestGetSubMatchAlignments(t *testing.T) {
 }
 
 func TestBuildPdfBracketRounds_NoPlayers(t *testing.T) {
-	rounds := buildPdfBracketRounds(&event.Event{}, nil)
+	rounds := buildPdfBracketRounds(&event.Event{}, "", nil)
 	if rounds != nil {
 		t.Errorf("expected nil rounds for empty players, got %v", rounds)
 	}
@@ -115,7 +115,7 @@ func TestBuildPdfBracketRounds_TwoPlayers(t *testing.T) {
 		},
 	}
 
-	rounds := buildPdfBracketRounds(ev, []*player.Player{p1, p2})
+	rounds := buildPdfBracketRounds(ev, "", []*player.Player{p1, p2})
 	if len(rounds) != 2 {
 		t.Fatalf("expected 2 rounds (Final + Champion), got %d", len(rounds))
 	}
@@ -153,7 +153,7 @@ func TestBuildPdfBracketRounds_FourPlayers(t *testing.T) {
 		},
 	}
 
-	rounds := buildPdfBracketRounds(ev, []*player.Player{p1, p2, p3, p4})
+	rounds := buildPdfBracketRounds(ev, "", []*player.Player{p1, p2, p3, p4})
 	if len(rounds) != 3 {
 		t.Fatalf("expected 3 rounds (Semi-Finals, Final, Champion), got %d", len(rounds))
 	}
@@ -174,7 +174,7 @@ func TestBuildPdfBracketRounds_ThreePlayersWithBye(t *testing.T) {
 	p3 := &player.Player{ID: "p3", FirstName: "P3"}
 
 	ev := &event.Event{}
-	rounds := buildPdfBracketRounds(ev, []*player.Player{p1, p2, p3})
+	rounds := buildPdfBracketRounds(ev, "", []*player.Player{p1, p2, p3})
 	if len(rounds) == 0 {
 		t.Fatalf("expected at least one round for 3 players (bracket size 4 with a bye)")
 	}
@@ -187,9 +187,70 @@ func TestBuildPdfBracketRounds_UnresolvedWinner(t *testing.T) {
 	// No matching finished match -> winner should remain unresolved and
 	// propagate as an unresolved slot to the next round.
 	ev := &event.Event{}
-	rounds := buildPdfBracketRounds(ev, []*player.Player{p1, p2})
+	rounds := buildPdfBracketRounds(ev, "", []*player.Player{p1, p2})
 	if len(rounds) != 1 {
 		t.Fatalf("expected only the Final round (no champion since winner unresolved), got %d rounds", len(rounds))
+	}
+}
+
+// TestBuildPdfBracketRounds_RealMatchesOverrideMismatchedSeeding is a
+// regression test for a production bug: a division ("Tercera Division")
+// whose knockout was fully played and had a real champion showed BYE for
+// every round past the first, because the players list handed in (from
+// getITTFKnockoutSeeds recomputed off *current* group standings) didn't
+// reproduce the pairing actually drawn/played. The hypothetical seeded
+// arrangement paired players who never actually played each other, so every
+// later round's "does a real match exist between these two players" lookup
+// failed. Here players is deliberately in an order that would NOT reproduce
+// the real first-round pairing via getSeedingArrangement, to prove the fix
+// reads the real matches directly instead.
+func TestBuildPdfBracketRounds_RealMatchesOverrideMismatchedSeeding(t *testing.T) {
+	p := make(map[string]*player.Player, 8)
+	for i := 1; i <= 8; i++ {
+		id := "p" + string(rune('0'+i))
+		p[id] = &player.Player{ID: id, FirstName: id}
+	}
+	// players is sorted p1..p8, but the real first-round pairing below is
+	// p1-p2, p3-p4, p5-p6, p7-p8 -- not the 1v8/4v5/... seeded arrangement
+	// that order would imply, and not reconstructable by re-deriving seeds.
+	players := []*player.Player{p["p1"], p["p2"], p["p3"], p["p4"], p["p5"], p["p6"], p["p7"], p["p8"]}
+
+	win := []event.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}}
+	ev := &event.Event{
+		Matches: []event.Match{
+			{ID: "qf-1", Stage: "quarterfinal", Status: "finished", DivisionID: "d3", WinnerTeam: "A", TeamA: []*player.Player{p["p1"]}, TeamB: []*player.Player{p["p2"]}, Sets: win},
+			{ID: "qf-2", Stage: "quarterfinal", Status: "finished", DivisionID: "d3", WinnerTeam: "A", TeamA: []*player.Player{p["p3"]}, TeamB: []*player.Player{p["p4"]}, Sets: win},
+			{ID: "qf-3", Stage: "quarterfinal", Status: "finished", DivisionID: "d3", WinnerTeam: "A", TeamA: []*player.Player{p["p5"]}, TeamB: []*player.Player{p["p6"]}, Sets: win},
+			{ID: "qf-4", Stage: "quarterfinal", Status: "finished", DivisionID: "d3", WinnerTeam: "A", TeamA: []*player.Player{p["p7"]}, TeamB: []*player.Player{p["p8"]}, Sets: win},
+			{ID: "sf-1", Stage: "semifinal", Status: "finished", DivisionID: "d3", WinnerTeam: "A", TeamA: []*player.Player{p["p1"]}, TeamB: []*player.Player{p["p3"]}, Sets: win},
+			{ID: "sf-2", Stage: "semifinal", Status: "finished", DivisionID: "d3", WinnerTeam: "A", TeamA: []*player.Player{p["p5"]}, TeamB: []*player.Player{p["p7"]}, Sets: win},
+			{ID: "final-1", Stage: "final", Status: "finished", DivisionID: "d3", WinnerTeam: "A", TeamA: []*player.Player{p["p1"]}, TeamB: []*player.Player{p["p5"]}, Sets: win},
+		},
+	}
+
+	rounds := buildPdfBracketRounds(ev, "d3", players)
+
+	stageNames := make([]string, len(rounds))
+	for i, r := range rounds {
+		stageNames[i] = r.Name
+	}
+	// 8 players / 4 first-round matches (r16-1..4) is a quarterfinal-sized
+	// field: QF (4 matches) -> SF (2 matches) -> Final -> Champion.
+	if len(rounds) != 4 {
+		t.Fatalf("expected 4 rounds (QF, SF, Final, Champion), got %d: %v", len(rounds), stageNames)
+	}
+	if rounds[0].Name != "Quarter-Finals" {
+		t.Errorf("expected first round Quarter-Finals, got %s", rounds[0].Name)
+	}
+	champRound := rounds[len(rounds)-1]
+	if champRound.Name != "Champion" {
+		t.Fatalf("expected last round Champion, got %s", champRound.Name)
+	}
+	if champRound.Matches[0].Player1 == nil || champRound.Matches[0].Player1.Player == nil {
+		t.Fatalf("expected a resolved champion, got BYE/unresolved: %+v", champRound.Matches[0])
+	}
+	if got := champRound.Matches[0].Player1.Player.ID; got != "p1" {
+		t.Errorf("expected champion p1 (winner of every real match on its path), got %s", got)
 	}
 }
 

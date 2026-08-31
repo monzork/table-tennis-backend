@@ -20,6 +20,7 @@ require (
 	github.com/valyala/fasthttp v1.51.0
 	github.com/xuri/excelize/v2 v2.10.1
 	golang.org/x/crypto v0.49.0
+	golang.org/x/image v0.25.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.35.0

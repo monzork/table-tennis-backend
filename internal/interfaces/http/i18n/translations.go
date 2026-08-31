@@ -866,6 +866,7 @@ var Translations = map[string]map[string]string{
 		"admin.tournament_edit_form.priorities_label":          "Table Priorities per Division (Optional)",
 		"admin.tournament_edit_form.priorities_ph":             "e.g. 1, 2",
 		"admin.tournament_edit_form.federation_endorsed_label": "Endorsed by the Federation",
+		"admin.tournament_edit_form.include_id_photos_label":   "Include player ID photos in the PDF report",
 		"admin.tournament_edit_form.save_btn":                  "Save Changes",
 		"admin.tournament_edit_form.cancel_btn":                "Cancel",
 
@@ -1790,6 +1791,7 @@ var Translations = map[string]map[string]string{
 		"admin.tournament_edit_form.priorities_label":          "Prioridades de Mesas por División (Opcional)",
 		"admin.tournament_edit_form.priorities_ph":             "ej. 1, 2",
 		"admin.tournament_edit_form.federation_endorsed_label": "Avalado por la Federación",
+		"admin.tournament_edit_form.include_id_photos_label":   "Incluir fotos de cédula de los jugadores en el reporte PDF",
 		"admin.tournament_edit_form.save_btn":                  "Guardar Cambios",
 		"admin.tournament_edit_form.cancel_btn":                "Cancelar",
 

@@ -1143,38 +1143,265 @@ func buildLosersBracketRounds(t *event.Event, divID string, numPlayers int, wRou
 	return rounds
 }
 
+type bracketPair struct {
+	P1 *MatchSlot
+	P2 *MatchSlot
+}
+
+// eliminationStageOrder lists knockout stage names from the earliest round
+// to the final, prefixed per tier the same way buildBracketRounds computes
+// stageNameCurrent below.
+func eliminationStageOrder(tier int) []string {
+	stages := []string{"r32", "r16", "quarterfinal", "semifinal", "final"}
+	if tier <= 0 {
+		return stages
+	}
+	prefixed := make([]string, len(stages))
+	for i, s := range stages {
+		prefixed[i] = fmt.Sprintf("tier%d_%s", tier, s)
+	}
+	return prefixed
+}
+
+// matchesForDivisionStage returns every real (non-team-sub-match) match for
+// divID at the given stage, in t.Matches order.
+func matchesForDivisionStage(t *event.Event, divID, stage string) []*event.Match {
+	var out []*event.Match
+	for i := range t.Matches {
+		m := &t.Matches[i]
+		if m.TeamMatchID != nil || m.DivisionID != divID || m.Stage != stage {
+			continue
+		}
+		if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
+			continue
+		}
+		out = append(out, m)
+	}
+	return out
+}
+
+// stageNameForCount maps a round's pair count to its stage name, the same
+// convention buildBracketRounds's stageNameCurrent uses (8 pairs = r16, 4 =
+// quarterfinal, 2 = semifinal, 1 = final, everything else = r32).
+func stageNameForCount(pairCount, tier int) string {
+	name := "r32"
+	switch pairCount {
+	case 8:
+		name = "r16"
+	case 4:
+		name = "quarterfinal"
+	case 2:
+		name = "semifinal"
+	case 1:
+		name = "final"
+	}
+	if tier > 0 {
+		name = fmt.Sprintf("tier%d_%s", tier, name)
+	}
+	return name
+}
+
+// groupSlotsByRealMatches groups a round's resolved winner slots two-at-a-
+// time using the next round's actual recorded matches, instead of pairing
+// them by position -- position reflects a hypothetical/recomputed seeding
+// that can silently diverge from what was actually drawn/played (see
+// firstRoundPairsFromRealMatches), which would otherwise make the *next*
+// round's "does a real match exist" lookup fail for correctly-resolved
+// winners. Slots with no resolvable player, or no matching next-round
+// match, are paired sequentially among themselves in their given order as a
+// fallback for a round not yet played/drawn.
+func groupSlotsByRealMatches(slots []*MatchSlot, nextMatches []*event.Match) []bracketPair {
+	idxByPlayer := make(map[string]int, len(slots))
+	for i, s := range slots {
+		if s != nil && s.Player != nil {
+			if _, exists := idxByPlayer[s.Player.ID]; !exists {
+				idxByPlayer[s.Player.ID] = i
+			}
+		}
+	}
+
+	used := make([]bool, len(slots))
+	pairs := make([]bracketPair, 0, (len(slots)+1)/2)
+	for _, m := range nextMatches {
+		idxA, okA := idxByPlayer[m.TeamA[0].ID]
+		idxB, okB := idxByPlayer[m.TeamB[0].ID]
+		if !okA || !okB || idxA == idxB || used[idxA] || used[idxB] {
+			continue
+		}
+		used[idxA], used[idxB] = true, true
+		pairs = append(pairs, bracketPair{P1: slots[idxA], P2: slots[idxB]})
+	}
+
+	var leftover []*MatchSlot
+	for i, s := range slots {
+		if !used[i] {
+			leftover = append(leftover, s)
+		}
+	}
+	for i := 0; i < len(leftover); i += 2 {
+		var p2 *MatchSlot
+		if i+1 < len(leftover) {
+			p2 = leftover[i+1]
+		}
+		pairs = append(pairs, bracketPair{P1: leftover[i], P2: p2})
+	}
+	return pairs
+}
+
+// firstRoundPairsFromRealMatches reconstructs round 1's pairing directly
+// from recorded matches instead of a hypothetical seeded arrangement, for a
+// division whose knockout bracket has actually started/finished but has no
+// saved "Bracket Draw"/"Knockout Seeds" group to read the original seed
+// order from (e.g. groups_elimination re-seeded from group standings, whose
+// *current* recomputation via GroupPassCount/standings can diverge from
+// whatever seeding was actually used at draw time -- ties broken
+// differently, GroupPassCount changed since, a later score correction,
+// etc). A seeded-arrangement pairing that doesn't match reality makes every
+// later round's "does a real match exist between these two players" lookup
+// fail, so the whole bracket beyond round 1 renders as unresolved/BYE even
+// though it's fully played with a real champion.
+//
+// Returns nil (caller falls back to the projected/preview pairing) when
+// there's no real match yet for this division/tier at any elimination
+// stage -- nothing has actually been drawn/played, so a preview is exactly
+// what should be shown.
+func firstRoundPairsFromRealMatches(t *event.Event, divID string, tier int, players []*player.Player) []bracketPair {
+	stages := eliminationStageOrder(tier)
+
+	firstIdx := -1
+	var firstStageMatches []*event.Match
+	for i, stage := range stages {
+		if ms := matchesForDivisionStage(t, divID, stage); len(ms) > 0 {
+			firstIdx, firstStageMatches = i, ms
+			break
+		}
+	}
+	if firstStageMatches == nil {
+		return nil
+	}
+
+	seedOf := make(map[string]int, len(players))
+	for i, p := range players {
+		if p != nil {
+			seedOf[p.ID] = i + 1
+		}
+	}
+
+	minSeed := func(m *event.Match) int {
+		a, b := seedOf[m.TeamA[0].ID], seedOf[m.TeamB[0].ID]
+		if a == 0 {
+			a = len(players) + 1
+		}
+		if b == 0 {
+			b = len(players) + 1
+		}
+		if a < b {
+			return a
+		}
+		return b
+	}
+	sort.SliceStable(firstStageMatches, func(i, j int) bool {
+		si, sj := minSeed(firstStageMatches[i]), minSeed(firstStageMatches[j])
+		if si != sj {
+			return si < sj
+		}
+		return firstStageMatches[i].ID < firstStageMatches[j].ID
+	})
+
+	// Each "provider" is one round-1 slot that will resolve to a single
+	// winner feeding round 2: either a real round-1 pair, or a solo bye
+	// (a player who skipped round 1 entirely -- e.g. an odd round-1 match
+	// count for this division). idxByPlayer maps every player who has a
+	// provider to that provider's index, for the round-2-based grouping
+	// below.
+	providers := make([]bracketPair, 0, len(firstStageMatches))
+	idxByPlayer := make(map[string]int, len(firstStageMatches)*2)
+	for _, m := range firstStageMatches {
+		idx := len(providers)
+		providers = append(providers, bracketPair{
+			P1: &MatchSlot{Seed: seedOf[m.TeamA[0].ID], Player: m.TeamA[0]},
+			P2: &MatchSlot{Seed: seedOf[m.TeamB[0].ID], Player: m.TeamB[0]},
+		})
+		idxByPlayer[m.TeamA[0].ID] = idx
+		idxByPlayer[m.TeamB[0].ID] = idx
+	}
+	var nextStageMatches []*event.Match
+	if firstIdx+1 < len(stages) {
+		nextStageMatches = matchesForDivisionStage(t, divID, stages[firstIdx+1])
+		for _, m := range nextStageMatches {
+			for _, side := range [2]*player.Player{m.TeamA[0], m.TeamB[0]} {
+				if _, ok := idxByPlayer[side.ID]; !ok {
+					idxByPlayer[side.ID] = len(providers)
+					providers = append(providers, bracketPair{P1: &MatchSlot{Seed: seedOf[side.ID], Player: side}})
+				}
+			}
+		}
+	}
+
+	// Group providers two-at-a-time by round 2's real matches -- whichever
+	// two providers actually played each other next, per the recorded
+	// data, rather than by position -- since a bye's actual round-2
+	// opponent isn't necessarily adjacent in providers/minSeed order.
+	used := make([]bool, len(providers))
+	pairs := make([]bracketPair, 0, len(providers))
+	for _, m := range nextStageMatches {
+		idxA, okA := idxByPlayer[m.TeamA[0].ID]
+		idxB, okB := idxByPlayer[m.TeamB[0].ID]
+		if !okA || !okB || idxA == idxB || used[idxA] || used[idxB] {
+			continue
+		}
+		used[idxA], used[idxB] = true, true
+		pairs = append(pairs, providers[idxA], providers[idxB])
+	}
+	// Providers with no (yet-played) round-2 match -- round 2 hasn't
+	// happened yet for them -- fall back to sequential minSeed-order
+	// pairing among themselves, same as when there's no round-2 data at
+	// all.
+	for i, pr := range providers {
+		if !used[i] {
+			pairs = append(pairs, pr)
+		}
+	}
+	if len(pairs) > 1 && len(pairs)%2 != 0 {
+		// Defensive: should be unreachable (an odd leftover count would
+		// mean a player has no recorded opponent anywhere), but pad
+		// rather than let the adjacent-pair indexing in the caller panic.
+		pairs = append(pairs, bracketPair{})
+	}
+
+	return pairs
+}
+
 func buildBracketRounds(t *event.Event, divID string, players []*player.Player, tier int) []Round {
 	if len(players) == 0 {
 		return nil
 	}
 	unresolvedSlot := &MatchSlot{Seed: 0, Player: nil}
-	size := nextPow2(len(players))
-	if size < 2 {
-		size = 2 // Minimum bracket size
-	}
-	arrangement := getSeedingArrangement(size)
 
-	type Pair struct {
-		P1 *MatchSlot
-		P2 *MatchSlot
-	}
+	current := firstRoundPairsFromRealMatches(t, divID, tier, players)
+	if current == nil {
+		size := nextPow2(len(players))
+		if size < 2 {
+			size = 2 // Minimum bracket size
+		}
+		arrangement := getSeedingArrangement(size)
 
-	var current []Pair
-	for i := 0; i < len(arrangement); i += 2 {
-		s1 := arrangement[i] - 1
-		s2 := -1
-		if i+1 < len(arrangement) {
-			s2 = arrangement[i+1] - 1
-		}
+		for i := 0; i < len(arrangement); i += 2 {
+			s1 := arrangement[i] - 1
+			s2 := -1
+			if i+1 < len(arrangement) {
+				s2 = arrangement[i+1] - 1
+			}
 
-		var p1, p2 *MatchSlot
-		if s1 >= 0 && s1 < len(players) {
-			p1 = &MatchSlot{Seed: s1 + 1, Player: players[s1]}
+			var p1, p2 *MatchSlot
+			if s1 >= 0 && s1 < len(players) {
+				p1 = &MatchSlot{Seed: s1 + 1, Player: players[s1]}
+			}
+			if s2 >= 0 && s2 < len(players) {
+				p2 = &MatchSlot{Seed: s2 + 1, Player: players[s2]}
+			}
+			current = append(current, bracketPair{P1: p1, P2: p2})
 		}
-		if s2 >= 0 && s2 < len(players) {
-			p2 = &MatchSlot{Seed: s2 + 1, Player: players[s2]}
-		}
-		current = append(current, Pair{P1: p1, P2: p2})
 	}
 
 	var rounds []Round
@@ -1182,126 +1409,110 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player, 
 	var thirdPlaceP1, thirdPlaceP2 *MatchSlot
 
 	for len(current) > 1 {
-		var next []Pair
 		var rvMatches []BracketMatch
 
-		stageNameCurrent := "r32"
 		rem := len(current)
-		if rem == 8 {
-			stageNameCurrent = "r16"
-		} else if rem == 4 {
-			stageNameCurrent = "quarterfinal"
-		} else if rem == 2 {
-			stageNameCurrent = "semifinal"
-		} else if rem == 1 {
-			stageNameCurrent = "final"
-		}
-		if tier > 0 {
-			stageNameCurrent = fmt.Sprintf("tier%d_%s", tier, stageNameCurrent)
-		}
+		stageNameCurrent := stageNameForCount(rem, tier)
 
-		for i := 0; i < len(current); i += 2 {
-			mLeft := current[i]
-			mRight := current[i+1]
-
-			getWinner := func(m Pair) *MatchSlot {
-				if m.P1 == unresolvedSlot || m.P2 == unresolvedSlot {
-					return unresolvedSlot
-				}
-
-				v1 := m.P1 != nil && m.P1.Player != nil
-				v2 := m.P2 != nil && m.P2.Player != nil
-
-				if !v1 && !v2 {
-					return nil
-				}
-				if v1 && !v2 {
-					return m.P1
-				}
-				if !v1 && v2 {
-					return m.P2
-				}
-
-				for k := range t.Matches {
-					tm := t.Matches[k]
-					if tm.TeamMatchID != nil {
-						continue
-					}
-					if tm.Stage != stageNameCurrent {
-						continue
-					}
-					if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
-						if tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID {
-							if tm.WinnerTeam == "A" {
-								return m.P1
-							} else {
-								return m.P2
-							}
-						}
-						if tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID {
-							if tm.WinnerTeam == "A" {
-								return m.P2
-							} else {
-								return m.P1
-							}
-						}
-					}
-				}
+		getWinner := func(m bracketPair) *MatchSlot {
+			if m.P1 == unresolvedSlot || m.P2 == unresolvedSlot {
 				return unresolvedSlot
 			}
 
-			getLoser := func(m Pair) *MatchSlot {
-				if m.P1 == unresolvedSlot || m.P2 == unresolvedSlot {
-					return unresolvedSlot
-				}
+			v1 := m.P1 != nil && m.P1.Player != nil
+			v2 := m.P2 != nil && m.P2.Player != nil
 
-				v1 := m.P1 != nil && m.P1.Player != nil
-				v2 := m.P2 != nil && m.P2.Player != nil
+			if !v1 && !v2 {
+				return nil
+			}
+			if v1 && !v2 {
+				return m.P1
+			}
+			if !v1 && v2 {
+				return m.P2
+			}
 
-				if !v1 && !v2 {
-					return nil
+			for k := range t.Matches {
+				tm := t.Matches[k]
+				if tm.TeamMatchID != nil {
+					continue
 				}
-				if v1 && !v2 {
-					return nil
+				if tm.Stage != stageNameCurrent {
+					continue
 				}
-				if !v1 && v2 {
-					return nil
-				}
-
-				for k := range t.Matches {
-					tm := t.Matches[k]
-					if tm.TeamMatchID != nil {
-						continue
-					}
-					if tm.Stage != stageNameCurrent {
-						continue
-					}
-					if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
-						if tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID {
-							if tm.WinnerTeam == "A" {
-								return m.P2
-							} else {
-								return m.P1
-							}
+				if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
+					if tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID {
+						if tm.WinnerTeam == "A" {
+							return m.P1
+						} else {
+							return m.P2
 						}
-						if tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID {
-							if tm.WinnerTeam == "A" {
-								return m.P1
-							} else {
-								return m.P2
-							}
+					}
+					if tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID {
+						if tm.WinnerTeam == "A" {
+							return m.P2
+						} else {
+							return m.P1
 						}
 					}
 				}
+			}
+			return unresolvedSlot
+		}
+
+		getLoser := func(m bracketPair) *MatchSlot {
+			if m.P1 == unresolvedSlot || m.P2 == unresolvedSlot {
 				return unresolvedSlot
 			}
 
-			if rem == 2 && t.HasThirdPlaceMatch {
-				thirdPlaceP1 = getLoser(mLeft)
-				thirdPlaceP2 = getLoser(mRight)
+			v1 := m.P1 != nil && m.P1.Player != nil
+			v2 := m.P2 != nil && m.P2.Player != nil
+
+			if !v1 && !v2 {
+				return nil
+			}
+			if v1 && !v2 {
+				return nil
+			}
+			if !v1 && v2 {
+				return nil
 			}
 
-			next = append(next, Pair{P1: getWinner(mLeft), P2: getWinner(mRight)})
+			for k := range t.Matches {
+				tm := t.Matches[k]
+				if tm.TeamMatchID != nil {
+					continue
+				}
+				if tm.Stage != stageNameCurrent {
+					continue
+				}
+				if tm.Status == "finished" && len(tm.TeamA) > 0 && len(tm.TeamB) > 0 {
+					if tm.TeamA[0].ID == m.P1.Player.ID && tm.TeamB[0].ID == m.P2.Player.ID {
+						if tm.WinnerTeam == "A" {
+							return m.P2
+						} else {
+							return m.P1
+						}
+					}
+					if tm.TeamA[0].ID == m.P2.Player.ID && tm.TeamB[0].ID == m.P1.Player.ID {
+						if tm.WinnerTeam == "A" {
+							return m.P1
+						} else {
+							return m.P2
+						}
+					}
+				}
+			}
+			return unresolvedSlot
+		}
+
+		winners := make([]*MatchSlot, len(current))
+		for i, pr := range current {
+			winners[i] = getWinner(pr)
+		}
+		if rem == 2 && t.HasThirdPlaceMatch && len(current) >= 2 {
+			thirdPlaceP1 = getLoser(current[0])
+			thirdPlaceP2 = getLoser(current[1])
 		}
 
 		// Save current round
@@ -1347,7 +1558,13 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player, 
 
 		rounds = append(rounds, Round{Name: name, Matches: rvMatches})
 
-		current = next
+		// Group this round's winners into the next round's pairs using the
+		// next stage's actual recorded matches -- not positional adjacency,
+		// which reflects a hypothetical/recomputed seeding that can diverge
+		// from what was really drawn/played at every round, not just round 1
+		// (see firstRoundPairsFromRealMatches/groupSlotsByRealMatches).
+		nextStageName := stageNameForCount(len(current)/2, tier)
+		current = groupSlotsByRealMatches(winners, matchesForDivisionStage(t, divID, nextStageName))
 	}
 
 	// Final match block

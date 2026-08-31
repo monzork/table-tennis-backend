@@ -33,7 +33,14 @@ type Tournament struct {
 	NumTables          int
 	TablePriorities    map[string][]int
 	FederationEndorsed bool
-	Events             []*event.Event
+	// IncludeIDPhotosInReport controls whether the exported tournament PDF
+	// appends each player's cédula de identidad photos -- off by default
+	// since downloading/embedding every player's ID photo is the slowest
+	// and most memory-heavy part of report generation (a large tournament
+	// caused an OOM before photos were downscaled/re-encoded; keeping this
+	// opt-in bounds the cost to tournaments that actually need it).
+	IncludeIDPhotosInReport bool
+	Events                  []*event.Event
 }
 
 func NewTournament(id string, name string, divisionIDs []string, skipElo bool, start, end time.Time) (*Tournament, error) {
