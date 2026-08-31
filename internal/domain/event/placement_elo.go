@@ -200,63 +200,50 @@ func knockoutPlacementBonus(t *Event, divisions []*division.Division) map[string
 	return bonus
 }
 
-// roundRobinPlacementBonus builds one standings table per DivisionID present
-// in the event's matches (an event with no divisions has every match share
-// the same empty DivisionID, i.e. one table over every participant, matching
-// the pre-division behavior) and awards each table's own top 3 the bonus for
-// that division's multiplier.
+// roundRobinPlacementBonus builds one standings table over every
+// participant and awards its top 3 the bonus for the event's single
+// division. Round-robin-format events in this codebase are always scoped to
+// exactly one division (e.g. "II Ranking Nacional por Divisiones" creates a
+// separate whole event per division, see resolveDivisionID) -- multi-
+// division brackets go through groups_elimination/knockoutPlacementBonus
+// instead, where per-match DivisionID is reliably stamped. Deliberately
+// does NOT bucket by each match's own DivisionID: a defaulting player's
+// forfeited matches have been observed to carry a stale/incorrect
+// DivisionID (e.g. a legacy gender-agnostic division ID) while every other
+// match in the same round-robin group carries none, which would otherwise
+// split one real group's matches into a bogus second "division" whose
+// standings are computed from only that handful of forfeits.
 func roundRobinPlacementBonus(t *Event, divisions []*division.Division) map[string]float64 {
 	pool := roundRobinParticipantPool(t)
 	if len(pool) == 0 {
 		return nil
 	}
 
-	byDivision := make(map[string][]Match)
+	var matches []Match
 	for _, m := range t.Matches {
 		if m.TeamMatchID != nil {
 			continue
 		}
-		byDivision[m.DivisionID] = append(byDivision[m.DivisionID], m)
+		matches = append(matches, m)
 	}
+
+	standings := BuildStandings(pool, matches)
+	divID := resolveDivisionID(t, divisions, "", firstPlayer(pool))
+	first, second, third := placementBonusAmounts(divisions, divID)
 
 	bonus := make(map[string]float64)
-	for divID, matches := range byDivision {
-		ids := make(map[string]bool)
-		for _, m := range matches {
-			for _, p := range m.TeamA {
-				ids[p.ID] = true
-			}
-			for _, p := range m.TeamB {
-				ids[p.ID] = true
-			}
+	assign := func(rank int, amount float64) {
+		if len(standings) <= rank {
+			return
 		}
-
-		var participants []*player.Player
-		for _, p := range pool {
-			if ids[p.ID] {
-				participants = append(participants, p)
-			}
+		slot := []*player.Player{standings[rank].Player}
+		for _, p := range resolveTeamSlot(t, slot) {
+			bonus[p.ID] = amount
 		}
-		if len(participants) == 0 {
-			continue
-		}
-
-		standings := BuildStandings(participants, matches)
-		resolvedDivID := resolveDivisionID(t, divisions, divID, firstPlayer(participants))
-		first, second, third := placementBonusAmounts(divisions, resolvedDivID)
-		assign := func(rank int, amount float64) {
-			if len(standings) <= rank {
-				return
-			}
-			slot := []*player.Player{standings[rank].Player}
-			for _, p := range resolveTeamSlot(t, slot) {
-				bonus[p.ID] = amount
-			}
-		}
-		assign(0, first)
-		assign(1, second)
-		assign(2, third)
 	}
+	assign(0, first)
+	assign(1, second)
+	assign(2, third)
 
 	return bonus
 }

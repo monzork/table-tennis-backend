@@ -212,19 +212,35 @@ func pdfEliminationStageOrder() []string {
 	return []string{"r32", "r16", "quarterfinal", "semifinal", "final"}
 }
 
-// matchesForPdfDivisionStage returns every real (non-team-sub-match) match
-// for divID at the given stage, in t.Matches order.
-func matchesForPdfDivisionStage(t *event.Event, divID, stage string) []*event.Match {
+// matchesAtPdfStage returns every real (non-team-sub-match) match at the
+// given stage, in t.Matches order, regardless of DivisionID -- see
+// domain/bracket.matchesAtStage for why DivisionID can't be trusted here.
+// Callers that need to scope to one division's real roster should filter
+// by player identity via matchesAtPdfStageForRoster instead.
+func matchesAtPdfStage(t *event.Event, stage string) []*event.Match {
 	var out []*event.Match
 	for i := range t.Matches {
 		m := &t.Matches[i]
-		if m.TeamMatchID != nil || m.DivisionID != divID || m.Stage != stage {
+		if m.TeamMatchID != nil || m.Stage != stage {
 			continue
 		}
 		if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
 			continue
 		}
 		out = append(out, m)
+	}
+	return out
+}
+
+// matchesAtPdfStageForRoster is matchesAtPdfStage further restricted to
+// matches whose both sides are members of roster -- see
+// domain/bracket.matchesAtStageForRoster.
+func matchesAtPdfStageForRoster(t *event.Event, stage string, roster map[string]bool) []*event.Match {
+	var out []*event.Match
+	for _, m := range matchesAtPdfStage(t, stage) {
+		if roster[m.TeamA[0].ID] && roster[m.TeamB[0].ID] {
+			out = append(out, m)
+		}
 	}
 	return out
 }
@@ -307,10 +323,17 @@ func groupPdfSlotsByRealMatches(slots []*pdfMatchSlot, nextMatches []*event.Matc
 func firstRoundPdfPairsFromRealMatches(t *event.Event, divID string, players []*player.Player) []pdfBracketPair {
 	stages := pdfEliminationStageOrder()
 
+	roster := make(map[string]bool, len(players))
+	for _, p := range players {
+		if p != nil {
+			roster[p.ID] = true
+		}
+	}
+
 	firstIdx := -1
 	var firstStageMatches []*event.Match
 	for i, stage := range stages {
-		if ms := matchesForPdfDivisionStage(t, divID, stage); len(ms) > 0 {
+		if ms := matchesAtPdfStageForRoster(t, stage, roster); len(ms) > 0 {
 			firstIdx, firstStageMatches = i, ms
 			break
 		}
@@ -366,7 +389,7 @@ func firstRoundPdfPairsFromRealMatches(t *event.Event, divID string, players []*
 	}
 	var nextStageMatches []*event.Match
 	if firstIdx+1 < len(stages) {
-		nextStageMatches = matchesForPdfDivisionStage(t, divID, stages[firstIdx+1])
+		nextStageMatches = matchesAtPdfStageForRoster(t, stages[firstIdx+1], roster)
 		for _, m := range nextStageMatches {
 			for _, side := range [2]*player.Player{m.TeamA[0], m.TeamB[0]} {
 				if _, ok := idxByPlayer[side.ID]; !ok {
@@ -557,7 +580,7 @@ func buildPdfBracketRounds(t *event.Event, divID string, players []*player.Playe
 		// next stage's actual recorded matches -- see
 		// groupPdfSlotsByRealMatches / firstRoundPdfPairsFromRealMatches.
 		nextStageName := pdfStageNameForCount(len(current) / 2)
-		current = groupPdfSlotsByRealMatches(winners, matchesForPdfDivisionStage(t, divID, nextStageName))
+		current = groupPdfSlotsByRealMatches(winners, matchesAtPdfStage(t, nextStageName))
 	}
 
 	if len(current) > 0 {

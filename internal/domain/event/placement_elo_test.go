@@ -215,39 +215,52 @@ func TestPlacementEloBonus_KnockoutPerDivisionMultiplier(t *testing.T) {
 	}
 }
 
-func TestPlacementEloBonus_RoundRobinPerDivisionMultiplier(t *testing.T) {
-	a1 := &player.Player{ID: "a1"}
-	a2 := &player.Player{ID: "a2"}
-	a3 := &player.Player{ID: "a3"}
-	b1 := &player.Player{ID: "b1"}
-	b2 := &player.Player{ID: "b2"}
-	b3 := &player.Player{ID: "b3"}
+// TestPlacementEloBonus_RoundRobinIgnoresStaleMatchDivisionID is a
+// regression test: a player (b1 here) who defaulted every one of their
+// round-robin matches had those matches recorded with a stale/incorrect
+// DivisionID while every other match in the same single round-robin group
+// carried none. Bucketing standings by each match's own DivisionID split
+// one real group into a bogus second "division" whose standings were
+// computed from only that player's forfeits, corrupting both the real
+// champion's rank and their placement bonus multiplier -- round-robin now
+// always treats the whole event as one table/division (see
+// roundRobinPlacementBonus), so this must resolve as a single group of 4.
+func TestPlacementEloBonus_RoundRobinIgnoresStaleMatchDivisionID(t *testing.T) {
+	a1 := &player.Player{ID: "a1", SinglesElo: 2300}
+	a2 := &player.Player{ID: "a2", SinglesElo: 2300}
+	a3 := &player.Player{ID: "a3", SinglesElo: 2300}
+	b1 := &player.Player{ID: "b1", SinglesElo: 2300} // defaults every match
 
 	ev := &Event{
-		Format:       "round_robin",
-		Type:         "singles",
-		Participants: []*player.Player{a1, a2, a3, b1, b2, b3},
+		Format: "round_robin", Type: "singles", EventCategory: "men", UseGenderDivisions: true,
+		Participants: []*player.Player{a1, a2, a3, b1},
 		Matches: []Match{
-			{Status: "finished", DivisionID: "divA", WinnerTeam: "A", TeamA: []*player.Player{a1}, TeamB: []*player.Player{a2}},
-			{Status: "finished", DivisionID: "divA", WinnerTeam: "A", TeamA: []*player.Player{a1}, TeamB: []*player.Player{a3}},
-			{Status: "finished", DivisionID: "divA", WinnerTeam: "A", TeamA: []*player.Player{a2}, TeamB: []*player.Player{a3}},
-			{Status: "finished", DivisionID: "divB", WinnerTeam: "A", TeamA: []*player.Player{b1}, TeamB: []*player.Player{b2}},
-			{Status: "finished", DivisionID: "divB", WinnerTeam: "A", TeamA: []*player.Player{b1}, TeamB: []*player.Player{b3}},
-			{Status: "finished", DivisionID: "divB", WinnerTeam: "A", TeamA: []*player.Player{b2}, TeamB: []*player.Player{b3}},
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{a1}, TeamB: []*player.Player{a2}},
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{a1}, TeamB: []*player.Player{a3}},
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{a2}, TeamB: []*player.Player{a3}},
+			// b1 forfeits every match -- stale DivisionID "div-first" (a
+			// real, but wrong/legacy, division for this event) recorded on
+			// these specifically, none of the real matches above.
+			{Status: "finished", IsForfeit: true, DivisionID: "div-first", WinnerTeam: "A", TeamA: []*player.Player{a1}, TeamB: []*player.Player{b1}},
+			{Status: "finished", IsForfeit: true, DivisionID: "div-first", WinnerTeam: "A", TeamA: []*player.Player{a2}, TeamB: []*player.Player{b1}},
+			{Status: "finished", IsForfeit: true, DivisionID: "div-first", WinnerTeam: "A", TeamA: []*player.Player{a3}, TeamB: []*player.Player{b1}},
 		},
 	}
 
 	divisions := []*division.Division{
-		{ID: "divA", PlacementEloMultiplier: 0.5},
-		{ID: "divB", PlacementEloMultiplier: 2},
+		{ID: "div-first", MinElo: 1600, MaxElo: nil, Category: "both", Gender: "both", PlacementEloMultiplier: 2},
+		{ID: "div-first-male", MinElo: 2000, MaxElo: nil, Category: "both", Gender: "M", PlacementEloMultiplier: 0.5},
 	}
 
 	bonus := PlacementEloBonus(ev, divisions)
+	// a1 (3 wins) is the real champion of the whole group -- and should get
+	// the gender-specific division's multiplier (0.5x), not the stale
+	// legacy division's (2x) that only b1's forfeits carried.
 	if bonus["a1"] != 16 {
-		t.Errorf("expected divA champion bonus 16, got %v", bonus["a1"])
+		t.Errorf("expected champion bonus 16 (0.5x K-factor), got %v", bonus["a1"])
 	}
-	if bonus["b1"] != 64 {
-		t.Errorf("expected divB champion bonus 64, got %v", bonus["b1"])
+	if _, ok := bonus["b1"]; ok {
+		t.Errorf("expected b1 (0 wins, defaulted every match) to have no bonus, got %v", bonus["b1"])
 	}
 }
 

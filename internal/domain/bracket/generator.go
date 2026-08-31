@@ -1163,19 +1163,43 @@ func eliminationStageOrder(tier int) []string {
 	return prefixed
 }
 
-// matchesForDivisionStage returns every real (non-team-sub-match) match for
-// divID at the given stage, in t.Matches order.
-func matchesForDivisionStage(t *event.Event, divID, stage string) []*event.Match {
+// matchesAtStage returns every real (non-team-sub-match) match at the given
+// stage, in t.Matches order, regardless of DivisionID. DivisionID has been
+// observed to be unreliable in practice -- unset on real matches from
+// events scoped to one division with no per-match tagging at all, wrongly
+// set to a stale/legacy division on a defaulting player's forfeited
+// matches while sibling matches in the same group carry none, and even
+// inconsistent *within a single bracket* (e.g. round 1 correctly tagged
+// but every later round left blank because they were created through a
+// different path). Callers that need to scope to one division's real
+// roster should filter by player identity via matchesAtStageForRoster
+// instead.
+func matchesAtStage(t *event.Event, stage string) []*event.Match {
 	var out []*event.Match
 	for i := range t.Matches {
 		m := &t.Matches[i]
-		if m.TeamMatchID != nil || m.DivisionID != divID || m.Stage != stage {
+		if m.TeamMatchID != nil || m.Stage != stage {
 			continue
 		}
 		if len(m.TeamA) == 0 || len(m.TeamB) == 0 {
 			continue
 		}
 		out = append(out, m)
+	}
+	return out
+}
+
+// matchesAtStageForRoster is matchesAtStage further restricted to matches
+// whose both sides are members of roster -- used where DivisionID can't be
+// trusted (see matchesAtStage) but the candidate still needs scoping to
+// avoid picking up a different division's match at the same generic stage
+// name (e.g. detecting round-1 or a real bye for the wrong division).
+func matchesAtStageForRoster(t *event.Event, stage string, roster map[string]bool) []*event.Match {
+	var out []*event.Match
+	for _, m := range matchesAtStage(t, stage) {
+		if roster[m.TeamA[0].ID] && roster[m.TeamB[0].ID] {
+			out = append(out, m)
+		}
 	}
 	return out
 }
@@ -1268,10 +1292,17 @@ func groupSlotsByRealMatches(slots []*MatchSlot, nextMatches []*event.Match) []b
 func firstRoundPairsFromRealMatches(t *event.Event, divID string, tier int, players []*player.Player) []bracketPair {
 	stages := eliminationStageOrder(tier)
 
+	roster := make(map[string]bool, len(players))
+	for _, p := range players {
+		if p != nil {
+			roster[p.ID] = true
+		}
+	}
+
 	firstIdx := -1
 	var firstStageMatches []*event.Match
 	for i, stage := range stages {
-		if ms := matchesForDivisionStage(t, divID, stage); len(ms) > 0 {
+		if ms := matchesAtStageForRoster(t, stage, roster); len(ms) > 0 {
 			firstIdx, firstStageMatches = i, ms
 			break
 		}
@@ -1327,7 +1358,7 @@ func firstRoundPairsFromRealMatches(t *event.Event, divID string, tier int, play
 	}
 	var nextStageMatches []*event.Match
 	if firstIdx+1 < len(stages) {
-		nextStageMatches = matchesForDivisionStage(t, divID, stages[firstIdx+1])
+		nextStageMatches = matchesAtStageForRoster(t, stages[firstIdx+1], roster)
 		for _, m := range nextStageMatches {
 			for _, side := range [2]*player.Player{m.TeamA[0], m.TeamB[0]} {
 				if _, ok := idxByPlayer[side.ID]; !ok {
@@ -1564,7 +1595,7 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player, 
 		// from what was really drawn/played at every round, not just round 1
 		// (see firstRoundPairsFromRealMatches/groupSlotsByRealMatches).
 		nextStageName := stageNameForCount(len(current)/2, tier)
-		current = groupSlotsByRealMatches(winners, matchesForDivisionStage(t, divID, nextStageName))
+		current = groupSlotsByRealMatches(winners, matchesAtStage(t, nextStageName))
 	}
 
 	// Final match block
