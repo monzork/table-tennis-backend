@@ -9,6 +9,7 @@ import (
 	"sort"
 	"time"
 
+	"table-tennis-backend/internal/domain/division"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/match"
 	"table-tennis-backend/internal/domain/player"
@@ -18,13 +19,15 @@ type RecalculateTournamentEloUseCase struct {
 	tournamentRepo tournamentDomain.Repository
 	matchRepo      tournamentDomain.MatchRepository
 	playerRepo     player.Repository
+	divisionRepo   division.Repository
 }
 
-func NewRecalculateTournamentEloUseCase(tournamentRepo tournamentDomain.Repository, matchRepo tournamentDomain.MatchRepository, playerRepo player.Repository) *RecalculateTournamentEloUseCase {
+func NewRecalculateTournamentEloUseCase(tournamentRepo tournamentDomain.Repository, matchRepo tournamentDomain.MatchRepository, playerRepo player.Repository, divisionRepo division.Repository) *RecalculateTournamentEloUseCase {
 	return &RecalculateTournamentEloUseCase{
 		tournamentRepo: tournamentRepo,
 		matchRepo:      matchRepo,
 		playerRepo:     playerRepo,
+		divisionRepo:   divisionRepo,
 	}
 }
 
@@ -104,7 +107,10 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 
 	// 2. Process matches chronologically
 	for _, m := range t.Matches {
-		if m.WinnerTeam == "" || m.MatchType == "teams" {
+		if m.MatchType == "teams" {
+			continue
+		}
+		if m.WinnerTeam == "" && m.Status != "double_forfeit" {
 			continue
 		}
 
@@ -147,7 +153,11 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 				}
 			}
 
-			match.CalculateAndApplyElo(m.MatchType, resolvedA, resolvedB, m.WinnerTeam)
+			if m.Status == "double_forfeit" {
+				match.CalculateAndApplyDoubleForfeitElo(m.MatchType, resolvedA, resolvedB)
+			} else {
+				match.CalculateAndApplyElo(m.MatchType, resolvedA, resolvedB, m.WinnerTeam)
+			}
 
 			var afterA, afterB []int16
 			for _, p := range resolvedA {
@@ -216,7 +226,8 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 	// gained or lost from the matches they actually played: champion +2xK,
 	// runner-up +1xK, (up to two) 3rd-place +0.5xK. See
 	// tournamentDomain.PlacementEloBonus.
-	for playerID, bonus := range tournamentDomain.PlacementEloBonus(t) {
+	divisions, _ := uc.divisionRepo.GetAll(ctx)
+	for playerID, bonus := range tournamentDomain.PlacementEloBonus(t, divisions) {
 		state, ok := playerElos[playerID]
 		if !ok {
 			continue

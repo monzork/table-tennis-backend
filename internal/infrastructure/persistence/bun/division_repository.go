@@ -18,14 +18,15 @@ func NewDivisionRepository(db *bun.DB) *DivisionRepository {
 
 func (r *DivisionRepository) Save(ctx context.Context, d *division.Division) error {
 	model := &DivisionModel{
-		ID:           d.ID,
-		Name:         d.Name,
-		DisplayOrder: d.DisplayOrder,
-		MinElo:       d.MinElo,
-		MaxElo:       d.MaxElo,
-		Category:     d.Category,
-		Gender:       d.Gender,
-		Color:        d.Color,
+		ID:                     d.ID,
+		Name:                   d.Name,
+		DisplayOrder:           d.DisplayOrder,
+		MinElo:                 d.MinElo,
+		MaxElo:                 d.MaxElo,
+		Category:               d.Category,
+		Gender:                 d.Gender,
+		Color:                  d.Color,
+		PlacementEloMultiplier: d.PlacementEloMultiplier,
 	}
 
 	_, err := ExtractDB(ctx, r.db).NewInsert().Model(model).On("CONFLICT (id) DO UPDATE").Exec(ctx)
@@ -43,14 +44,15 @@ func (r *DivisionRepository) GetAll(ctx context.Context) ([]*division.Division, 
 	divisions := make([]*division.Division, len(models))
 	for i, m := range models {
 		divisions[i] = &division.Division{
-			ID:           m.ID,
-			Name:         m.Name,
-			DisplayOrder: m.DisplayOrder,
-			MinElo:       m.MinElo,
-			MaxElo:       m.MaxElo,
-			Category:     m.Category,
-			Gender:       m.Gender,
-			Color:        m.Color,
+			ID:                     m.ID,
+			Name:                   m.Name,
+			DisplayOrder:           m.DisplayOrder,
+			MinElo:                 m.MinElo,
+			MaxElo:                 m.MaxElo,
+			Category:               m.Category,
+			Gender:                 m.Gender,
+			Color:                  m.Color,
+			PlacementEloMultiplier: m.PlacementEloMultiplier,
 		}
 	}
 	return divisions, nil
@@ -70,13 +72,14 @@ func (r *DivisionRepository) GetById(ctx context.Context, id string) (*division.
 	}
 
 	return &division.Division{
-		ID:           m.ID,
-		Name:         m.Name,
-		DisplayOrder: m.DisplayOrder,
-		MinElo:       m.MinElo,
-		MaxElo:       m.MaxElo,
-		Category:     m.Category,
-		Gender:       m.Gender,
-		Color:        m.Color,
+		ID:                     m.ID,
+		Name:                   m.Name,
+		DisplayOrder:           m.DisplayOrder,
+		MinElo:                 m.MinElo,
+		MaxElo:                 m.MaxElo,
+		Category:               m.Category,
+		Gender:                 m.Gender,
+		Color:                  m.Color,
+		PlacementEloMultiplier: m.PlacementEloMultiplier,
 	}, nil
 }

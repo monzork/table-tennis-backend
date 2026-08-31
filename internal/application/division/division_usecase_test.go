@@ -56,7 +56,7 @@ func TestDivisionUseCase_Save(t *testing.T) {
 	uc := division.NewDivisionUseCase(repo)
 	ctx := context.Background()
 
-	err := uc.Save(ctx, "", "Div 1", 1, 1000, nil, "singles", "", "#ff0000")
+	err := uc.Save(ctx, "", "Div 1", 1, 1000, nil, "singles", "", "#ff0000", 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -75,8 +75,8 @@ func TestDivisionUseCase_GetAll(t *testing.T) {
 	uc := division.NewDivisionUseCase(repo)
 	ctx := context.Background()
 
-	_ = uc.Save(ctx, "", "Div 1", 1, 1000, nil, "", "", "")
-	_ = uc.Save(ctx, "", "Div 2", 2, 800, nil, "", "", "")
+	_ = uc.Save(ctx, "", "Div 1", 1, 1000, nil, "", "", "", 0)
+	_ = uc.Save(ctx, "", "Div 2", 2, 800, nil, "", "", "", 0)
 
 	res, err := uc.GetAll(ctx)
 	if err != nil {
@@ -92,7 +92,7 @@ func TestDivisionUseCase_Delete(t *testing.T) {
 	uc := division.NewDivisionUseCase(repo)
 	ctx := context.Background()
 
-	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "", "", "")
+	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "", "", "", 0)
 
 	err := uc.Delete(ctx, "id1")
 	if err != nil {
@@ -110,7 +110,7 @@ func TestDivisionUseCase_GetById(t *testing.T) {
 	uc := division.NewDivisionUseCase(repo)
 	ctx := context.Background()
 
-	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "", "", "")
+	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "", "", "", 0)
 
 	d, err := uc.GetById(ctx, "id1")
 	if err != nil {
@@ -132,10 +132,10 @@ func TestDivisionUseCase_Save_Update(t *testing.T) {
 	ctx := context.Background()
 
 	// Initial save
-	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "cat1", "", "red")
+	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "cat1", "", "red", 0)
 
 	maxElo := int16(1200)
-	err := uc.Save(ctx, "id1", "Div 1 Updated", 2, 800, &maxElo, "cat2", "", "blue")
+	err := uc.Save(ctx, "id1", "Div 1 Updated", 2, 800, &maxElo, "cat2", "", "blue", 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -154,12 +154,32 @@ func TestDivisionUseCase_Save_Update_InvalidElo(t *testing.T) {
 	uc := division.NewDivisionUseCase(repo)
 	ctx := context.Background()
 
-	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "", "", "")
+	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "", "", "", 0)
 
 	invalidMaxElo := int16(900)
-	err := uc.Save(ctx, "id1", "Div 1", 1, 1000, &invalidMaxElo, "", "", "")
+	err := uc.Save(ctx, "id1", "Div 1", 1, 1000, &invalidMaxElo, "", "", "", 0)
 	if err != domain.ErrInvalidEloRange {
 		t.Fatalf("expected ErrInvalidEloRange, got %v", err)
+	}
+}
+
+func TestDivisionUseCase_Save_PlacementEloMultiplier(t *testing.T) {
+	repo := newMockRepo()
+	uc := division.NewDivisionUseCase(repo)
+	ctx := context.Background()
+
+	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "", "", "", 0.5)
+
+	d, _ := uc.GetById(ctx, "id1")
+	if d.PlacementEloMultiplier != 0.5 {
+		t.Errorf("expected custom multiplier 0.5, got %v", d.PlacementEloMultiplier)
+	}
+
+	// A zero/omitted multiplier on update leaves the existing value alone.
+	_ = uc.Save(ctx, "id1", "Div 1", 1, 1000, nil, "", "", "", 0)
+	d, _ = uc.GetById(ctx, "id1")
+	if d.PlacementEloMultiplier != 0.5 {
+		t.Errorf("expected multiplier to stay 0.5, got %v", d.PlacementEloMultiplier)
 	}
 }
 
@@ -168,7 +188,7 @@ func TestDivisionUseCase_Save_Fallback(t *testing.T) {
 	uc := division.NewDivisionUseCase(repo)
 	ctx := context.Background()
 
-	err := uc.Save(ctx, "not-exist", "Div 1", 1, 1000, nil, "", "", "")
+	err := uc.Save(ctx, "not-exist", "Div 1", 1, 1000, nil, "", "", "", 0)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

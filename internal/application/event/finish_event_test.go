@@ -15,7 +15,7 @@ func TestFinishTournamentUseCase_Execute(t *testing.T) {
 		repo := newMockRepo()
 		matchRepo := &mockMatchRepo{}
 		playerRepo := newMockPlayerRepo()
-		uc := NewFinishTournamentUseCase(repo, matchRepo, playerRepo)
+		uc := NewFinishTournamentUseCase(repo, matchRepo, playerRepo, &mockDivisionRepo{})
 		return uc, repo, matchRepo, playerRepo
 	}
 

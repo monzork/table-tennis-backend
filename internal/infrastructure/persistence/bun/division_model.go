@@ -9,14 +9,15 @@ import (
 type DivisionModel struct {
 	bun.BaseModel `bun:"table:divisions"`
 
-	ID           string     `bun:"id,pk,type:text"`
-	Name         string     `bun:"name,notnull"`
-	DisplayOrder int        `bun:"display_order,notnull,default:0"`
-	MinElo       int16      `bun:"min_elo,notnull,default:0"`
-	MaxElo       *int16     `bun:"max_elo"` // can be null
-	Category     string     `bun:"category,notnull,default:'both'"`
-	Gender       string     `bun:"gender,notnull,default:'both'"`
-	Color        string     `bun:"color,notnull,default:'#ffffff'"`
-	CreatedAt    time.Time  `bun:"created_at,notnull,default:current_timestamp"`
-	UpdatedAt    *time.Time `bun:"updated_at,nullzero"`
+	ID                     string     `bun:"id,pk,type:text"`
+	Name                   string     `bun:"name,notnull"`
+	DisplayOrder           int        `bun:"display_order,notnull,default:0"`
+	MinElo                 int16      `bun:"min_elo,notnull,default:0"`
+	MaxElo                 *int16     `bun:"max_elo"` // can be null
+	Category               string     `bun:"category,notnull,default:'both'"`
+	Gender                 string     `bun:"gender,notnull,default:'both'"`
+	Color                  string     `bun:"color,notnull,default:'#ffffff'"`
+	PlacementEloMultiplier float64    `bun:"placement_elo_multiplier,notnull,default:2"`
+	CreatedAt              time.Time  `bun:"created_at,notnull,default:current_timestamp"`
+	UpdatedAt              *time.Time `bun:"updated_at,nullzero"`
 }

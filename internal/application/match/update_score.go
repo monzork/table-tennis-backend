@@ -79,8 +79,8 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 }
 
 // ExecuteDoubleForfeit records a match as a no-contest: both sides
-// defaulted, so it finishes with no winner, no Elo, and no bracket
-// advancement.
+// defaulted, so it finishes with no winner and no bracket advancement, but
+// both players still lose Elo since neither actually played.
 func (uc *UpdateMatchScoreUseCase) ExecuteDoubleForfeit(
 	ctx context.Context,
 	matchIDStr string,

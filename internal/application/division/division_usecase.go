@@ -18,7 +18,7 @@ func (uc *DivisionUseCase) GetAll(ctx context.Context) ([]*division.Division, er
 	return uc.repo.GetAll(ctx)
 }
 
-func (uc *DivisionUseCase) Save(ctx context.Context, id, name string, displayOrder int, minElo int16, maxElo *int16, category, gender, color string) error {
+func (uc *DivisionUseCase) Save(ctx context.Context, id, name string, displayOrder int, minElo int16, maxElo *int16, category, gender, color string, placementEloMultiplier float64) error {
 	var d *division.Division
 	var err error
 
@@ -53,6 +53,9 @@ func (uc *DivisionUseCase) Save(ctx context.Context, id, name string, displayOrd
 
 	if gender != "" {
 		d.Gender = gender
+	}
+	if placementEloMultiplier > 0 {
+		d.PlacementEloMultiplier = placementEloMultiplier
 	}
 
 	return uc.repo.Save(ctx, d)

@@ -133,6 +133,11 @@ CREATE TABLE IF NOT EXISTS divisions (
     category TEXT NOT NULL DEFAULT 'both', -- 'singles', 'doubles', 'both'
     gender TEXT NOT NULL DEFAULT 'both', -- 'M', 'F', 'both'
     color TEXT,
+    -- Multiplier of match.DefaultKFactor for the champion's flat placement
+    -- Elo bonus in this division (runner-up gets half, 3rd place half of
+    -- that, rounded up) -- see event.PlacementEloBonus. 2 reproduces the
+    -- original flat 2x/1x/0.5x bonus every division used before this column.
+    placement_elo_multiplier NUMERIC NOT NULL DEFAULT 2,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP
 );
@@ -148,13 +153,16 @@ INSERT INTO divisions (id, name, display_order, min_elo, max_elo, category, colo
 ON CONFLICT (id) DO NOTHING;
 
 -- Gender-specific division bands, additive to the gender-agnostic set above.
--- Only used by events with use_gender_divisions = true (see below).
-INSERT INTO divisions (id, name, display_order, min_elo, max_elo, category, gender, color) VALUES
-    ('div-first-male',    '1st Division (Men)',   10, 2000, NULL, 'both', 'M', '#C0C0C0'),
-    ('div-second-male',   '2nd Division (Men)',   11, 1300, 2000, 'both', 'M', '#7B8794'),
-    ('div-third-male',    '3rd Division (Men)',   12, 0,    1300, 'both', 'M', '#4A90D9'),
-    ('div-first-female',  '1st Division (Women)', 13, 1300, NULL, 'both', 'F', '#C0C0C0'),
-    ('div-second-female', '2nd Division (Women)', 14, 0,    1300, 'both', 'F', '#7B8794')
+-- Only used by events with use_gender_divisions = true (see below). The
+-- elite division earns the smallest champion placement bonus since its
+-- players are already top-rated, the lowest division the largest to reward
+-- climbing.
+INSERT INTO divisions (id, name, display_order, min_elo, max_elo, category, gender, color, placement_elo_multiplier) VALUES
+    ('div-first-male',    '1st Division (Men)',   10, 2000, NULL, 'both', 'M', '#C0C0C0', 0.5),
+    ('div-second-male',   '2nd Division (Men)',   11, 1300, 2000, 'both', 'M', '#7B8794', 1),
+    ('div-third-male',    '3rd Division (Men)',   12, 0,    1300, 'both', 'M', '#4A90D9', 2),
+    ('div-first-female',  '1st Division (Women)', 13, 1300, NULL, 'both', 'F', '#C0C0C0', 0.5),
+    ('div-second-female', '2nd Division (Women)', 14, 0,    1300, 'both', 'F', '#7B8794', 1)
 ON CONFLICT (id) DO NOTHING;
 
 -- 12. Table: tournaments

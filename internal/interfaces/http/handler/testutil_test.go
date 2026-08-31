@@ -132,7 +132,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	updateTournamentUC := event.NewUpdateTournamentUseCase(tournamentRepo, playerRepo)
 	deleteTournamentUC := event.NewDeleteTournamentUseCase(tournamentRepo)
 	matchRepo := bunRepo.NewMatchRepository(db, playerRepo)
-	finishTournamentUC := event.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo)
+	finishTournamentUC := event.NewFinishTournamentUseCase(tournamentRepo, matchRepo, playerRepo, divisionRepo)
 	exportTournamentUC := event.NewExportTournamentReportUseCase(tournamentRepo)
 	pdfGen := pdfinfra.NewGoFpdfGenerator()
 	exportTournamentPdfUC := event.NewExportTournamentPdfUseCase(tournamentRepo, divisionRepo, pdfGen)
@@ -149,7 +149,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	saveKnockoutSeedsUC := event.NewSaveKnockoutSeedsUseCase(tournamentRepo, divisionRepo)
 	toggleSeedingLockUC := event.NewToggleSeedingLockUseCase(tournamentRepo)
 	addGroupUC := event.NewAddGroupUseCase(tournamentRepo)
-	recalculateEloUC := event.NewRecalculateTournamentEloUseCase(tournamentRepo, matchRepo, playerRepo)
+	recalculateEloUC := event.NewRecalculateTournamentEloUseCase(tournamentRepo, matchRepo, playerRepo, divisionRepo)
 
 	startKnockoutUC := event.NewStartKnockoutStageUseCase(tournamentRepo, matchRepo, divisionRepo)
 	getEventDetailViewUC := event.NewGetEventDetailViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC)

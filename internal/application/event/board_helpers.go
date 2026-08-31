@@ -142,7 +142,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 		switch m.Status {
 		case "in_progress":
 			inProgress = append(inProgress, card)
-		case "finished":
+		case "finished", "double_forfeit":
 			finished = append(finished, card)
 		default:
 			scheduled = append(scheduled, card)

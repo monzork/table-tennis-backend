@@ -1,6 +1,7 @@
 package event
 
 import (
+	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/player"
 	"testing"
 )
@@ -40,7 +41,7 @@ func TestPlacementEloBonus_Elimination(t *testing.T) {
 		},
 	}
 
-	bonus := PlacementEloBonus(ev)
+	bonus := PlacementEloBonus(ev, nil)
 	if bonus["john"] != FirstPlaceEloBonus {
 		t.Errorf("expected champion bonus %.1f, got %v", FirstPlaceEloBonus, bonus["john"])
 	}
@@ -63,7 +64,7 @@ func TestPlacementEloBonus_NoFinishedFinal(t *testing.T) {
 			{Stage: "final", Status: "in_progress", TeamA: []*player.Player{{ID: "a"}}, TeamB: []*player.Player{{ID: "b"}}},
 		},
 	}
-	bonus := PlacementEloBonus(ev)
+	bonus := PlacementEloBonus(ev, nil)
 	if len(bonus) != 0 {
 		t.Errorf("expected no bonus for unfinished final, got %v", bonus)
 	}
@@ -89,7 +90,7 @@ func TestPlacementEloBonus_RoundRobin(t *testing.T) {
 		},
 	}
 
-	bonus := PlacementEloBonus(ev)
+	bonus := PlacementEloBonus(ev, nil)
 	if bonus["p1"] != FirstPlaceEloBonus {
 		t.Errorf("expected p1 (3 wins) as champion bonus %.1f, got %v", FirstPlaceEloBonus, bonus["p1"])
 	}
@@ -139,7 +140,7 @@ func TestPlacementEloBonus_TeamsFormat(t *testing.T) {
 		},
 	}
 
-	bonus := PlacementEloBonus(ev)
+	bonus := PlacementEloBonus(ev, nil)
 	if bonus["john"] != FirstPlaceEloBonus {
 		t.Errorf("expected team A member john as champion bonus %.1f, got %v", FirstPlaceEloBonus, bonus["john"])
 	}
@@ -153,14 +154,128 @@ func TestPlacementEloBonus_TeamsFormat(t *testing.T) {
 
 func TestPlacementEloBonus_UnknownFormat(t *testing.T) {
 	ev := &Event{Format: "single_division_multiple_brackets"}
-	if bonus := PlacementEloBonus(ev); bonus != nil {
+	if bonus := PlacementEloBonus(ev, nil); bonus != nil {
 		t.Errorf("expected nil bonus for unhandled format, got %v", bonus)
 	}
 }
 
 func TestPlacementEloBonus_RoundRobinEmptyParticipants(t *testing.T) {
 	ev := &Event{Format: "round_robin", Type: "singles"}
-	if bonus := PlacementEloBonus(ev); bonus != nil {
+	if bonus := PlacementEloBonus(ev, nil); bonus != nil {
 		t.Errorf("expected nil bonus with no participants, got %v", bonus)
+	}
+}
+
+func TestPlacementEloBonus_KnockoutPerDivisionMultiplier(t *testing.T) {
+	elite1 := &player.Player{ID: "elite1"}
+	elite2 := &player.Player{ID: "elite2"}
+	rookie1 := &player.Player{ID: "rookie1"}
+	rookie2 := &player.Player{ID: "rookie2"}
+
+	ev := &Event{
+		Format: "elimination",
+		Type:   "singles",
+		Matches: []Match{
+			{
+				Stage:      "final",
+				Status:     "finished",
+				DivisionID: "elite",
+				WinnerTeam: "A",
+				TeamA:      []*player.Player{elite1},
+				TeamB:      []*player.Player{elite2},
+			},
+			{
+				Stage:      "final",
+				Status:     "finished",
+				DivisionID: "rookie",
+				WinnerTeam: "A",
+				TeamA:      []*player.Player{rookie1},
+				TeamB:      []*player.Player{rookie2},
+			},
+		},
+	}
+
+	divisions := []*division.Division{
+		{ID: "elite", PlacementEloMultiplier: 0.5},
+		{ID: "rookie", PlacementEloMultiplier: 2},
+	}
+
+	bonus := PlacementEloBonus(ev, divisions)
+	if bonus["elite1"] != 16 { // 0.5 * 32
+		t.Errorf("expected elite champion bonus 16, got %v", bonus["elite1"])
+	}
+	if bonus["elite2"] != 8 { // half of 16
+		t.Errorf("expected elite runner-up bonus 8, got %v", bonus["elite2"])
+	}
+	if bonus["rookie1"] != 64 { // 2 * 32
+		t.Errorf("expected rookie champion bonus 64, got %v", bonus["rookie1"])
+	}
+	if bonus["rookie2"] != 32 { // half of 64
+		t.Errorf("expected rookie runner-up bonus 32, got %v", bonus["rookie2"])
+	}
+}
+
+func TestPlacementEloBonus_RoundRobinPerDivisionMultiplier(t *testing.T) {
+	a1 := &player.Player{ID: "a1"}
+	a2 := &player.Player{ID: "a2"}
+	a3 := &player.Player{ID: "a3"}
+	b1 := &player.Player{ID: "b1"}
+	b2 := &player.Player{ID: "b2"}
+	b3 := &player.Player{ID: "b3"}
+
+	ev := &Event{
+		Format:       "round_robin",
+		Type:         "singles",
+		Participants: []*player.Player{a1, a2, a3, b1, b2, b3},
+		Matches: []Match{
+			{Status: "finished", DivisionID: "divA", WinnerTeam: "A", TeamA: []*player.Player{a1}, TeamB: []*player.Player{a2}},
+			{Status: "finished", DivisionID: "divA", WinnerTeam: "A", TeamA: []*player.Player{a1}, TeamB: []*player.Player{a3}},
+			{Status: "finished", DivisionID: "divA", WinnerTeam: "A", TeamA: []*player.Player{a2}, TeamB: []*player.Player{a3}},
+			{Status: "finished", DivisionID: "divB", WinnerTeam: "A", TeamA: []*player.Player{b1}, TeamB: []*player.Player{b2}},
+			{Status: "finished", DivisionID: "divB", WinnerTeam: "A", TeamA: []*player.Player{b1}, TeamB: []*player.Player{b3}},
+			{Status: "finished", DivisionID: "divB", WinnerTeam: "A", TeamA: []*player.Player{b2}, TeamB: []*player.Player{b3}},
+		},
+	}
+
+	divisions := []*division.Division{
+		{ID: "divA", PlacementEloMultiplier: 0.5},
+		{ID: "divB", PlacementEloMultiplier: 2},
+	}
+
+	bonus := PlacementEloBonus(ev, divisions)
+	if bonus["a1"] != 16 {
+		t.Errorf("expected divA champion bonus 16, got %v", bonus["a1"])
+	}
+	if bonus["b1"] != 64 {
+		t.Errorf("expected divB champion bonus 64, got %v", bonus["b1"])
+	}
+}
+
+func TestPlacementEloBonus_RoundRobinTeamsFormat(t *testing.T) {
+	john := &player.Player{ID: "john"}
+	jane := &player.Player{ID: "jane"}
+	bob := &player.Player{ID: "bob"}
+
+	teamA := &Team{ID: "teamA", Players: []*player.Player{john}}
+	teamB := &Team{ID: "teamB", Players: []*player.Player{jane}}
+	teamC := &Team{ID: "teamC", Players: []*player.Player{bob}}
+
+	ev := &Event{
+		Format: "round_robin",
+		Type:   "teams",
+		Teams:  []*Team{teamA, teamB, teamC},
+		Matches: []Match{
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{{ID: "teamA"}}, TeamB: []*player.Player{{ID: "teamB"}}},
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{{ID: "teamA"}}, TeamB: []*player.Player{{ID: "teamC"}}},
+			{Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{{ID: "teamB"}}, TeamB: []*player.Player{{ID: "teamC"}}},
+		},
+	}
+
+	bonus := PlacementEloBonus(ev, nil)
+	if bonus["john"] != FirstPlaceEloBonus {
+		t.Errorf("expected team A member john as champion bonus %.1f, got %v", FirstPlaceEloBonus, bonus["john"])
+	}
+	if bonus["jane"] != SecondPlaceEloBonus {
+		t.Errorf("expected team B member jane as runner-up bonus %.1f, got %v", SecondPlaceEloBonus, bonus["jane"])
 	}
 }

@@ -14,14 +14,14 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 	newUC := func() (*RecalculateTournamentEloUseCase, *mockRepo, *mockPlayerRepo) {
 		repo := newMockRepo()
 		playerRepo := newMockPlayerRepo()
-		uc := NewRecalculateTournamentEloUseCase(repo, &mockMatchRepo{}, playerRepo)
+		uc := NewRecalculateTournamentEloUseCase(repo, &mockMatchRepo{}, playerRepo, &mockDivisionRepo{})
 		return uc, repo, playerRepo
 	}
 	newUCWithMatchRepo := func() (*RecalculateTournamentEloUseCase, *mockRepo, *mockMatchRepo, *mockPlayerRepo) {
 		repo := newMockRepo()
 		matchRepo := &mockMatchRepo{}
 		playerRepo := newMockPlayerRepo()
-		uc := NewRecalculateTournamentEloUseCase(repo, matchRepo, playerRepo)
+		uc := NewRecalculateTournamentEloUseCase(repo, matchRepo, playerRepo, &mockDivisionRepo{})
 		return uc, repo, matchRepo, playerRepo
 	}
 

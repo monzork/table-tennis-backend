@@ -27,7 +27,20 @@ type Division struct {
 	Category     string // "singles", "doubles", or "both"
 	Gender       string // "M", "F", or "both" (default) -- lets men's/women's bands use different Elo ranges over one shared Elo pool
 	Color        string
+	// PlacementEloMultiplier scales the champion's (1st place) flat Elo
+	// placement bonus for events played within this division: bonus =
+	// PlacementEloMultiplier * match.DefaultKFactor. Runner-up gets half of
+	// that, and each 3rd-place finisher gets half of the runner-up's bonus
+	// (rounded up). Defaults to DefaultPlacementEloMultiplier, matching the
+	// flat 2x/1x/0.5x bonus every division used before this field existed.
+	// See event.PlacementEloBonus.
+	PlacementEloMultiplier float64
 }
+
+// DefaultPlacementEloMultiplier is the champion Elo-bonus multiplier used
+// when a division doesn't set its own (or for events with no division at
+// all) -- preserves the original flat 2x-K-factor champion bonus.
+const DefaultPlacementEloMultiplier = 2.0
 
 func NewDivision(id, name string, displayOrder int, minElo int16, maxElo *int16, category, color string) (*Division, error) {
 	if name == "" {
@@ -43,14 +56,15 @@ func NewDivision(id, name string, displayOrder int, minElo int16, maxElo *int16,
 		color = "#ffffff"
 	}
 	return &Division{
-		ID:           id,
-		Name:         name,
-		DisplayOrder: displayOrder,
-		MinElo:       minElo,
-		MaxElo:       maxElo,
-		Category:     category,
-		Gender:       "both",
-		Color:        color,
+		ID:                     id,
+		Name:                   name,
+		DisplayOrder:           displayOrder,
+		MinElo:                 minElo,
+		MaxElo:                 maxElo,
+		Category:               category,
+		Gender:                 "both",
+		Color:                  color,
+		PlacementEloMultiplier: DefaultPlacementEloMultiplier,
 	}, nil
 }
 

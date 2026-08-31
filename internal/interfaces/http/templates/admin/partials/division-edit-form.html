@@ -38,6 +38,11 @@
                     <input type="number" name="max_elo" value="{{if .Division.MaxElo}}{{.Division.MaxElo}}{{end}}" placeholder="{{t .T "admin.division_form.max_elo_ph"}}" class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all">
                 </div>
             </div>
+            <div>
+                <label class="block text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{{t .T "admin.division_form.placement_bonus_label"}}</label>
+                <input type="number" step="0.1" min="0" name="placement_elo_multiplier" value="{{if .Division.PlacementEloMultiplier}}{{.Division.PlacementEloMultiplier}}{{else}}2{{end}}" required class="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all">
+                <p class="text-gray-500 text-xs mt-2">{{t .T "admin.division_form.placement_bonus_hint"}}</p>
+            </div>
             <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-white/10">
                 <button type="button" hx-on:click="document.getElementById('divisionModal').classList.add('hidden')" class="px-6 py-3 text-gray-400 hover:text-white uppercase tracking-widest text-sm font-bold transition-colors">{{t .T "score_form.cancel"}}</button>
                 <button type="submit" class="bg-white hover:bg-gray-200 text-black font-bold py-3 px-8 rounded-lg uppercase tracking-widest text-sm transition-all">{{t .T "admin.division_form.save"}}</button>

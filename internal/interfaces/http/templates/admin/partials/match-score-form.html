@@ -41,6 +41,7 @@
     {{end}}
     hx-on::before-request="const btn = this.querySelector('button[type=\'submit\']'); if(btn) { btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed'); }"
     hx-on::after-request="const btn = this.querySelector('button[type=\'submit\']'); if(btn) { btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed'); }"
+    data-best-of="{{.BestOf}}"
     class="space-y-3 mb-6">
     
     <input type="hidden" name="tournamentId" value="{{.EventID}}">
@@ -142,9 +143,18 @@ function applyForfeit(forfeitingTeam) {
     const form = scope.querySelector('form[hx-put], form[hx-post]');
     const inputsA = form.querySelectorAll('input[name="scores[]_a"]');
     const inputsB = form.querySelectorAll('input[name="scores[]_b"]');
-    
-    // ITTF Walkover/Forfeit rule: 11-0 for every set awarded to the non-defaulting side
+
+    // ITTF Walkover/Forfeit rule: 11-0 for only the sets needed to win the
+    // match (e.g. Bo5 -> 3 sets, Bo3 -> 2 sets), same as a match that ends
+    // early because one side already clinched it. Leftover sets stay blank.
+    const bestOf = parseInt(form.dataset.bestOf, 10) || inputsA.length;
+    const setsToWin = Math.ceil((bestOf + 1) / 2);
     for (let i = 0; i < inputsA.length; i++) {
+        if (i >= setsToWin) {
+            inputsA[i].value = '';
+            inputsB[i].value = '';
+            continue;
+        }
         if (forfeitingTeam === 'A') {
             inputsA[i].value = '0';
             inputsB[i].value = '11';

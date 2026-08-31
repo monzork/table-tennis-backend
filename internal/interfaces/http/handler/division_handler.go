@@ -41,7 +41,9 @@ func (h *DivisionHandler) CreateOrUpdate(c *fiber.Ctx) error {
 
 	gender := c.FormValue("gender", "both")
 
-	err := h.uc.Save(c.Context(), id, name, order, int16(minElo), maxElo, "both", gender, color)
+	placementEloMultiplier, _ := strconv.ParseFloat(c.FormValue("placement_elo_multiplier"), 64)
+
+	err := h.uc.Save(c.Context(), id, name, order, int16(minElo), maxElo, "both", gender, color, placementEloMultiplier)
 	if err != nil {
 		return c.Status(400).SendString(err.Error())
 	}

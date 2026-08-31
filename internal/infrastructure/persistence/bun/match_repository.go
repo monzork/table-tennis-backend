@@ -423,11 +423,13 @@ func (r *MatchRepository) UpdateScore(ctx context.Context, idStr string, sets []
 }
 
 // DoubleForfeit marks a match as a no-contest: both sides defaulted, so the
-// match is finalized with no winner, no sets, no Elo, and no bracket
-// advancement. Existing consumers only branch on WinnerTeam once they've
-// already confirmed Status == "finished", so a distinct "double_forfeit"
-// status keeps this outcome invisible to standings/Elo/bracket logic
-// without needing to touch each of them.
+// match is finalized with no winner, no sets, and no bracket advancement.
+// Both players still lose Elo (each computed against the other's rating,
+// see match.CalculateAndApplyDoubleForfeitElo) since neither actually played.
+// Existing consumers only branch on WinnerTeam once they've already
+// confirmed Status == "finished", so a distinct "double_forfeit" status
+// keeps this outcome invisible to standings/bracket logic without needing
+// to touch each of them.
 func (r *MatchRepository) DoubleForfeit(ctx context.Context, idStr string) error {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
