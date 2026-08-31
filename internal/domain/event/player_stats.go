@@ -336,7 +336,7 @@ func resultEloDeltaFor(matchType string, isA bool, winnerSide string, ownTeam, o
 // recalculated yet (i.e. the real m.EloDeltaA/B aren't populated). Returns
 // nil once the real value exists -- callers should prefer that.
 func finishedPreviewEloDeltaFor(m Match, isA bool, ownTeam, opponentTeam []*player.Player) *float64 {
-	if m.Status != "finished" || m.WinnerTeam == "" {
+	if m.Status != "finished" || m.WinnerTeam == "" || m.IsForfeit {
 		return nil
 	}
 	return resultEloDeltaFor(m.MatchType, isA, m.WinnerTeam, ownTeam, opponentTeam)

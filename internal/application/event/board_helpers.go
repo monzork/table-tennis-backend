@@ -94,7 +94,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 		// wrong number; leave it blank instead.
 		eloDeltaA, eloDeltaB := m.EloDeltaA, m.EloDeltaB
 		eloDeltaIsPreview := false
-		if eloDeltaA == nil && t.Status != "finished" && m.Status == "finished" && m.WinnerTeam != "" {
+		if eloDeltaA == nil && t.Status != "finished" && m.Status == "finished" && m.WinnerTeam != "" && !m.IsForfeit {
 			if m.WinnerTeam == "A" {
 				eloDeltaA, eloDeltaB = projWinA, projLossB
 			} else {

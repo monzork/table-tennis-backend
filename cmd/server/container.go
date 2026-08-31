@@ -93,7 +93,9 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	getEloTrendUC := player.NewGetPlayerEloTrendUseCase(chartGenerator)
 	playerHandler := handler.NewPlayerHandler(playerUC, updatePlayerUC, deletePlayerUC, getPlayerByIDUC, searchPlayerUC, searchPlayerSelectionUC, importPlayerUC, enrollPlayerUC, getTournamentsUC, getPlayerStatsUC, getEloTrendUC)
 	if cfg.SupabaseURL != "" && cfg.SupabaseKey != "" {
-		playerHandler = playerHandler.WithUploader(storageinfra.NewSupabaseStorage(cfg.SupabaseURL, cfg.SupabaseKey, cfg.SupabaseBucket))
+		supabaseStorage := storageinfra.NewSupabaseStorage(cfg.SupabaseURL, cfg.SupabaseKey, cfg.SupabaseBucket)
+		playerHandler = playerHandler.WithUploader(supabaseStorage)
+		pdfGenerator.WithPhotoDownloader(supabaseStorage)
 	}
 
 	tournamentHandler := handler.NewEventHandler(

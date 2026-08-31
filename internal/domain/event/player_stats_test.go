@@ -197,6 +197,25 @@ func TestBuildPlayerMatchDetails(t *testing.T) {
 		}
 	})
 
+	t.Run("no preview Elo for a forfeit -- forfeits never affect Elo", func(t *testing.T) {
+		favorite := &player.Player{ID: "p1", FirstName: "Fav", SinglesElo: 1800}
+		underdog := &player.Player{ID: "p2", FirstName: "Dog", SinglesElo: 1200}
+		matches := []Match{
+			{
+				Status: "finished", WinnerTeam: "A", MatchType: "singles", IsForfeit: true,
+				TeamA: []*player.Player{favorite}, TeamB: []*player.Player{underdog},
+			},
+		}
+
+		details := BuildPlayerMatchDetails("p1", matches, false)
+		if len(details) != 1 {
+			t.Fatalf("expected 1 match, got %+v", details)
+		}
+		if details[0].EloDelta != nil {
+			t.Errorf("expected no Elo preview for a forfeit, got %v", *details[0].EloDelta)
+		}
+	})
+
 	t.Run("prefers the real applied delta over a preview once it exists", func(t *testing.T) {
 		p1 := &player.Player{ID: "p1", SinglesElo: 1800}
 		p2 := &player.Player{ID: "p2", SinglesElo: 1200}

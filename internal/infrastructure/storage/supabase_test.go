@@ -61,6 +61,47 @@ func TestSupabaseStorageSignedURLEmptyPath(t *testing.T) {
 	}
 }
 
+func TestSupabaseStorageDownload(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/storage/v1/object/player-ids/id_front/abc.jpg" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer test-key" {
+			t.Errorf("missing/wrong auth header: %s", r.Header.Get("Authorization"))
+		}
+		w.Write([]byte("fake-image-bytes"))
+	}))
+	defer srv.Close()
+
+	s := NewSupabaseStorage(srv.URL, "test-key", "player-ids")
+	data, err := s.Download(context.Background(), "id_front/abc.jpg")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(data) != "fake-image-bytes" {
+		t.Errorf("got %q, want %q", data, "fake-image-bytes")
+	}
+}
+
+func TestSupabaseStorageDownloadEmptyPath(t *testing.T) {
+	s := NewSupabaseStorage("https://example.supabase.co", "test-key", "player-ids")
+	if _, err := s.Download(context.Background(), ""); err == nil {
+		t.Fatal("expected error for empty path")
+	}
+}
+
+func TestSupabaseStorageDownloadError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	s := NewSupabaseStorage(srv.URL, "bad-key", "player-ids")
+	if _, err := s.Download(context.Background(), "missing.jpg"); err == nil {
+		t.Fatal("expected error on non-2xx response")
+	}
+}
+
 func TestSupabaseStorageUploadError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)

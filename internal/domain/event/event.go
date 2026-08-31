@@ -524,13 +524,13 @@ type MatchRepository interface {
 	GetMatchByParticipants(ctx context.Context, eventID, p1ID, p2ID, stage string) (*Match, error)
 	GetInProgressMatchOnTable(ctx context.Context, tableNumber int, eventID, tournamentID string) (*Match, error)
 	// isForfeit marks the match as a walkover (one side defaulted) rather
-	// than real play, so it's flagged distinctly in the UI/history -- it
-	// still finishes normally otherwise (winner advances, both sides' Elo
-	// applies as usual).
+	// than real play: winner/loser and bracket advancement work exactly as
+	// normal, but neither side's Elo changes (see the IsForfeit guard in
+	// RecalculateTournamentEloUseCase/FinishTournamentUseCase), and it's
+	// flagged distinctly in the UI/history.
 	UpdateScore(ctx context.Context, id string, sets []MatchSet, stageRule StageRule, isForfeit bool) error
 	// DoubleForfeit marks a match as a no-contest: both sides defaulted, so
-	// neither wins, both lose Elo (as if each lost to the other), and no one
-	// advances in the bracket.
+	// neither wins, no Elo is applied, and no one advances in the bracket.
 	DoubleForfeit(ctx context.Context, id string) error
 	ProposeScore(ctx context.Context, matchID string, sets []MatchSet, proposedByPlayerID string, stageRule StageRule) error
 	ClearScoreProposal(ctx context.Context, matchID string) error

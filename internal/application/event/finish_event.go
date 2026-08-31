@@ -141,10 +141,7 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 
 		// 2. Process matches chronologically
 		for _, m := range t.Matches {
-			if m.MatchType == "teams" {
-				continue
-			}
-			if m.WinnerTeam == "" && m.Status != "double_forfeit" {
+			if m.WinnerTeam == "" || m.MatchType == "teams" || m.IsForfeit {
 				continue
 			}
 
@@ -189,11 +186,7 @@ func (uc *FinishTournamentUseCase) Execute(ctx context.Context, tournamentID str
 					}
 				}
 
-				if m.Status == "double_forfeit" {
-					match.CalculateAndApplyDoubleForfeitElo(m.MatchType, resolvedA, resolvedB)
-				} else {
-					match.CalculateAndApplyElo(m.MatchType, resolvedA, resolvedB, m.WinnerTeam)
-				}
+				match.CalculateAndApplyElo(m.MatchType, resolvedA, resolvedB, m.WinnerTeam)
 
 				var afterA, afterB []int16
 				for _, p := range resolvedA {

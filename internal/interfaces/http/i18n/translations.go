@@ -1048,7 +1048,7 @@ var Translations = map[string]map[string]string{
 		"status.scheduled":      "En Espera",
 		"status.in_progress":    "En Progreso",
 		"status.finished":       "Finalizado",
-		"status.forfeit":        "Abandono",
+		"status.forfeit":        "No se presentó (NSP)",
 		"status.double_forfeit": "Doble Abandono",
 
 		// Events List

@@ -145,6 +145,37 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("forfeit match (single or double) skipped in elo processing", func(t *testing.T) {
+		uc, repo, playerRepo := newUC()
+		p1 := &playerDomain.Player{ID: "p1", FirstName: "Alice", LastName: "A", SinglesElo: 1000}
+		p2 := &playerDomain.Player{ID: "p2", FirstName: "Bob", LastName: "B", SinglesElo: 1000}
+		p3 := &playerDomain.Player{ID: "p3", FirstName: "Carl", LastName: "C", SinglesElo: 1000}
+		playerRepo.players["p1"] = p1
+		playerRepo.players["p2"] = p2
+		playerRepo.players["p3"] = p3
+
+		now := time.Now()
+		singleForfeit := tournamentDomain.Match{
+			ID: "m1", MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2},
+			Status: "finished", WinnerTeam: "A", IsForfeit: true, UpdatedAt: &now,
+		}
+		doubleForfeit := tournamentDomain.Match{
+			ID: "m2", MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p3},
+			Status: "double_forfeit", WinnerTeam: "", UpdatedAt: &now,
+		}
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID: "t1", Participants: []*playerDomain.Player{p1, p2, p3},
+			Matches: []tournamentDomain.Match{singleForfeit, doubleForfeit},
+		}
+
+		if err := uc.Execute(context.Background(), "t1"); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if p1.SinglesElo != 1000 || p2.SinglesElo != 1000 || p3.SinglesElo != 1000 {
+			t.Errorf("expected no elo change from either forfeit type, got p1=%d p2=%d p3=%d", p1.SinglesElo, p2.SinglesElo, p3.SinglesElo)
+		}
+	})
+
 	t.Run("FIDE-style: each match uses the start-of-event rating, not a compounding one", func(t *testing.T) {
 		uc, repo, matchRepo, playerRepo := newUCWithMatchRepo()
 		p1 := &playerDomain.Player{ID: "p1", FirstName: "Alice", LastName: "A", SinglesElo: 1234}

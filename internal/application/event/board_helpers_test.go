@@ -169,6 +169,26 @@ func TestBuildBoardCards(t *testing.T) {
 		}
 	})
 
+	t.Run("no Elo preview for a forfeit -- forfeits never affect Elo", func(t *testing.T) {
+		mForfeit := tournamentDomain.Match{
+			ID: "m1", Status: "finished", Stage: "final", MatchType: "singles", WinnerTeam: "A", IsForfeit: true,
+			TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2},
+		}
+		ev := &tournamentDomain.Event{
+			ID: "t1", Type: "singles", EventCategory: "open", Format: "elimination",
+			Participants: []*playerDomain.Player{p1, p2},
+			Matches:      []tournamentDomain.Match{mForfeit},
+		}
+
+		_, _, finished := BuildBoardCards(ev, nil)
+		if len(finished) != 1 {
+			t.Fatalf("expected 1 finished card, got %d", len(finished))
+		}
+		if finished[0].EloDeltaA != nil || finished[0].EloDeltaIsPreview {
+			t.Errorf("expected no Elo delta/preview for a forfeit, got %+v", finished[0])
+		}
+	})
+
 	t.Run("no preview for a legacy match in an already-finished event with no recorded delta", func(t *testing.T) {
 		mLegacy := tournamentDomain.Match{
 			ID: "m1", Status: "finished", Stage: "final", MatchType: "singles", WinnerTeam: "A",

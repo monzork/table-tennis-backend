@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"table-tennis-backend/internal/domain/division"
+	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/domain/tournament"
 
 	"github.com/go-pdf/fpdf"
@@ -66,6 +67,13 @@ func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*
 	for _, t := range tournamentsList {
 		BuildTournamentPdfContent(pdf, t, divs, tr)
 	}
+
+	// --- APPENDIX: PLAYER ID PHOTOS ---
+	var allParticipants []*player.Player
+	for _, t := range tournamentsList {
+		allParticipants = append(allParticipants, t.Participants...)
+	}
+	appendIDPhotos(pdf, allParticipants, g.photoDownloader, tr)
 
 	var buf bytes.Buffer
 	err := pdf.Output(&buf)

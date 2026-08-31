@@ -114,37 +114,3 @@ func CalculateAndApplyElo(matchType string, teamA, teamB []*player.Player, winne
 		teamB[0].UpdateSinglesElo(int16(math.Round(float64(teamB[0].SinglesElo) + deltaB)))
 	}
 }
-
-// CalculateAndApplyDoubleForfeitElo handles a no-contest: neither side played,
-// so both sides lose Elo as if they'd lost to the other (each computed against
-// the opponent's rating, same StandardEloPoints formula, just wonMatch=false
-// on both sides instead of the usual zero-sum winner/loser split).
-func CalculateAndApplyDoubleForfeitElo(matchType string, teamA, teamB []*player.Player) {
-	if len(teamA) == 0 || len(teamB) == 0 {
-		return
-	}
-
-	kFactor := DefaultKFactor
-
-	if matchType == "doubles" && len(teamA) == 2 && len(teamB) == 2 {
-		rA := (int(teamA[0].DoublesElo) + int(teamA[1].DoublesElo)) / 2
-		rB := (int(teamB[0].DoublesElo) + int(teamB[1].DoublesElo)) / 2
-
-		deltaA := StandardEloPoints(rA, rB, false, kFactor)
-		deltaB := StandardEloPoints(rB, rA, false, kFactor)
-
-		teamA[0].UpdateDoublesElo(int16(math.Round(float64(teamA[0].DoublesElo) + deltaA)))
-		teamA[1].UpdateDoublesElo(int16(math.Round(float64(teamA[1].DoublesElo) + deltaA)))
-		teamB[0].UpdateDoublesElo(int16(math.Round(float64(teamB[0].DoublesElo) + deltaB)))
-		teamB[1].UpdateDoublesElo(int16(math.Round(float64(teamB[1].DoublesElo) + deltaB)))
-	} else {
-		rA := int(teamA[0].SinglesElo)
-		rB := int(teamB[0].SinglesElo)
-
-		deltaA := StandardEloPoints(rA, rB, false, kFactor)
-		deltaB := StandardEloPoints(rB, rA, false, kFactor)
-
-		teamA[0].UpdateSinglesElo(int16(math.Round(float64(teamA[0].SinglesElo) + deltaA)))
-		teamB[0].UpdateSinglesElo(int16(math.Round(float64(teamB[0].SinglesElo) + deltaB)))
-	}
-}

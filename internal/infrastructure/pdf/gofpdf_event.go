@@ -2,6 +2,7 @@ package pdf
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"math"
 	"os"
@@ -17,10 +18,27 @@ import (
 	"github.com/go-pdf/fpdf"
 )
 
-type GoFpdfGenerator struct{}
+// PhotoDownloader fetches an uploaded file's raw bytes by its storage object
+// path. Satisfied by internal/infrastructure/storage.SupabaseStorage.
+type PhotoDownloader interface {
+	Download(ctx context.Context, path string) ([]byte, error)
+}
+
+type GoFpdfGenerator struct {
+	photoDownloader PhotoDownloader
+}
 
 func NewGoFpdfGenerator() *GoFpdfGenerator {
 	return &GoFpdfGenerator{}
+}
+
+// WithPhotoDownloader enables appending each player's cédula de identidad
+// photos to the tournament report. Without it (e.g. Supabase isn't
+// configured), reports generate exactly as before, just without that
+// section — same optional-wiring pattern as PlayerHandler.WithUploader.
+func (g *GoFpdfGenerator) WithPhotoDownloader(d PhotoDownloader) *GoFpdfGenerator {
+	g.photoDownloader = d
+	return g
 }
 
 func (g *GoFpdfGenerator) GenerateTournamentReport(t *event.Event, divs []*division.Division) ([]byte, error) {
@@ -911,7 +929,9 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 							for _, m := range gMatches {
 								if (m.TeamA[0].ID == p1.ID && m.TeamB[0].ID == p2.ID) || (m.TeamA[0].ID == p2.ID && m.TeamB[0].ID == p1.ID) {
 									if m.Status == "finished" {
-										if m.TeamA[0].ID == p1.ID {
+										if m.IsForfeit {
+											mVal = "NSP"
+										} else if m.TeamA[0].ID == p1.ID {
 											mVal = fmt.Sprintf("%d-%d", m.ScoreA(), m.ScoreB())
 										} else {
 											mVal = fmt.Sprintf("%d-%d", m.ScoreB(), m.ScoreA())
@@ -1276,6 +1296,9 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 
 								if mForDetails.Match.Status == "finished" {
 									scoreStr := fmt.Sprintf("(%d-%d)", mForDetails.Match.ScoreA(), mForDetails.Match.ScoreB())
+									if mForDetails.Match.IsForfeit {
+										scoreStr = "(NSP)"
+									}
 									pdf.SetFont("Arial", "B", 6)
 									pdf.SetTextColor(0, 0, 0)
 									pdf.Text(lineX1+1, currentMidY+3, tr(scoreStr))
