@@ -117,6 +117,14 @@ type BracketMatch struct {
 type MatchSlot struct {
 	Seed   int
 	Player *player.Player
+	// BracketPos is the slot's 0-based leaf position in the canonical
+	// seeding arrangement (getSeedingArrangement) at the bracket's initial
+	// size. Positions are laid out so that any two sibling slots at any
+	// round always land in a contiguous half of the array -- pairing (or
+	// sorting a round's pairs) by ascending BracketPos therefore recovers
+	// the true bracket-tree adjacency, independent of the arbitrary order
+	// real match rows come back from the DB in. See sortPairsByBracketPos.
+	BracketPos int
 }
 
 // player1IsTeamA reports whether Player1 corresponds to the underlying match's
@@ -1355,7 +1363,37 @@ func groupSlotsByRealMatches(slots []*MatchSlot, nextMatches []*event.Match) []b
 	for i, ip := range indexed {
 		pairs[i] = ip.pair
 	}
+	sortPairsByBracketPos(pairs)
 	return pairs
+}
+
+// pairBracketPos returns pr's lower BracketPos, or a large sentinel when
+// neither slot has a resolved player, so sortPairsByBracketPos's stable
+// sort leaves such pairs in their original relative order.
+func pairBracketPos(pr bracketPair) int {
+	const unresolved = 1 << 30
+	a, b := unresolved, unresolved
+	if pr.P1 != nil && pr.P1.Player != nil {
+		a = pr.P1.BracketPos
+	}
+	if pr.P2 != nil && pr.P2.Player != nil {
+		b = pr.P2.BracketPos
+	}
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// sortPairsByBracketPos restores true bracket-tree adjacency order across
+// pairs gathered from real match data in arbitrary (DB row) order, so a
+// later round with no real match yet can safely pair consecutive array
+// entries and land on the correct (adjacent) opponent instead of
+// cross-wiring non-adjacent quarters/halves.
+func sortPairsByBracketPos(pairs []bracketPair) {
+	sort.SliceStable(pairs, func(i, j int) bool {
+		return pairBracketPos(pairs[i]) < pairBracketPos(pairs[j])
+	})
 }
 
 // firstRoundPairsFromRealMatches reconstructs round 1's pairing directly
@@ -1404,6 +1442,27 @@ func firstRoundPairsFromRealMatches(t *event.Event, divID string, tier int, play
 		}
 	}
 
+	// posOfSeed maps a seed to its 0-based leaf position in the canonical
+	// arrangement, so real-match providers can be given a true BracketPos
+	// even though they're discovered in arbitrary DB order (see
+	// MatchSlot.BracketPos / sortPairsByBracketPos).
+	arrangementSize := nextPow2(len(players))
+	if arrangementSize < 2 {
+		arrangementSize = 2
+	}
+	posOfSeed := make(map[int]int, arrangementSize)
+	for i, seed := range getSeedingArrangement(arrangementSize) {
+		posOfSeed[seed] = i
+	}
+	bracketPosFor := func(playerID string, fallbackIdx int) int {
+		if seed, ok := seedOf[playerID]; ok {
+			if pos, ok2 := posOfSeed[seed]; ok2 {
+				return pos
+			}
+		}
+		return arrangementSize + fallbackIdx
+	}
+
 	minSeed := func(m *event.Match) int {
 		a, b := seedOf[m.TeamA[0].ID], seedOf[m.TeamB[0].ID]
 		if a == 0 {
@@ -1434,10 +1493,21 @@ func firstRoundPairsFromRealMatches(t *event.Event, divID string, tier int, play
 	providers := make([]bracketPair, 0, len(firstStageMatches))
 	idxByPlayer := make(map[string]int, len(firstStageMatches)*2)
 	for _, m := range firstStageMatches {
+		// A stale/duplicate match row (bad DivisionID tagging, forfeit
+		// correction leftovers, etc.) can feature a player who already has a
+		// provider from an earlier row in this loop. Without this guard
+		// they'd get a second, independent provider slot, which later
+		// resolves to the same player "winning" two sibling bracket matches.
+		if _, ok := idxByPlayer[m.TeamA[0].ID]; ok {
+			continue
+		}
+		if _, ok := idxByPlayer[m.TeamB[0].ID]; ok {
+			continue
+		}
 		idx := len(providers)
 		providers = append(providers, bracketPair{
-			P1: &MatchSlot{Seed: seedOf[m.TeamA[0].ID], Player: m.TeamA[0]},
-			P2: &MatchSlot{Seed: seedOf[m.TeamB[0].ID], Player: m.TeamB[0]},
+			P1: &MatchSlot{Seed: seedOf[m.TeamA[0].ID], Player: m.TeamA[0], BracketPos: bracketPosFor(m.TeamA[0].ID, idx*2)},
+			P2: &MatchSlot{Seed: seedOf[m.TeamB[0].ID], Player: m.TeamB[0], BracketPos: bracketPosFor(m.TeamB[0].ID, idx*2+1)},
 		})
 		idxByPlayer[m.TeamA[0].ID] = idx
 		idxByPlayer[m.TeamB[0].ID] = idx
@@ -1449,7 +1519,7 @@ func firstRoundPairsFromRealMatches(t *event.Event, divID string, tier int, play
 			for _, side := range [2]*player.Player{m.TeamA[0], m.TeamB[0]} {
 				if _, ok := idxByPlayer[side.ID]; !ok {
 					idxByPlayer[side.ID] = len(providers)
-					providers = append(providers, bracketPair{P1: &MatchSlot{Seed: seedOf[side.ID], Player: side}})
+					providers = append(providers, bracketPair{P1: &MatchSlot{Seed: seedOf[side.ID], Player: side, BracketPos: bracketPosFor(side.ID, len(providers))}})
 				}
 			}
 		}
@@ -1486,6 +1556,7 @@ func firstRoundPairsFromRealMatches(t *event.Event, divID string, tier int, play
 		pairs = append(pairs, bracketPair{})
 	}
 
+	sortPairsByBracketPos(pairs)
 	return pairs
 }
 
@@ -1494,6 +1565,13 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player, 
 		return nil
 	}
 	unresolvedSlot := &MatchSlot{Seed: 0, Player: nil}
+
+	roster := make(map[string]bool, len(players))
+	for _, p := range players {
+		if p != nil {
+			roster[p.ID] = true
+		}
+	}
 
 	current := firstRoundPairsFromRealMatches(t, divID, tier, players)
 	if current == nil {
@@ -1512,10 +1590,10 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player, 
 
 			var p1, p2 *MatchSlot
 			if s1 >= 0 && s1 < len(players) {
-				p1 = &MatchSlot{Seed: s1 + 1, Player: players[s1]}
+				p1 = &MatchSlot{Seed: s1 + 1, Player: players[s1], BracketPos: i}
 			}
 			if s2 >= 0 && s2 < len(players) {
-				p2 = &MatchSlot{Seed: s2 + 1, Player: players[s2]}
+				p2 = &MatchSlot{Seed: s2 + 1, Player: players[s2], BracketPos: i + 1}
 			}
 			current = append(current, bracketPair{P1: p1, P2: p2})
 		}
@@ -1681,7 +1759,7 @@ func buildBracketRounds(t *event.Event, divID string, players []*player.Player, 
 		// from what was really drawn/played at every round, not just round 1
 		// (see firstRoundPairsFromRealMatches/groupSlotsByRealMatches).
 		nextStageName := stageNameForCount(len(current)/2, tier)
-		current = groupSlotsByRealMatches(winners, matchesAtStage(t, nextStageName))
+		current = groupSlotsByRealMatches(winners, matchesAtStageForRoster(t, nextStageName, roster))
 	}
 
 	// Final match block
