@@ -598,3 +598,60 @@ func TestGetITTFKnockoutSeeds_PassCountExceedsGroupSize(t *testing.T) {
 		t.Fatalf("expected 4 advancing players (capped), got %d: %v", len(out), out)
 	}
 }
+
+// TestGetITTFKnockoutSeeds_ThreeGroupsPassThreeMatchesDomainAlgorithm is a
+// regression test for a production bug (II Ranking Nacional, 3rd Division
+// (Men): 5 groups, GroupPassCount 3): this function used to place runners-up
+// and 3rd-place finishers with a simpler top-half/bottom-half-only split
+// that disagreed with domain/bracket.buildITTFKnockoutSeeds (used by the
+// live event/admin bracket pages) as soon as more than 2 groups or a
+// passCount above 2 was involved -- e.g. a group's runner-up seed ending up
+// at the very front of the bracket in the PDF while the live event page put
+// it at the back. With 3 groups and passCount 3, the two algorithms diverge
+// specifically at the runner-up layer (seeds 4-6): the simple split lands
+// them as [B2, C2, A2], the domain algorithm's region-based placement lands
+// them as [A2, B2, C2].
+func TestGetITTFKnockoutSeeds_ThreeGroupsPassThreeMatchesDomainAlgorithm(t *testing.T) {
+	pA1 := &player.Player{ID: "pA1", FirstName: "A1", SinglesElo: 1900}
+	pA2 := &player.Player{ID: "pA2", FirstName: "A2", SinglesElo: 1800}
+	pA3 := &player.Player{ID: "pA3", FirstName: "A3", SinglesElo: 1700}
+	pB1 := &player.Player{ID: "pB1", FirstName: "B1", SinglesElo: 1600}
+	pB2 := &player.Player{ID: "pB2", FirstName: "B2", SinglesElo: 1500}
+	pB3 := &player.Player{ID: "pB3", FirstName: "B3", SinglesElo: 1400}
+	pC1 := &player.Player{ID: "pC1", FirstName: "C1", SinglesElo: 1300}
+	pC2 := &player.Player{ID: "pC2", FirstName: "C2", SinglesElo: 1200}
+	pC3 := &player.Player{ID: "pC3", FirstName: "C3", SinglesElo: 1100}
+
+	win3 := []event.MatchSet{{Number: 1, ScoreA: 11, ScoreB: 5}, {Number: 2, ScoreA: 11, ScoreB: 5}, {Number: 3, ScoreA: 11, ScoreB: 5}}
+	// Within each group, player 1 beats 2 and 3, and player 2 beats 3 --
+	// standings come out in numeric order (1st, 2nd, 3rd).
+	roundRobin := func(p1, p2, p3 *player.Player) []event.Match {
+		return []event.Match{
+			{Stage: "group", Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2}, Sets: win3},
+			{Stage: "group", Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{p1}, TeamB: []*player.Player{p3}, Sets: win3},
+			{Stage: "group", Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{p2}, TeamB: []*player.Player{p3}, Sets: win3},
+		}
+	}
+
+	groupA := &event.Group{ID: "gA", Name: "Group A", Players: []*player.Player{pA1, pA2, pA3}}
+	groupB := &event.Group{ID: "gB", Name: "Group B", Players: []*player.Player{pB1, pB2, pB3}}
+	groupC := &event.Group{ID: "gC", Name: "Group C", Players: []*player.Player{pC1, pC2, pC3}}
+
+	var matches []event.Match
+	matches = append(matches, roundRobin(pA1, pA2, pA3)...)
+	matches = append(matches, roundRobin(pB1, pB2, pB3)...)
+	matches = append(matches, roundRobin(pC1, pC2, pC3)...)
+
+	ev := &event.Event{GroupPassCount: 3, Matches: matches}
+
+	out := getITTFKnockoutSeeds(ev, "div1", "Division 1", nil, []*event.Group{groupA, groupB, groupC})
+	wantIDs := []string{"pA1", "pB1", "pC1", "pA2", "pB2", "pC2", "pA3", "pB3", "pC3"}
+	if len(out) != len(wantIDs) {
+		t.Fatalf("expected %d advancing players, got %d: %v", len(wantIDs), len(out), out)
+	}
+	for i, want := range wantIDs {
+		if out[i].ID != want {
+			t.Errorf("seed %d = %s, want %s (full: %v)", i+1, out[i].ID, want, out)
+		}
+	}
+}
