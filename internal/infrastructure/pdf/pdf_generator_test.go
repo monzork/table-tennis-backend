@@ -35,6 +35,7 @@ func TestGoFpdfGenerator_GenerateTournamentReport(t *testing.T) {
 		MinElo:   1000,
 		MaxElo:   &maxElo1500,
 		Category: "singles",
+		Gender:   "both",
 	}
 
 	ev := &event.Event{
@@ -422,7 +423,7 @@ func TestGoFpdfGenerator_GenerateTournamentReport_PlayerStatsGetsOwnPage(t *test
 		{ID: "final1", Stage: "final", Status: "finished", DivisionID: "div1", WinnerTeam: "A", TeamA: []*player.Player{pA1}, TeamB: []*player.Player{pA2}, Sets: win3},
 	}
 	maxElo := int16(1700)
-	divs := []*division.Division{{ID: "div1", Name: "Elite", MinElo: 1000, MaxElo: &maxElo, Category: "singles"}}
+	divs := []*division.Division{{ID: "div1", Name: "Elite", MinElo: 1000, MaxElo: &maxElo, Category: "singles", Gender: "both"}}
 	ev := &event.Event{
 		ID: "e1", Name: "Bracket No Metrics", Type: "singles", Format: "elimination", Status: "finished",
 		StartDate: time.Now(), Participants: []*player.Player{pA1, pA2},
@@ -482,9 +483,9 @@ func TestGoFpdfGenerator_GenerateTournamentReport_FullBracket(t *testing.T) {
 
 	maxElo := int16(1700)
 	divs := []*division.Division{
-		{ID: "div1", Name: "Elite Division", MinElo: 1000, MaxElo: &maxElo, Category: "singles"},
-		{ID: "div-mismatch", Name: "Doubles Only", MinElo: 0, MaxElo: nil, Category: "doubles"},
-		{ID: "div-skip", Name: "No Division", MinElo: 0, MaxElo: nil, Category: "both"},
+		{ID: "div1", Name: "Elite Division", MinElo: 1000, MaxElo: &maxElo, Category: "singles", Gender: "both"},
+		{ID: "div-mismatch", Name: "Doubles Only", MinElo: 0, MaxElo: nil, Category: "doubles", Gender: "both"},
+		{ID: "div-skip", Name: "No Division", MinElo: 0, MaxElo: nil, Category: "both", Gender: "both"},
 	}
 
 	ev := &event.Event{
@@ -557,7 +558,7 @@ func TestGetDivisionPlaces(t *testing.T) {
 		},
 	}
 
-	first, second, third := pdf.GetDivisionPlaces(ev, "div1", []*player.Player{p1, p2, p3})
+	first, second, third := pdf.GetDivisionPlaces(ev, []*player.Player{p1, p2, p3})
 	if first == "" || second == "" {
 		t.Errorf("expected non-empty 1st and 2nd places, got first=%q, second=%q", first, second)
 	}
@@ -566,9 +567,43 @@ func TestGetDivisionPlaces(t *testing.T) {
 	}
 }
 
+// TestGetDivisionPlaces_BlankDivisionIDStillResolves is a regression test
+// for a production bug (II Ranking Nacional, 2nd/3rd Division (Men)): final
+// and semifinal matches never had Match.DivisionID backfilled (blank string,
+// same as when division tagging didn't exist yet), so the old DivisionID
+// equality check silently found no matches and the podium printed nothing.
+// Scoping by whether the match's players are in divisionPlayers instead
+// must resolve the podium even when DivisionID is blank.
+func TestGetDivisionPlaces_BlankDivisionIDStillResolves(t *testing.T) {
+	p1 := &player.Player{ID: "p1", FirstName: "Winner", LastName: "User"}
+	p2 := &player.Player{ID: "p2", FirstName: "Runner", LastName: "Up"}
+	p3 := &player.Player{ID: "p3", FirstName: "Semi", LastName: "Finalist"}
+
+	ev := &event.Event{
+		Status: "finished",
+		Format: "groups_elimination",
+		Type:   "singles",
+		Matches: []event.Match{
+			{Stage: "final", Status: "finished", TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2}, WinnerTeam: "A"},
+			{Stage: "semifinal", Status: "finished", TeamA: []*player.Player{p2}, TeamB: []*player.Player{p3}, WinnerTeam: "A"},
+		},
+	}
+
+	first, second, third := pdf.GetDivisionPlaces(ev, []*player.Player{p1, p2, p3})
+	if first != "Winner User" {
+		t.Errorf("expected first to be Winner User despite blank DivisionID, got %q", first)
+	}
+	if second != "Runner Up" {
+		t.Errorf("expected second to be Runner Up despite blank DivisionID, got %q", second)
+	}
+	if third != "Semi Finalist" {
+		t.Errorf("expected third to be Semi Finalist despite blank DivisionID, got %q", third)
+	}
+}
+
 func TestGetDivisionPlaces_NotFinished(t *testing.T) {
 	ev := &event.Event{Status: "in_progress"}
-	first, second, third := pdf.GetDivisionPlaces(ev, "div1", nil)
+	first, second, third := pdf.GetDivisionPlaces(ev, nil)
 	if first != "" || second != "" || third != "" {
 		t.Errorf("expected empty places for unfinished event, got %q/%q/%q", first, second, third)
 	}
@@ -612,7 +647,7 @@ func TestGetDivisionPlaces_WinnerBBranch(t *testing.T) {
 		},
 	}
 
-	first, second, third := pdf.GetDivisionPlaces(ev, "div1", []*player.Player{p1, p2, p3, p4})
+	first, second, third := pdf.GetDivisionPlaces(ev, []*player.Player{p1, p2, p3, p4})
 	if first != "Winner User" {
 		t.Errorf("expected first to be Winner User, got %q", first)
 	}
@@ -642,7 +677,7 @@ func TestGetDivisionPlaces_RoundRobin(t *testing.T) {
 		},
 	}
 
-	first, second, third := pdf.GetDivisionPlaces(ev, "div1", []*player.Player{p1, p2, p3})
+	first, second, third := pdf.GetDivisionPlaces(ev, []*player.Player{p1, p2, p3})
 	if first != "First Place" {
 		t.Errorf("expected first to be First Place, got %q", first)
 	}
@@ -656,7 +691,7 @@ func TestGetDivisionPlaces_RoundRobin(t *testing.T) {
 
 func TestGetDivisionPlaces_RoundRobin_NoPlayers(t *testing.T) {
 	ev := &event.Event{Status: "finished", Format: "round_robin"}
-	first, second, third := pdf.GetDivisionPlaces(ev, "div1", nil)
+	first, second, third := pdf.GetDivisionPlaces(ev, nil)
 	if first != "" || second != "" || third != "" {
 		t.Errorf("expected empty places for no division players, got %q/%q/%q", first, second, third)
 	}

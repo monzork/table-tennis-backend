@@ -901,6 +901,22 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 		return tVal.Format("15:04")
 	}
 
+	// The legacy gender-agnostic bands (Primera/Segunda/Tercera Division)
+	// stay in the DB for old brackets and sort before the gender-specific
+	// bands (lower DisplayOrder) -- left in that order, the matching loop
+	// below (which greedily claims players by raw Elo, first match wins)
+	// would fragment one division's players/standings across a mislabeled
+	// legacy bucket ("Tercera") and whatever gendered band was left to catch
+	// the remainder. Move every gendered (M/F) band ahead of the "both"
+	// bands instead of dropping the "both" ones outright (division.
+	// OnlyGendered would leave an event with no gendered coverage at all --
+	// e.g. a custom "both"-only division setup -- with nothing to match).
+	sort.SliceStable(divs, func(i, j int) bool {
+		iGendered := strings.EqualFold(divs[i].Gender, "M") || strings.EqualFold(divs[i].Gender, "F")
+		jGendered := strings.EqualFold(divs[j].Gender, "M") || strings.EqualFold(divs[j].Gender, "F")
+		return iGendered && !jGendered
+	})
+
 	type divisionToCheck struct {
 		ID      string
 		Name    string
@@ -969,6 +985,19 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				if assigned[p.ID] {
 					continue
 				}
+				// A gender-specific band (every band left after
+				// division.OnlyGendered above) must not claim the other
+				// gender's players just because their Elo happens to fall
+				// in its range -- e.g. a women's event's low-Elo players
+				// matching "3rd Division (Men)" before ever reaching "2nd
+				// Division (Women)", since bands are checked in
+				// DisplayOrder and this loop never used to compare gender.
+				// p.Gender is empty for the synthetic team/doubles-pair
+				// entries built above (a team has no single gender), so the
+				// check only applies to real individual players.
+				if p.Gender != "" && !d.MatchesGender(p.Gender) {
+					continue
+				}
 				elo := p.SinglesElo
 				if t.Type == "doubles" || t.Type == "mixed_doubles" {
 					elo = p.DoublesElo
@@ -1011,7 +1040,7 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 	if t.Status == "finished" {
 		hasPlaces := false
 		for _, dt := range divsToCheck {
-			f, s, td := GetDivisionPlaces(t, dt.ID, dt.Players)
+			f, s, td := GetDivisionPlaces(t, dt.Players)
 			if f != "" || s != "" || td != "" {
 				hasPlaces = true
 				break
@@ -1021,7 +1050,7 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 		if hasPlaces {
 			writeHeader("POSICIONES FINALES")
 			for _, dt := range divsToCheck {
-				first, second, third := GetDivisionPlaces(t, dt.ID, dt.Players)
+				first, second, third := GetDivisionPlaces(t, dt.Players)
 				if first != "" || second != "" || third != "" {
 					pdf.SetFillColor(245, 247, 250) // clean light grey background
 					pdf.SetFont("Arial", "B", 10)
@@ -1097,6 +1126,22 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 
 	// 2.5 GROUP STANDINGS / POOLS
 	if t.Format == "round_robin" || t.Format == "groups_elimination" {
+		// A group's own Name only carries a "DivisionName - " prefix when
+		// this event's roster was split across multiple divisions (an
+		// "Open"-style event, SkipDivisionSplit=false with a wide Elo
+		// range) -- the common case of one event = one homogeneous division
+		// creates groups as a bare "Group A" with no prefix, since there's
+		// nothing to disambiguate. Falling back to a hardcoded "Open
+		// Division" label for that common case is wrong: recover the real
+		// division name from divsToCheck (already Elo-matched above) via
+		// one of the group's own players instead.
+		playerDivName := make(map[string]string, len(t.Participants))
+		for _, dt := range divsToCheck {
+			for _, p := range dt.Players {
+				playerDivName[p.ID] = dt.Name
+			}
+		}
+
 		type groupStandings struct {
 			DivisionName string
 			GroupName    string
@@ -1112,6 +1157,19 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				if idx := strings.Index(g.Name, " - "); idx != -1 {
 					divName = g.Name[:idx]
 					grpName = g.Name[idx+3:]
+				} else if len(g.Players) > 0 {
+					if dn, ok := playerDivName[g.Players[0].ID]; ok {
+						divName = dn
+					}
+				}
+				if grpName == "All Against All" {
+					// The report is Spanish-only; "All Against All" is the
+					// literal English group name OpenBracketSnakeSeeder
+					// stores for a single round-robin group (see
+					// domain/event/seeding.go) -- same Spanish wording
+					// already used for this format elsewhere in the app
+					// (i18n key admin.event_form.fmt_round_robin).
+					grpName = "Todos contra Todos"
 				}
 				// Filter matches that are in this group and have valid teams
 				var gMatches []event.Match
@@ -1146,7 +1204,6 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 
 		if len(groupStages) > 0 {
 			pdf.Ln(8)
-			writeHeader("TABLAS DE POSICIONES DE GRUPOS")
 
 			// Large round-robin groups (many teams -> many cross-table columns) don't
 			// fit the schedule + matrix + points layout within an A4 portrait page's
@@ -1164,7 +1221,32 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				fixedTableWidth = 142.0
 				defaultColWidth = 8.0
 				minColWidth     = 5.0
+				// writeHeader's own layout: Ln(5) + cell(8) + Ln(3).
+				sectionHeaderHeight = 5.0 + 8.0 + 3.0
 			)
+
+			// Keep "TABLAS DE POSICIONES DE GRUPOS" attached to at least the
+			// first group's table -- otherwise a header that lands near the
+			// bottom of a page (or needs an orientation switch the first
+			// group also needs) gets orphaned there while the group it
+			// introduces renders on the next page.
+			first := groupStages[0]
+			firstWantOrientation := "P"
+			if fixedTableWidth+float64(len(first.Players))*defaultColWidth > portraitPrintableWidth {
+				firstWantOrientation = "L"
+			}
+			firstReqHeight := 10.0 + float64(len(first.Players)+1)*5.0 + 10.0
+			_, pageHeight := pdf.GetPageSize()
+			_, _, _, bottomMargin := pdf.GetMargins()
+			if firstWantOrientation != curOrientation {
+				pdf.AddPageFormat(firstWantOrientation, fpdf.SizeType{Wd: 210, Ht: 297})
+				pdf.SetMargins(15, 52, 15)
+				curOrientation = firstWantOrientation
+			} else if pdf.GetY()+sectionHeaderHeight+firstReqHeight > pageHeight-bottomMargin {
+				pdf.AddPage()
+			}
+
+			writeHeader("TABLAS DE POSICIONES DE GRUPOS")
 
 			for _, gs := range groupStages {
 				n := len(gs.Players)
@@ -1388,12 +1470,12 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				pdf.Ln(6)
 			}
 
-			// Later sections assume a portrait page; switch back if the last
-			// group table forced a landscape page.
-			if curOrientation != "P" {
-				pdf.AddPageFormat("P", fpdf.SizeType{Wd: 210, Ht: 297})
-				pdf.SetMargins(15, 52, 15)
-			}
+			// No forced switch back to portrait here: every section that
+			// draws after this one already starts with its own unconditional
+			// AddPageFormat (the visual bracket goes "L" per division, and
+			// both stats sections below go "P") -- eagerly adding a portrait
+			// page here just to immediately abandon it produced a blank page
+			// after every division whose last group table went landscape.
 		}
 	}
 
@@ -1597,12 +1679,13 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				}
 
 				if rounds[r].Name != "Champion" {
-					// minGap must exceed boxH, not just equal it: with
-					// minGap == boxH two nudged boxes end up with their edges
-					// exactly touching (zero visible gap), which reads as one
-					// merged box with both matches' text run together --
-					// see TestResolveCenterCollisions_SeparatesBoxesWithVisibleGap.
-					resolveCenterCollisions(centers[r], boxH+2.0)
+					// minGap must clear boxH by a real margin, not just
+					// barely -- a bare +2mm edge gap reads as visually
+					// cramped/broken next to the generous spacing everywhere
+					// else in the bracket (see the "Segunda" 2nd Division
+					// report: real-match pairing crossed R16 boxes 4-7,
+					// putting two QF boxes at the same computed midpoint).
+					resolveCenterCollisions(centers[r], boxH*1.5)
 				}
 			}
 
@@ -1837,12 +1920,25 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 		isDoublesType := t.Type == "doubles" || t.Type == "mixed_doubles" || t.Type == "teams"
 
 		// The bracket section above draws with absolute coordinates and never
-		// advances fpdf's page/cursor state, so this section must always start
-		// on its own fresh portrait page rather than continuing wherever the
-		// cursor was left (which can still be mid-way through a landscape
-		// bracket page).
-		pdf.AddPageFormat("P", fpdf.SizeType{Wd: 210, Ht: 297})
-		pdf.SetMargins(15, 52, 15)
+		// advances fpdf's page/cursor state, so a still-open landscape
+		// bracket page can't be continued onto -- this section needs a fresh
+		// portrait page in that case. But when the cursor is already on a
+		// portrait page (e.g. right after Tournament Statistics, which does
+		// end on one), force a new page only if there's not enough room left
+		// for the header and at least one player row -- otherwise let player
+		// statistics continue on the same page as tournament statistics.
+		pageW, pageH := pdf.GetPageSize()
+		if pageW > pageH {
+			pdf.AddPageFormat("P", fpdf.SizeType{Wd: 210, Ht: 297})
+			pdf.SetMargins(15, 52, 15)
+		} else {
+			const sectionHeaderHeight = 5.0 + 8.0 + 3.0 // writeHeader: Ln(5) + cell(8) + Ln(3)
+			const tableHeaderAndOneRow = 7.0 + 6.0
+			_, _, _, bottomMargin := pdf.GetMargins()
+			if pdf.GetY()+sectionHeaderHeight+tableHeaderAndOneRow > pageH-bottomMargin {
+				pdf.AddPage()
+			}
+		}
 
 		writeHeader("ESTADÍSTICAS DE JUGADORES")
 
@@ -2042,9 +2138,27 @@ func getITTFKnockoutSeeds(t *event.Event, divID, divName string, players []*play
 	return out
 }
 
-func GetDivisionPlaces(t *event.Event, divisionID string, divisionPlayers []*player.Player) (first, second, third string) {
+func GetDivisionPlaces(t *event.Event, divisionPlayers []*player.Player) (first, second, third string) {
 	if t.Status != "finished" {
 		return "", "", ""
+	}
+
+	// Match.DivisionID is unreliable for scoping to this division: it's
+	// blank on many historical final/semifinal/group rows (never backfilled
+	// when division tagging was added), and can still carry a stale legacy
+	// gender-agnostic ID even when populated. Since every match's actual
+	// participants are known, membership in divisionPlayers is the robust
+	// signal -- it works whether this event covers one division (the common
+	// case, where it's simply every match) or several (an "Open" event,
+	// where it still correctly scopes by who's playing).
+	inDivision := make(map[string]bool, len(divisionPlayers))
+	for _, p := range divisionPlayers {
+		if p != nil {
+			inDivision[p.ID] = true
+		}
+	}
+	matchInDivision := func(m *event.Match) bool {
+		return len(m.TeamA) > 0 && len(m.TeamB) > 0 && inDivision[m.TeamA[0].ID] && inDivision[m.TeamB[0].ID]
 	}
 
 	if t.Format == "elimination" || t.Format == "groups_elimination" {
@@ -2052,7 +2166,7 @@ func GetDivisionPlaces(t *event.Event, divisionID string, divisionPlayers []*pla
 		var finalMatch *event.Match
 		for i := range t.Matches {
 			m := &t.Matches[i]
-			if m.Stage == "final" && m.Status == "finished" && m.TeamMatchID == nil && m.DivisionID == divisionID {
+			if m.Stage == "final" && m.Status == "finished" && m.TeamMatchID == nil && matchInDivision(m) {
 				finalMatch = m
 				break
 			}
@@ -2071,7 +2185,7 @@ func GetDivisionPlaces(t *event.Event, divisionID string, divisionPlayers []*pla
 		var semiLosers []string
 		for i := range t.Matches {
 			m := &t.Matches[i]
-			if m.Stage == "semifinal" && m.Status == "finished" && m.TeamMatchID == nil && m.DivisionID == divisionID {
+			if m.Stage == "semifinal" && m.Status == "finished" && m.TeamMatchID == nil && matchInDivision(m) {
 				if m.WinnerTeam == "A" {
 					semiLosers = append(semiLosers, event.GetTeamDisplayName(m.TeamB, t.Type))
 				} else if m.WinnerTeam == "B" {
@@ -2088,7 +2202,7 @@ func GetDivisionPlaces(t *event.Event, divisionID string, divisionPlayers []*pla
 			// Find matches for this division
 			var divMatches []event.Match
 			for _, m := range t.Matches {
-				if m.DivisionID == divisionID && m.TeamMatchID == nil {
+				if m.TeamMatchID == nil && matchInDivision(&m) {
 					divMatches = append(divMatches, m)
 				}
 			}
