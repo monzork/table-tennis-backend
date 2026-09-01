@@ -475,6 +475,39 @@ func TestBuildPdfBracketRounds_FinalNextIndexPointsAtChampion(t *testing.T) {
 	}
 }
 
+// TestResolveCenterCollisions_SeparatesEqualMidpoints is a regression test
+// for a production bug (2nd Division, "II Ranking Nacional" PDF report): two
+// quarterfinal boxes whose feeders were the real match pairs {R16 slot 5,
+// slot 6} and {slot 4, slot 7} both averaged to the same Y midpoint (5.5),
+// so the second box silently overwrote/hid the first one when drawn --
+// "Orlando Ortegaray vs Ilich Romero" disappeared from the printed bracket
+// even though the underlying pairing data was correct.
+func TestResolveCenterCollisions_SeparatesEqualMidpoints(t *testing.T) {
+	centers := []float64{10, 30, 55, 55} // last two collide
+	resolveCenterCollisions(centers, 12)
+
+	if centers[0] != 10 || centers[1] != 30 {
+		t.Errorf("expected non-colliding centers to be left untouched, got %v", centers)
+	}
+	if centers[3] < centers[2]+12 {
+		t.Errorf("expected the colliding pair to end up at least 12 apart, got %v", centers)
+	}
+	if centers[2] != 55 {
+		t.Errorf("expected the earlier-sorted box to stay put, got %v", centers)
+	}
+}
+
+func TestResolveCenterCollisions_NoCollisionLeavesCentersUnchanged(t *testing.T) {
+	centers := []float64{10, 40, 90}
+	want := []float64{10, 40, 90}
+	resolveCenterCollisions(centers, 12)
+	for i := range centers {
+		if centers[i] != want[i] {
+			t.Errorf("expected already-spaced centers to be unchanged, got %v want %v", centers, want)
+		}
+	}
+}
+
 func TestGetITTFKnockoutSeeds_NoGroups(t *testing.T) {
 	ev := &event.Event{}
 	out := getITTFKnockoutSeeds(ev, "div1", "Division 1", nil, nil)

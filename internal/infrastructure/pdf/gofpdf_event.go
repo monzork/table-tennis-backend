@@ -400,6 +400,30 @@ func sortPdfPairsByBracketPos(pairs []pdfBracketPair) {
 	})
 }
 
+// resolveCenterCollisions nudges a round's box-center Y coordinates apart in
+// place so no two are closer than minGap. Two sibling boxes can land on the
+// exact same vertical midpoint even though their feeder pairs are different
+// and both correct -- e.g. feeders {5,6} and {4,7} both average to 5.5 --
+// because real-match-based pairing (see groupPdfSlotsByRealMatches) doesn't
+// guarantee feeder-pair averages are distinct. Left alone, the later-drawn
+// box silently overwrites/hides the earlier one. Boxes are nudged in
+// ascending-Y order so a round with no collision is left untouched.
+func resolveCenterCollisions(centers []float64, minGap float64) {
+	order := make([]int, len(centers))
+	for j := range order {
+		order[j] = j
+	}
+	sort.SliceStable(order, func(a, b int) bool {
+		return centers[order[a]] < centers[order[b]]
+	})
+	for i := 1; i < len(order); i++ {
+		prev, cur := order[i-1], order[i]
+		if centers[cur] < centers[prev]+minGap {
+			centers[cur] = centers[prev] + minGap
+		}
+	}
+}
+
 // firstRoundPdfPairsFromRealMatches reconstructs round 1's pairing directly
 // from recorded matches instead of a hypothetical seeded arrangement, for a
 // division whose knockout bracket has actually started/finished but whose
@@ -1570,6 +1594,10 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 					default:
 						centers[r][j] = marginT + printableH/2
 					}
+				}
+
+				if rounds[r].Name != "Champion" {
+					resolveCenterCollisions(centers[r], boxH)
 				}
 			}
 
