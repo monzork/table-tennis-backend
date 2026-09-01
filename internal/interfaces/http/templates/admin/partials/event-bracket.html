@@ -291,11 +291,13 @@
                       <th class="px-2 py-3 sm:p-4 w-16 text-center">{{t $.T "bracket.seed"}}</th>
                       <th class="px-2 py-3 sm:p-4">{{t $.T "bracket.player"}}</th>
                       <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.elo"}}</th>
+                      <th class="px-2 py-3 sm:p-4 text-center">{{t $.T "bracket.placement"}}</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-white/5">
                     {{$divID := $currentDivisionID}}
                     {{$knockoutGroupID := .GroupID}}
+                    {{$placements := .Placements}}
                     {{$canMoveKnockout := and (not $.IsPublic) (not $.Event.ManualSeedingLocked)}}
                     {{range $idx, $p := .Advancing}}
                     <tr 
@@ -333,6 +335,18 @@
                           {{$p.DoublesElo}}
                         {{else}}
                           {{$p.SinglesElo}}
+                        {{end}}
+                      </td>
+                      <td class="px-2 py-3 sm:p-4 text-center text-[11px] uppercase tracking-widest whitespace-nowrap">
+                        {{$placement := index $placements $p.ID}}
+                        {{if eq $placement "Champion"}}
+                          <span class="text-yellow-400 font-bold">🏆 {{$placement}}</span>
+                        {{else if eq $placement "Finalist"}}
+                          <span class="text-gray-300 font-bold">{{$placement}}</span>
+                        {{else if eq $placement "3rd Place"}}
+                          <span class="text-orange-400 font-bold">🥉 {{$placement}}</span>
+                        {{else if $placement}}
+                          <span class="text-gray-500">{{$placement}}</span>
                         {{end}}
                       </td>
                     </tr>

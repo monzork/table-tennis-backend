@@ -282,6 +282,7 @@ var Translations = map[string]map[string]string{
 		"bracket.tbd":              "TBD",
 		"bracket.elo":              "Elo",
 		"bracket.division":         "Division",
+		"bracket.placement":        "Placement",
 
 		// TV Dashboard
 		"tv.dashboard_title_event":      "Live Event Dashboard",
@@ -1207,6 +1208,7 @@ var Translations = map[string]map[string]string{
 		"bracket.tbd":              "Por Definir",
 		"bracket.elo":              "Elo",
 		"bracket.division":         "División",
+		"bracket.placement":        "Posición Final",
 
 		// TV Dashboard
 		"tv.dashboard_title_event":      "Tablero de Evento en Vivo",

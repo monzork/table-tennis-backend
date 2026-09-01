@@ -62,6 +62,10 @@ type KnockoutBracket struct {
 	RoundsLeft   []Round
 	RoundsRight  []Round
 	RoundsCenter []Round
+	// Placements maps player ID to a short placement label ("Champion",
+	// "Finalist", "3rd Place", "Quarter-Finals", ...) -- see
+	// PlayerPlacements. Empty for a player with no finished match yet.
+	Placements map[string]string
 	// Started is true once this tier's first round has at least one real,
 	// persisted Match (i.e. StartKnockoutStageUseCase has actually run for
 	// it) rather than only the live-computed seeding preview. Formats with
@@ -607,6 +611,7 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 					RoundsLeft:   left,
 					RoundsRight:  right,
 					RoundsCenter: center,
+					Placements:   PlayerPlacements(tierRounds),
 					Started:      len(tierRounds) > 0 && roundHasRealMatch(tierRounds[0]),
 				})
 			}
@@ -623,6 +628,7 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 			RoundsLeft:   leftW,
 			RoundsRight:  rightW,
 			RoundsCenter: centerW,
+			Placements:   PlayerPlacements(winnersRounds),
 			Started:      true, // double_elimination has no separate "Start Bracket" step
 		})
 
@@ -638,6 +644,7 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 			RoundsLeft:   leftL,
 			RoundsRight:  rightL,
 			RoundsCenter: centerL,
+			Placements:   PlayerPlacements(losersRounds),
 			Started:      true, // double_elimination has no separate "Start Bracket" step
 		})
 	} else {
@@ -652,6 +659,7 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 			RoundsLeft:   left,
 			RoundsRight:  right,
 			RoundsCenter: center,
+			Placements:   PlayerPlacements(tierRounds),
 			Started:      true, // plain elimination format has no separate "Start Bracket" step
 		})
 	}
@@ -1111,6 +1119,66 @@ func getMatchLoser(m BracketMatch) *MatchSlot {
 		}
 	}
 	return &MatchSlot{Seed: 0, Player: nil}
+}
+
+// PlayerPlacements computes, for every player who has a resolved result in
+// this bracket (KnockoutBracket.Rounds), a short placement label: "Champion"
+// for the bracket winner, "Finalist" for the other finalist, "3rd Place"/
+// "4th Place" for a played 3rd-place match, or -- for every earlier round --
+// the name of the round they were eliminated in (e.g. "Quarter-Finals",
+// "Round of 16"), reusing Round.Name the same way the bracket UI's own round
+// headers already do. A player with no finished match anywhere in the
+// bracket yet (round not played, or still TBD) has no entry.
+func PlayerPlacements(rounds []Round) map[string]string {
+	var championID string
+	for _, r := range rounds {
+		if r.Name == "Champion" && len(r.Matches) > 0 {
+			if s := r.Matches[0].Player1; s != nil && s.Player != nil {
+				championID = s.Player.ID
+			}
+		}
+	}
+
+	placements := make(map[string]string)
+	if championID != "" {
+		placements[championID] = "Champion"
+	}
+	for _, r := range rounds {
+		switch r.Name {
+		case "Champion":
+			// Handled above.
+		case "🏆 Final":
+			// Only label the other finalist once the final is actually
+			// decided (championID known) -- otherwise both slots are just
+			// an unplayed/projected matchup, not a real result.
+			if championID == "" {
+				continue
+			}
+			for _, m := range r.Matches {
+				for _, slot := range [2]*MatchSlot{m.Player1, m.Player2} {
+					if slot != nil && slot.Player != nil && slot.Player.ID != championID {
+						placements[slot.Player.ID] = "Finalist"
+					}
+				}
+			}
+		case "🥉 3rd Place":
+			for _, m := range r.Matches {
+				if w := getMatchWinner(m); w.Player != nil {
+					placements[w.Player.ID] = "3rd Place"
+				}
+				if l := getMatchLoser(m); l.Player != nil {
+					placements[l.Player.ID] = "4th Place"
+				}
+			}
+		default:
+			for _, m := range r.Matches {
+				if l := getMatchLoser(m); l.Player != nil {
+					placements[l.Player.ID] = r.Name
+				}
+			}
+		}
+	}
+	return placements
 }
 
 func buildLosersBracketRounds(t *event.Event, divID string, numPlayers int, wRounds []Round) []Round {
