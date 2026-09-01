@@ -153,6 +153,13 @@ func findHeaderImage() string {
 type pdfMatchSlot struct {
 	Seed   int
 	Player *player.Player
+	// BracketPos is the slot's 0-based leaf position in the canonical
+	// seeding arrangement (getSeedingArrangement) at the bracket's initial
+	// size -- see domain/bracket.MatchSlot.BracketPos. Sorting a round's
+	// pairs by ascending BracketPos recovers true bracket-tree adjacency
+	// independent of the arbitrary order real match rows come back from the
+	// DB in.
+	BracketPos int
 }
 
 type pdfBracketMatchView struct {
@@ -289,12 +296,16 @@ func groupPdfSlotsByRealMatches(slots []*pdfMatchSlot, nextMatches []*event.Matc
 		}
 	}
 
-	used := make([]bool, len(slots))
-	parentIndex = make([]int, len(slots))
-	for i := range parentIndex {
-		parentIndex[i] = -1
+	// Each pair is tracked alongside the lower of its two slot indices (as a
+	// tie-break for the sort below) and which slot indices it consumed (so
+	// parentIndex can be rebuilt from the pair's post-sort position).
+	type pdfIndexedPair struct {
+		pair     pdfBracketPair
+		minIdx   int
+		slotIdxs []int
 	}
-	pairs = make([]pdfBracketPair, 0, (len(slots)+1)/2)
+	used := make([]bool, len(slots))
+	var indexed []pdfIndexedPair
 	for _, m := range nextMatches {
 		idxA, okA := idxByPlayer[m.TeamA[0].ID]
 		idxB, okB := idxByPlayer[m.TeamB[0].ID]
@@ -302,8 +313,15 @@ func groupPdfSlotsByRealMatches(slots []*pdfMatchSlot, nextMatches []*event.Matc
 			continue
 		}
 		used[idxA], used[idxB] = true, true
-		parentIndex[idxA], parentIndex[idxB] = len(pairs), len(pairs)
-		pairs = append(pairs, pdfBracketPair{P1: slots[idxA], P2: slots[idxB]})
+		minIdx := idxA
+		if idxB < minIdx {
+			minIdx = idxB
+		}
+		indexed = append(indexed, pdfIndexedPair{
+			pair:     pdfBracketPair{P1: slots[idxA], P2: slots[idxB]},
+			minIdx:   minIdx,
+			slotIdxs: []int{idxA, idxB},
+		})
 	}
 
 	var leftover []int
@@ -315,15 +333,71 @@ func groupPdfSlotsByRealMatches(slots []*pdfMatchSlot, nextMatches []*event.Matc
 	for i := 0; i < len(leftover); i += 2 {
 		idxA := leftover[i]
 		var p2 *pdfMatchSlot
+		slotIdxs := []int{idxA}
 		if i+1 < len(leftover) {
 			idxB := leftover[i+1]
 			p2 = slots[idxB]
-			parentIndex[idxB] = len(pairs)
+			slotIdxs = append(slotIdxs, idxB)
 		}
-		parentIndex[idxA] = len(pairs)
-		pairs = append(pairs, pdfBracketPair{P1: slots[idxA], P2: p2})
+		indexed = append(indexed, pdfIndexedPair{
+			pair:     pdfBracketPair{P1: slots[idxA], P2: p2},
+			minIdx:   idxA,
+			slotIdxs: slotIdxs,
+		})
+	}
+
+	// Primary key: BracketPos, which restores true bracket-tree adjacency
+	// regardless of arrival order -- this is what fixes a pair actually
+	// combining non-adjacent quarters/halves (see pdfMatchSlot.BracketPos).
+	// Secondary key: minIdx, a fallback for slots with no (or tied)
+	// BracketPos that keeps the prior top-to-bottom rendering order.
+	sort.SliceStable(indexed, func(i, j int) bool {
+		bi, bj := pdfPairBracketPos(indexed[i].pair), pdfPairBracketPos(indexed[j].pair)
+		if bi != bj {
+			return bi < bj
+		}
+		return indexed[i].minIdx < indexed[j].minIdx
+	})
+
+	pairs = make([]pdfBracketPair, len(indexed))
+	parentIndex = make([]int, len(slots))
+	for i := range parentIndex {
+		parentIndex[i] = -1
+	}
+	for newPos, ip := range indexed {
+		pairs[newPos] = ip.pair
+		for _, si := range ip.slotIdxs {
+			parentIndex[si] = newPos
+		}
 	}
 	return pairs, parentIndex
+}
+
+// pdfPairBracketPos returns pr's lower BracketPos, or a large sentinel when
+// neither slot has a resolved player, so ties fall back to minIdx instead of
+// being reshuffled -- see domain/bracket.pairBracketPos.
+func pdfPairBracketPos(pr pdfBracketPair) int {
+	const unresolved = 1 << 30
+	a, b := unresolved, unresolved
+	if pr.P1 != nil && pr.P1.Player != nil {
+		a = pr.P1.BracketPos
+	}
+	if pr.P2 != nil && pr.P2.Player != nil {
+		b = pr.P2.BracketPos
+	}
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// sortPdfPairsByBracketPos restores true bracket-tree adjacency order
+// across pairs gathered from real match data in arbitrary (DB row) order --
+// see domain/bracket.sortPairsByBracketPos.
+func sortPdfPairsByBracketPos(pairs []pdfBracketPair) {
+	sort.SliceStable(pairs, func(i, j int) bool {
+		return pdfPairBracketPos(pairs[i]) < pdfPairBracketPos(pairs[j])
+	})
 }
 
 // firstRoundPdfPairsFromRealMatches reconstructs round 1's pairing directly
@@ -372,6 +446,27 @@ func firstRoundPdfPairsFromRealMatches(t *event.Event, divID string, players []*
 		}
 	}
 
+	// posOfSeed maps a seed to its 0-based leaf position in the canonical
+	// arrangement, so real-match providers can be given a true BracketPos
+	// even though they're discovered in arbitrary DB order -- see
+	// domain/bracket.firstRoundPairsFromRealMatches's identical helper.
+	arrangementSize := nextPow2(len(players))
+	if arrangementSize < 2 {
+		arrangementSize = 2
+	}
+	posOfSeed := make(map[int]int, arrangementSize)
+	for i, seed := range getSeedingArrangement(arrangementSize) {
+		posOfSeed[seed] = i
+	}
+	bracketPosFor := func(playerID string, fallbackIdx int) int {
+		if seed, ok := seedOf[playerID]; ok {
+			if pos, ok2 := posOfSeed[seed]; ok2 {
+				return pos
+			}
+		}
+		return arrangementSize + fallbackIdx
+	}
+
 	minSeed := func(m *event.Match) int {
 		a, b := seedOf[m.TeamA[0].ID], seedOf[m.TeamB[0].ID]
 		if a == 0 {
@@ -402,10 +497,20 @@ func firstRoundPdfPairsFromRealMatches(t *event.Event, divID string, players []*
 	providers := make([]pdfBracketPair, 0, len(firstStageMatches))
 	idxByPlayer := make(map[string]int, len(firstStageMatches)*2)
 	for _, m := range firstStageMatches {
+		// A stale/duplicate match row (bad DivisionID tagging, forfeit
+		// correction leftovers, etc.) can feature a player who already has a
+		// provider from an earlier row in this loop -- see
+		// domain/bracket.firstRoundPairsFromRealMatches's identical guard.
+		if _, ok := idxByPlayer[m.TeamA[0].ID]; ok {
+			continue
+		}
+		if _, ok := idxByPlayer[m.TeamB[0].ID]; ok {
+			continue
+		}
 		idx := len(providers)
 		providers = append(providers, pdfBracketPair{
-			P1: &pdfMatchSlot{Seed: seedOf[m.TeamA[0].ID], Player: m.TeamA[0]},
-			P2: &pdfMatchSlot{Seed: seedOf[m.TeamB[0].ID], Player: m.TeamB[0]},
+			P1: &pdfMatchSlot{Seed: seedOf[m.TeamA[0].ID], Player: m.TeamA[0], BracketPos: bracketPosFor(m.TeamA[0].ID, idx*2)},
+			P2: &pdfMatchSlot{Seed: seedOf[m.TeamB[0].ID], Player: m.TeamB[0], BracketPos: bracketPosFor(m.TeamB[0].ID, idx*2+1)},
 		})
 		idxByPlayer[m.TeamA[0].ID] = idx
 		idxByPlayer[m.TeamB[0].ID] = idx
@@ -417,7 +522,7 @@ func firstRoundPdfPairsFromRealMatches(t *event.Event, divID string, players []*
 			for _, side := range [2]*player.Player{m.TeamA[0], m.TeamB[0]} {
 				if _, ok := idxByPlayer[side.ID]; !ok {
 					idxByPlayer[side.ID] = len(providers)
-					providers = append(providers, pdfBracketPair{P1: &pdfMatchSlot{Seed: seedOf[side.ID], Player: side}})
+					providers = append(providers, pdfBracketPair{P1: &pdfMatchSlot{Seed: seedOf[side.ID], Player: side, BracketPos: bracketPosFor(side.ID, len(providers))}})
 				}
 			}
 		}
@@ -454,6 +559,7 @@ func firstRoundPdfPairsFromRealMatches(t *event.Event, divID string, players []*
 		pairs = append(pairs, pdfBracketPair{})
 	}
 
+	sortPdfPairsByBracketPos(pairs)
 	return pairs
 }
 
@@ -462,6 +568,13 @@ func buildPdfBracketRounds(t *event.Event, divID string, players []*player.Playe
 		return nil
 	}
 	unresolvedSlot := &pdfMatchSlot{Seed: 0, Player: nil}
+
+	roster := make(map[string]bool, len(players))
+	for _, p := range players {
+		if p != nil {
+			roster[p.ID] = true
+		}
+	}
 
 	current := firstRoundPdfPairsFromRealMatches(t, divID, players)
 	if current == nil {
@@ -480,10 +593,10 @@ func buildPdfBracketRounds(t *event.Event, divID string, players []*player.Playe
 
 			var p1, p2 *pdfMatchSlot
 			if s1 >= 0 && s1 < len(players) {
-				p1 = &pdfMatchSlot{Seed: s1 + 1, Player: players[s1]}
+				p1 = &pdfMatchSlot{Seed: s1 + 1, Player: players[s1], BracketPos: i}
 			}
 			if s2 >= 0 && s2 < len(players) {
-				p2 = &pdfMatchSlot{Seed: s2 + 1, Player: players[s2]}
+				p2 = &pdfMatchSlot{Seed: s2 + 1, Player: players[s2], BracketPos: i + 1}
 			}
 			current = append(current, pdfBracketPair{P1: p1, P2: p2})
 		}
@@ -605,7 +718,7 @@ func buildPdfBracketRounds(t *event.Event, divID string, players []*player.Playe
 		// assuming winner 2*j/2*j+1 feeds pairs[j].
 		nextStageName := pdfStageNameForCount(len(current) / 2)
 		var nextIndex []int
-		current, nextIndex = groupPdfSlotsByRealMatches(winners, matchesAtPdfStage(t, nextStageName))
+		current, nextIndex = groupPdfSlotsByRealMatches(winners, matchesAtPdfStageForRoster(t, nextStageName, roster))
 
 		rounds = append(rounds, pdfRoundView{Name: name, Matches: rvMatches, NextIndex: nextIndex})
 	}
