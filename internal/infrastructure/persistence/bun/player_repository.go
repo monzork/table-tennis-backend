@@ -366,27 +366,27 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 // UpdateElo writes only singles_elo/doubles_elo for each player, leaving
 // every other column alone — unlike Save/SaveMultiple's full-row upsert,
 // which silently blanks out any field the caller's Player struct didn't
-// have populated (e.g. second_name, second_last_name).
+// have populated (e.g. second_name, second_last_name). Done as a single
+// bulk statement rather than one UPDATE per player to avoid N round-trips
+// when recalculating Elo for a whole event's roster.
 func (r *PlayerRepository) UpdateElo(ctx context.Context, players []*player.Player) error {
 	if len(players) == 0 {
 		return nil
 	}
-	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
-		for _, p := range players {
-			id, err := uuid.Parse(p.ID)
-			if err != nil {
-				return err
-			}
-			if _, err := tx.NewUpdate().
-				Model((*PlayerModel)(nil)).
-				Set("singles_elo = ?, doubles_elo = ?", p.SinglesElo, p.DoublesElo).
-				Where("id = ?", id).
-				Exec(ctx); err != nil {
-				return err
-			}
+	models := make([]*PlayerModel, len(players))
+	for i, p := range players {
+		id, err := uuid.Parse(p.ID)
+		if err != nil {
+			return err
 		}
-		return nil
-	})
+		models[i] = &PlayerModel{ID: id, SinglesElo: p.SinglesElo, DoublesElo: p.DoublesElo}
+	}
+	_, err := ExtractDB(ctx, r.db).NewUpdate().
+		Model(&models).
+		Column("singles_elo", "doubles_elo").
+		Bulk().
+		Exec(ctx)
+	return err
 }
 
 // GetByGuardianAccountID returns every player linked to the given guardian
