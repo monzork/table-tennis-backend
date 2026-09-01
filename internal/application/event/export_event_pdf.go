@@ -22,12 +22,12 @@ func NewExportTournamentPdfUseCase(tournamentRepo tournamentDomain.Repository, d
 	}
 }
 
-func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDStr string) ([]byte, error) {
+func (uc *ExportTournamentPdfUseCase) Execute(ctx context.Context, tournamentIDStr string, lang string) ([]byte, error) {
 	t, err := uc.tournamentRepo.GetByID(ctx, tournamentIDStr)
 	if err != nil {
 		return nil, err
 	}
 	divs, _ := uc.divisionRepo.GetAll(ctx)
 	t.ParticipantSnapshots, _ = uc.tournamentRepo.GetParticipantSnapshots(ctx, tournamentIDStr)
-	return uc.pdfGenerator.GenerateTournamentReport(t, divs)
+	return uc.pdfGenerator.GenerateTournamentReport(t, divs, lang)
 }

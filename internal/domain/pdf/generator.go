@@ -7,9 +7,12 @@ import (
 )
 
 type Generator interface {
-	GenerateTournamentReport(t *event.Event, divs []*division.Division) ([]byte, error)
+	// lang selects the report's rendered language ("es" for Spanish; any
+	// other value, including "en" or empty, renders in English).
+	GenerateTournamentReport(t *event.Event, divs []*division.Division, lang string) ([]byte, error)
 	// includeIDPhotos appends each player's cédula de identidad photos at
 	// the end of the report -- the caller should pass the owning
-	// tournament's IncludeIDPhotosInReport setting.
-	GenerateEventReport(e *tournament.Tournament, divs []*division.Division, includeIDPhotos bool) ([]byte, error)
+	// tournament's IncludeIDPhotosInReport setting. lang selects the
+	// report's rendered language, same as GenerateTournamentReport.
+	GenerateEventReport(e *tournament.Tournament, divs []*division.Division, includeIDPhotos bool, lang string) ([]byte, error)
 }

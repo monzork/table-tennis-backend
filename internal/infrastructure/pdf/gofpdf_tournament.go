@@ -13,7 +13,7 @@ import (
 	"github.com/go-pdf/fpdf"
 )
 
-func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*division.Division, includeIDPhotos bool) ([]byte, error) {
+func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*division.Division, includeIDPhotos bool, lang string) ([]byte, error) {
 	tournamentsList := e.Events
 
 	pdf := fpdf.New("P", "mm", "A4", "")
@@ -28,7 +28,7 @@ func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*
 		pdf.SetY(17)
 		pdf.SetX(48)
 
-		text := tr("EVENTO TENIS DE MESA - " + strings.ToUpper(e.Name))
+		text := tr(L(lang, "TABLE TENNIS EVENT - ") + strings.ToUpper(e.Name))
 		w, _ := pdf.GetPageSize()
 		maxWidth := w - 48 - 15
 
@@ -54,18 +54,22 @@ func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*
 	pdf.Ln(5)
 
 	pdf.SetFont("Arial", "B", 14)
-	pdf.CellFormat(0, 10, "REPORT SUMMARY", "B", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 10, L(lang, "REPORT SUMMARY"), "B", 1, "L", false, 0, "")
 	pdf.Ln(5)
 
 	pdf.SetFont("Arial", "", 11)
-	pdf.CellFormat(60, 8, "Date Generated:", "", 0, "L", false, 0, "")
+	pdf.CellFormat(60, 8, L(lang, "Date Generated: "), "", 0, "L", false, 0, "")
+	// ponytail: month name stays in English regardless of lang -- Go's time
+	// formatting has no built-in locale support; translating it would need a
+	// small day/month-name lookup table of its own. Add one if this
+	// actually confuses a Spanish-reading user.
 	pdf.CellFormat(0, 8, time.Now().Format("January 02, 2006 at 15:04 PM"), "", 1, "L", false, 0, "")
 
-	pdf.CellFormat(60, 8, "Total Sub-Events:", "", 0, "L", false, 0, "")
-	pdf.CellFormat(0, 8, fmt.Sprintf("%d Events", len(tournamentsList)), "", 1, "L", false, 0, "")
+	pdf.CellFormat(60, 8, L(lang, "Total Sub-Events: "), "", 0, "L", false, 0, "")
+	pdf.CellFormat(0, 8, fmt.Sprintf(L(lang, "%d Events"), len(tournamentsList)), "", 1, "L", false, 0, "")
 
 	for _, t := range tournamentsList {
-		BuildTournamentPdfContent(pdf, t, divs, tr)
+		BuildTournamentPdfContent(pdf, t, divs, tr, lang)
 	}
 
 	// --- APPENDIX: PLAYER ID PHOTOS ---
@@ -74,7 +78,7 @@ func (g *GoFpdfGenerator) GenerateEventReport(e *tournament.Tournament, divs []*
 		for _, t := range tournamentsList {
 			allParticipants = append(allParticipants, t.Participants...)
 		}
-		appendIDPhotos(pdf, allParticipants, g.photoDownloader, tr)
+		appendIDPhotos(pdf, allParticipants, g.photoDownloader, tr, lang)
 	}
 
 	var buf bytes.Buffer

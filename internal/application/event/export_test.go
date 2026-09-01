@@ -20,7 +20,7 @@ func TestExportTournamentPdfUseCase_Execute(t *testing.T) {
 		pdfGen := &mockPdfGenerator{tournamentReportBytes: []byte("pdf-data")}
 		uc := NewExportTournamentPdfUseCase(repo, divRepo, pdfGen)
 
-		data, err := uc.Execute(context.Background(), "t1")
+		data, err := uc.Execute(context.Background(), "t1", "es")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -34,7 +34,7 @@ func TestExportTournamentPdfUseCase_Execute(t *testing.T) {
 		repo.getErr = errors.New("db error")
 		uc := NewExportTournamentPdfUseCase(repo, &mockDivisionRepo{}, &mockPdfGenerator{})
 
-		_, err := uc.Execute(context.Background(), "missing")
+		_, err := uc.Execute(context.Background(), "missing", "es")
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -47,7 +47,7 @@ func TestExportTournamentPdfUseCase_Execute(t *testing.T) {
 		pdfGen := &mockPdfGenerator{tournamentReportBytes: []byte("ok")}
 		uc := NewExportTournamentPdfUseCase(repo, divRepo, pdfGen)
 
-		data, err := uc.Execute(context.Background(), "t1")
+		data, err := uc.Execute(context.Background(), "t1", "es")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -65,7 +65,7 @@ func TestExportEventPdfUseCase_Execute(t *testing.T) {
 		pdfGen := &mockPdfGenerator{eventReportBytes: []byte("event-pdf")}
 		uc := NewExportEventPdfUseCase(repo, newMockRepo(), divRepo, pdfGen)
 
-		data, err := uc.Execute(context.Background(), "e1")
+		data, err := uc.Execute(context.Background(), "e1", "es")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -79,7 +79,7 @@ func TestExportEventPdfUseCase_Execute(t *testing.T) {
 		repo.getByIDDeepErr = errors.New("db error")
 		uc := NewExportEventPdfUseCase(repo, newMockRepo(), &mockDivisionRepo{}, &mockPdfGenerator{})
 
-		_, err := uc.Execute(context.Background(), "missing")
+		_, err := uc.Execute(context.Background(), "missing", "es")
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -91,7 +91,7 @@ func TestExportEventPdfUseCase_Execute(t *testing.T) {
 		divRepo := &mockDivisionRepo{getAllErr: errors.New("boom")}
 		uc := NewExportEventPdfUseCase(repo, newMockRepo(), divRepo, &mockPdfGenerator{})
 
-		_, err := uc.Execute(context.Background(), "e1")
+		_, err := uc.Execute(context.Background(), "e1", "es")
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}

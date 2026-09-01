@@ -27,7 +27,7 @@ func NewExportEventPdfUseCase(eventRepo eventDomain.Repository, subEventRepo sub
 	}
 }
 
-func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([]byte, error) {
+func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string, lang string) ([]byte, error) {
 	e, err := uc.eventRepo.GetByIDDeep(ctx, eventID)
 	if err != nil {
 		return nil, err
@@ -48,5 +48,5 @@ func (uc *ExportEventPdfUseCase) Execute(ctx context.Context, eventID string) ([
 	}
 	_ = eg.Wait()
 
-	return uc.pdfGenerator.GenerateEventReport(e, divs, e.IncludeIDPhotosInReport)
+	return uc.pdfGenerator.GenerateEventReport(e, divs, e.IncludeIDPhotosInReport, lang)
 }

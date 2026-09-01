@@ -481,11 +481,11 @@ type mockPdfGenerator struct {
 	eventReportErr        error
 }
 
-func (m *mockPdfGenerator) GenerateTournamentReport(t *tournamentDomain.Event, divs []*divisionDomain.Division) ([]byte, error) {
+func (m *mockPdfGenerator) GenerateTournamentReport(t *tournamentDomain.Event, divs []*divisionDomain.Division, lang string) ([]byte, error) {
 	return m.tournamentReportBytes, m.tournamentReportErr
 }
 
-func (m *mockPdfGenerator) GenerateEventReport(e *singleTournamentDomain.Tournament, divs []*divisionDomain.Division, includeIDPhotos bool) ([]byte, error) {
+func (m *mockPdfGenerator) GenerateEventReport(e *singleTournamentDomain.Tournament, divs []*divisionDomain.Division, includeIDPhotos bool, lang string) ([]byte, error) {
 	return m.eventReportBytes, m.eventReportErr
 }
 

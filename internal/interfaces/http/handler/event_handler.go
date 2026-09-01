@@ -336,7 +336,7 @@ func (h *EventHandler) Export(c *fiber.Ctx) error {
 
 func (h *EventHandler) ExportPDF(c *fiber.Ctx) error {
 	idStr := c.Params("id")
-	pdfBytes, err := h.exportPdfUC.Execute(c.Context(), idStr)
+	pdfBytes, err := h.exportPdfUC.Execute(c.Context(), idStr, getLang(c))
 	if err != nil {
 		fmt.Println(err)
 		return ErrorHandler(err)

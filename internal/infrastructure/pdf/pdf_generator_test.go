@@ -94,7 +94,7 @@ func TestGoFpdfGenerator_GenerateTournamentReport(t *testing.T) {
 		},
 	}
 
-	pdfBytes, err := gen.GenerateTournamentReport(ev, []*division.Division{div1})
+	pdfBytes, err := gen.GenerateTournamentReport(ev, []*division.Division{div1}, "es")
 	if err != nil {
 		t.Fatalf("unexpected error generating tournament report: %v", err)
 	}
@@ -138,7 +138,7 @@ func TestGoFpdfGenerator_GenerateTournamentReport_LargeGroupUsesLandscape(t *tes
 		},
 	}
 
-	pdfBytes, err := gen.GenerateTournamentReport(ev, nil)
+	pdfBytes, err := gen.GenerateTournamentReport(ev, nil, "es")
 	if err != nil {
 		t.Fatalf("unexpected error generating tournament report: %v", err)
 	}
@@ -175,7 +175,7 @@ func TestGoFpdfGenerator_GenerateTournamentReport_HugeGroupShrinksColumns(t *tes
 		},
 	}
 
-	pdfBytes, err := gen.GenerateTournamentReport(ev, nil)
+	pdfBytes, err := gen.GenerateTournamentReport(ev, nil, "es")
 	if err != nil {
 		t.Fatalf("unexpected error generating tournament report: %v", err)
 	}
@@ -295,7 +295,7 @@ func TestGoFpdfGenerator_GenerateEventReport(t *testing.T) {
 		Events: []*event.Event{ev1, ev2, ev3},
 	}
 
-	pdfBytes, err := gen.GenerateEventReport(tourn, nil, false)
+	pdfBytes, err := gen.GenerateEventReport(tourn, nil, false, "es")
 	if err != nil {
 		t.Fatalf("unexpected error generating event report: %v", err)
 	}
@@ -355,7 +355,7 @@ func TestGoFpdfGenerator_GenerateEventReport_AppendsIDPhotos(t *testing.T) {
 
 	tourn := &tournament.Tournament{ID: "t1", Name: "Grand Tournament", Events: []*event.Event{ev1}}
 
-	pdfBytes, err := gen.GenerateEventReport(tourn, nil, true)
+	pdfBytes, err := gen.GenerateEventReport(tourn, nil, true, "es")
 	if err != nil {
 		t.Fatalf("unexpected error generating event report: %v", err)
 	}
@@ -378,7 +378,7 @@ func TestGoFpdfGenerator_GenerateEventReport_IDPhotosOptedOut(t *testing.T) {
 	// includeIDPhotos=false: even with a downloader configured and a player
 	// who has a photo on file, no download should happen -- the tournament
 	// didn't opt in.
-	pdfBytes, err := gen.GenerateEventReport(tourn, nil, false)
+	pdfBytes, err := gen.GenerateEventReport(tourn, nil, false, "es")
 	if err != nil {
 		t.Fatalf("unexpected error generating event report: %v", err)
 	}
@@ -397,7 +397,7 @@ func TestGoFpdfGenerator_GenerateEventReport_NoPhotoDownloaderConfigured(t *test
 	ev1 := &event.Event{ID: "e1", Name: "Sub Event 1", Type: "singles", Format: "round_robin", Status: "finished", Participants: []*player.Player{p1}}
 	tourn := &tournament.Tournament{ID: "t1", Name: "Grand Tournament", Events: []*event.Event{ev1}}
 
-	pdfBytes, err := gen.GenerateEventReport(tourn, nil, false)
+	pdfBytes, err := gen.GenerateEventReport(tourn, nil, false, "es")
 	if err != nil {
 		t.Fatalf("unexpected error generating event report: %v", err)
 	}
@@ -432,7 +432,7 @@ func TestGoFpdfGenerator_GenerateTournamentReport_PlayerStatsGetsOwnPage(t *test
 		Metrics: nil, // deliberately omitted: this is the case that used to skip the page break
 	}
 
-	pdfBytes, err := gen.GenerateTournamentReport(ev, divs)
+	pdfBytes, err := gen.GenerateTournamentReport(ev, divs, "es")
 	if err != nil {
 		t.Fatalf("unexpected error generating tournament report: %v", err)
 	}
@@ -517,7 +517,7 @@ func TestGoFpdfGenerator_GenerateTournamentReport_FullBracket(t *testing.T) {
 		},
 	}
 
-	pdfBytes, err := gen.GenerateTournamentReport(ev, divs)
+	pdfBytes, err := gen.GenerateTournamentReport(ev, divs, "es")
 	if err != nil {
 		t.Fatalf("unexpected error generating tournament report: %v", err)
 	}

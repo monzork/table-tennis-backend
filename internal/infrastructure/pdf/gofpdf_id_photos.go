@@ -227,7 +227,7 @@ func applyJPEGOrientation(img image.Image, orientation int) image.Image {
 // at the end of the report. Players with neither photo are skipped
 // entirely, and a single failed/unsupported/undecodable download just skips
 // that one image rather than failing the whole report.
-func appendIDPhotos(pdf *fpdf.Fpdf, players []*player.Player, downloader PhotoDownloader, tr func(string) string) {
+func appendIDPhotos(pdf *fpdf.Fpdf, players []*player.Player, downloader PhotoDownloader, tr func(string) string, lang string) {
 	if downloader == nil {
 		return
 	}
@@ -280,10 +280,10 @@ func appendIDPhotos(pdf *fpdf.Fpdf, players []*player.Player, downloader PhotoDo
 
 		pdf.SetFont("Arial", "B", 14)
 		name := strings.TrimSpace(p.FirstNameWithSecond() + " " + p.LastNameWithSecond())
-		pdf.CellFormat(0, 10, tr(strings.ToUpper("CÉDULA DE IDENTIDAD - "+name)), "", 1, "L", false, 0, "")
+		pdf.CellFormat(0, 10, tr(strings.ToUpper(L(lang, "ID CARD - ")+name)), "", 1, "L", false, 0, "")
 		if p.NationalID != "" {
 			pdf.SetFont("Arial", "", 10)
-			pdf.CellFormat(0, 8, tr("Cédula No: "+p.NationalID), "", 1, "L", false, 0, "")
+			pdf.CellFormat(0, 8, tr(L(lang, "ID No: ")+p.NationalID), "", 1, "L", false, 0, "")
 		}
 		pdf.Ln(6)
 
@@ -295,7 +295,7 @@ func appendIDPhotos(pdf *fpdf.Fpdf, players []*player.Player, downloader PhotoDo
 		frontName := "idfront-" + p.ID
 		if registerPhoto(frontName, p.IDFrontPath) {
 			pdf.SetFont("Arial", "B", 10)
-			pdf.CellFormat(0, 6, tr("Frente"), "", 1, "L", false, 0, "")
+			pdf.CellFormat(0, 6, tr(L(lang, "Front")), "", 1, "L", false, 0, "")
 			pdf.ImageOptions(frontName, pdf.GetX(), pdf.GetY(), imgW, imgH, false, fpdf.ImageOptions{ImageType: "JPG"}, 0, "")
 			pdf.SetY(pdf.GetY() + imgH + 8)
 		}
@@ -303,7 +303,7 @@ func appendIDPhotos(pdf *fpdf.Fpdf, players []*player.Player, downloader PhotoDo
 		backName := "idback-" + p.ID
 		if registerPhoto(backName, p.IDBackPath) {
 			pdf.SetFont("Arial", "B", 10)
-			pdf.CellFormat(0, 6, tr("Reverso"), "", 1, "L", false, 0, "")
+			pdf.CellFormat(0, 6, tr(L(lang, "Back")), "", 1, "L", false, 0, "")
 			pdf.ImageOptions(backName, pdf.GetX(), pdf.GetY(), imgW, imgH, false, fpdf.ImageOptions{ImageType: "JPG"}, 0, "")
 			pdf.SetY(pdf.GetY() + imgH + 8)
 		}
