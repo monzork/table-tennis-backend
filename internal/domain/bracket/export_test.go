@@ -30,3 +30,7 @@ type BracketPairForTest = bracketPair
 func GroupSlotsByRealMatchesForTest(slots []*MatchSlot, nextMatches []*event.Match) []BracketPairForTest {
 	return groupSlotsByRealMatches(slots, nextMatches)
 }
+
+func SplitKnockoutRoundsForTest(rounds []Round) (left, right, center []Round) {
+	return splitKnockoutRounds(rounds)
+}

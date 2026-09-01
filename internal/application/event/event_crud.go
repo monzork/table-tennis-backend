@@ -179,6 +179,17 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 		t.SkipDivisionSplit = existing.SkipDivisionSplit
 		t.UseGenderDivisions = existing.UseGenderDivisions
 		t.ManualSeedingLocked = existing.ManualSeedingLocked
+		// t was just rebuilt from scratch via NewEvent, which doesn't know
+		// about these -- carry them forward so editing any other field of an
+		// already-finished event (e.g. adding a late-enrolling player to an
+		// ongoing league) doesn't silently un-finish it. Losing Status here
+		// made a genuinely-finished, Elo-already-applied event look "still
+		// in progress" again, hiding that its Elo had already been applied
+		// and blocking the "Recalculate Elo" action (gated on Status ==
+		// "finished") the admin would need to correct it afterward.
+		t.Status = existing.Status
+		t.WinnerName = existing.WinnerName
+		t.Metrics = existing.Metrics
 
 		// Check if participants, cmd.Format, type, or cmd.Category changed
 		participantsChanged := false

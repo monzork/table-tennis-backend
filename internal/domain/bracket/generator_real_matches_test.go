@@ -102,3 +102,78 @@ func TestGroupSlotsByRealMatches_CrossedPairingSortedBackToPosition(t *testing.T
 		t.Errorf("expected the first pair to be s0/s3 (lowest original index), got %+v", pairs)
 	}
 }
+
+// TestSplitKnockoutRounds_TracksPlayerSideAcrossRounds is a regression test
+// for a production bug in the admin and public bracket/draw views: a
+// player's semifinal (or later) match rendered on the opposite half of the
+// page from their own quarterfinal, with no visual relationship between the
+// two -- because splitKnockoutRounds re-split each round's match list in
+// half independently by list position, instead of tracking which side a
+// given match's players actually came from. Here the semifinal round's own
+// match list is deliberately ordered so a naive positional split gets both
+// matches backwards, while the players' actual origin (from the
+// quarterfinal round) is unambiguous.
+func TestSplitKnockoutRounds_TracksPlayerSideAcrossRounds(t *testing.T) {
+	mkSlot := func(id string) *bracket.MatchSlot {
+		return &bracket.MatchSlot{Player: &player.Player{ID: id, FirstName: id}}
+	}
+	finishedMatch := func(winnerID string, p1, p2 *bracket.MatchSlot) *event.Match {
+		return &event.Match{
+			Status:     "finished",
+			WinnerTeam: "A",
+			TeamA:      []*player.Player{{ID: winnerID}},
+			TeamB:      []*player.Player{{ID: mapOtherID(p1, p2, winnerID)}},
+		}
+	}
+
+	a, b, c, d, e, f, g, h := mkSlot("A"), mkSlot("B"), mkSlot("C"), mkSlot("D"), mkSlot("E"), mkSlot("F"), mkSlot("G"), mkSlot("H")
+
+	qfRound := bracket.Round{
+		Name: "Quarter-Finals",
+		Matches: []bracket.BracketMatch{
+			{Player1: a, Player2: b, Match: finishedMatch("A", a, b)}, // idx0 -> left
+			{Player1: c, Player2: d, Match: finishedMatch("C", c, d)}, // idx1 -> left
+			{Player1: e, Player2: f, Match: finishedMatch("E", e, f)}, // idx2 -> right
+			{Player1: g, Player2: h, Match: finishedMatch("G", g, h)}, // idx3 -> right
+		},
+	}
+
+	// The semifinal round's own list order puts the right-origin pair (E vs
+	// G) first and the left-origin pair (A vs C) second -- a naive halving
+	// (Matches[:1] / Matches[1:]) would put E-vs-G on the left and A-vs-C on
+	// the right, exactly backwards from where their quarterfinals rendered.
+	sfEvsG := mkSlot("E")
+	sfEvsG2 := mkSlot("G")
+	sfAvsC := mkSlot("A")
+	sfAvsC2 := mkSlot("C")
+	sfRound := bracket.Round{
+		Name: "Semi-Finals",
+		Matches: []bracket.BracketMatch{
+			{Player1: sfEvsG, Player2: sfEvsG2, Match: finishedMatch("E", sfEvsG, sfEvsG2)},
+			{Player1: sfAvsC, Player2: sfAvsC2, Match: finishedMatch("A", sfAvsC, sfAvsC2)},
+		},
+	}
+
+	left, right, _ := bracket.SplitKnockoutRoundsForTest([]bracket.Round{qfRound, sfRound})
+
+	if len(left) != 2 || len(right) != 2 {
+		t.Fatalf("expected 2 rounds on each side, got left=%d right=%d", len(left), len(right))
+	}
+
+	sfLeft := left[1]
+	sfRight := right[0] // splitKnockoutRounds reverses the right side's round order (SF nearest the center)
+
+	if len(sfLeft.Matches) != 1 || sfLeft.Matches[0].Player1.Player.ID != "A" {
+		t.Errorf("expected the left semifinal to be A-vs-C (matching A and C's own quarterfinal side), got %+v", sfLeft.Matches)
+	}
+	if len(sfRight.Matches) != 1 || sfRight.Matches[0].Player1.Player.ID != "E" {
+		t.Errorf("expected the right semifinal to be E-vs-G (matching E and G's own quarterfinal side), got %+v", sfRight.Matches)
+	}
+}
+
+func mapOtherID(p1, p2 *bracket.MatchSlot, winnerID string) string {
+	if p1.Player.ID == winnerID {
+		return p2.Player.ID
+	}
+	return p1.Player.ID
+}

@@ -651,19 +651,77 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 	return dv
 }
 
+// splitKnockoutRounds divides each round's matches into the "left" and
+// "right" halves of the visual bracket, converging on a center Final. A
+// player's side is decided once, from the very first round's positional
+// halves, then propagated forward round-by-round via each match's actual
+// winner -- not by re-splitting every round's match list in half on its own.
+// Independent per-round splitting assumes round R's left half always feeds
+// round R+1's left half, which real-match-based pairing (needed to survive
+// byes/forfeits -- see groupSlotsByRealMatches) does not guarantee: a
+// player's own next match can legitimately land on the opposite side from
+// their previous one, which made the rendered bracket show two unrelated
+// players' paths crossing sides.
 func splitKnockoutRounds(rounds []Round) (left, right, center []Round) {
+	if len(rounds) == 0 {
+		return nil, nil, nil
+	}
+
+	side := make(map[string]bool) // true = left
+
+	first := rounds[0]
+	if first.Name != "🏆 Final" && first.Name != "Champion" && first.Name != "🥉 3rd Place" {
+		half := len(first.Matches) / 2
+		for i, m := range first.Matches {
+			isLeft := i < half
+			if m.Player1 != nil && m.Player1.Player != nil {
+				side[m.Player1.Player.ID] = isLeft
+			}
+			if m.Player2 != nil && m.Player2.Player != nil {
+				side[m.Player2.Player.ID] = isLeft
+			}
+		}
+	}
+
+	// matchSide resolves a match's side from either of its players' already-
+	// known side (a match's two players are always on the same side once
+	// resolved); an unresolved/TBD match with neither player known yet
+	// defaults to left, which only affects a still-empty box's placement.
+	matchSide := func(m BracketMatch) bool {
+		if m.Player1 != nil && m.Player1.Player != nil {
+			if s, ok := side[m.Player1.Player.ID]; ok {
+				return s
+			}
+		}
+		if m.Player2 != nil && m.Player2.Player != nil {
+			if s, ok := side[m.Player2.Player.ID]; ok {
+				return s
+			}
+		}
+		return true
+	}
+
 	for _, r := range rounds {
 		if r.Name == "🏆 Final" || r.Name == "Champion" || r.Name == "🥉 3rd Place" {
 			center = append(center, r)
-		} else {
-			half := len(r.Matches) / 2
-
-			leftRound := Round{Name: r.Name, Matches: r.Matches[:half]}
-			rightRound := Round{Name: r.Name, Matches: r.Matches[half:]}
-
-			left = append(left, leftRound)
-			right = append(right, rightRound)
+			continue
 		}
+
+		var leftMatches, rightMatches []BracketMatch
+		for _, m := range r.Matches {
+			isLeft := matchSide(m)
+			if isLeft {
+				leftMatches = append(leftMatches, m)
+			} else {
+				rightMatches = append(rightMatches, m)
+			}
+			if w := getMatchWinner(m); w != nil && w.Player != nil {
+				side[w.Player.ID] = isLeft
+			}
+		}
+
+		left = append(left, Round{Name: r.Name, Matches: leftMatches})
+		right = append(right, Round{Name: r.Name, Matches: rightMatches})
 	}
 
 	for i, j := 0, len(right)-1; i < j; i, j = i+1, j-1 {

@@ -252,6 +252,42 @@ func TestUpdateTournamentUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	// TestUpdateTournamentUseCase_Execute/preserves_Status_WinnerName_and_Metrics
+	// is a regression test for a production bug: editing any field of an
+	// already-finished event (e.g. adding a late-enrolling player to an
+	// ongoing league) silently un-finished it, because t is rebuilt from
+	// scratch via NewEvent, which doesn't know about Status/WinnerName/
+	// Metrics -- making a genuinely-finished, Elo-already-applied event look
+	// "still in progress" again and hiding that its Elo had already been
+	// applied.
+	t.Run("preserves Status, WinnerName, and Metrics from the existing event", func(t *testing.T) {
+		uc, repo, _ := newUC()
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID:            "t1",
+			Format:        "round_robin",
+			Type:          "singles",
+			EventCategory: "open",
+			Status:        "finished",
+			WinnerName:    "Champion Player",
+			Metrics:       &tournamentDomain.TournamentMetrics{TotalMatchesPlayed: 42},
+		}
+		cmd := baseCmd()
+
+		got, err := uc.Execute(context.Background(), cmd)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if got.Status != "finished" {
+			t.Errorf("expected Status to be preserved as \"finished\" after an unrelated edit, got %q", got.Status)
+		}
+		if got.WinnerName != "Champion Player" {
+			t.Errorf("expected WinnerName to be preserved, got %q", got.WinnerName)
+		}
+		if got.Metrics == nil || got.Metrics.TotalMatchesPlayed != 42 {
+			t.Errorf("expected Metrics to be preserved, got %+v", got.Metrics)
+		}
+	})
+
 	t.Run("regenerates groups when format changed", func(t *testing.T) {
 		uc, repo, _ := newUC()
 		repo.events["t1"] = &tournamentDomain.Event{
