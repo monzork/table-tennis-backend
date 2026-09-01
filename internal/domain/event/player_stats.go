@@ -50,8 +50,9 @@ type PlayerSetScore struct {
 // PlayerMatchDetail is a single finished match's result from one player's
 // perspective: who they played, whether they won, and the set-by-set score.
 type PlayerMatchDetail struct {
-	Opponent string
-	Won      bool
+	Opponent   string
+	OpponentID string
+	Won        bool
 	SetsWon  int
 	SetsLost int
 	Sets     []PlayerSetScore
@@ -115,6 +116,7 @@ func BuildPlayerMatchDetails(playerID string, matches []Match, eventFinished boo
 
 		details = append(details, PlayerMatchDetail{
 			Opponent:          opponentName(opponentTeam),
+			OpponentID:        opponentID(opponentTeam),
 			Won:               won,
 			SetsWon:           setsWon,
 			SetsLost:          setsLost,
