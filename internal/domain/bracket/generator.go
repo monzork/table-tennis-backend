@@ -1310,17 +1310,11 @@ func groupSlotsByRealMatches(slots []*MatchSlot, nextMatches []*event.Match) []b
 		}
 	}
 
-	// Each pair is tracked alongside the lower of its two slot indices so
-	// the final order can be sorted back into bracket position below --
-	// nextMatches (the real matches actually recorded for the next stage)
-	// arrives in arbitrary DB order, and a pair built from it can combine
-	// non-adjacent slots (e.g. slot 0's winner actually played slot 3's,
-	// not slot 1's). Returning pairs in that raw arrival order previously
-	// made the rendered column jump between brackets that look unrelated to
-	// their neighbors -- e.g. a player's own next match rendered at the top
-	// of the column right after their first-round match was drawn at the
-	// bottom. Sorting restores the top-to-bottom flow a reader expects,
-	// without changing which two players any pair actually contains.
+	// Each pair is tracked alongside the lower of its two slot indices as a
+	// tie-break for the sort below: nextMatches (the real matches actually
+	// recorded for the next stage) arrives in arbitrary DB order, and a
+	// pair built from it can combine non-adjacent slots (e.g. slot 0's
+	// winner actually played slot 3's, not slot 1's).
 	type indexedPair struct {
 		pair   bracketPair
 		minIdx int
@@ -1357,19 +1351,29 @@ func groupSlotsByRealMatches(slots []*MatchSlot, nextMatches []*event.Match) []b
 		indexed = append(indexed, indexedPair{pair: bracketPair{P1: leftover[i], P2: p2}, minIdx: leftoverIdx[i]})
 	}
 
-	sort.SliceStable(indexed, func(i, j int) bool { return indexed[i].minIdx < indexed[j].minIdx })
+	// Primary key: BracketPos, which restores true bracket-tree adjacency
+	// regardless of arrival order (see MatchSlot.BracketPos) -- this is
+	// what fixes a pair actually combining non-adjacent quarters/halves.
+	// Secondary key: minIdx, a fallback for slots with no (or tied)
+	// BracketPos that keeps the prior top-to-bottom rendering order.
+	sort.SliceStable(indexed, func(i, j int) bool {
+		bi, bj := pairBracketPos(indexed[i].pair), pairBracketPos(indexed[j].pair)
+		if bi != bj {
+			return bi < bj
+		}
+		return indexed[i].minIdx < indexed[j].minIdx
+	})
 
 	pairs := make([]bracketPair, len(indexed))
 	for i, ip := range indexed {
 		pairs[i] = ip.pair
 	}
-	sortPairsByBracketPos(pairs)
 	return pairs
 }
 
 // pairBracketPos returns pr's lower BracketPos, or a large sentinel when
-// neither slot has a resolved player, so sortPairsByBracketPos's stable
-// sort leaves such pairs in their original relative order.
+// neither slot has a resolved player, so ties fall back to minIdx instead
+// of being reshuffled.
 func pairBracketPos(pr bracketPair) int {
 	const unresolved = 1 << 30
 	a, b := unresolved, unresolved
