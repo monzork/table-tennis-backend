@@ -1597,7 +1597,12 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				}
 
 				if rounds[r].Name != "Champion" {
-					resolveCenterCollisions(centers[r], boxH)
+					// minGap must exceed boxH, not just equal it: with
+					// minGap == boxH two nudged boxes end up with their edges
+					// exactly touching (zero visible gap), which reads as one
+					// merged box with both matches' text run together --
+					// see TestResolveCenterCollisions_SeparatesBoxesWithVisibleGap.
+					resolveCenterCollisions(centers[r], boxH+2.0)
 				}
 			}
 

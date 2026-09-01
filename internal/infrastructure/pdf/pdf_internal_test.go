@@ -497,6 +497,25 @@ func TestResolveCenterCollisions_SeparatesEqualMidpoints(t *testing.T) {
 	}
 }
 
+// TestResolveCenterCollisions_MinGapMustExceedBoxHeight is a regression test
+// for a production bug (3rd Division, "II Ranking Nacional" PDF report):
+// resolveCenterCollisions was called with minGap == boxH, so two colliding
+// boxes ended up with centers exactly boxH apart -- their edges touched with
+// zero visible gap, so two separate quarterfinal matches ("Miguel Espinoza
+// vs Wiston Mondragon" and "Luis Mongalo vs Ramiro Velez") were drawn
+// back-to-back with no border between them, reading as one box with four
+// names. minGap must be strictly greater than boxH so a visible gap survives.
+func TestResolveCenterCollisions_MinGapMustExceedBoxHeight(t *testing.T) {
+	const boxH = 12.0
+	centers := []float64{55, 55}
+	resolveCenterCollisions(centers, boxH+2.0)
+
+	gap := centers[1] - centers[0]
+	if gap <= boxH {
+		t.Errorf("expected a visible gap (> boxH=%v) between nudged boxes, got centers %v (gap %v)", boxH, centers, gap)
+	}
+}
+
 func TestResolveCenterCollisions_NoCollisionLeavesCentersUnchanged(t *testing.T) {
 	centers := []float64{10, 40, 90}
 	want := []float64{10, 40, 90}
