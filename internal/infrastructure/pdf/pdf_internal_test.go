@@ -254,6 +254,120 @@ func TestBuildPdfBracketRounds_RealMatchesOverrideMismatchedSeeding(t *testing.T
 	}
 }
 
+// TestGroupPdfSlotsByRealMatches_CrossedPairing is a regression test for a
+// production bug: when the real next-round matches pair non-adjacent slots
+// (e.g. slot 0's winner actually played slot 3's winner, not slot 1's), the
+// bracket geometry code used to assume position 2*j/2*j+1 always fed pair j
+// -- drawing connector lines between the wrong boxes and positioning the box
+// containing slots 0+3's winners where slots 0+1's should have been.
+// parentIndex must instead record the real structural relationship: which
+// pair each input slot actually ended up in.
+func TestGroupPdfSlotsByRealMatches_CrossedPairing(t *testing.T) {
+	mk := func(id string) *pdfMatchSlot {
+		return &pdfMatchSlot{Player: &player.Player{ID: id, FirstName: id}}
+	}
+	slots := []*pdfMatchSlot{mk("s0"), mk("s1"), mk("s2"), mk("s3")}
+
+	// Real matches cross the slots: s0 played s3, and s2 played s1 -- not
+	// the adjacent 0-1/2-3 pairing a position-based assumption would expect.
+	nextMatches := []*event.Match{
+		{TeamA: []*player.Player{slots[0].Player}, TeamB: []*player.Player{slots[3].Player}},
+		{TeamA: []*player.Player{slots[2].Player}, TeamB: []*player.Player{slots[1].Player}},
+	}
+
+	pairs, parentIndex := groupPdfSlotsByRealMatches(slots, nextMatches)
+
+	if len(pairs) != 2 {
+		t.Fatalf("expected 2 pairs, got %d: %+v", len(pairs), pairs)
+	}
+	if len(parentIndex) != 4 {
+		t.Fatalf("expected parentIndex of length 4, got %v", parentIndex)
+	}
+
+	// s0 (idx 0) and s3 (idx 3) must map to the same pair index.
+	if parentIndex[0] != parentIndex[3] {
+		t.Errorf("expected s0 and s3 to map to the same pair, got parentIndex %v", parentIndex)
+	}
+	// s1 (idx 1) and s2 (idx 2) must map to the same (other) pair index.
+	if parentIndex[1] != parentIndex[2] {
+		t.Errorf("expected s1 and s2 to map to the same pair, got parentIndex %v", parentIndex)
+	}
+	// The two pairs must be distinct.
+	if parentIndex[0] == parentIndex[1] {
+		t.Errorf("expected s0/s3's pair and s1/s2's pair to be different, got parentIndex %v", parentIndex)
+	}
+
+	// The pair s0 maps into must actually contain s0 and s3.
+	got := pairs[parentIndex[0]]
+	gotIDs := map[string]bool{}
+	if got.P1 != nil && got.P1.Player != nil {
+		gotIDs[got.P1.Player.ID] = true
+	}
+	if got.P2 != nil && got.P2.Player != nil {
+		gotIDs[got.P2.Player.ID] = true
+	}
+	if !gotIDs["s0"] || !gotIDs["s3"] {
+		t.Errorf("expected the pair at index %d to contain s0 and s3, got %+v", parentIndex[0], got)
+	}
+}
+
+// TestGroupPdfSlotsByRealMatches_LeftoverSlotsGetOwnParentIndex covers the
+// no-real-match-yet fallback path, where slots are paired positionally and
+// each one (including an odd trailing solo) still gets a valid parentIndex
+// pointing at its own pair.
+func TestGroupPdfSlotsByRealMatches_LeftoverSlotsGetOwnParentIndex(t *testing.T) {
+	mk := func(id string) *pdfMatchSlot {
+		return &pdfMatchSlot{Player: &player.Player{ID: id, FirstName: id}}
+	}
+	slots := []*pdfMatchSlot{mk("s0"), mk("s1"), mk("s2")}
+
+	pairs, parentIndex := groupPdfSlotsByRealMatches(slots, nil)
+
+	if len(pairs) != 2 {
+		t.Fatalf("expected 2 pairs (one full, one solo leftover), got %d: %+v", len(pairs), pairs)
+	}
+	if parentIndex[0] != 0 || parentIndex[1] != 0 {
+		t.Errorf("expected s0 and s1 to pair up as leftover pair 0, got parentIndex %v", parentIndex)
+	}
+	if parentIndex[2] != 1 {
+		t.Errorf("expected the solo trailing slot s2 to get its own pair 1, got parentIndex %v", parentIndex)
+	}
+	if pairs[1].P2 != nil {
+		t.Errorf("expected the solo leftover pair to have a nil P2, got %+v", pairs[1])
+	}
+}
+
+// TestBuildPdfBracketRounds_FinalNextIndexPointsAtChampion is a regression
+// test for a production bug where the Final round's own date/table/score
+// annotation and its connector line into the Champion box never rendered --
+// the drawing code needs a Final round with a NextIndex of [0] so the
+// generic connector-line/annotation logic (which used to special-case and
+// skip a next round named "Champion" entirely) treats it like any other
+// round.
+func TestBuildPdfBracketRounds_FinalNextIndexPointsAtChampion(t *testing.T) {
+	p1 := &player.Player{ID: "p1", FirstName: "Alice", LastName: "A"}
+	p2 := &player.Player{ID: "p2", FirstName: "Bob", LastName: "B"}
+
+	ev := &event.Event{
+		StageRules: []event.StageRule{{Stage: "final", BestOf: 7}},
+		Matches: []event.Match{
+			{ID: "m1", Stage: "final", Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{p1}, TeamB: []*player.Player{p2}},
+		},
+	}
+
+	rounds := buildPdfBracketRounds(ev, "", []*player.Player{p1, p2})
+	if len(rounds) != 2 {
+		t.Fatalf("expected 2 rounds (Final + Champion), got %d", len(rounds))
+	}
+	finalRound := rounds[0]
+	if len(finalRound.NextIndex) != 1 || finalRound.NextIndex[0] != 0 {
+		t.Errorf("expected the Final round's NextIndex to be [0] (pointing at the Champion box), got %v", finalRound.NextIndex)
+	}
+	if finalRound.Matches[0].Match == nil {
+		t.Fatalf("expected the Final round to carry its own finished match record")
+	}
+}
+
 func TestGetITTFKnockoutSeeds_NoGroups(t *testing.T) {
 	ev := &event.Event{}
 	out := getITTFKnockoutSeeds(ev, "div1", "Division 1", nil, nil)

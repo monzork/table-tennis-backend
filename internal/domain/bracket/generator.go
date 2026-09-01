@@ -1244,8 +1244,23 @@ func groupSlotsByRealMatches(slots []*MatchSlot, nextMatches []*event.Match) []b
 		}
 	}
 
+	// Each pair is tracked alongside the lower of its two slot indices so
+	// the final order can be sorted back into bracket position below --
+	// nextMatches (the real matches actually recorded for the next stage)
+	// arrives in arbitrary DB order, and a pair built from it can combine
+	// non-adjacent slots (e.g. slot 0's winner actually played slot 3's,
+	// not slot 1's). Returning pairs in that raw arrival order previously
+	// made the rendered column jump between brackets that look unrelated to
+	// their neighbors -- e.g. a player's own next match rendered at the top
+	// of the column right after their first-round match was drawn at the
+	// bottom. Sorting restores the top-to-bottom flow a reader expects,
+	// without changing which two players any pair actually contains.
+	type indexedPair struct {
+		pair   bracketPair
+		minIdx int
+	}
 	used := make([]bool, len(slots))
-	pairs := make([]bracketPair, 0, (len(slots)+1)/2)
+	indexed := make([]indexedPair, 0, (len(slots)+1)/2)
 	for _, m := range nextMatches {
 		idxA, okA := idxByPlayer[m.TeamA[0].ID]
 		idxB, okB := idxByPlayer[m.TeamB[0].ID]
@@ -1253,13 +1268,19 @@ func groupSlotsByRealMatches(slots []*MatchSlot, nextMatches []*event.Match) []b
 			continue
 		}
 		used[idxA], used[idxB] = true, true
-		pairs = append(pairs, bracketPair{P1: slots[idxA], P2: slots[idxB]})
+		minIdx := idxA
+		if idxB < minIdx {
+			minIdx = idxB
+		}
+		indexed = append(indexed, indexedPair{pair: bracketPair{P1: slots[idxA], P2: slots[idxB]}, minIdx: minIdx})
 	}
 
 	var leftover []*MatchSlot
+	var leftoverIdx []int
 	for i, s := range slots {
 		if !used[i] {
 			leftover = append(leftover, s)
+			leftoverIdx = append(leftoverIdx, i)
 		}
 	}
 	for i := 0; i < len(leftover); i += 2 {
@@ -1267,7 +1288,14 @@ func groupSlotsByRealMatches(slots []*MatchSlot, nextMatches []*event.Match) []b
 		if i+1 < len(leftover) {
 			p2 = leftover[i+1]
 		}
-		pairs = append(pairs, bracketPair{P1: leftover[i], P2: p2})
+		indexed = append(indexed, indexedPair{pair: bracketPair{P1: leftover[i], P2: p2}, minIdx: leftoverIdx[i]})
+	}
+
+	sort.SliceStable(indexed, func(i, j int) bool { return indexed[i].minIdx < indexed[j].minIdx })
+
+	pairs := make([]bracketPair, len(indexed))
+	for i, ip := range indexed {
+		pairs[i] = ip.pair
 	}
 	return pairs
 }

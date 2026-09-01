@@ -166,6 +166,14 @@ type pdfBracketMatchView struct {
 type pdfRoundView struct {
 	Name    string
 	Matches []pdfBracketMatchView
+	// NextIndex[j] is the index into the NEXT round's Matches that this
+	// round's match j structurally feeds into. It is NOT always j/2:
+	// groupPdfSlotsByRealMatches pairs winners by which real next-stage
+	// match they actually played, which can pair non-adjacent slots (e.g.
+	// the winner of match 0 and the winner of match 3), so the geometry
+	// that draws connector lines and centers boxes must follow this
+	// mapping rather than assume positional adjacency.
+	NextIndex []int
 }
 
 func nextPow2(n int) int {
@@ -265,7 +273,13 @@ func pdfStageNameForCount(pairCount int) string {
 // groupPdfSlotsByRealMatches groups a round's resolved winner slots two-at-
 // a-time using the next round's actual recorded matches, instead of pairing
 // them by position -- see domain/bracket.groupSlotsByRealMatches for why.
-func groupPdfSlotsByRealMatches(slots []*pdfMatchSlot, nextMatches []*event.Match) []pdfBracketPair {
+// The returned parentIndex is parallel to slots: parentIndex[i] is the index
+// into the returned pairs slice that slots[i] ended up in. Because pairing
+// follows real results rather than position, a pair can combine two
+// non-adjacent slots (e.g. slots[0] actually played slots[3]) -- callers
+// that draw bracket geometry must use parentIndex rather than assume
+// slots[2*j]/slots[2*j+1] feed pairs[j].
+func groupPdfSlotsByRealMatches(slots []*pdfMatchSlot, nextMatches []*event.Match) (pairs []pdfBracketPair, parentIndex []int) {
 	idxByPlayer := make(map[string]int, len(slots))
 	for i, s := range slots {
 		if s != nil && s.Player != nil {
@@ -276,7 +290,11 @@ func groupPdfSlotsByRealMatches(slots []*pdfMatchSlot, nextMatches []*event.Matc
 	}
 
 	used := make([]bool, len(slots))
-	pairs := make([]pdfBracketPair, 0, (len(slots)+1)/2)
+	parentIndex = make([]int, len(slots))
+	for i := range parentIndex {
+		parentIndex[i] = -1
+	}
+	pairs = make([]pdfBracketPair, 0, (len(slots)+1)/2)
 	for _, m := range nextMatches {
 		idxA, okA := idxByPlayer[m.TeamA[0].ID]
 		idxB, okB := idxByPlayer[m.TeamB[0].ID]
@@ -284,23 +302,28 @@ func groupPdfSlotsByRealMatches(slots []*pdfMatchSlot, nextMatches []*event.Matc
 			continue
 		}
 		used[idxA], used[idxB] = true, true
+		parentIndex[idxA], parentIndex[idxB] = len(pairs), len(pairs)
 		pairs = append(pairs, pdfBracketPair{P1: slots[idxA], P2: slots[idxB]})
 	}
 
-	var leftover []*pdfMatchSlot
-	for i, s := range slots {
+	var leftover []int
+	for i := range slots {
 		if !used[i] {
-			leftover = append(leftover, s)
+			leftover = append(leftover, i)
 		}
 	}
 	for i := 0; i < len(leftover); i += 2 {
+		idxA := leftover[i]
 		var p2 *pdfMatchSlot
 		if i+1 < len(leftover) {
-			p2 = leftover[i+1]
+			idxB := leftover[i+1]
+			p2 = slots[idxB]
+			parentIndex[idxB] = len(pairs)
 		}
-		pairs = append(pairs, pdfBracketPair{P1: leftover[i], P2: p2})
+		parentIndex[idxA] = len(pairs)
+		pairs = append(pairs, pdfBracketPair{P1: slots[idxA], P2: p2})
 	}
-	return pairs
+	return pairs, parentIndex
 }
 
 // firstRoundPdfPairsFromRealMatches reconstructs round 1's pairing directly
@@ -574,13 +597,17 @@ func buildPdfBracketRounds(t *event.Event, divID string, players []*player.Playe
 			name = "Final"
 		}
 
-		rounds = append(rounds, pdfRoundView{Name: name, Matches: rvMatches})
-
 		// Group this round's winners into the next round's pairs using the
 		// next stage's actual recorded matches -- see
 		// groupPdfSlotsByRealMatches / firstRoundPdfPairsFromRealMatches.
+		// nextIndex is captured before the round is appended so the round's
+		// own connector-line geometry can follow the real pairing instead of
+		// assuming winner 2*j/2*j+1 feeds pairs[j].
 		nextStageName := pdfStageNameForCount(len(current) / 2)
-		current = groupPdfSlotsByRealMatches(winners, matchesAtPdfStage(t, nextStageName))
+		var nextIndex []int
+		current, nextIndex = groupPdfSlotsByRealMatches(winners, matchesAtPdfStage(t, nextStageName))
+
+		rounds = append(rounds, pdfRoundView{Name: name, Matches: rvMatches, NextIndex: nextIndex})
 	}
 
 	if len(current) > 0 {
@@ -635,6 +662,9 @@ func buildPdfBracketRounds(t *event.Event, divID string, players []*player.Playe
 					BestOf:  bestOfForStage("final"),
 				},
 			},
+			// The Final always feeds the single Champion box (index 0) when
+			// one is appended below.
+			NextIndex: []int{0},
 		})
 
 		if champion != nil {
@@ -688,10 +718,20 @@ func getSubMatchAlignments(roundNumber int, teamFormat string) (string, string) 
 func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.Division, tr func(string) string) {
 	pdf.AddPage()
 
-	// Event Title Block
-	pdf.SetFont("Arial", "B", 16)
+	// Event Title Block -- shrink the font to fit long event names instead of
+	// letting them overflow the bordered cell/page width at a fixed 16pt,
+	// same auto-shrink pattern the page header uses.
+	titleText := strings.ToUpper(t.Name)
+	titleFontSize := 16.0
+	pdf.SetFont("Arial", "B", titleFontSize)
+	w, _ := pdf.GetPageSize()
+	maxTitleWidth := w - 15 - 15 - 4 // page width minus L/R margins, minus cell padding
+	for pdf.GetStringWidth(titleText) > maxTitleWidth && titleFontSize > 8.0 {
+		titleFontSize -= 0.5
+		pdf.SetFont("Arial", "B", titleFontSize)
+	}
 	pdf.SetFillColor(240, 240, 240)
-	pdf.CellFormat(0, 12, strings.ToUpper(t.Name), "1", 1, "C", true, 0, "")
+	pdf.CellFormat(0, 12, titleText, "1", 1, "C", true, 0, "")
 	pdf.Ln(4)
 
 	// Helpers
@@ -1393,21 +1433,29 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				}
 			}
 
-			// Subsequent rounds are calculated as midpoints of their children
+			// Subsequent rounds are calculated as midpoints of their children,
+			// using each round's NextIndex to find which previous-round
+			// matches actually feed each match here -- not 2*j/2*j+1, since
+			// real-match-based pairing can combine non-adjacent slots.
 			for r := 1; r < numRounds; r++ {
+				feeders := make([][]int, len(rounds[r].Matches))
+				for i, nj := range rounds[r-1].NextIndex {
+					if nj >= 0 && nj < len(feeders) {
+						feeders[nj] = append(feeders[nj], i)
+					}
+				}
 				for j := range rounds[r].Matches {
 					if rounds[r].Name == "Champion" {
 						centers[r][0] = centers[r-1][0]
-					} else {
-						c1 := 2 * j
-						c2 := 2*j + 1
-						if c1 < len(centers[r-1]) && c2 < len(centers[r-1]) {
-							centers[r][j] = (centers[r-1][c1] + centers[r-1][c2]) / 2
-						} else if c1 < len(centers[r-1]) {
-							centers[r][j] = centers[r-1][c1]
-						} else {
-							centers[r][j] = marginT + printableH/2
-						}
+						continue
+					}
+					switch fs := feeders[j]; len(fs) {
+					case 2:
+						centers[r][j] = (centers[r-1][fs[0]] + centers[r-1][fs[1]]) / 2
+					case 1:
+						centers[r][j] = centers[r-1][fs[0]]
+					default:
+						centers[r][j] = marginT + printableH/2
 					}
 				}
 			}
@@ -1487,10 +1535,30 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 
 				if r < numRounds-1 {
 					nextNumMatches := len(rounds[r+1].Matches)
-					if nextNumMatches > 0 && rounds[r+1].Name != "Champion" {
+					if nextNumMatches > 0 {
+						// Group this round's match indices by which next-round
+						// match they actually feed (round.NextIndex), not
+						// positional adjacency -- see groupPdfSlotsByRealMatches:
+						// real-match-based pairing can combine non-adjacent
+						// slots (e.g. match 0's winner actually played match
+						// 3's winner next), so 2*j/2*j+1 would draw the wrong
+						// connector lines and mislabel which box a given pair
+						// of winners feeds into.
+						feederGroups := make(map[int][]int, numMatches)
+						for j := 0; j < numMatches; j++ {
+							nj := j / 2
+							if j < len(round.NextIndex) && round.NextIndex[j] >= 0 {
+								nj = round.NextIndex[j]
+							}
+							feederGroups[nj] = append(feederGroups[nj], j)
+						}
+
 						for j := 0; j < numMatches; j++ {
 							currentMidY := centers[r][j]
 							nextJ := j / 2
+							if j < len(round.NextIndex) && round.NextIndex[j] >= 0 {
+								nextJ = round.NextIndex[j]
+							}
 							nextMidY := centers[r+1][nextJ]
 
 							lineX1 := x + boxW
@@ -1499,7 +1567,12 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 							pdf.SetDrawColor(180, 180, 180)
 							pdf.Line(lineX1, currentMidY, lineX2, currentMidY)
 
-							// Print match details above and score below the line
+							// Print match details above and score below the
+							// line -- always, including the round right
+							// before the Champion box (the Final itself),
+							// which used to have this whole block skipped
+							// because the old code nested it inside a check
+							// that excluded a next round named "Champion".
 							mForDetails := round.Matches[j]
 							if mForDetails.Match != nil {
 								dStr := formatTime(t.StartDate, true)
@@ -1530,10 +1603,15 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 
 								pdf.SetTextColor(0, 0, 0)
 
-								if j%2 == 0 && j+1 < numMatches {
-									siblingMidY := centers[r][j+1]
-									pdf.Line(lineX2, currentMidY, lineX2, siblingMidY)
-
+								// Draw the merge/next-box lines once per
+								// feeder group (its lowest match index),
+								// instead of once per position-adjacent pair.
+								group := feederGroups[nextJ]
+								if len(group) > 0 && group[0] == j {
+									if len(group) == 2 {
+										siblingMidY := centers[r][group[1]]
+										pdf.Line(lineX2, currentMidY, lineX2, siblingMidY)
+									}
 									nextColStartX := marginL + float64(r+1)*colW
 									nextColBoxX := nextColStartX + (colW-boxW)/2
 									pdf.Line(lineX2, nextMidY, nextColBoxX, nextMidY)

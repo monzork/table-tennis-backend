@@ -180,6 +180,48 @@ func TestTournamentRepository_Update(t *testing.T) {
 	}
 }
 
+// TestTournamentRepository_Update_IncludeIDPhotosInReport is a regression
+// test for a production bug: Update's explicit Column(...) whitelist omitted
+// "include_id_photos_in_report", so toggling the "include ID photos in
+// report" checkbox on the tournament edit form silently never persisted --
+// the model field was set correctly in Go, but bun's Column restriction
+// dropped it from the actual SQL UPDATE statement.
+func TestTournamentRepository_Update_IncludeIDPhotosInReport(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	repo := bunRepo.NewTournamentRepository(db, eventRepo)
+	ctx := context.Background()
+
+	tr := newTestTournament(t, "Photos Toggle")
+	if err := repo.Save(ctx, tr); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	tr.IncludeIDPhotosInReport = true
+	if err := repo.Update(ctx, tr); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	got, err := repo.GetByID(ctx, tr.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if !got.IncludeIDPhotosInReport {
+		t.Fatalf("expected IncludeIDPhotosInReport to round-trip as true, got false")
+	}
+
+	tr.IncludeIDPhotosInReport = false
+	if err := repo.Update(ctx, tr); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	got, err = repo.GetByID(ctx, tr.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.IncludeIDPhotosInReport {
+		t.Fatalf("expected IncludeIDPhotosInReport to round-trip back to false")
+	}
+}
+
 func TestTournamentRepository_GetAll(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)

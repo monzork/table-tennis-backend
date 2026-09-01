@@ -302,7 +302,7 @@ func (r *TournamentRepository) Update(ctx context.Context, e *tournament.Tournam
 		FederationEndorsed:      e.FederationEndorsed,
 		IncludeIDPhotosInReport: e.IncludeIDPhotosInReport,
 	}
-	_, err = ExtractDB(ctx, r.db).NewUpdate().Model(model).WherePK().Column("name", "division_ids", "skip_elo", "start_date", "end_date", "num_tables", "table_priorities", "federation_endorsed").Exec(ctx)
+	_, err = ExtractDB(ctx, r.db).NewUpdate().Model(model).WherePK().Column("name", "division_ids", "skip_elo", "start_date", "end_date", "num_tables", "table_priorities", "federation_endorsed", "include_id_photos_in_report").Exec(ctx)
 	return err
 }
 

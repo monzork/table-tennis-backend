@@ -58,3 +58,47 @@ func TestBuildBracketRounds_RealMatchesOverrideMismatchedSeeding(t *testing.T) {
 		t.Errorf("expected champion p1 (winner of every real match on its path), got %s", got)
 	}
 }
+
+// TestGroupSlotsByRealMatches_CrossedPairingSortedBackToPosition is a
+// regression test for a production bug affecting the admin and public
+// bracket/draw views: when the real next-round matches pair non-adjacent
+// slots (e.g. slot 0's winner actually played slot 3's, not slot 1's), the
+// pairing function used to return pairs in whatever arbitrary order the
+// underlying matches happened to be recorded in the DB -- so a player's own
+// next match could render at the top of the column right after their
+// previous match was drawn at the bottom, with no visual relationship
+// between the two. The pairing itself (who plays whom) was always correct;
+// only the rendering order needed to go back to bracket position.
+func TestGroupSlotsByRealMatches_CrossedPairingSortedBackToPosition(t *testing.T) {
+	mk := func(id string) *bracket.MatchSlot {
+		return &bracket.MatchSlot{Player: &player.Player{ID: id, FirstName: id}}
+	}
+	slots := []*bracket.MatchSlot{mk("s0"), mk("s1"), mk("s2"), mk("s3")}
+
+	// Real matches arrive in an order that crosses the slots (s0 played s3,
+	// found before s1 played s2) and would, without sorting, put the s1/s2
+	// pair first in the output.
+	nextMatches := []*event.Match{
+		{TeamA: []*player.Player{slots[1].Player}, TeamB: []*player.Player{slots[2].Player}},
+		{TeamA: []*player.Player{slots[0].Player}, TeamB: []*player.Player{slots[3].Player}},
+	}
+
+	pairs := bracket.GroupSlotsByRealMatchesForTest(slots, nextMatches)
+
+	if len(pairs) != 2 {
+		t.Fatalf("expected 2 pairs, got %d: %+v", len(pairs), pairs)
+	}
+	// The pair containing s0 (the lowest original slot index) must be
+	// sorted first, even though its real match was recorded second.
+	first := pairs[0]
+	gotIDs := map[string]bool{}
+	if first.P1 != nil && first.P1.Player != nil {
+		gotIDs[first.P1.Player.ID] = true
+	}
+	if first.P2 != nil && first.P2.Player != nil {
+		gotIDs[first.P2.Player.ID] = true
+	}
+	if !gotIDs["s0"] || !gotIDs["s3"] {
+		t.Errorf("expected the first pair to be s0/s3 (lowest original index), got %+v", pairs)
+	}
+}

@@ -22,3 +22,11 @@ func GetMatchLoserForTest(m BracketMatch) *MatchSlot {
 func BuildBracketRoundsForTest(t *event.Event, divID string, players []*player.Player, tier int) []Round {
 	return buildBracketRounds(t, divID, players, tier)
 }
+
+// BracketPairForTest aliases the unexported bracketPair so external tests can
+// read P1/P2 off GroupSlotsByRealMatchesForTest's result.
+type BracketPairForTest = bracketPair
+
+func GroupSlotsByRealMatchesForTest(slots []*MatchSlot, nextMatches []*event.Match) []BracketPairForTest {
+	return groupSlotsByRealMatches(slots, nextMatches)
+}
