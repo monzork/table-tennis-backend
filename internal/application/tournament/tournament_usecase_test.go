@@ -102,6 +102,9 @@ func (m *mockSubTourneyRepo) GetByID(ctx context.Context, id string) (*subTourne
 	return t, nil
 }
 
+func (m *mockSubTourneyRepo) GetByIDLite(ctx context.Context, id string) (*subTourneyDomain.Event, error) {
+	return m.GetByID(ctx, id)
+}
 func (m *mockSubTourneyRepo) GetAll(ctx context.Context) ([]*subTourneyDomain.Event, error) {
 	var res []*subTourneyDomain.Event
 	for _, t := range m.subTourneys {

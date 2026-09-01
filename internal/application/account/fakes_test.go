@@ -52,6 +52,16 @@ func (f *fakeAccountRepo) GetByID(ctx context.Context, id string) (*account.Acco
 	return a, nil
 }
 
+func (f *fakeAccountRepo) GetByIDs(ctx context.Context, ids []string) ([]*account.Account, error) {
+	accounts := make([]*account.Account, 0, len(ids))
+	for _, id := range ids {
+		if a, ok := f.byID[id]; ok {
+			accounts = append(accounts, a)
+		}
+	}
+	return accounts, nil
+}
+
 func (f *fakeAccountRepo) GetByGoogleSub(ctx context.Context, sub string) (*account.Account, error) {
 	return f.byGoogle[sub], nil
 }

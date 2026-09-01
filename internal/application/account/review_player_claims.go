@@ -36,13 +36,28 @@ func (uc *GetPendingPlayerClaimsUseCase) Execute(ctx context.Context) ([]Pending
 	if err != nil {
 		return nil, err
 	}
-	var claims []PendingClaim
+
+	var claimants []*player.Player
+	accountIDs := make([]string, 0, len(all))
 	for _, p := range all {
 		if p.ClaimedByAccountID == nil {
 			continue
 		}
+		claimants = append(claimants, p)
+		accountIDs = append(accountIDs, *p.ClaimedByAccountID)
+	}
+
+	accountsByID := make(map[string]*account.Account, len(accountIDs))
+	if accounts, err := uc.accountRepo.GetByIDs(ctx, accountIDs); err == nil {
+		for _, a := range accounts {
+			accountsByID[a.ID] = a
+		}
+	}
+
+	claims := make([]PendingClaim, 0, len(claimants))
+	for _, p := range claimants {
 		var name, email string
-		if a, err := uc.accountRepo.GetByID(ctx, *p.ClaimedByAccountID); err == nil && a != nil {
+		if a, ok := accountsByID[*p.ClaimedByAccountID]; ok {
 			name = a.Name
 			email = a.Email
 		}

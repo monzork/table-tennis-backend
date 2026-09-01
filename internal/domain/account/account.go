@@ -43,6 +43,7 @@ func NewAccount(id, googleSub, email, name, pictureURL string) (*Account, error)
 // Repository persists and retrieves Account records.
 type Repository interface {
 	GetByID(ctx context.Context, id string) (*Account, error)
+	GetByIDs(ctx context.Context, ids []string) ([]*Account, error)
 	GetByGoogleSub(ctx context.Context, sub string) (*Account, error)
 	GetByEmail(ctx context.Context, email string) (*Account, error)
 	Save(ctx context.Context, a *Account) error // upsert

@@ -80,6 +80,10 @@ func (m *mockRepo) GetByID(ctx context.Context, id string) (*tournamentDomain.Ev
 	return t, nil
 }
 
+func (m *mockRepo) GetByIDLite(ctx context.Context, id string) (*tournamentDomain.Event, error) {
+	return m.GetByID(ctx, id)
+}
+
 func (m *mockRepo) GetAll(ctx context.Context) ([]*tournamentDomain.Event, error) {
 	if m.getAllErr != nil {
 		return nil, m.getAllErr

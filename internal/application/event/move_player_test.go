@@ -28,6 +28,10 @@ func (m *mockMovePlayerRepository) GetByID(ctx context.Context, id string) (*tou
 	return m.t, nil
 }
 
+func (m *mockMovePlayerRepository) GetByIDLite(ctx context.Context, id string) (*tournamentDomain.Event, error) {
+	return m.GetByID(ctx, id)
+}
+
 func (m *mockMovePlayerRepository) GetAll(ctx context.Context) ([]*tournamentDomain.Event, error) {
 	return nil, nil
 }

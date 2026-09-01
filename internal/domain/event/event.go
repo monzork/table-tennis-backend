@@ -465,6 +465,10 @@ var ErrTableOccupied = errors.New("table occupied by another in-progress match")
 type EventRepository interface {
 	Save(ctx context.Context, t *Event) error
 	GetByID(ctx context.Context, id string) (*Event, error)
+	// GetByIDLite fetches an event without its heavy Matches relation, for
+	// callers that only need the event's own fields (rules, teams, stage
+	// config) and not its full match history.
+	GetByIDLite(ctx context.Context, id string) (*Event, error)
 	GetAll(ctx context.Context) ([]*Event, error)
 	Update(ctx context.Context, t *Event) error
 	UpdateEventIDBulk(ctx context.Context, eventIDs []string, tournamentID string) error

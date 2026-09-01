@@ -5,9 +5,6 @@ import (
 
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
-
-	"github.com/google/uuid"
 )
 
 type SubMatchVM struct {
@@ -50,11 +47,11 @@ type TeamMatchFormView struct {
 }
 
 type GetTeamMatchFormViewUseCase struct {
-	matchRepo      *bun.MatchRepository
-	tournamentRepo *bun.EventRepository
+	matchRepo      event.MatchRepository
+	tournamentRepo event.Repository
 }
 
-func NewGetTeamMatchFormViewUseCase(matchRepo *bun.MatchRepository, tournamentRepo *bun.EventRepository) *GetTeamMatchFormViewUseCase {
+func NewGetTeamMatchFormViewUseCase(matchRepo event.MatchRepository, tournamentRepo event.Repository) *GetTeamMatchFormViewUseCase {
 	return &GetTeamMatchFormViewUseCase{
 		matchRepo:      matchRepo,
 		tournamentRepo: tournamentRepo,
@@ -62,14 +59,12 @@ func NewGetTeamMatchFormViewUseCase(matchRepo *bun.MatchRepository, tournamentRe
 }
 
 func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eventID, stage string) (*TeamMatchFormView, error) {
-	parentUUID, _ := uuid.Parse(matchID)
-
 	t, err := uc.tournamentRepo.GetByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
 
-	parent, err := uc.matchRepo.GetModelByID(ctx, parentUUID)
+	parent, err := uc.matchRepo.GetByID(ctx, matchID)
 	if err != nil {
 		return nil, err
 	}
@@ -84,23 +79,26 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eve
 		teamFormat = "olympic"
 	}
 
+	teamAPlayer1ID := teamPlayerID(parent.TeamA, 0)
+	teamBPlayer1ID := teamPlayerID(parent.TeamB, 0)
+
 	var teamA, teamB *event.Team
 	for _, team := range t.Teams {
-		if team.ID == parent.TeamAPlayer1ID.String() {
+		if team.ID == teamAPlayer1ID {
 			teamA = team
 		} else {
 			for _, p := range team.Players {
-				if p.ID == parent.TeamAPlayer1ID.String() {
+				if p.ID == teamAPlayer1ID {
 					teamA = team
 					break
 				}
 			}
 		}
-		if team.ID == parent.TeamBPlayer1ID.String() {
+		if team.ID == teamBPlayer1ID {
 			teamB = team
 		} else {
 			for _, p := range team.Players {
-				if p.ID == parent.TeamBPlayer1ID.String() {
+				if p.ID == teamBPlayer1ID {
 					teamB = team
 					break
 				}
@@ -213,7 +211,7 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eve
 
 	var refereeIDStr string
 	if parent.RefereeID != nil {
-		refereeIDStr = parent.RefereeID.String()
+		refereeIDStr = *parent.RefereeID
 	}
 
 	return &TeamMatchFormView{

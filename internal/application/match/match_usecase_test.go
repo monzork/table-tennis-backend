@@ -188,6 +188,9 @@ func (m *mockEventRepo) GetByID(ctx context.Context, id string) (*eventDomain.Ev
 	}
 	return e, nil
 }
+func (m *mockEventRepo) GetByIDLite(ctx context.Context, id string) (*eventDomain.Event, error) {
+	return m.GetByID(ctx, id)
+}
 func (m *mockEventRepo) GetAll(ctx context.Context) ([]*eventDomain.Event, error) { return nil, nil }
 func (m *mockEventRepo) UpdateEventIDBulk(ctx context.Context, tournamentIDs []string, eventID string) error {
 	return nil

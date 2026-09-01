@@ -41,6 +41,30 @@ func (r *AccountRepository) GetByID(ctx context.Context, id string) (*account.Ac
 	return modelToAccount(&model), nil
 }
 
+func (r *AccountRepository) GetByIDs(ctx context.Context, ids []string) ([]*account.Account, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	uids := make([]uuid.UUID, 0, len(ids))
+	for _, idStr := range ids {
+		if uid, err := uuid.Parse(idStr); err == nil {
+			uids = append(uids, uid)
+		}
+	}
+	if len(uids) == 0 {
+		return nil, nil
+	}
+	var models []AccountModel
+	if err := ExtractDB(ctx, r.db).NewSelect().Model(&models).Where("id IN (?)", bun.List(uids)).Scan(ctx); err != nil {
+		return nil, err
+	}
+	accounts := make([]*account.Account, len(models))
+	for i := range models {
+		accounts[i] = modelToAccount(&models[i])
+	}
+	return accounts, nil
+}
+
 func (r *AccountRepository) GetByGoogleSub(ctx context.Context, sub string) (*account.Account, error) {
 	var model AccountModel
 	err := ExtractDB(ctx, r.db).NewSelect().Model(&model).Where("google_sub = ?", sub).Scan(ctx)

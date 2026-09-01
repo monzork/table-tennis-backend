@@ -5,9 +5,6 @@ import (
 
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
-	"table-tennis-backend/internal/infrastructure/persistence/bun"
-
-	"github.com/google/uuid"
 )
 
 // SetVM is a single set view model for the score entry form.
@@ -46,17 +43,17 @@ type ScoreFormView struct {
 
 // GetScoreFormViewUseCase orchestrates all data fetching needed to render the score entry form.
 type GetScoreFormViewUseCase struct {
-	matchRepo      *bun.MatchRepository
-	tournamentRepo *bun.EventRepository
-	playerRepo     *bun.PlayerRepository
+	matchRepo      event.MatchRepository
+	tournamentRepo event.Repository
+	playerRepo     player.Repository
 	createMatchUC  *CreateMatchUseCase
 	teamMatchUC    *TeamMatchOrchestratorUseCase
 }
 
 func NewGetScoreFormViewUseCase(
-	matchRepo *bun.MatchRepository,
-	tournamentRepo *bun.EventRepository,
-	playerRepo *bun.PlayerRepository,
+	matchRepo event.MatchRepository,
+	tournamentRepo event.Repository,
+	playerRepo player.Repository,
 	createMatchUC *CreateMatchUseCase,
 	teamMatchUC *TeamMatchOrchestratorUseCase,
 ) *GetScoreFormViewUseCase {
@@ -77,23 +74,24 @@ func (uc *GetScoreFormViewUseCase) Execute(
 	bestOf int,
 	p1Id, p2Id string,
 ) (*ScoreFormView, error) {
-	// Load match metadata (pin, referee, table number, status)
-	var matchPin string
-	var matchRefereeID *uuid.UUID
-	var matchTableNumber *int
+	// Load existing match (pin, referee, table number, status, sets, resolved
+	// TeamA/TeamB players) once — every other lookup below reuses it instead
+	// of hitting the DB again.
+	var existingMatch *event.Match
 	matchStatus := "scheduled"
-	if isValidID(matchID) {
-		mUUID, _ := uuid.Parse(matchID)
-		if mModel, err := uc.matchRepo.GetModelByID(ctx, mUUID); err == nil {
-			matchPin = mModel.Pin
-			matchRefereeID = mModel.RefereeID
-			matchTableNumber = mModel.TableNumber
-			matchStatus = mModel.Status
-		}
-	}
 	refereeIDStr := ""
-	if matchRefereeID != nil {
-		refereeIDStr = matchRefereeID.String()
+	var matchTableNumber *int
+	var matchPin string
+	if isValidID(matchID) {
+		if em, err := uc.matchRepo.GetByID(ctx, matchID); err == nil {
+			existingMatch = em
+			matchPin = em.Pin
+			if em.RefereeID != nil {
+				refereeIDStr = *em.RefereeID
+			}
+			matchTableNumber = em.TableNumber
+			matchStatus = em.Status
+		}
 	}
 
 	// Fetch tournament (lite — no heavy Matches relation)
@@ -114,11 +112,8 @@ func (uc *GetScoreFormViewUseCase) Execute(
 	// Detect teams mode
 	var isTeams, isSubMatch bool
 	if tourney != nil && tourney.Type == "teams" {
-		if isValidID(matchID) {
-			mUUID, _ := uuid.Parse(matchID)
-			if existingMatch, err := uc.matchRepo.GetModelByID(ctx, mUUID); err == nil && existingMatch.TeamMatchID != nil {
-				isSubMatch = true
-			}
+		if existingMatch != nil && existingMatch.TeamMatchID != nil {
+			isSubMatch = true
 		}
 		if !isSubMatch {
 			// Signal to handler to use team-match form
@@ -169,15 +164,6 @@ func (uc *GetScoreFormViewUseCase) Execute(
 		}
 	}
 
-	// Fetch existing match model
-	var existingMatch *bun.MatchModel
-	if isValidID(matchID) {
-		mUUID, _ := uuid.Parse(matchID)
-		if em, err := uc.matchRepo.GetModelByID(ctx, mUUID); err == nil {
-			existingMatch = em
-		}
-	}
-
 	// Determine doubles
 	isDoubles := false
 	if tourney != nil && (tourney.Type == "doubles" || tourney.Type == "mixed_doubles") {
@@ -194,23 +180,17 @@ func (uc *GetScoreFormViewUseCase) Execute(
 		var p1A, p2A, p1B, p2B *player.Player
 
 		if existingMatch != nil {
-			p1UUID := existingMatch.TeamAPlayer1ID
-			p1BUUID := existingMatch.TeamBPlayer1ID
-			if p, err := uc.playerRepo.GetById(ctx, p1UUID.String()); err == nil {
-				p1A = p
+			if len(existingMatch.TeamA) > 0 {
+				p1A = existingMatch.TeamA[0]
 			}
-			if existingMatch.TeamAPlayer2ID != nil {
-				if p, err := uc.playerRepo.GetById(ctx, existingMatch.TeamAPlayer2ID.String()); err == nil {
-					p2A = p
-				}
+			if len(existingMatch.TeamA) > 1 {
+				p2A = existingMatch.TeamA[1]
 			}
-			if p, err := uc.playerRepo.GetById(ctx, p1BUUID.String()); err == nil {
-				p1B = p
+			if len(existingMatch.TeamB) > 0 {
+				p1B = existingMatch.TeamB[0]
 			}
-			if existingMatch.TeamBPlayer2ID != nil {
-				if p, err := uc.playerRepo.GetById(ctx, existingMatch.TeamBPlayer2ID.String()); err == nil {
-					p2B = p
-				}
+			if len(existingMatch.TeamB) > 1 {
+				p2B = existingMatch.TeamB[1]
 			}
 		} else if tourney != nil {
 			for _, team := range tourney.Teams {
@@ -292,29 +272,23 @@ func (uc *GetScoreFormViewUseCase) Execute(
 			if p, err := uc.playerRepo.GetById(ctx, p1Id); err == nil {
 				playerAName = p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
 			}
-		} else if existingMatch != nil {
-			if p, err := uc.playerRepo.GetById(ctx, existingMatch.TeamAPlayer1ID.String()); err == nil {
-				playerAName = p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
-			}
+		} else if existingMatch != nil && len(existingMatch.TeamA) > 0 {
+			playerAName = existingMatch.TeamA[0].FirstNameWithSecond() + " " + existingMatch.TeamA[0].LastNameWithSecond()
 		}
 		if p2Id != "" {
 			if p, err := uc.playerRepo.GetById(ctx, p2Id); err == nil {
 				playerBName = p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
 			}
-		} else if existingMatch != nil {
-			if p, err := uc.playerRepo.GetById(ctx, existingMatch.TeamBPlayer1ID.String()); err == nil {
-				playerBName = p.FirstNameWithSecond() + " " + p.LastNameWithSecond()
-			}
+		} else if existingMatch != nil && len(existingMatch.TeamB) > 0 {
+			playerBName = existingMatch.TeamB[0].FirstNameWithSecond() + " " + existingMatch.TeamB[0].LastNameWithSecond()
 		}
 	}
 
 	// Load existing set scores
-	existingScores := make(map[int]bun.MatchSetModel)
-	if isValidID(matchID) {
-		if s, err := uc.matchRepo.GetSets(ctx, matchID); err == nil {
-			for _, sm := range s {
-				existingScores[sm.SetNumber] = sm
-			}
+	existingScores := make(map[int]event.MatchSet)
+	if existingMatch != nil {
+		for _, sm := range existingMatch.Sets {
+			existingScores[sm.Number] = sm
 		}
 	}
 
