@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"html/template"
 	"strings"
 	"sync"
@@ -13,14 +14,33 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// RenderRankMovement renders the public leaderboard's rank-change indicator
+// -- how many places a player has moved since the Elo snapshot before their
+// most recently finished event (leaderboard.RankedPlayer.RankDelta). A nil
+// delta (no finished event yet) renders nothing.
+func RenderRankMovement(delta *int) template.HTML {
+	if delta == nil {
+		return ""
+	}
+	switch {
+	case *delta > 0:
+		return template.HTML(fmt.Sprintf(`<span class="inline-flex items-center gap-0.5 text-emerald-400 font-bold text-xs whitespace-nowrap"><svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4l8 10h-6v6h-4v-6H4z"/></svg>%d</span>`, *delta))
+	case *delta < 0:
+		return template.HTML(fmt.Sprintf(`<span class="inline-flex items-center gap-0.5 text-red-400 font-bold text-xs whitespace-nowrap"><svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20l-8-10h6V4h4v6h6z"/></svg>%d</span>`, -*delta))
+	default:
+		return template.HTML(`<span class="text-gray-500 text-xs font-bold">–</span>`)
+	}
+}
+
 type LeaderboardHandler struct {
 	getUC             *leaderboard.GetLeaderboardUseCase
 	divisionUC        *division.DivisionUseCase
 	getDistributionUC *leaderboard.GetDivisionDistributionUseCase
+	rankMovementUC    *leaderboard.GetRankMovementUseCase
 }
 
-func NewLeaderboardHandler(uc *leaderboard.GetLeaderboardUseCase, divUC *division.DivisionUseCase, distUC *leaderboard.GetDivisionDistributionUseCase) *LeaderboardHandler {
-	return &LeaderboardHandler{getUC: uc, divisionUC: divUC, getDistributionUC: distUC}
+func NewLeaderboardHandler(uc *leaderboard.GetLeaderboardUseCase, divUC *division.DivisionUseCase, distUC *leaderboard.GetDivisionDistributionUseCase, rankMovementUC *leaderboard.GetRankMovementUseCase) *LeaderboardHandler {
+	return &LeaderboardHandler{getUC: uc, divisionUC: divUC, getDistributionUC: distUC, rankMovementUC: rankMovementUC}
 }
 
 type DivisionGroup struct {
@@ -151,10 +171,11 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 
 	var players []*player.Player
 	var divisions []*divisionDomain.Division
+	var previousElo map[string]int16
 	var pErr, dErr error
 	var wg sync.WaitGroup
 
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		defer wg.Done()
 		players, pErr = h.getUC.Execute(c.Context(), rankType)
@@ -162,6 +183,12 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 	go func() {
 		defer wg.Done()
 		divisions, dErr = h.divisionUC.GetAll(c.Context())
+	}()
+	go func() {
+		defer wg.Done()
+		// Rank movement is a nice-to-have indicator, not core ranking data --
+		// an error here is swallowed rather than failing the whole page.
+		previousElo, _ = h.rankMovementUC.Execute(c.Context(), rankType)
 	}()
 	wg.Wait()
 
@@ -178,6 +205,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		DivisionFilter: divFilter,
 		SortOrder:      sortOrder,
 		GenderFilter:   genderFilter,
+		PreviousElo:    previousElo,
 	}
 
 	var result leaderboard.RankingResult

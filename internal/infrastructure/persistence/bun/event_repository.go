@@ -1730,6 +1730,47 @@ func (r *EventRepository) AddParticipant(ctx context.Context, tournamentID strin
 	return err
 }
 
+// GetPreviousEloSnapshots returns each player's elo_before_<rankType> value
+// from their most recently finished event (the latest events.start_date
+// among rows with a non-null elo_after_<rankType>). Players with no finished
+// event are simply absent from the map. Dedupes in Go rather than SQL
+// DISTINCT ON, which SQLite (used in tests) doesn't support.
+func (r *EventRepository) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+	beforeCol, afterCol := "elo_before_singles", "elo_after_singles"
+	if rankType == "doubles" {
+		beforeCol, afterCol = "elo_before_doubles", "elo_after_doubles"
+	}
+
+	type eloSnapshotRow struct {
+		PlayerID uuid.UUID `bun:"player_id"`
+		Elo      int16     `bun:"elo"`
+	}
+	var rows []eloSnapshotRow
+
+	err := ExtractDB(ctx, r.db).NewSelect().
+		TableExpr("event_participants AS ep").
+		Join("JOIN events AS e ON e.id = ep.event_id").
+		ColumnExpr("ep.player_id AS player_id").
+		ColumnExpr(fmt.Sprintf("ep.%s AS elo", beforeCol)).
+		Where(fmt.Sprintf("ep.%s IS NOT NULL", beforeCol)).
+		Where(fmt.Sprintf("ep.%s IS NOT NULL", afterCol)).
+		OrderExpr("e.start_date DESC").
+		Scan(ctx, &rows)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(map[string]int16, len(rows))
+	for _, row := range rows {
+		id := row.PlayerID.String()
+		if _, seen := out[id]; seen {
+			continue // rows arrive ordered by start_date DESC, so the first hit per player is their most recent finished event.
+		}
+		out[id] = row.Elo
+	}
+	return out, nil
+}
+
 // RemoveParticipant deletes a player from event_participants and any group they belong to.
 func (r *EventRepository) RemoveParticipant(ctx context.Context, tournamentID string, playerID string) error {
 	tID, err := uuid.Parse(tournamentID)

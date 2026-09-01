@@ -483,6 +483,12 @@ type ParticipantRepository interface {
 	RemoveParticipant(ctx context.Context, eventID string, playerID string) error
 	GetParticipantSnapshots(ctx context.Context, eventID string) ([]ParticipantSnapshot, error)
 	GetParticipantOrOfficialByPIN(ctx context.Context, eventID string, pin string) (string, error)
+	// GetPreviousEloSnapshots returns, for every player who has at least one
+	// finished event, the Elo ("singles" or "doubles") they held immediately
+	// before their most recently finished event -- the elo_before_* value on
+	// that event_participants row. Used as the baseline for showing rank
+	// movement on the public leaderboard.
+	GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error)
 }
 
 // TeamRepository manages teams and their player rosters (doubles/team-format events).

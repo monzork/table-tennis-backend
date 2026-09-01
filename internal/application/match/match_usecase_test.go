@@ -220,6 +220,9 @@ func (m *mockEventRepo) RemovePlayerFromTeam(ctx context.Context, teamID string,
 func (m *mockEventRepo) GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]eventDomain.ParticipantSnapshot, error) {
 	return nil, nil
 }
+func (m *mockEventRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+	return nil, nil
+}
 func (m *mockEventRepo) GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error) {
 	return "", nil
 }

@@ -85,6 +85,10 @@ func (m *mockMovePlayerRepository) GetParticipantSnapshots(ctx context.Context, 
 	return nil, nil
 }
 
+func (m *mockMovePlayerRepository) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+	return nil, nil
+}
+
 func (m *mockMovePlayerRepository) GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error) {
 	return "", nil
 }

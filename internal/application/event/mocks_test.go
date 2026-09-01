@@ -169,6 +169,10 @@ func (m *mockRepo) GetParticipantOrOfficialByPIN(ctx context.Context, tournament
 	return m.pinLookup, m.pinLookupErr
 }
 
+func (m *mockRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+	return nil, nil
+}
+
 func (m *mockRepo) AddOfficial(ctx context.Context, tournamentID string, playerID string, pin string) error {
 	return m.addOfficialErr
 }

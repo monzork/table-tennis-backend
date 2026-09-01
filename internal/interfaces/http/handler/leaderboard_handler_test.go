@@ -60,7 +60,9 @@ func createTestLeaderboardApp(t *testing.T) *fiber.App {
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 	distUC := leaderboard.NewGetDivisionDistributionUseCase(svgchartinfra.NewSVGGenerator())
-	lh := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
+	eventRepo := bunRepo.NewEventRepository(db)
+	rankMovementUC := leaderboard.NewGetRankMovementUseCase(eventRepo)
+	lh := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC, rankMovementUC)
 
 	engine := html.New("../templates", ".html")
 	type CountryInfo struct {
@@ -108,6 +110,7 @@ func createTestLeaderboardApp(t *testing.T) *fiber.App {
 		}
 		return fmt.Sprintf("%+.0f", *delta)
 	})
+	engine.AddFunc("rankMovement", handler.RenderRankMovement)
 
 	app := fiber.New(fiber.Config{
 		Views:             engine,

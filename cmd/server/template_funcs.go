@@ -132,5 +132,6 @@ func SetupTemplateEngine() *html.Engine {
 		}
 		return fmt.Sprintf("%+.0f", *delta)
 	})
+	engine.AddFunc("rankMovement", handler.RenderRankMovement)
 	return engine
 }

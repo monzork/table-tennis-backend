@@ -165,6 +165,54 @@ func TestBuildRanking_DivisionFilter(t *testing.T) {
 	})
 }
 
+func TestBuildRanking_RankDelta(t *testing.T) {
+	players := []*player.Player{
+		{ID: "a", FirstName: "A", SinglesElo: 1000},
+		{ID: "b", FirstName: "B", SinglesElo: 900},
+		{ID: "c", FirstName: "C", SinglesElo: 800},
+	}
+
+	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
+		RankType:  "singles",
+		SortOrder: "points_desc",
+		PreviousElo: map[string]int16{
+			"b": 700,  // was lowest by own-Elo (rank 3), now 900 -> up 1
+			"c": 1100, // was highest by own-Elo (rank 1), now 800 -> down 2
+			"a": 1000, // unchanged -> no movement
+		},
+	})
+
+	byID := map[string]leaderboard.RankedPlayer{}
+	for _, p := range result.Groups[0].Players {
+		byID[p.ID] = p
+	}
+
+	if got := byID["b"].RankDelta; got == nil || *got != 1 {
+		t.Errorf("expected b to have moved up 1 place, got %v", got)
+	}
+	if got := byID["c"].RankDelta; got == nil || *got != -2 {
+		t.Errorf("expected c to have moved down 2 places, got %v", got)
+	}
+	if got := byID["a"].RankDelta; got == nil || *got != 0 {
+		t.Errorf("expected a to show unchanged (0), got %v", got)
+	}
+}
+
+func TestBuildRanking_RankDelta_NilWhenNoPreviousSnapshot(t *testing.T) {
+	players := []*player.Player{
+		{ID: "a", FirstName: "A", SinglesElo: 1000},
+	}
+
+	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
+		RankType:  "singles",
+		SortOrder: "points_desc",
+	})
+
+	if result.Groups[0].Players[0].RankDelta != nil {
+		t.Errorf("expected nil RankDelta when the player has no previous Elo snapshot, got %v", *result.Groups[0].Players[0].RankDelta)
+	}
+}
+
 func TestBuildRanking_DoublesUsesDoublesElo(t *testing.T) {
 	players := []*player.Player{
 		{ID: "1", FirstName: "A", SinglesElo: 2000, DoublesElo: 1000},

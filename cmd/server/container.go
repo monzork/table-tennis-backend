@@ -60,6 +60,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	getTournamentsUC := event.NewGetTournamentsUseCase(eventRepo)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
+	rankMovementUC := leaderboard.NewGetRankMovementUseCase(eventRepo)
 
 	divisionRepo := bun.NewDivisionRepository(bun.DB)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
@@ -152,7 +153,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, eventRepo, tournamentRepo, finishTournamentUC, broadcastNotificationUC, teamMatchUC, startMatchUC, divisionRepo)
 
 	distUC := leaderboard.NewGetDivisionDistributionUseCase(chartGenerator)
-	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
+	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC, rankMovementUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
 	selfRegisterUC := event.NewSelfRegisterUseCase(eventRepo, playerRepo)
 	publicHandler := handler.NewPublicHandler(playerUC, selfRegisterUC)

@@ -14,6 +14,7 @@
         <tr class="ranking-row group cursor-default transition-all duration-300 hidden sm:table-row">
             <td class="py-6 px-4 text-center font-black text-3xl italic text-gray-400 group-hover:text-white transition-colors">
                 {{.Rank}}
+                <div class="text-center">{{rankMovement .RankDelta}}</div>
             </td>
             <td class="py-6 px-4">
                 <div class="flex items-center gap-6">
@@ -21,9 +22,9 @@
                         {{.Gender}}
                     </div>
                     <div>
-                        <div class="text-2xl tracking-wide text-gray-200 font-bold group-hover:text-white transition-colors">
+                        <a href="/players/{{.ID}}/stats" title="{{t $.T "rankings_table.view"}}" class="text-2xl tracking-wide text-gray-200 font-bold hover:text-white hover:underline transition-colors">
                             <span class="font-light text-gray-400 mr-1">{{.FirstNameWithSecond}}</span><span class="uppercase">{{.LastNameWithSecond}}</span>
-                        </div>
+                        </a>
                     </div>
                 </div>
             </td>
@@ -47,15 +48,18 @@
             <td colspan="4" class="block w-full p-0">
                 <div class="flex items-center gap-3 px-4 py-3 active:scale-[0.98] transition-transform duration-200 cursor-default">
                     {{/* Rank badge */}}
-                    <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center font-black text-lg italic text-gray-300 shadow-lg">
-                        {{.Rank}}
+                    <div class="flex-shrink-0 flex flex-col items-center justify-center">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center font-black text-lg italic text-gray-300 shadow-lg">
+                            {{.Rank}}
+                        </div>
+                        <div class="mt-0.5">{{rankMovement .RankDelta}}</div>
                     </div>
 
                     {{/* Player info */}}
                     <div class="flex-1 min-w-0">
-                        <div class="text-base font-bold text-gray-200 leading-tight break-words">
+                        <a href="/players/{{.ID}}/stats" class="text-base font-bold text-gray-200 leading-tight break-words hover:underline">
                             <span class="font-light text-gray-400 mr-0.5">{{.FirstNameWithSecond}}</span><span class="uppercase">{{.LastNameWithSecond}}</span>
-                        </div>
+                        </a>
                         <div class="flex items-center gap-2 mt-1">
                             <span class="text-[9px] font-bold tracking-widest text-gray-400 bg-black/40 border border-white/10 px-1.5 py-0.5 rounded shadow-inner uppercase">{{.Country}}</span>
                             {{if $.Compact}}

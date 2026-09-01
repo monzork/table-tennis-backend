@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,16 @@ import (
 )
 
 var distUC = leaderboard.NewGetDivisionDistributionUseCase(svgchartinfra.NewSVGGenerator())
+
+type mockRankMovementRepo struct {
+	snapshots map[string]int16
+}
+
+func (m *mockRankMovementRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+	return m.snapshots, nil
+}
+
+var rankMovementUC = leaderboard.NewGetRankMovementUseCase(&mockRankMovementRepo{})
 
 type mockPlayerRepo struct {
 	player.Repository
@@ -90,6 +101,36 @@ var (
 	errDivisionRepo = fiber.NewError(500, "division repo boom")
 )
 
+func TestRenderRankMovement(t *testing.T) {
+	up, down, same := 3, -2, 0
+
+	cases := []struct {
+		name  string
+		delta *int
+		want  string // substring expected in the rendered HTML, "" for nil delta
+	}{
+		{"nil delta renders nothing", nil, ""},
+		{"positive delta renders up indicator", &up, ">3<"},
+		{"negative delta renders down indicator with absolute value", &down, ">2<"},
+		{"zero delta renders unchanged dash", &same, "–"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := string(RenderRankMovement(tc.delta))
+			if tc.want == "" {
+				if got != "" {
+					t.Errorf("expected empty output for nil delta, got %q", got)
+				}
+				return
+			}
+			if !strings.Contains(got, tc.want) {
+				t.Errorf("expected output to contain %q, got %q", tc.want, got)
+			}
+		})
+	}
+}
+
 func TestLeaderboardHandler_GetGroupedPlayers_Errors(t *testing.T) {
 	app := fiber.New()
 	ctx := app.AcquireCtx(&fasthttp.RequestCtx{})
@@ -99,28 +140,28 @@ func TestLeaderboardHandler_GetGroupedPlayers_Errors(t *testing.T) {
 	okPlayerRepo := &mockPlayerRepo{players: nil}
 
 	t.Run("getGroupedPlayers player error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(okDivRepo), distUC)
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(okDivRepo), distUC, rankMovementUC)
 		if _, err := h.getGroupedPlayers(ctx, "singles"); err == nil {
 			t.Fatal("expected error from player repo")
 		}
 	})
 
 	t.Run("getGroupedPlayers division error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(okPlayerRepo), division.NewDivisionUseCase(&erroringDivisionRepo{}), distUC)
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(okPlayerRepo), division.NewDivisionUseCase(&erroringDivisionRepo{}), distUC, rankMovementUC)
 		if _, err := h.getGroupedPlayers(ctx, "singles"); err == nil {
 			t.Fatal("expected error from division repo")
 		}
 	})
 
 	t.Run("getGroupedPlayersByGender player error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(okDivRepo), distUC)
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(okDivRepo), distUC, rankMovementUC)
 		if _, err := h.getGroupedPlayersByGender(ctx, "singles", "M"); err == nil {
 			t.Fatal("expected error from player repo")
 		}
 	})
 
 	t.Run("getGroupedPlayersByGender division error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(okPlayerRepo), division.NewDivisionUseCase(&erroringDivisionRepo{}), distUC)
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(okPlayerRepo), division.NewDivisionUseCase(&erroringDivisionRepo{}), distUC, rankMovementUC)
 		if _, err := h.getGroupedPlayersByGender(ctx, "singles", "M"); err == nil {
 			t.Fatal("expected error from division repo")
 		}
@@ -129,7 +170,7 @@ func TestLeaderboardHandler_GetGroupedPlayers_Errors(t *testing.T) {
 
 func TestLeaderboardHandler_RenderRanking_Errors(t *testing.T) {
 	t.Run("renderRanking player error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(&mockDivisionRepo{}), distUC)
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&erroringPlayerRepo{}), division.NewDivisionUseCase(&mockDivisionRepo{}), distUC, rankMovementUC)
 		app := fiber.New()
 		app.Get("/rankings/singles", h.GetSingles)
 		req := httptest.NewRequest("GET", "/rankings/singles", nil)
@@ -140,7 +181,7 @@ func TestLeaderboardHandler_RenderRanking_Errors(t *testing.T) {
 	})
 
 	t.Run("renderRanking division error", func(t *testing.T) {
-		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&mockPlayerRepo{}), division.NewDivisionUseCase(&erroringDivisionRepo{}), distUC)
+		h := NewLeaderboardHandler(leaderboard.NewGetLeaderboardUseCase(&mockPlayerRepo{}), division.NewDivisionUseCase(&erroringDivisionRepo{}), distUC, rankMovementUC)
 		app := fiber.New()
 		app.Get("/rankings/singles", h.GetSingles)
 		req := httptest.NewRequest("GET", "/rankings/singles", nil)
@@ -177,7 +218,7 @@ func TestLeaderboardHandler_GetGroupedPlayers(t *testing.T) {
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 
-	h := NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
+	h := NewLeaderboardHandler(leaderboardUC, divisionUC, distUC, rankMovementUC)
 
 	app := fiber.New()
 	ctx := app.AcquireCtx(&fasthttp.RequestCtx{})
@@ -246,7 +287,7 @@ func TestLeaderboardHandler_GetGroupedPlayersByGender(t *testing.T) {
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)
 	divisionUC := division.NewDivisionUseCase(divisionRepo)
 
-	h := NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
+	h := NewLeaderboardHandler(leaderboardUC, divisionUC, distUC, rankMovementUC)
 
 	app := fiber.New()
 	ctx := app.AcquireCtx(&fasthttp.RequestCtx{})

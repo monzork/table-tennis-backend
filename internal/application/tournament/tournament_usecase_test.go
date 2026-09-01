@@ -156,6 +156,9 @@ func (m *mockSubTourneyRepo) RemovePlayerFromTeam(ctx context.Context, teamID st
 func (m *mockSubTourneyRepo) GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]subTourneyDomain.ParticipantSnapshot, error) {
 	return nil, nil
 }
+func (m *mockSubTourneyRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+	return nil, nil
+}
 func (m *mockSubTourneyRepo) GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error) {
 	return "", nil
 }

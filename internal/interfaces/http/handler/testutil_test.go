@@ -188,7 +188,8 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, tournamentRepo, eventRepo, finishTournamentUC, broadcastPushUC, teamMatchUC, startMatchUC, divisionRepo)
 
 	distUC := leaderboard.NewGetDivisionDistributionUseCase(svgchartinfra.NewSVGGenerator())
-	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC)
+	rankMovementUC := leaderboard.NewGetRankMovementUseCase(tournamentRepo)
+	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC, rankMovementUC)
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
 	dashboardRepo := bunRepo.NewDashboardRepository(db)
 	getDashboardViewUC := dashboardApp.NewGetPublicDashboardViewUseCase(dashboardRepo, svgchartinfra.NewSVGGenerator())
@@ -312,6 +313,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 		}
 		return fmt.Sprintf("%+.0f", *delta)
 	})
+	engine.AddFunc("rankMovement", handler.RenderRankMovement)
 	app := fiber.New(fiber.Config{
 		Views:             engine,
 		PassLocalsToViews: true,
