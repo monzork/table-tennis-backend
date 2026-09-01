@@ -15,9 +15,10 @@ import (
 )
 
 // RenderRankMovement renders the public leaderboard's rank-change indicator
-// -- how many places a player has moved since the Elo snapshot before their
-// most recently finished event (leaderboard.RankedPlayer.RankDelta). A nil
-// delta (no finished event yet) renders nothing.
+// -- how many places a player has moved, within their own gender, since the
+// Elo snapshot before the single most recently finished tournament
+// (leaderboard.RankedPlayer.RankDelta). A nil delta (player wasn't in that
+// tournament) renders nothing.
 func RenderRankMovement(delta *int) template.HTML {
 	if delta == nil {
 		return ""

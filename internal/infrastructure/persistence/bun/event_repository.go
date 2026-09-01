@@ -1731,14 +1731,41 @@ func (r *EventRepository) AddParticipant(ctx context.Context, tournamentID strin
 }
 
 // GetPreviousEloSnapshots returns each player's elo_before_<rankType> value
-// from their most recently finished event (the latest events.start_date
-// among rows with a non-null elo_after_<rankType>). Players with no finished
-// event are simply absent from the map. Dedupes in Go rather than SQL
-// DISTINCT ON, which SQLite (used in tests) doesn't support.
+// from the single most recently finished tournament -- every child event
+// sharing that tournament's tournament_id (or, for a standalone event with
+// no parent tournament, just that one event). This is a global cutoff
+// shared by every player, not each player's own latest event, so the
+// rank-movement arrow always reflects "how did the last tournament change
+// your rank" -- a player absent from that tournament simply has no arrow,
+// rather than falling back to an older one. Players with no finished event
+// in scope are absent from the map. Dedupes in Go rather than SQL DISTINCT
+// ON, which SQLite (used in tests) doesn't support.
 func (r *EventRepository) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
 	beforeCol, afterCol := "elo_before_singles", "elo_after_singles"
 	if rankType == "doubles" {
 		beforeCol, afterCol = "elo_before_doubles", "elo_after_doubles"
+	}
+
+	type latestEventRow struct {
+		EventID      uuid.UUID     `bun:"event_id"`
+		TournamentID uuid.NullUUID `bun:"tournament_id"`
+	}
+	var latest latestEventRow
+	err := ExtractDB(ctx, r.db).NewSelect().
+		TableExpr("event_participants AS ep").
+		Join("JOIN events AS e ON e.id = ep.event_id").
+		ColumnExpr("e.id AS event_id").
+		ColumnExpr("e.tournament_id AS tournament_id").
+		Where(fmt.Sprintf("ep.%s IS NOT NULL", beforeCol)).
+		Where(fmt.Sprintf("ep.%s IS NOT NULL", afterCol)).
+		OrderExpr("e.start_date DESC").
+		Limit(1).
+		Scan(ctx, &latest)
+	if err == sql.ErrNoRows {
+		return map[string]int16{}, nil
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	type eloSnapshotRow struct {
@@ -1747,26 +1774,25 @@ func (r *EventRepository) GetPreviousEloSnapshots(ctx context.Context, rankType 
 	}
 	var rows []eloSnapshotRow
 
-	err := ExtractDB(ctx, r.db).NewSelect().
+	q := ExtractDB(ctx, r.db).NewSelect().
 		TableExpr("event_participants AS ep").
 		Join("JOIN events AS e ON e.id = ep.event_id").
 		ColumnExpr("ep.player_id AS player_id").
 		ColumnExpr(fmt.Sprintf("ep.%s AS elo", beforeCol)).
 		Where(fmt.Sprintf("ep.%s IS NOT NULL", beforeCol)).
-		Where(fmt.Sprintf("ep.%s IS NOT NULL", afterCol)).
-		OrderExpr("e.start_date DESC").
-		Scan(ctx, &rows)
-	if err != nil {
+		Where(fmt.Sprintf("ep.%s IS NOT NULL", afterCol))
+	if latest.TournamentID.Valid {
+		q = q.Where("e.tournament_id = ?", latest.TournamentID.UUID)
+	} else {
+		q = q.Where("e.id = ?", latest.EventID)
+	}
+	if err := q.Scan(ctx, &rows); err != nil {
 		return nil, err
 	}
 
 	out := make(map[string]int16, len(rows))
 	for _, row := range rows {
-		id := row.PlayerID.String()
-		if _, seen := out[id]; seen {
-			continue // rows arrive ordered by start_date DESC, so the first hit per player is their most recent finished event.
-		}
-		out[id] = row.Elo
+		out[row.PlayerID.String()] = row.Elo // one row per player per event within the single latest tournament.
 	}
 	return out, nil
 }

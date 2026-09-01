@@ -31,7 +31,8 @@ func TestEventRepository_GetPreviousEloSnapshots(t *testing.T) {
 	p2 := savePlayer(t, playerRepo, "P", "Two", "M")
 	p3 := savePlayer(t, playerRepo, "P", "Three", "M")
 
-	// p1's earlier, finished event: entered at 1000, finished at 1200.
+	// An earlier, finished event that both p1 and p2 played: entered at
+	// 1000/1050, finished at 1200/1050.
 	p1.SinglesElo = 1000
 	earlier := newEventAt(t, "Earlier", time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), []*player.Player{p1, p2})
 	if err := eventRepo.Save(ctx, earlier); err != nil {
@@ -43,8 +44,9 @@ func TestEventRepository_GetPreviousEloSnapshots(t *testing.T) {
 		t.Fatalf("UpdateParticipantsElo earlier: %v", err)
 	}
 
-	// p1's later, finished event: entered at 1200 (current live Elo at
-	// creation time), finished at 1300. This is the snapshot that should win.
+	// A later, finished event that only p1 played: entered at 1200 (current
+	// live Elo at creation time), finished at 1300. This is the single
+	// latest finished tournament -- the global cutoff for everyone.
 	later := newEventAt(t, "Later", time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC), []*player.Player{p1})
 	if err := eventRepo.Save(ctx, later); err != nil {
 		t.Fatalf("Save later: %v", err)
@@ -68,13 +70,61 @@ func TestEventRepository_GetPreviousEloSnapshots(t *testing.T) {
 	}
 
 	if elo, ok := got[p1.ID]; !ok || elo != 1200 {
-		t.Errorf("expected p1's previous Elo to be 1200 (from its most recent finished event), got %v (present=%v)", elo, ok)
+		t.Errorf("expected p1's previous Elo to be 1200 (from the latest finished tournament), got %v (present=%v)", elo, ok)
 	}
-	if elo, ok := got[p2.ID]; !ok || elo != 1000 {
-		t.Errorf("expected p2's previous Elo to be 1000, got %v (present=%v)", elo, ok)
+	if _, ok := got[p2.ID]; ok {
+		t.Errorf("expected p2 to be absent: it didn't play in the single latest finished tournament, and this is a global cutoff, not p2's own latest event")
 	}
 	if _, ok := got[p3.ID]; ok {
 		t.Errorf("expected p3 to be absent (its only event was never finished)")
+	}
+}
+
+// TestEventRepository_GetPreviousEloSnapshots_MultiEventTournament covers
+// the parent-tournament case: several child events (categories) sharing one
+// tournament_id all count as the same "latest finished tournament", even
+// though each child event has its own start_date.
+func TestEventRepository_GetPreviousEloSnapshots_MultiEventTournament(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	playerRepo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	p1 := savePlayer(t, playerRepo, "P", "One", "M")
+	p2 := savePlayer(t, playerRepo, "P", "Two", "F")
+	tournamentID := uuid.NewString()
+
+	p1.SinglesElo = 1000
+	menSingles := newEventAt(t, "Men's Singles", time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC), []*player.Player{p1})
+	menSingles.TournamentID = &tournamentID
+	if err := eventRepo.Save(ctx, menSingles); err != nil {
+		t.Fatalf("Save menSingles: %v", err)
+	}
+	p1.SinglesElo = 1100
+	if err := eventRepo.UpdateParticipantsElo(ctx, menSingles.ID, []*player.Player{p1}); err != nil {
+		t.Fatalf("UpdateParticipantsElo menSingles: %v", err)
+	}
+
+	p2.SinglesElo = 900
+	womenSingles := newEventAt(t, "Women's Singles", time.Date(2026, 4, 2, 0, 0, 0, 0, time.UTC), []*player.Player{p2})
+	womenSingles.TournamentID = &tournamentID
+	if err := eventRepo.Save(ctx, womenSingles); err != nil {
+		t.Fatalf("Save womenSingles: %v", err)
+	}
+	p2.SinglesElo = 950
+	if err := eventRepo.UpdateParticipantsElo(ctx, womenSingles.ID, []*player.Player{p2}); err != nil {
+		t.Fatalf("UpdateParticipantsElo womenSingles: %v", err)
+	}
+
+	got, err := eventRepo.GetPreviousEloSnapshots(ctx, "singles")
+	if err != nil {
+		t.Fatalf("GetPreviousEloSnapshots: %v", err)
+	}
+	if elo, ok := got[p1.ID]; !ok || elo != 1000 {
+		t.Errorf("expected p1's previous Elo to be 1000 (from its own category within the latest tournament), got %v (present=%v)", elo, ok)
+	}
+	if elo, ok := got[p2.ID]; !ok || elo != 900 {
+		t.Errorf("expected p2's previous Elo to be 900 (a different category, same tournament), got %v (present=%v)", elo, ok)
 	}
 }
 

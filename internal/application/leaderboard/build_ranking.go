@@ -11,11 +11,12 @@ import (
 type RankedPlayer struct {
 	*player.Player
 	Rank int
-	// RankDelta is how many positions this player has moved since the Elo
-	// snapshot taken before their most recently finished event, holding the
-	// rest of the field at its current Elo. Positive means moved up
-	// (improved rank number went down); nil means no finished event yet, so
-	// movement can't be shown.
+	// RankDelta is how many positions this player has moved, within their
+	// own gender's pool, since the Elo snapshot taken before the single most
+	// recently finished tournament, holding the rest of that gender's field
+	// at its current Elo. Positive means moved up (improved rank number went
+	// down); nil means the player wasn't in that tournament, so movement
+	// can't be shown.
 	RankDelta *int
 }
 
@@ -30,9 +31,9 @@ type RankingParams struct {
 	DivisionFilter string
 	SortOrder      string // "points_desc" | "points_asc" | "name_asc"
 	GenderFilter   string // "M" | "F" -- only consulted by BuildGenderRanking
-	// PreviousElo maps playerID -> Elo held before that player's most
-	// recently finished event (see PreviousEloRepository). Optional: a nil
-	// map simply means no rank-movement indicator is shown for anyone.
+	// PreviousElo maps playerID -> Elo held before the single most recently
+	// finished tournament (see PreviousEloRepository). Optional: a nil map
+	// simply means no rank-movement indicator is shown for anyone.
 	PreviousElo map[string]int16
 }
 
@@ -92,16 +93,28 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 	sorted := append([]*player.Player{}, players...)
 	sort.Slice(sorted, func(i, j int) bool { return eloOf(sorted[i], params.RankType) > eloOf(sorted[j], params.RankType) })
 
-	sortedElos := make([]int16, len(sorted))
-	for i, p := range sorted {
-		sortedElos[i] = eloOf(p, params.RankType)
+	// Rank movement is always computed within a player's own gender pool,
+	// even when the overall rank number (i above) is a combined M+F
+	// enumeration -- M and F Elo are separate rating scales, so comparing a
+	// player's previous Elo against the *combined* pool's current spread
+	// (BuildRanking's "overall" view) would misreport how far they actually
+	// moved relative to their real peers.
+	elosByGender := map[string][]int16{"M": nil, "F": nil}
+	for _, p := range sorted {
+		g := strings.ToUpper(p.Gender)
+		elosByGender[g] = append(elosByGender[g], eloOf(p, params.RankType))
+	}
+	for g := range elosByGender {
+		sort.Slice(elosByGender[g], func(i, j int) bool { return elosByGender[g][i] > elosByGender[g][j] })
 	}
 
 	for i, p := range sorted {
 		rp := RankedPlayer{Player: p, Rank: i + 1}
 		if prevElo, ok := params.PreviousElo[p.ID]; ok {
-			prevRank := previousRankFor(sortedElos, prevElo, eloOf(p, params.RankType))
-			delta := prevRank - rp.Rank
+			genderElos := elosByGender[strings.ToUpper(p.Gender)]
+			prevRank := previousRankFor(genderElos, prevElo, eloOf(p, params.RankType))
+			currentGenderRank := previousRankFor(genderElos, eloOf(p, params.RankType), eloOf(p, params.RankType))
+			delta := prevRank - currentGenderRank
 			rp.RankDelta = &delta
 		}
 		preRanked = append(preRanked, rp)

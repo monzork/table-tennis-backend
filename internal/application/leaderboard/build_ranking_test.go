@@ -213,6 +213,41 @@ func TestBuildRanking_RankDelta_NilWhenNoPreviousSnapshot(t *testing.T) {
 	}
 }
 
+// TestBuildRanking_RankDeltaIsGenderScoped is a regression test: even in
+// BuildRanking's combined-pool "overall" view (one shared 1..N rank number
+// across genders), a player's RankDelta must be computed against their own
+// gender's Elo pool only -- M and F Elo are separate rating scales, so a
+// male player's movement must not be measured against female opponents'
+// current Elo, and vice versa.
+func TestBuildRanking_RankDeltaIsGenderScoped(t *testing.T) {
+	players := []*player.Player{
+		{ID: "m1", FirstName: "M1", Gender: "M", SinglesElo: 2000},
+		{ID: "m2", FirstName: "M2", Gender: "M", SinglesElo: 1000},
+		// f1 sits between m1 and m2 in the combined pool, but is the ONLY
+		// female player -- within her own gender pool she is unopposed, so
+		// her rank movement must always be 0, regardless of what happens in
+		// the men's pool around her combined-pool position.
+		{ID: "f1", FirstName: "F1", Gender: "F", SinglesElo: 1500},
+	}
+
+	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
+		RankType:  "singles",
+		SortOrder: "points_desc",
+		PreviousElo: map[string]int16{
+			"f1": 500, // previously far below current Elo, but no other female player exists
+		},
+	})
+
+	byID := map[string]leaderboard.RankedPlayer{}
+	for _, p := range result.Groups[0].Players {
+		byID[p.ID] = p
+	}
+
+	if got := byID["f1"].RankDelta; got == nil || *got != 0 {
+		t.Errorf("expected f1's movement to be 0 (unopposed within her own gender pool), got %v", got)
+	}
+}
+
 func TestBuildRanking_DoublesUsesDoublesElo(t *testing.T) {
 	players := []*player.Player{
 		{ID: "1", FirstName: "A", SinglesElo: 2000, DoublesElo: 1000},
