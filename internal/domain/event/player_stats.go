@@ -53,9 +53,9 @@ type PlayerMatchDetail struct {
 	Opponent   string
 	OpponentID string
 	Won        bool
-	SetsWon  int
-	SetsLost int
-	Sets     []PlayerSetScore
+	SetsWon    int
+	SetsLost   int
+	Sets       []PlayerSetScore
 	// EloDelta is the Elo points this player gained (positive) or lost
 	// (negative) from this specific match. When the real applied delta
 	// isn't available yet (event not finished/recalculated), this falls
