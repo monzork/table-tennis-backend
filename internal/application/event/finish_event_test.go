@@ -132,6 +132,48 @@ func TestFinishTournamentUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("forfeit match: forfeiting side loses elo, winner-by-walkover gains nothing", func(t *testing.T) {
+		uc, repo, matchRepo, playerRepo := newUC()
+		p1 := &playerDomain.Player{ID: "p1", FirstName: "Alice", LastName: "A", SinglesElo: 1000}
+		p2 := &playerDomain.Player{ID: "p2", FirstName: "Bob", LastName: "B", SinglesElo: 1000}
+		playerRepo.players["p1"] = p1
+		playerRepo.players["p2"] = p2
+
+		now := time.Now()
+		// p1 (Team A) wins by walkover; p2 (Team B) forfeited.
+		finalMatch := tournamentDomain.Match{
+			ID:         "m1",
+			MatchType:  "singles",
+			TeamA:      []*playerDomain.Player{p1},
+			TeamB:      []*playerDomain.Player{p2},
+			Status:     "finished",
+			Stage:      "final",
+			WinnerTeam: "A",
+			IsForfeit:  true,
+			UpdatedAt:  &now,
+		}
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID:           "t1",
+			Status:       "in_progress",
+			Format:       "elimination",
+			Participants: []*playerDomain.Player{p1, p2},
+			Matches:      []tournamentDomain.Match{finalMatch},
+		}
+		matchRepo.finishedCount = 1
+
+		if err := uc.Execute(context.Background(), "t1"); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		// p1 also earns the flat 1st-place bonus (+64) and p2 the runner-up
+		// bonus (+32) on top of the match result -- see PlacementEloBonus.
+		if p1.SinglesElo != 1064 {
+			t.Errorf("expected winner-by-walkover elo 1000+0+64=1064, got %d", p1.SinglesElo)
+		}
+		if p2.SinglesElo != 1016 {
+			t.Errorf("expected forfeiting player elo 1000-16+32=1016, got %d", p2.SinglesElo)
+		}
+	})
+
 	t.Run("skip elo events do not touch elo but still finish", func(t *testing.T) {
 		uc, repo, matchRepo, _ := newUC()
 		p1 := &playerDomain.Player{ID: "p1", FirstName: "Alice", LastName: "A"}

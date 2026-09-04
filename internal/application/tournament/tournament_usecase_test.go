@@ -218,6 +218,9 @@ func (m *mockPlayerRepo) SaveMultiple(ctx context.Context, players []*playerDoma
 func (m *mockPlayerRepo) UpdateElo(ctx context.Context, players []*playerDomain.Player) error {
 	return nil
 }
+func (m *mockPlayerRepo) UpdateInactivity(ctx context.Context, players []*playerDomain.Player) error {
+	return nil
+}
 func (m *mockPlayerRepo) Delete(ctx context.Context, id string) error { return nil }
 func (m *mockPlayerRepo) Search(ctx context.Context, query string) ([]*playerDomain.Player, error) {
 	return nil, nil
@@ -225,7 +228,13 @@ func (m *mockPlayerRepo) Search(ctx context.Context, query string) ([]*playerDom
 func (m *mockPlayerRepo) SearchForSelection(ctx context.Context, query, gender string) ([]*playerDomain.Player, error) {
 	return nil, nil
 }
-func (m *mockPlayerRepo) GetAll(ctx context.Context) ([]*playerDomain.Player, error) { return nil, nil }
+func (m *mockPlayerRepo) GetAll(ctx context.Context) ([]*playerDomain.Player, error) {
+	var out []*playerDomain.Player
+	for _, p := range m.players {
+		out = append(out, p)
+	}
+	return out, nil
+}
 func (m *mockPlayerRepo) GetAllSingles(ctx context.Context) ([]*playerDomain.Player, error) {
 	return nil, nil
 }

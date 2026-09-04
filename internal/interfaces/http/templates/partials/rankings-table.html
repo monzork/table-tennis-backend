@@ -25,6 +25,9 @@
                         <a href="/players/{{.ID}}/stats" title="{{t $.T "rankings_table.view"}}" class="text-2xl tracking-wide text-gray-200 font-bold hover:text-white hover:underline transition-colors">
                             <span class="font-light text-gray-400 mr-1">{{.FirstNameWithSecond}}</span><span class="uppercase">{{.LastNameWithSecond}}</span>
                         </a>
+                        {{if and $.ShowInactive .Inactive}}
+                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-red-500/20 text-red-400 border border-red-500/30">{{t $.T "rankings_table.inactive"}}</span>
+                        {{end}}
                     </div>
                 </div>
             </td>
@@ -64,6 +67,9 @@
                             <span class="text-[9px] font-bold tracking-widest text-gray-400 bg-black/40 border border-white/10 px-1.5 py-0.5 rounded shadow-inner uppercase">{{.Country}}</span>
                             {{if $.Compact}}
                                 <span class="text-[9px] font-bold tracking-widest text-gray-500">{{.Gender}}</span>
+                            {{end}}
+                            {{if and $.ShowInactive .Inactive}}
+                            <span class="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">{{t $.T "rankings_table.inactive"}}</span>
                             {{end}}
                         </div>
                     </div>

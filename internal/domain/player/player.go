@@ -17,6 +17,10 @@ type Repository interface {
 	// fully-hydrated Player or they'll blank out fields the caller didn't
 	// set.
 	UpdateElo(ctx context.Context, players []*Player) error
+	// UpdateInactivity writes singles_elo/doubles_elo/missed_federated_tournaments/inactive
+	// for each given player -- the inactivity-decay pass mutates Elo and the
+	// tracking counters together in one pass.
+	UpdateInactivity(ctx context.Context, players []*Player) error
 	Delete(ctx context.Context, id string) error
 	Search(ctx context.Context, query string) ([]*Player, error)
 	SearchForSelection(ctx context.Context, query, gender string) ([]*Player, error)
@@ -55,6 +59,22 @@ type Player struct {
 	// player (self-claim) and cleared once an admin approves (promoting it to
 	// GuardianAccountID) or rejects it. Nil means no claim is pending.
 	ClaimedByAccountID *string
+	// MissedFederatedTournaments counts consecutive federation-endorsed
+	// tournaments concluded without this player enrolling in any of their
+	// events. Reset to 0 the moment the player enrolls in one again. See
+	// application/tournament.ApplyInactivityDecayUseCase.
+	MissedFederatedTournaments int16
+	// Inactive is set once MissedFederatedTournaments reaches the configured
+	// threshold, and cleared again as soon as the player re-enrolls.
+	Inactive bool
+	// FloorSingles/FloorDoubles are the elo targets inactivity decay is
+	// eroding this player's rating towards (see inactivity.BandFloor),
+	// fixed the moment each rating first goes inactive so it doesn't keep
+	// sliding down band by band on every later missed tournament. Nil
+	// means no decay floor is currently in effect for that rating; both
+	// are cleared the moment the player re-enrolls.
+	FloorSingles *int16
+	FloorDoubles *int16
 }
 
 func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, country, department, nationalID string) (*Player, error) {

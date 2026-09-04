@@ -1096,8 +1096,9 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 				writeHeader(fmt.Sprintf(L(lang, "REGISTERED PLAYERS - %s (%d PLAYERS)"), strings.ToUpper(dt.Name), len(dt.Players)))
 
 				pdf.SetFont("Arial", "B", 10)
-				pdf.CellFormat(30, 8, "Elo", "1", 0, "C", false, 0, "")
-				pdf.CellFormat(150, 8, tr(L(lang, "NAME")), "1", 1, "C", false, 0, "")
+				pdf.CellFormat(25, 8, "Elo", "1", 0, "C", false, 0, "")
+				pdf.CellFormat(115, 8, tr(L(lang, "NAME")), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(40, 8, tr(L(lang, "DEPARTMENT")), "1", 1, "C", false, 0, "")
 
 				// Sort division players by Elo descending
 				sort.Slice(dt.Players, func(i, j int) bool {
@@ -1120,8 +1121,9 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 					if strings.TrimSpace(p.LastName) != "(Team)" && strings.TrimSpace(p.LastName) != "" {
 						fullName += " " + p.LastNameWithSecond()
 					}
-					pdf.CellFormat(30, 8, fmt.Sprintf("%d", elo), "1", 0, "C", false, 0, "")
-					pdf.CellFormat(150, 8, tr(fullName), "1", 1, "L", false, 0, "")
+					pdf.CellFormat(25, 8, fmt.Sprintf("%d", elo), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(115, 8, tr(fullName), "1", 0, "L", false, 0, "")
+					pdf.CellFormat(40, 8, tr(p.Department), "1", 1, "C", false, 0, "")
 				}
 			}
 		}

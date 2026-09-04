@@ -48,6 +48,7 @@ var Translations = map[string]map[string]string{
 		"rankings.sort_pts_desc":      "Points (High to Low)",
 		"rankings.sort_pts_asc":       "Points (Low to High)",
 		"rankings.sort_name_asc":      "Name (A-Z)",
+		"rankings.show_inactive":      "Show inactive players",
 		"rankings.col_rank":           "Rank",
 		"rankings.col_player":         "Player",
 		"rankings.col_assoc":          "Assoc.",
@@ -244,6 +245,7 @@ var Translations = map[string]map[string]string{
 		"rankings_table.pts":      "pts",
 		"rankings_table.no_match": "No matching players found.",
 		"rankings_table.view":     "View stats",
+		"rankings_table.inactive": "Inactive",
 
 		// Player tournament stats page
 		"player_stats.eyebrow":             "Player Profile",
@@ -974,6 +976,7 @@ var Translations = map[string]map[string]string{
 		"rankings.sort_pts_desc":      "Puntos (Mayor a Menor)",
 		"rankings.sort_pts_asc":       "Puntos (Menor a Mayor)",
 		"rankings.sort_name_asc":      "Nombre (A-Z)",
+		"rankings.show_inactive":      "Mostrar jugadores inactivos",
 		"rankings.col_rank":           "Pos.",
 		"rankings.col_player":         "Jugador",
 		"rankings.col_assoc":          "País",
@@ -1170,6 +1173,7 @@ var Translations = map[string]map[string]string{
 		"rankings_table.pts":      "pts",
 		"rankings_table.no_match": "No se encontraron jugadores.",
 		"rankings_table.view":     "Ver estadísticas",
+		"rankings_table.inactive": "Inactivo",
 
 		// Player tournament stats page
 		"player_stats.eyebrow":             "Perfil del Jugador",

@@ -35,6 +35,10 @@ type RankingParams struct {
 	// finished tournament (see PreviousEloRepository). Optional: a nil map
 	// simply means no rank-movement indicator is shown for anyone.
 	PreviousElo map[string]int16
+	// ShowInactive includes players flagged Inactive (see
+	// player.Player.Inactive) in the ranking. Defaults to false so the
+	// public ranking only shows active players unless explicitly asked.
+	ShowInactive bool
 }
 
 type RankingResult struct {
@@ -118,6 +122,17 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 			rp.RankDelta = &delta
 		}
 		preRanked = append(preRanked, rp)
+	}
+
+	// 0.5 Filter out inactive players unless explicitly asked to show them.
+	if !params.ShowInactive {
+		var active []RankedPlayer
+		for _, rp := range preRanked {
+			if !rp.Inactive {
+				active = append(active, rp)
+			}
+		}
+		preRanked = active
 	}
 
 	// 1. Filter by search query (name, country, or department).

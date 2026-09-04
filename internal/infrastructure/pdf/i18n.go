@@ -19,11 +19,12 @@ var esTranslations = map[string]string{
 	"  2nd Place: ":            "  2do Lugar:",
 	"  3rd Place: ":            "  3er Lugar:",
 
-	"NAME":  "NOMBRE",
-	"Day":   "Día",
-	"Time":  "Hora",
-	"Table": "Mesa",
-	"Match": "Part.",
+	"NAME":       "NOMBRE",
+	"DEPARTMENT": "DEPARTAMENTO",
+	"Day":        "Día",
+	"Time":       "Hora",
+	"Table":      "Mesa",
+	"Match":      "Part.",
 
 	"Points": "Puntos",
 

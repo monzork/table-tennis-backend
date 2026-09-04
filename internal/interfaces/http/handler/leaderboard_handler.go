@@ -165,6 +165,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 	divFilter := c.Query("division")
 	sortOrder := c.Query("sort", "points_desc")
 	view := c.Query("view", "overall")
+	showInactive := c.Query("show_inactive") == "1"
 	genderFilter := strings.ToUpper(c.Query("gender", "M"))
 	if genderFilter != "M" && genderFilter != "F" {
 		genderFilter = "M"
@@ -207,6 +208,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		SortOrder:      sortOrder,
 		GenderFilter:   genderFilter,
 		PreviousElo:    previousElo,
+		ShowInactive:   showInactive,
 	}
 
 	var result leaderboard.RankingResult
@@ -228,6 +230,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		"Division":     divFilter,
 		"Sort":         sortOrder,
 		"View":         view,
+		"ShowInactive": showInactive,
 		"Gender":       genderFilter,
 		"IsDivisional": result.IsDivisional,
 		"Divisions":    divisions,

@@ -107,7 +107,7 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 
 	// 2. Process matches chronologically
 	for _, m := range t.Matches {
-		if m.WinnerTeam == "" || m.MatchType == "teams" || m.IsForfeit {
+		if m.WinnerTeam == "" || m.MatchType == "teams" {
 			continue
 		}
 
@@ -151,6 +151,24 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 			}
 
 			match.CalculateAndApplyElo(m.MatchType, resolvedA, resolvedB, m.WinnerTeam)
+
+			// A forfeit is a walkover, not a played match: the side that
+			// defaulted still loses Elo like any other loss, but the side
+			// that won by default gains nothing. Revert the winning side
+			// back to its before-match rating.
+			if m.IsForfeit {
+				winners, winnersBefore := resolvedA, beforeA
+				if m.WinnerTeam == "B" {
+					winners, winnersBefore = resolvedB, beforeB
+				}
+				for i, p := range winners {
+					if m.MatchType == "doubles" {
+						p.UpdateDoublesElo(winnersBefore[i])
+					} else {
+						p.UpdateSinglesElo(winnersBefore[i])
+					}
+				}
+			}
 
 			var afterA, afterB []int16
 			for _, p := range resolvedA {

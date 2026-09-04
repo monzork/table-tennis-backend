@@ -376,6 +376,23 @@ func (m *mockPlayerRepo) UpdateElo(ctx context.Context, players []*playerDomain.
 	return nil
 }
 
+func (m *mockPlayerRepo) UpdateInactivity(ctx context.Context, players []*playerDomain.Player) error {
+	if m.saveMultipleErr != nil {
+		return m.saveMultipleErr
+	}
+	for _, p := range players {
+		if existing, ok := m.players[p.ID]; ok {
+			existing.SinglesElo = p.SinglesElo
+			existing.DoublesElo = p.DoublesElo
+			existing.MissedFederatedTournaments = p.MissedFederatedTournaments
+			existing.Inactive = p.Inactive
+		} else {
+			m.players[p.ID] = p
+		}
+	}
+	return nil
+}
+
 func (m *mockPlayerRepo) Delete(ctx context.Context, id string) error {
 	if m.deleteErr != nil {
 		return m.deleteErr

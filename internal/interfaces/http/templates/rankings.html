@@ -35,9 +35,23 @@
                    hx-get="{{.CurrentPath}}"
                    hx-trigger="keyup changed delay:300ms"
                    hx-target="#rankings-container"
-                   hx-include="#division-filter, #gender-filter, #sort-order, #view-input"
+                   hx-include="#division-filter, #gender-filter, #sort-order, #view-input, #show-inactive"
                    hx-push-url="true"
                    hx-indicator="#rankings-container">
+        </div>
+        <div class="flex items-center gap-2 pb-3">
+            <input type="checkbox"
+                   id="show-inactive"
+                   name="show_inactive"
+                   value="1"
+                   {{if .ShowInactive}}checked{{end}}
+                   class="w-4 h-4 accent-white cursor-pointer"
+                   hx-get="{{.CurrentPath}}"
+                   hx-target="#rankings-container"
+                   hx-include="[name='q'], #division-filter, #gender-filter, #sort-order, #view-input"
+                   hx-push-url="true"
+                   hx-indicator="#rankings-container">
+            <label for="show-inactive" class="text-[10px] font-bold uppercase tracking-widest text-gray-500 cursor-pointer">{{t .T "rankings.show_inactive"}}</label>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full md:flex md:w-auto md:gap-4 items-end">
             {{if eq .View "gender"}}
@@ -48,7 +62,7 @@
                         class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
                         hx-get="{{.CurrentPath}}"
                         hx-target="#rankings-container"
-                        hx-include="[name='q'], #sort-order, #view-input"
+                        hx-include="[name='q'], #sort-order, #view-input, #show-inactive"
                         hx-push-url="true"
                         hx-indicator="#rankings-container">
                     <option value="M" {{if eq .Gender "M"}}selected{{end}}>{{t .T "rankings.gender_male"}}</option>
@@ -64,7 +78,7 @@
                             class="flex-1 bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
                             hx-get="{{.CurrentPath}}"
                             hx-target="#rankings-container"
-                            hx-include="[name='q'], #sort-order, #view-input"
+                            hx-include="[name='q'], #sort-order, #view-input, #show-inactive"
                             hx-push-url="true"
                             hx-indicator="#rankings-container">
                         <option value="all" {{if eq .Division "all"}}selected{{end}}>{{t .T "rankings.all_divisions"}}</option>
@@ -85,7 +99,7 @@
                         class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer text-base sm:text-sm"
                         hx-get="{{.CurrentPath}}"
                         hx-target="#rankings-container"
-                        hx-include="[name='q'], #division-filter, #gender-filter, #view-input"
+                        hx-include="[name='q'], #division-filter, #gender-filter, #view-input, #show-inactive"
                         hx-push-url="true"
                         hx-indicator="#rankings-container">
                     <option value="points_desc" {{if eq .Sort "points_desc"}}selected{{end}}>{{t .T "rankings.sort_pts_desc"}}</option>

@@ -223,3 +223,17 @@ ALTER TABLE matches ADD COLUMN IF NOT EXISTS spindex_match_id TEXT UNIQUE;
 -- Player ID card photos (Supabase Storage URLs)
 ALTER TABLE players ADD COLUMN IF NOT EXISTS id_front_path TEXT;
 ALTER TABLE players ADD COLUMN IF NOT EXISTS id_back_path TEXT;
+
+-- Inactivity tracking (migration 073)
+ALTER TABLE players ADD COLUMN IF NOT EXISTS missed_federated_tournaments SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS inactive BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS inactivity_settings (
+    id                    TEXT PRIMARY KEY DEFAULT 'default',
+    tournament_threshold  SMALLINT NOT NULL DEFAULT 4,
+    elo_penalty           SMALLINT NOT NULL DEFAULT 50
+);
+INSERT INTO inactivity_settings (id) VALUES ('default') ON CONFLICT (id) DO NOTHING;
+
+-- Inactivity decay floors per rating band (migration 074)
+ALTER TABLE players ADD COLUMN IF NOT EXISTS inactivity_floor_singles SMALLINT;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS inactivity_floor_doubles SMALLINT;

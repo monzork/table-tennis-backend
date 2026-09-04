@@ -29,6 +29,11 @@ type PlayerModel struct {
 	ClaimedByAccountID *uuid.UUID `bun:"claimed_by_account_id,type:uuid"`
 	CreatedAt          time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	UpdatedAt          *time.Time `bun:"updated_at,nullzero"`
+
+	MissedFederatedTournaments int16  `bun:"missed_federated_tournaments,notnull,default:0"`
+	Inactive                   bool   `bun:"inactive,notnull,default:false"`
+	FloorSingles               *int16 `bun:"inactivity_floor_singles"`
+	FloorDoubles               *int16 `bun:"inactivity_floor_doubles"`
 }
 
 func (m *PlayerModel) FullName() string {

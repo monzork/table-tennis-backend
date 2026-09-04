@@ -9,6 +9,7 @@ import (
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/event"
 	"table-tennis-backend/internal/application/leaderboard"
+	tournamentApp "table-tennis-backend/internal/application/tournament"
 	"table-tennis-backend/internal/domain/bracket"
 	divisionDomain "table-tennis-backend/internal/domain/division"
 	tournamentDomain "table-tennis-backend/internal/domain/event"
@@ -49,6 +50,15 @@ type EventHandler struct {
 	tvDashboardUC          *event.GetPublicTVDashboardViewUseCase
 	boardViewUC            *event.GetBoardViewUseCase
 	editFormViewUC         *event.GetEditFormViewUseCase
+	inactivityDecayUC      *tournamentApp.ApplyInactivityDecayUseCase
+}
+
+// WithInactivityDecay wires the optional inactivity-decay pass, run after an
+// event finishes on the chance it's the last child event of its parent
+// tournament. Left unset, Finish just skips it.
+func (h *EventHandler) WithInactivityDecay(uc *tournamentApp.ApplyInactivityDecayUseCase) *EventHandler {
+	h.inactivityDecayUC = uc
+	return h
 }
 
 func NewEventHandler(
@@ -275,6 +285,15 @@ func (h *EventHandler) Finish(c *fiber.Ctx) error {
 	if err := h.finishUC.Execute(c.Context(), idStr); err != nil {
 		fmt.Println(err)
 		return ErrorHandler(err)
+	}
+	if h.inactivityDecayUC != nil {
+		if ev, err := h.getByID.Execute(c.Context(), idStr); err == nil {
+			// Best-effort: a failure here shouldn't undo the event having
+			// finished, so it's logged rather than surfaced to the caller.
+			if err := h.inactivityDecayUC.ExecuteForEvent(c.Context(), ev.TournamentID); err != nil {
+				fmt.Println("inactivity decay:", err)
+			}
+		}
 	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")

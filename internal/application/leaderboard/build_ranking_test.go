@@ -264,6 +264,29 @@ func TestBuildRanking_DoublesUsesDoublesElo(t *testing.T) {
 	}
 }
 
+func TestBuildRanking_InactivePlayersHiddenByDefault(t *testing.T) {
+	players := []*player.Player{
+		{ID: "1", FirstName: "Active", SinglesElo: 2000},
+		{ID: "2", FirstName: "Benched", SinglesElo: 1800, Inactive: true},
+	}
+
+	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
+		RankType: "singles", SortOrder: "points_desc",
+	})
+	got := result.Groups[0].Players
+	if len(got) != 1 || got[0].ID != "1" {
+		t.Fatalf("expected only the active player by default, got %+v", got)
+	}
+
+	shown := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
+		RankType: "singles", SortOrder: "points_desc", ShowInactive: true,
+	})
+	gotShown := shown.Groups[0].Players
+	if len(gotShown) != 2 {
+		t.Fatalf("expected both players when ShowInactive is set, got %+v", gotShown)
+	}
+}
+
 func genderDivisionFixture() []*division.Division {
 	return []*division.Division{
 		{ID: "none", Name: "No Division"},

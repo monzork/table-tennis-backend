@@ -145,7 +145,7 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 		}
 	})
 
-	t.Run("forfeit match (single or double) skipped in elo processing", func(t *testing.T) {
+	t.Run("single forfeit: forfeiting side loses elo, winner gains nothing; double forfeit skipped entirely", func(t *testing.T) {
 		uc, repo, playerRepo := newUC()
 		p1 := &playerDomain.Player{ID: "p1", FirstName: "Alice", LastName: "A", SinglesElo: 1000}
 		p2 := &playerDomain.Player{ID: "p2", FirstName: "Bob", LastName: "B", SinglesElo: 1000}
@@ -155,6 +155,7 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 		playerRepo.players["p3"] = p3
 
 		now := time.Now()
+		// p1 (Team A) is the winner-by-walkover; p2 (Team B) forfeited.
 		singleForfeit := tournamentDomain.Match{
 			ID: "m1", MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2},
 			Status: "finished", WinnerTeam: "A", IsForfeit: true, UpdatedAt: &now,
@@ -171,8 +172,14 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 		if err := uc.Execute(context.Background(), "t1"); err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		if p1.SinglesElo != 1000 || p2.SinglesElo != 1000 || p3.SinglesElo != 1000 {
-			t.Errorf("expected no elo change from either forfeit type, got p1=%d p2=%d p3=%d", p1.SinglesElo, p2.SinglesElo, p3.SinglesElo)
+		if p1.SinglesElo != 1000 {
+			t.Errorf("expected winner-by-walkover to gain nothing, got p1=%d", p1.SinglesElo)
+		}
+		if p2.SinglesElo != 984 {
+			t.Errorf("expected forfeiting player to lose elo like a normal loss (1000-16=984), got p2=%d", p2.SinglesElo)
+		}
+		if p3.SinglesElo != 1000 {
+			t.Errorf("expected double-forfeit match to be skipped entirely, got p3=%d", p3.SinglesElo)
 		}
 	})
 

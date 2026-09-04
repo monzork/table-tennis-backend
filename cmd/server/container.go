@@ -130,6 +130,8 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 		event.NewGetBoardViewUseCase(getTournamentByIDUC, divisionUC),
 		event.NewGetEditFormViewUseCase(getTournamentByIDUC, leaderboardUC, divisionUC),
 	)
+	inactivitySettingsRepo := bun.NewInactivitySettingsRepository(bun.DB)
+	tournamentHandler = tournamentHandler.WithInactivityDecay(tournament.NewApplyInactivityDecayUseCase(tournamentRepo, playerRepo, inactivitySettingsRepo))
 	exportEventPdfUC := event.NewExportEventPdfUseCase(tournamentRepo, eventRepo, divisionRepo, pdfGenerator)
 	createEventUC := tournament.NewCreateEventUseCase(tournamentRepo, eventRepo, playerRepo, divisionRepo)
 	getEventByIDUC := tournament.NewGetEventByIDUseCase(tournamentRepo)

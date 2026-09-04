@@ -413,6 +413,43 @@ func TestPlayerRepository_UpdateElo_InvalidID(t *testing.T) {
 	}
 }
 
+func TestPlayerRepository_UpdateInactivity(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	if err := repo.UpdateInactivity(ctx, nil); err != nil {
+		t.Fatalf("UpdateInactivity (empty): %v", err)
+	}
+
+	p := newTestPlayer(t, "Rusty", "Player", "M")
+	p.SecondName = "Middle"
+	if err := repo.Save(ctx, p); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	update := &player.Player{ID: p.ID, SinglesElo: 1900, DoublesElo: 1850, MissedFederatedTournaments: 4, Inactive: true}
+	if err := repo.UpdateInactivity(ctx, []*player.Player{update}); err != nil {
+		t.Fatalf("UpdateInactivity: %v", err)
+	}
+
+	got, err := repo.GetById(ctx, p.ID)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.SinglesElo != 1900 || got.DoublesElo != 1850 || got.MissedFederatedTournaments != 4 || !got.Inactive {
+		t.Fatalf("expected inactivity fields updated, got %+v", got)
+	}
+	if got.SecondName != "Middle" {
+		t.Fatalf("expected non-inactivity fields preserved, got %+v", got)
+	}
+
+	bad := &player.Player{ID: "not-a-uuid"}
+	if err := repo.UpdateInactivity(ctx, []*player.Player{bad}); err == nil {
+		t.Fatal("expected error for invalid UUID, got nil")
+	}
+}
+
 func TestPlayerRepository_SaveMultiple_InvalidID(t *testing.T) {
 	db := setupTestDB(t)
 	repo := bunRepo.NewPlayerRepository(db)

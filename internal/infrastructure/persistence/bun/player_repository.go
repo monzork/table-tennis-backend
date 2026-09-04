@@ -119,28 +119,32 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 		return err
 	}
 	model := &PlayerModel{
-		ID:                 id,
-		FirstName:          p.FirstName,
-		SecondName:         p.SecondName,
-		LastName:           p.LastName,
-		SecondLastName:     p.SecondLastName,
-		Birthdate:          p.Birthdate,
-		Gender:             p.Gender,
-		SinglesElo:         p.SinglesElo,
-		DoublesElo:         p.DoublesElo,
-		Country:            p.Country,
-		Department:         p.Department,
-		WhatsAppNumber:     p.WhatsAppNumber,
-		NationalID:         p.NationalID,
-		IDFrontPath:        p.IDFrontPath,
-		IDBackPath:         p.IDBackPath,
-		GuardianAccountID:  guardianID,
-		ClaimedByAccountID: claimedByID,
+		ID:                         id,
+		FirstName:                  p.FirstName,
+		SecondName:                 p.SecondName,
+		LastName:                   p.LastName,
+		SecondLastName:             p.SecondLastName,
+		Birthdate:                  p.Birthdate,
+		Gender:                     p.Gender,
+		SinglesElo:                 p.SinglesElo,
+		DoublesElo:                 p.DoublesElo,
+		Country:                    p.Country,
+		Department:                 p.Department,
+		WhatsAppNumber:             p.WhatsAppNumber,
+		NationalID:                 p.NationalID,
+		IDFrontPath:                p.IDFrontPath,
+		IDBackPath:                 p.IDBackPath,
+		GuardianAccountID:          guardianID,
+		ClaimedByAccountID:         claimedByID,
+		MissedFederatedTournaments: p.MissedFederatedTournaments,
+		Inactive:                   p.Inactive,
+		FloorSingles:               p.FloorSingles,
+		FloorDoubles:               p.FloorDoubles,
 	}
 
 	_, err = ExtractDB(ctx, r.db).NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id, claimed_by_account_id = EXCLUDED.claimed_by_account_id").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id, claimed_by_account_id = EXCLUDED.claimed_by_account_id, missed_federated_tournaments = EXCLUDED.missed_federated_tournaments, inactive = EXCLUDED.inactive, inactivity_floor_singles = EXCLUDED.inactivity_floor_singles, inactivity_floor_doubles = EXCLUDED.inactivity_floor_doubles").
 		Exec(ctx)
 
 	return err
@@ -214,23 +218,27 @@ func modelToPlayer(m *PlayerModel) *player.Player {
 		claimedByID = &s
 	}
 	return &player.Player{
-		ID:                 m.ID.String(),
-		FirstName:          m.FirstName,
-		SecondName:         m.SecondName,
-		LastName:           m.LastName,
-		SecondLastName:     m.SecondLastName,
-		Birthdate:          m.Birthdate,
-		Gender:             m.Gender,
-		SinglesElo:         m.SinglesElo,
-		DoublesElo:         m.DoublesElo,
-		Country:            m.Country,
-		Department:         m.Department,
-		WhatsAppNumber:     m.WhatsAppNumber,
-		NationalID:         m.NationalID,
-		IDFrontPath:        m.IDFrontPath,
-		IDBackPath:         m.IDBackPath,
-		GuardianAccountID:  guardianID,
-		ClaimedByAccountID: claimedByID,
+		ID:                         m.ID.String(),
+		FirstName:                  m.FirstName,
+		SecondName:                 m.SecondName,
+		LastName:                   m.LastName,
+		SecondLastName:             m.SecondLastName,
+		Birthdate:                  m.Birthdate,
+		Gender:                     m.Gender,
+		SinglesElo:                 m.SinglesElo,
+		DoublesElo:                 m.DoublesElo,
+		Country:                    m.Country,
+		Department:                 m.Department,
+		WhatsAppNumber:             m.WhatsAppNumber,
+		NationalID:                 m.NationalID,
+		IDFrontPath:                m.IDFrontPath,
+		IDBackPath:                 m.IDBackPath,
+		GuardianAccountID:          guardianID,
+		ClaimedByAccountID:         claimedByID,
+		MissedFederatedTournaments: m.MissedFederatedTournaments,
+		Inactive:                   m.Inactive,
+		FloorSingles:               m.FloorSingles,
+		FloorDoubles:               m.FloorDoubles,
 	}
 }
 
@@ -336,29 +344,33 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 			return err
 		}
 		models[i] = PlayerModel{
-			ID:                 id,
-			FirstName:          p.FirstName,
-			SecondName:         p.SecondName,
-			LastName:           p.LastName,
-			SecondLastName:     p.SecondLastName,
-			Birthdate:          p.Birthdate,
-			Gender:             p.Gender,
-			SinglesElo:         p.SinglesElo,
-			DoublesElo:         p.DoublesElo,
-			Country:            p.Country,
-			Department:         p.Department,
-			WhatsAppNumber:     p.WhatsAppNumber,
-			NationalID:         p.NationalID,
-			IDFrontPath:        p.IDFrontPath,
-			IDBackPath:         p.IDBackPath,
-			GuardianAccountID:  guardianID,
-			ClaimedByAccountID: claimedByID,
+			ID:                         id,
+			FirstName:                  p.FirstName,
+			SecondName:                 p.SecondName,
+			LastName:                   p.LastName,
+			SecondLastName:             p.SecondLastName,
+			Birthdate:                  p.Birthdate,
+			Gender:                     p.Gender,
+			SinglesElo:                 p.SinglesElo,
+			DoublesElo:                 p.DoublesElo,
+			Country:                    p.Country,
+			Department:                 p.Department,
+			WhatsAppNumber:             p.WhatsAppNumber,
+			NationalID:                 p.NationalID,
+			IDFrontPath:                p.IDFrontPath,
+			IDBackPath:                 p.IDBackPath,
+			GuardianAccountID:          guardianID,
+			ClaimedByAccountID:         claimedByID,
+			MissedFederatedTournaments: p.MissedFederatedTournaments,
+			Inactive:                   p.Inactive,
+			FloorSingles:               p.FloorSingles,
+			FloorDoubles:               p.FloorDoubles,
 		}
 	}
 
 	_, err := ExtractDB(ctx, r.db).NewInsert().Model(&models).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id, claimed_by_account_id = EXCLUDED.claimed_by_account_id").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id, claimed_by_account_id = EXCLUDED.claimed_by_account_id, missed_federated_tournaments = EXCLUDED.missed_federated_tournaments, inactive = EXCLUDED.inactive, inactivity_floor_singles = EXCLUDED.inactivity_floor_singles, inactivity_floor_doubles = EXCLUDED.inactivity_floor_doubles").
 		Exec(ctx)
 	return err
 }
@@ -384,6 +396,38 @@ func (r *PlayerRepository) UpdateElo(ctx context.Context, players []*player.Play
 	_, err := ExtractDB(ctx, r.db).NewUpdate().
 		Model(&models).
 		Column("singles_elo", "doubles_elo").
+		Bulk().
+		Exec(ctx)
+	return err
+}
+
+// UpdateInactivity writes singles_elo/doubles_elo/missed_federated_tournaments/inactive/
+// inactivity_floor_singles/inactivity_floor_doubles for each player in a
+// single bulk statement -- see UpdateElo above for why this only touches
+// these columns instead of doing a full-row Save.
+func (r *PlayerRepository) UpdateInactivity(ctx context.Context, players []*player.Player) error {
+	if len(players) == 0 {
+		return nil
+	}
+	models := make([]*PlayerModel, len(players))
+	for i, p := range players {
+		id, err := uuid.Parse(p.ID)
+		if err != nil {
+			return err
+		}
+		models[i] = &PlayerModel{
+			ID:                         id,
+			SinglesElo:                 p.SinglesElo,
+			DoublesElo:                 p.DoublesElo,
+			MissedFederatedTournaments: p.MissedFederatedTournaments,
+			Inactive:                   p.Inactive,
+			FloorSingles:               p.FloorSingles,
+			FloorDoubles:               p.FloorDoubles,
+		}
+	}
+	_, err := ExtractDB(ctx, r.db).NewUpdate().
+		Model(&models).
+		Column("singles_elo", "doubles_elo", "missed_federated_tournaments", "inactive", "inactivity_floor_singles", "inactivity_floor_doubles").
 		Bulk().
 		Exec(ctx)
 	return err

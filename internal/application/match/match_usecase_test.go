@@ -315,6 +315,9 @@ func (m *mockPlayerRepo) SaveMultiple(ctx context.Context, players []*playerDoma
 func (m *mockPlayerRepo) UpdateElo(ctx context.Context, players []*playerDomain.Player) error {
 	return nil
 }
+func (m *mockPlayerRepo) UpdateInactivity(ctx context.Context, players []*playerDomain.Player) error {
+	return nil
+}
 func (m *mockPlayerRepo) Delete(ctx context.Context, id string) error { return nil }
 func (m *mockPlayerRepo) Search(ctx context.Context, query string) ([]*playerDomain.Player, error) {
 	return nil, nil
