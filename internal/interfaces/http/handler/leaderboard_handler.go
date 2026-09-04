@@ -38,10 +38,18 @@ type LeaderboardHandler struct {
 	divisionUC        *division.DivisionUseCase
 	getDistributionUC *leaderboard.GetDivisionDistributionUseCase
 	rankMovementUC    *leaderboard.GetRankMovementUseCase
+	placementBonusUC  *leaderboard.GetPlacementBonusUseCase
 }
 
 func NewLeaderboardHandler(uc *leaderboard.GetLeaderboardUseCase, divUC *division.DivisionUseCase, distUC *leaderboard.GetDivisionDistributionUseCase, rankMovementUC *leaderboard.GetRankMovementUseCase) *LeaderboardHandler {
 	return &LeaderboardHandler{getUC: uc, divisionUC: divUC, getDistributionUC: distUC, rankMovementUC: rankMovementUC}
+}
+
+// WithPlacementBonus wires the optional podium-bonus badge shown on the
+// public ranking page. Left unset, renderRanking just skips it.
+func (h *LeaderboardHandler) WithPlacementBonus(uc *leaderboard.GetPlacementBonusUseCase) *LeaderboardHandler {
+	h.placementBonusUC = uc
+	return h
 }
 
 type DivisionGroup struct {
@@ -174,6 +182,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 	var players []*player.Player
 	var divisions []*divisionDomain.Division
 	var previousElo map[string]int16
+	var placementBonus map[string]float64
 	var pErr, dErr error
 	var wg sync.WaitGroup
 
@@ -188,9 +197,13 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 	}()
 	go func() {
 		defer wg.Done()
-		// Rank movement is a nice-to-have indicator, not core ranking data --
-		// an error here is swallowed rather than failing the whole page.
+		// Rank movement and the placement-bonus badge are both nice-to-have
+		// indicators, not core ranking data -- errors here are swallowed
+		// rather than failing the whole page.
 		previousElo, _ = h.rankMovementUC.Execute(c.Context(), rankType)
+		if h.placementBonusUC != nil {
+			placementBonus, _ = h.placementBonusUC.Execute(c.Context(), rankType)
+		}
 	}()
 	wg.Wait()
 
@@ -209,6 +222,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		GenderFilter:   genderFilter,
 		PreviousElo:    previousElo,
 		ShowInactive:   showInactive,
+		PlacementBonus: placementBonus,
 	}
 
 	var result leaderboard.RankingResult

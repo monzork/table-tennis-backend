@@ -34,6 +34,8 @@ type PlayerModel struct {
 	Inactive                   bool   `bun:"inactive,notnull,default:false"`
 	FloorSingles               *int16 `bun:"inactivity_floor_singles"`
 	FloorDoubles               *int16 `bun:"inactivity_floor_doubles"`
+	LostToInactivitySingles    int16  `bun:"lost_to_inactivity_singles,notnull,default:0"`
+	LostToInactivityDoubles    int16  `bun:"lost_to_inactivity_doubles,notnull,default:0"`
 }
 
 func (m *PlayerModel) FullName() string {

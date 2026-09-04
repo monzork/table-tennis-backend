@@ -287,6 +287,35 @@ func TestBuildRanking_InactivePlayersHiddenByDefault(t *testing.T) {
 	}
 }
 
+func TestBuildRanking_PlacementBonus(t *testing.T) {
+	players := []*player.Player{
+		{ID: "champ", FirstName: "Champ", SinglesElo: 2000},
+		{ID: "nobody", FirstName: "Nobody", SinglesElo: 1800},
+	}
+
+	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
+		RankType: "singles", SortOrder: "points_desc",
+		PlacementBonus: map[string]float64{"champ": 64},
+	})
+
+	got := result.Groups[0].Players
+	var champ, nobody *leaderboard.RankedPlayer
+	for i := range got {
+		switch got[i].ID {
+		case "champ":
+			champ = &got[i]
+		case "nobody":
+			nobody = &got[i]
+		}
+	}
+	if champ == nil || champ.PlacementBonus == nil || *champ.PlacementBonus != 64 {
+		t.Errorf("expected champ's placement bonus to be 64, got %+v", champ)
+	}
+	if nobody == nil || nobody.PlacementBonus != nil {
+		t.Errorf("expected nobody to have no placement bonus, got %+v", nobody)
+	}
+}
+
 func genderDivisionFixture() []*division.Division {
 	return []*division.Division{
 		{ID: "none", Name: "No Division"},

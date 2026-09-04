@@ -428,7 +428,10 @@ func TestPlayerRepository_UpdateInactivity(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 
-	update := &player.Player{ID: p.ID, SinglesElo: 1900, DoublesElo: 1850, MissedFederatedTournaments: 4, Inactive: true}
+	update := &player.Player{
+		ID: p.ID, SinglesElo: 1900, DoublesElo: 1850, MissedFederatedTournaments: 4, Inactive: true,
+		LostToInactivitySingles: 100, LostToInactivityDoubles: 50,
+	}
 	if err := repo.UpdateInactivity(ctx, []*player.Player{update}); err != nil {
 		t.Fatalf("UpdateInactivity: %v", err)
 	}
@@ -439,6 +442,9 @@ func TestPlayerRepository_UpdateInactivity(t *testing.T) {
 	}
 	if got.SinglesElo != 1900 || got.DoublesElo != 1850 || got.MissedFederatedTournaments != 4 || !got.Inactive {
 		t.Fatalf("expected inactivity fields updated, got %+v", got)
+	}
+	if got.LostToInactivitySingles != 100 || got.LostToInactivityDoubles != 50 {
+		t.Fatalf("expected lost-to-inactivity fields updated, got %+v", got)
 	}
 	if got.SecondName != "Middle" {
 		t.Fatalf("expected non-inactivity fields preserved, got %+v", got)

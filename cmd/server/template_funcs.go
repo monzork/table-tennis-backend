@@ -133,5 +133,13 @@ func SetupTemplateEngine() *html.Engine {
 		return fmt.Sprintf("%+.0f", *delta)
 	})
 	engine.AddFunc("rankMovement", handler.RenderRankMovement)
+	// inactivityLoss picks the rank-type-appropriate side of a player's
+	// cumulative inactivity-decay loss (see player.Player.LostToInactivitySingles/Doubles).
+	engine.AddFunc("inactivityLoss", func(rankType string, singles, doubles int16) int16 {
+		if rankType == "doubles" {
+			return doubles
+		}
+		return singles
+	})
 	return engine
 }

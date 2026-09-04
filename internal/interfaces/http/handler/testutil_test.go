@@ -314,6 +314,12 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 		return fmt.Sprintf("%+.0f", *delta)
 	})
 	engine.AddFunc("rankMovement", handler.RenderRankMovement)
+	engine.AddFunc("inactivityLoss", func(rankType string, singles, doubles int16) int16 {
+		if rankType == "doubles" {
+			return doubles
+		}
+		return singles
+	})
 	app := fiber.New(fiber.Config{
 		Views:             engine,
 		PassLocalsToViews: true,

@@ -236,18 +236,25 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 	// 2b. Podium finishers earn a flat Elo bonus besides whatever they
 	// gained or lost from the matches they actually played: champion +2xK,
 	// runner-up +1xK, (up to two) 3rd-place +0.5xK. See
-	// tournamentDomain.PlacementEloBonus.
+	// tournamentDomain.PlacementResults. Persisted as a durable per-event
+	// record (see SavePlacementResults) so it's never lost once a later
+	// tournament finishes -- best-effort: a failure here doesn't undo the
+	// recalculation.
 	divisions, _ := uc.divisionRepo.GetAll(ctx)
-	for playerID, bonus := range tournamentDomain.PlacementEloBonus(t, divisions) {
+	placements := tournamentDomain.PlacementResults(t, divisions)
+	for playerID, detail := range placements {
 		state, ok := playerElos[playerID]
 		if !ok {
 			continue
 		}
 		if t.Type == "doubles" || t.Type == "mixed_doubles" {
-			state.DeltaDoubles += bonus
+			state.DeltaDoubles += detail.BonusElo
 		} else {
-			state.DeltaSingles += bonus
+			state.DeltaSingles += detail.BonusElo
 		}
+	}
+	if err := uc.tournamentRepo.SavePlacementResults(ctx, t.ID, placements); err != nil {
+		slog.Warn("failed to persist placement results", "eventID", t.ID, "error", err)
 	}
 
 	// 3. Save final updated Elos to database

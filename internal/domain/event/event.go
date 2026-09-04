@@ -459,6 +459,20 @@ type ParticipantSnapshot struct {
 	EloAfterDoubles  *int16
 }
 
+// PlacementRecord is one durable, permanent record of a player's final
+// tournament placement and the flat Elo bonus it earned in a past event --
+// written once via ParticipantRepository.SavePlacementResults when the
+// event finishes and never overwritten by any later tournament, so
+// GetPlacementHistoryByPlayerID always has the player's full bonus history,
+// not just their most recent one.
+type PlacementRecord struct {
+	EventID   string
+	EventName string
+	Placement string // "champion" | "runner_up" | "third" -- see PlacementChampion etc.
+	BonusElo  float64
+	Date      time.Time
+}
+
 var ErrTableOccupied = errors.New("table occupied by another in-progress match")
 
 // EventRepository is the core CRUD interface for the Event aggregate root.
@@ -493,6 +507,13 @@ type ParticipantRepository interface {
 	// that event_participants row. Used as the baseline for showing rank
 	// movement on the public leaderboard.
 	GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error)
+	// SavePlacementResults persists each player's final tournament placement
+	// and Elo bonus for this event as a durable record -- see
+	// PlacementRecord and GetPlacementHistoryByPlayerID.
+	SavePlacementResults(ctx context.Context, eventID string, results map[string]PlacementDetail) error
+	// GetPlacementHistoryByPlayerID returns every placement bonus a player
+	// has ever earned, across every event, newest tournament first.
+	GetPlacementHistoryByPlayerID(ctx context.Context, playerID string) ([]PlacementRecord, error)
 }
 
 // TeamRepository manages teams and their player rosters (doubles/team-format events).

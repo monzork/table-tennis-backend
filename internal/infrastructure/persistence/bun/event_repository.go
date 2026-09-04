@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
@@ -811,9 +812,11 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 		existingEloBeforeDoubles := make(map[string]*int16)
 		existingEloAfterSingles := make(map[string]*int16)
 		existingEloAfterDoubles := make(map[string]*int16)
+		existingPlacement := make(map[string]*string)
+		existingPlacementBonusElo := make(map[string]*float64)
 		{
 			var existingParts []EventParticipantModel
-			_ = tx.NewSelect().Model(&existingParts).Column("player_id", "pin", "elo_before_singles", "elo_before_doubles", "elo_after_singles", "elo_after_doubles").Where("event_id = ?", tID).Scan(ctx)
+			_ = tx.NewSelect().Model(&existingParts).Column("player_id", "pin", "elo_before_singles", "elo_before_doubles", "elo_after_singles", "elo_after_doubles", "placement", "placement_bonus_elo").Where("event_id = ?", tID).Scan(ctx)
 			for _, ep := range existingParts {
 				pIDStr := ep.PlayerID.String()
 				existingPINs[pIDStr] = ep.Pin
@@ -821,6 +824,8 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 				existingEloBeforeDoubles[pIDStr] = ep.EloBeforeDoubles
 				existingEloAfterSingles[pIDStr] = ep.EloAfterSingles
 				existingEloAfterDoubles[pIDStr] = ep.EloAfterDoubles
+				existingPlacement[pIDStr] = ep.Placement
+				existingPlacementBonusElo[pIDStr] = ep.PlacementBonusElo
 			}
 		}
 
@@ -863,13 +868,15 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 				}
 
 				partModels[i] = EventParticipantModel{
-					EventID:          tID,
-					PlayerID:         pID,
-					Pin:              pin,
-					EloBeforeSingles: eloBeforeS,
-					EloBeforeDoubles: eloBeforeD,
-					EloAfterSingles:  existingEloAfterSingles[p.ID],
-					EloAfterDoubles:  existingEloAfterDoubles[p.ID],
+					EventID:           tID,
+					PlayerID:          pID,
+					Pin:               pin,
+					EloBeforeSingles:  eloBeforeS,
+					EloBeforeDoubles:  eloBeforeD,
+					EloAfterSingles:   existingEloAfterSingles[p.ID],
+					EloAfterDoubles:   existingEloAfterDoubles[p.ID],
+					Placement:         existingPlacement[p.ID],
+					PlacementBonusElo: existingPlacementBonusElo[p.ID],
 				}
 			}
 			if _, err = tx.NewInsert().Model(&partModels).Exec(ctx); err != nil {
@@ -1793,6 +1800,145 @@ func (r *EventRepository) GetPreviousEloSnapshots(ctx context.Context, rankType 
 	out := make(map[string]int16, len(rows))
 	for _, row := range rows {
 		out[row.PlayerID.String()] = row.Elo // one row per player per event within the single latest tournament.
+	}
+	return out, nil
+}
+
+// SavePlacementResults persists each player's final tournament placement
+// and Elo bonus for this event onto its event_participants row -- written
+// once when the event finishes and never touched again by any later
+// tournament, so it's a durable record of exactly where those bonus points
+// came from (see event.PlacementRecord).
+func (r *EventRepository) SavePlacementResults(ctx context.Context, eventID string, results map[string]event.PlacementDetail) error {
+	if len(results) == 0 {
+		return nil
+	}
+	eID, err := uuid.Parse(eventID)
+	if err != nil {
+		return err
+	}
+	for playerID, detail := range results {
+		pID, err := uuid.Parse(playerID)
+		if err != nil {
+			continue
+		}
+		placement, bonus := detail.Placement, detail.BonusElo
+		if _, err := ExtractDB(ctx, r.db).NewUpdate().
+			TableExpr("event_participants").
+			Set("placement = ?, placement_bonus_elo = ?", placement, bonus).
+			Where("event_id = ? AND player_id = ?", eID, pID).
+			Exec(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// GetPlacementHistoryByPlayerID returns every placement bonus a player has
+// ever earned, across every event, newest tournament first.
+func (r *EventRepository) GetPlacementHistoryByPlayerID(ctx context.Context, playerID string) ([]event.PlacementRecord, error) {
+	pID, err := uuid.Parse(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	type row struct {
+		EventID   uuid.UUID `bun:"event_id"`
+		EventName string    `bun:"event_name"`
+		Placement string    `bun:"placement"`
+		BonusElo  float64   `bun:"placement_bonus_elo"`
+		StartDate time.Time `bun:"start_date"`
+	}
+	var rows []row
+	if err := ExtractDB(ctx, r.db).NewSelect().
+		TableExpr("event_participants AS ep").
+		Join("JOIN events AS e ON e.id = ep.event_id").
+		ColumnExpr("ep.event_id AS event_id").
+		ColumnExpr("e.name AS event_name").
+		ColumnExpr("ep.placement AS placement").
+		ColumnExpr("ep.placement_bonus_elo AS placement_bonus_elo").
+		ColumnExpr("e.start_date AS start_date").
+		Where("ep.player_id = ? AND ep.placement_bonus_elo IS NOT NULL", pID).
+		OrderExpr("e.start_date DESC").
+		Scan(ctx, &rows); err != nil {
+		return nil, err
+	}
+
+	out := make([]event.PlacementRecord, len(rows))
+	for i, rw := range rows {
+		out[i] = event.PlacementRecord{
+			EventID:   rw.EventID.String(),
+			EventName: rw.EventName,
+			Placement: rw.Placement,
+			BonusElo:  rw.BonusElo,
+			Date:      rw.StartDate,
+		}
+	}
+	return out, nil
+}
+
+// latestFinishedEventScope identifies the single most recently finished
+// event (by start_date) and, if it belongs to one, its parent tournament --
+// the shared "latest tournament" cutoff used by
+// GetLatestTournamentPlacementBonuses.
+func (r *EventRepository) latestFinishedEventScope(ctx context.Context) (eventID uuid.UUID, tournamentID uuid.NullUUID, err error) {
+	var latest struct {
+		ID           uuid.UUID     `bun:"id"`
+		TournamentID uuid.NullUUID `bun:"tournament_id"`
+	}
+	err = ExtractDB(ctx, r.db).NewSelect().
+		TableExpr("events").
+		Column("id", "tournament_id").
+		Where("status = 'finished'").
+		OrderExpr("start_date DESC").
+		Limit(1).
+		Scan(ctx, &latest)
+	return latest.ID, latest.TournamentID, err
+}
+
+// GetLatestTournamentPlacementBonuses returns playerID -> podium Elo bonus
+// earned in the single most recently finished tournament, restricted to
+// child events matching rankType ("singles" | "doubles"). Reads the durable
+// record written by SavePlacementResults rather than recomputing anything,
+// so it always matches what was actually applied to each player's rating.
+func (r *EventRepository) GetLatestTournamentPlacementBonuses(ctx context.Context, rankType string) (map[string]float64, error) {
+	eventID, tournamentID, err := r.latestFinishedEventScope(ctx)
+	if err == sql.ErrNoRows {
+		return map[string]float64{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	types := []string{"singles"}
+	if rankType == "doubles" {
+		types = []string{"doubles", "mixed_doubles"}
+	}
+
+	q := ExtractDB(ctx, r.db).NewSelect().
+		TableExpr("event_participants AS ep").
+		Join("JOIN events AS e ON e.id = ep.event_id").
+		ColumnExpr("ep.player_id AS player_id").
+		ColumnExpr("ep.placement_bonus_elo AS bonus").
+		Where("ep.placement_bonus_elo IS NOT NULL").
+		Where("e.type IN (?)", bun.In(types))
+	if tournamentID.Valid {
+		q = q.Where("e.tournament_id = ?", tournamentID.UUID)
+	} else {
+		q = q.Where("e.id = ?", eventID)
+	}
+
+	type row struct {
+		PlayerID uuid.UUID `bun:"player_id"`
+		Bonus    float64   `bun:"bonus"`
+	}
+	var rows []row
+	if err := q.Scan(ctx, &rows); err != nil {
+		return nil, err
+	}
+	out := make(map[string]float64, len(rows))
+	for _, rw := range rows {
+		out[rw.PlayerID.String()] = rw.Bonus
 	}
 	return out, nil
 }

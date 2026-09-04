@@ -54,6 +54,9 @@ type mockRepo struct {
 	updateCalls       int
 	updateGroupsCalls int
 	deleteCalls       int
+
+	placementResults map[string]map[string]tournamentDomain.PlacementDetail // eventID -> playerID -> detail
+	savePlacementErr error
 }
 
 func newMockRepo() *mockRepo {
@@ -174,6 +177,21 @@ func (m *mockRepo) GetParticipantOrOfficialByPIN(ctx context.Context, tournament
 }
 
 func (m *mockRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+	return nil, nil
+}
+
+func (m *mockRepo) SavePlacementResults(ctx context.Context, eventID string, results map[string]tournamentDomain.PlacementDetail) error {
+	if m.savePlacementErr != nil {
+		return m.savePlacementErr
+	}
+	if m.placementResults == nil {
+		m.placementResults = make(map[string]map[string]tournamentDomain.PlacementDetail)
+	}
+	m.placementResults[eventID] = results
+	return nil
+}
+
+func (m *mockRepo) GetPlacementHistoryByPlayerID(ctx context.Context, playerID string) ([]tournamentDomain.PlacementRecord, error) {
 	return nil, nil
 }
 

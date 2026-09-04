@@ -59,6 +59,13 @@ type EventParticipantModel struct {
 	EloAfterSingles  *int16 `bun:"elo_after_singles"`
 	EloAfterDoubles  *int16 `bun:"elo_after_doubles"`
 
+	// Placement/PlacementBonusElo are set once, when the event finishes, and
+	// never touched again -- a durable record of the podium bonus this
+	// player earned here, independent of whatever their rating does in
+	// later tournaments. See event.PlacementRecord.
+	Placement         *string  `bun:"placement"`
+	PlacementBonusElo *float64 `bun:"placement_bonus_elo"`
+
 	Player *PlayerModel `bun:"rel:belongs-to,join:player_id=id"`
 }
 

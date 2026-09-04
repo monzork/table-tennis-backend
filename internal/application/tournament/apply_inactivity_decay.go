@@ -15,8 +15,11 @@ import (
 // (inactivity.BandFloor) -- so a 2101-rated player floors at 2000 while a
 // 1859-rated one floors at 1700, and neither erodes further than that once
 // reached. The player is flagged Inactive once the threshold is first
-// reached. Enrolling in a tournament again resets the streak, the flag, and
-// both floors, so the next inactive streak computes fresh ones.
+// reached, and each penalty accumulates into
+// LostToInactivitySingles/Doubles so the total damage is visible (e.g. on
+// the public ranking). Enrolling in a tournament again resets the streak,
+// the flag, both floors, and the lost-Elo tally, so the next inactive
+// streak starts fresh.
 type ApplyInactivityDecayUseCase struct {
 	tournamentRepo tournamentDomain.Repository
 	playerRepo     playerDomain.Repository
@@ -101,8 +104,11 @@ func (uc *ApplyInactivityDecayUseCase) ExecuteForEvent(ctx context.Context, tour
 			p.Inactive = true
 		}
 		if settings.TournamentThreshold > 0 && int(p.MissedFederatedTournaments)%settings.TournamentThreshold == 0 {
+			beforeSingles, beforeDoubles := p.SinglesElo, p.DoublesElo
 			p.SinglesElo, p.FloorSingles = decayElo(p.SinglesElo, p.FloorSingles, settings.EloPenalty)
 			p.DoublesElo, p.FloorDoubles = decayElo(p.DoublesElo, p.FloorDoubles, settings.EloPenalty)
+			p.LostToInactivitySingles += beforeSingles - p.SinglesElo
+			p.LostToInactivityDoubles += beforeDoubles - p.DoublesElo
 		}
 		toUpdate = append(toUpdate, p)
 	}
@@ -135,16 +141,19 @@ func (uc *ApplyInactivityDecayUseCase) resetEnrolled(ctx context.Context, enroll
 	return uc.playerRepo.UpdateInactivity(ctx, toUpdate)
 }
 
-// reset clears a player's missed-tournament streak/flag/floor and reports
-// whether anything actually changed.
+// reset clears a player's missed-tournament streak/flag/floor/lost-Elo
+// tracking and reports whether anything actually changed.
 func reset(p *playerDomain.Player) bool {
-	if p.MissedFederatedTournaments == 0 && !p.Inactive && p.FloorSingles == nil && p.FloorDoubles == nil {
+	if p.MissedFederatedTournaments == 0 && !p.Inactive && p.FloorSingles == nil && p.FloorDoubles == nil &&
+		p.LostToInactivitySingles == 0 && p.LostToInactivityDoubles == 0 {
 		return false
 	}
 	p.MissedFederatedTournaments = 0
 	p.Inactive = false
 	p.FloorSingles = nil
 	p.FloorDoubles = nil
+	p.LostToInactivitySingles = 0
+	p.LostToInactivityDoubles = 0
 	return true
 }
 

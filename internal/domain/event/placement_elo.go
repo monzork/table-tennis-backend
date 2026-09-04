@@ -108,6 +108,23 @@ func firstPlayer(team []*player.Player) *player.Player {
 	return team[0]
 }
 
+// PlacementDetail pairs a player's final tournament placement label
+// ("champion" | "runner_up" | "third") with the flat Elo bonus it earned --
+// the richer counterpart to PlacementEloBonus's bare amount, used to
+// persist a durable per-event placement record (see
+// ParticipantRepository.SavePlacementResults) rather than just apply the
+// points and forget where they came from.
+type PlacementDetail struct {
+	Placement string
+	BonusElo  float64
+}
+
+const (
+	PlacementChampion = "champion"
+	PlacementRunnerUp = "runner_up"
+	PlacementThird    = "third"
+)
+
 // PlacementEloBonus computes, for every player whose final placement in this
 // event lands on the podium, the flat Elo bonus (in rating points) they earn
 // besides whatever they gained or lost from the matches they actually
@@ -118,11 +135,27 @@ func firstPlayer(team []*player.Player) *player.Player {
 // the placement-bonus multiplier for each match's DivisionID; pass nil (or
 // an event with no divisions) to use the default multiplier everywhere.
 func PlacementEloBonus(t *Event, divisions []*division.Division) map[string]float64 {
+	details := PlacementResults(t, divisions)
+	if details == nil {
+		return nil
+	}
+	out := make(map[string]float64, len(details))
+	for id, d := range details {
+		out[id] = d.BonusElo
+	}
+	return out
+}
+
+// PlacementResults is PlacementEloBonus's richer counterpart: same podium
+// computation, but keyed with each player's placement label alongside the
+// bonus amount so it can be persisted as a durable history entry instead of
+// just applied to the player's rating.
+func PlacementResults(t *Event, divisions []*division.Division) map[string]PlacementDetail {
 	switch t.Format {
 	case "elimination", "groups_elimination":
-		return knockoutPlacementBonus(t, divisions)
+		return knockoutPlacementDetails(t, divisions)
 	case "round_robin":
-		return roundRobinPlacementBonus(t, divisions)
+		return roundRobinPlacementDetails(t, divisions)
 	default:
 		return nil
 	}
@@ -155,12 +188,12 @@ func resolveTeamSlot(t *Event, slot []*player.Player) []*player.Player {
 	return resolved
 }
 
-// knockoutPlacementBonus walks every finished final/semifinal, keyed by its
-// own DivisionID -- an event split into multiple divisions runs one
+// knockoutPlacementDetails walks every finished final/semifinal, keyed by
+// its own DivisionID -- an event split into multiple divisions runs one
 // independent bracket (and podium) per division, so each division's final
 // and semifinals are scored with that division's own bonus multiplier.
-func knockoutPlacementBonus(t *Event, divisions []*division.Division) map[string]float64 {
-	bonus := make(map[string]float64)
+func knockoutPlacementDetails(t *Event, divisions []*division.Division) map[string]PlacementDetail {
+	bonus := make(map[string]PlacementDetail)
 
 	for i := range t.Matches {
 		m := &t.Matches[i]
@@ -174,10 +207,10 @@ func knockoutPlacementBonus(t *Event, divisions []*division.Division) map[string
 			winners, losers = m.TeamB, m.TeamA
 		}
 		for _, p := range resolveTeamSlot(t, winners) {
-			bonus[p.ID] = first
+			bonus[p.ID] = PlacementDetail{Placement: PlacementChampion, BonusElo: first}
 		}
 		for _, p := range resolveTeamSlot(t, losers) {
-			bonus[p.ID] = second
+			bonus[p.ID] = PlacementDetail{Placement: PlacementRunnerUp, BonusElo: second}
 		}
 	}
 
@@ -193,19 +226,19 @@ func knockoutPlacementBonus(t *Event, divisions []*division.Division) map[string
 			loser = m.TeamB
 		}
 		for _, p := range resolveTeamSlot(t, loser) {
-			bonus[p.ID] = third
+			bonus[p.ID] = PlacementDetail{Placement: PlacementThird, BonusElo: third}
 		}
 	}
 
 	return bonus
 }
 
-// roundRobinPlacementBonus builds one standings table over every
+// roundRobinPlacementDetails builds one standings table over every
 // participant and awards its top 3 the bonus for the event's single
 // division. Round-robin-format events in this codebase are always scoped to
 // exactly one division (e.g. "II Ranking Nacional por Divisiones" creates a
 // separate whole event per division, see resolveDivisionID) -- multi-
-// division brackets go through groups_elimination/knockoutPlacementBonus
+// division brackets go through groups_elimination/knockoutPlacementDetails
 // instead, where per-match DivisionID is reliably stamped. Deliberately
 // does NOT bucket by each match's own DivisionID: a defaulting player's
 // forfeited matches have been observed to carry a stale/incorrect
@@ -213,7 +246,7 @@ func knockoutPlacementBonus(t *Event, divisions []*division.Division) map[string
 // match in the same round-robin group carries none, which would otherwise
 // split one real group's matches into a bogus second "division" whose
 // standings are computed from only that handful of forfeits.
-func roundRobinPlacementBonus(t *Event, divisions []*division.Division) map[string]float64 {
+func roundRobinPlacementDetails(t *Event, divisions []*division.Division) map[string]PlacementDetail {
 	pool := roundRobinParticipantPool(t)
 	if len(pool) == 0 {
 		return nil
@@ -231,19 +264,19 @@ func roundRobinPlacementBonus(t *Event, divisions []*division.Division) map[stri
 	divID := resolveDivisionID(t, divisions, "", firstPlayer(pool))
 	first, second, third := placementBonusAmounts(divisions, divID)
 
-	bonus := make(map[string]float64)
-	assign := func(rank int, amount float64) {
+	bonus := make(map[string]PlacementDetail)
+	assign := func(rank int, placement string, amount float64) {
 		if len(standings) <= rank {
 			return
 		}
 		slot := []*player.Player{standings[rank].Player}
 		for _, p := range resolveTeamSlot(t, slot) {
-			bonus[p.ID] = amount
+			bonus[p.ID] = PlacementDetail{Placement: placement, BonusElo: amount}
 		}
 	}
-	assign(0, first)
-	assign(1, second)
-	assign(2, third)
+	assign(0, PlacementChampion, first)
+	assign(1, PlacementRunnerUp, second)
+	assign(2, PlacementThird, third)
 
 	return bonus
 }

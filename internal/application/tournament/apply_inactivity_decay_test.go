@@ -221,6 +221,11 @@ func TestApplyInactivityDecayUseCase_ExecuteForEvent(t *testing.T) {
 				t.Errorf("crossing %d: expected the floor to stay fixed at 1700, got %+v", i+1, p.FloorSingles)
 			}
 		}
+		// 1859 - 1700 = 159 lost in total across the four crossings above
+		// (50 + 50 + 50 + 9, the last one clamped).
+		if p.LostToInactivitySingles != 159 {
+			t.Errorf("expected 159 total elo lost, got %d", p.LostToInactivitySingles)
+		}
 
 		// A fifth crossing costs nothing further: already at the floor.
 		p.MissedFederatedTournaments = 19
@@ -229,6 +234,34 @@ func TestApplyInactivityDecayUseCase_ExecuteForEvent(t *testing.T) {
 		}
 		if p.SinglesElo != 1700 {
 			t.Errorf("expected elo to stay at the floor once reached, got %d", p.SinglesElo)
+		}
+		if p.LostToInactivitySingles != 159 {
+			t.Errorf("expected no further loss once at the floor, got %d", p.LostToInactivitySingles)
+		}
+	})
+
+	t.Run("re-enrolling resets the lost-elo tally alongside the rest of the streak", func(t *testing.T) {
+		repo := newMockEventRepo()
+		id := "t1"
+		enrolled := &playerDomain.Player{
+			ID: "p1", SinglesElo: 1809, MissedFederatedTournaments: 4, Inactive: true,
+			LostToInactivitySingles: 50,
+		}
+		floor := int16(1700)
+		enrolled.FloorSingles = &floor
+		repo.events[id] = &tournamentDomain.Tournament{
+			ID: id, FederationEndorsed: true,
+			Events: []*subTourneyDomain.Event{{Status: "finished", Participants: []*playerDomain.Player{enrolled}}},
+		}
+		playerRepo := newMockPlayerRepo()
+		playerRepo.players[enrolled.ID] = enrolled
+
+		uc := tournament.NewApplyInactivityDecayUseCase(repo, playerRepo, defaultSettingsRepo())
+		if err := uc.ExecuteForEvent(context.Background(), &id); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if enrolled.LostToInactivitySingles != 0 {
+			t.Errorf("expected lost-elo tally reset on re-enrollment, got %d", enrolled.LostToInactivitySingles)
 		}
 	})
 

@@ -18,6 +18,11 @@ type RankedPlayer struct {
 	// down); nil means the player wasn't in that tournament, so movement
 	// can't be shown.
 	RankDelta *int
+	// PlacementBonus is the flat podium Elo bonus this player earned in the
+	// single most recently finished tournament (see
+	// GetPlacementBonusUseCase), or nil if they didn't place on a podium (or
+	// weren't in that tournament at all).
+	PlacementBonus *float64
 }
 
 type DivisionGroupView struct {
@@ -39,6 +44,11 @@ type RankingParams struct {
 	// player.Player.Inactive) in the ranking. Defaults to false so the
 	// public ranking only shows active players unless explicitly asked.
 	ShowInactive bool
+	// PlacementBonus maps playerID -> the flat podium Elo bonus they earned
+	// in the single most recently finished tournament (see
+	// GetPlacementBonusUseCase). Optional: a nil map simply means no bonus
+	// badge is shown for anyone.
+	PlacementBonus map[string]float64
 }
 
 type RankingResult struct {
@@ -120,6 +130,10 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 			currentGenderRank := previousRankFor(genderElos, eloOf(p, params.RankType), eloOf(p, params.RankType))
 			delta := prevRank - currentGenderRank
 			rp.RankDelta = &delta
+		}
+		if bonus, ok := params.PlacementBonus[p.ID]; ok {
+			b := bonus
+			rp.PlacementBonus = &b
 		}
 		preRanked = append(preRanked, rp)
 	}

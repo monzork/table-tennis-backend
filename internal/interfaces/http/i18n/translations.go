@@ -242,10 +242,14 @@ var Translations = map[string]map[string]string{
 		"pub_detail.score":        "Score",
 
 		// Rankings table
-		"rankings_table.pts":      "pts",
-		"rankings_table.no_match": "No matching players found.",
-		"rankings_table.view":     "View stats",
-		"rankings_table.inactive": "Inactive",
+		"rankings_table.pts":         "pts",
+		"rankings_table.no_match":    "No matching players found.",
+		"rankings_table.view":        "View stats",
+		"rankings_table.inactive":    "Inactive",
+		"rankings_table.bonus":       "Bonus",
+		"rankings_table.bonus_title": "Podium Elo bonus earned in the last tournament",
+		"rankings_table.lost":        "Lost",
+		"rankings_table.lost_title":  "Elo lost to inactivity",
 
 		// Player tournament stats page
 		"player_stats.eyebrow":             "Player Profile",
@@ -1170,10 +1174,14 @@ var Translations = map[string]map[string]string{
 		"pub_detail.score":        "Resultado",
 
 		// Rankings table
-		"rankings_table.pts":      "pts",
-		"rankings_table.no_match": "No se encontraron jugadores.",
-		"rankings_table.view":     "Ver estadísticas",
-		"rankings_table.inactive": "Inactivo",
+		"rankings_table.pts":         "pts",
+		"rankings_table.no_match":    "No se encontraron jugadores.",
+		"rankings_table.view":        "Ver estadísticas",
+		"rankings_table.inactive":    "Inactivo",
+		"rankings_table.bonus":       "Bono",
+		"rankings_table.bonus_title": "Bono de Elo por podio en el último torneo",
+		"rankings_table.lost":        "Perdido",
+		"rankings_table.lost_title":  "Elo perdido por inactividad",
 
 		// Player tournament stats page
 		"player_stats.eyebrow":             "Perfil del Jugador",

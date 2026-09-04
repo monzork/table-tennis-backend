@@ -75,6 +75,12 @@ type Player struct {
 	// are cleared the moment the player re-enrolls.
 	FloorSingles *int16
 	FloorDoubles *int16
+	// LostToInactivitySingles/Doubles are how many Elo points this rating
+	// has shed to inactivity decay since the current streak began -- reset
+	// to 0 alongside MissedFederatedTournaments/Inactive/Floor* the moment
+	// the player enrolls in a tournament again.
+	LostToInactivitySingles int16
+	LostToInactivityDoubles int16
 }
 
 func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, country, department, nationalID string) (*Player, error) {

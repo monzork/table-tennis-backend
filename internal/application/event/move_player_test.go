@@ -93,6 +93,14 @@ func (m *mockMovePlayerRepository) GetPreviousEloSnapshots(ctx context.Context, 
 	return nil, nil
 }
 
+func (m *mockMovePlayerRepository) SavePlacementResults(ctx context.Context, eventID string, results map[string]tournamentDomain.PlacementDetail) error {
+	return nil
+}
+
+func (m *mockMovePlayerRepository) GetPlacementHistoryByPlayerID(ctx context.Context, playerID string) ([]tournamentDomain.PlacementRecord, error) {
+	return nil, nil
+}
+
 func (m *mockMovePlayerRepository) GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error) {
 	return "", nil
 }

@@ -156,6 +156,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 
 	distUC := leaderboard.NewGetDivisionDistributionUseCase(chartGenerator)
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUC, divisionUC, distUC, rankMovementUC)
+	leaderboardHandler = leaderboardHandler.WithPlacementBonus(leaderboard.NewGetPlacementBonusUseCase(eventRepo))
 	divisionHandler := handler.NewDivisionHandler(divisionUC)
 	selfRegisterUC := event.NewSelfRegisterUseCase(eventRepo, playerRepo)
 	publicHandler := handler.NewPublicHandler(playerUC, selfRegisterUC)

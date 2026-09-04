@@ -56,6 +56,45 @@ func TestPlacementEloBonus_Elimination(t *testing.T) {
 	}
 }
 
+func TestPlacementResults_LabelsMatchAmounts(t *testing.T) {
+	john := &player.Player{ID: "john"}
+	jane := &player.Player{ID: "jane"}
+	bob := &player.Player{ID: "bob"}
+	alice := &player.Player{ID: "alice"}
+
+	ev := &Event{
+		Format: "elimination",
+		Type:   "singles",
+		Matches: []Match{
+			{Stage: "final", Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{john}, TeamB: []*player.Player{jane}},
+			{Stage: "semifinal", Status: "finished", WinnerTeam: "A", TeamA: []*player.Player{bob}, TeamB: []*player.Player{alice}},
+		},
+	}
+
+	results := PlacementResults(ev, nil)
+	if got := results["john"]; got.Placement != PlacementChampion || got.BonusElo != FirstPlaceEloBonus {
+		t.Errorf("expected john labeled champion with %.1f, got %+v", FirstPlaceEloBonus, got)
+	}
+	if got := results["jane"]; got.Placement != PlacementRunnerUp || got.BonusElo != SecondPlaceEloBonus {
+		t.Errorf("expected jane labeled runner_up with %.1f, got %+v", SecondPlaceEloBonus, got)
+	}
+	if got := results["alice"]; got.Placement != PlacementThird || got.BonusElo != ThirdPlaceEloBonus {
+		t.Errorf("expected alice labeled third with %.1f, got %+v", ThirdPlaceEloBonus, got)
+	}
+	if _, ok := results["bob"]; ok {
+		t.Errorf("expected bob (semifinal winner, not on the podium) absent, got %+v", results["bob"])
+	}
+
+	// PlacementEloBonus must stay in lockstep with PlacementResults -- same
+	// underlying computation, just without the label.
+	amounts := PlacementEloBonus(ev, nil)
+	for id, detail := range results {
+		if amounts[id] != detail.BonusElo {
+			t.Errorf("expected PlacementEloBonus[%s]=%.1f to match PlacementResults, got %.1f", id, detail.BonusElo, amounts[id])
+		}
+	}
+}
+
 func TestPlacementEloBonus_NoFinishedFinal(t *testing.T) {
 	ev := &Event{
 		Format: "elimination",

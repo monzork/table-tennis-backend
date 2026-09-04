@@ -226,6 +226,14 @@ func (m *mockEventRepo) GetParticipantSnapshots(ctx context.Context, tournamentI
 func (m *mockEventRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
 	return nil, nil
 }
+
+func (m *mockEventRepo) SavePlacementResults(ctx context.Context, eventID string, results map[string]eventDomain.PlacementDetail) error {
+	return nil
+}
+
+func (m *mockEventRepo) GetPlacementHistoryByPlayerID(ctx context.Context, playerID string) ([]eventDomain.PlacementRecord, error) {
+	return nil, nil
+}
 func (m *mockEventRepo) GetParticipantOrOfficialByPIN(ctx context.Context, tournamentID string, pin string) (string, error) {
 	return "", nil
 }

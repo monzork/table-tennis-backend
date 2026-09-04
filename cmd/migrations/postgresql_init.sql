@@ -237,3 +237,11 @@ INSERT INTO inactivity_settings (id) VALUES ('default') ON CONFLICT (id) DO NOTH
 -- Inactivity decay floors per rating band (migration 074)
 ALTER TABLE players ADD COLUMN IF NOT EXISTS inactivity_floor_singles SMALLINT;
 ALTER TABLE players ADD COLUMN IF NOT EXISTS inactivity_floor_doubles SMALLINT;
+
+-- Durable placement-bonus history (migration 075)
+ALTER TABLE event_participants ADD COLUMN IF NOT EXISTS placement TEXT;
+ALTER TABLE event_participants ADD COLUMN IF NOT EXISTS placement_bonus_elo DOUBLE PRECISION;
+
+-- Cumulative Elo lost to inactivity decay this streak (migration 076)
+ALTER TABLE players ADD COLUMN IF NOT EXISTS lost_to_inactivity_singles SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS lost_to_inactivity_doubles SMALLINT NOT NULL DEFAULT 0;
