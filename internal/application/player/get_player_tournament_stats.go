@@ -26,6 +26,10 @@ type PlayerEventStatsView struct {
 	// PendingProposals previews the Elo effect of any not-yet-confirmed
 	// score proposal on this player's matches within the event.
 	PendingProposals []tournamentEvent.PendingProposalPreview
+	// Placement/PlacementBonus are this player's durable podium result for
+	// this specific event, if any -- see tournamentEvent.SavePlacementResults.
+	Placement      *string
+	PlacementBonus *float64
 }
 
 // PlayerTournamentView groups a player's per-event stats under the parent
@@ -149,6 +153,8 @@ func (uc *GetPlayerTournamentStatsUseCase) Execute(ctx context.Context, playerID
 			view.EloAfterSingles = snap.EloAfterSingles
 			view.EloBeforeDoubles = snap.EloBeforeDoubles
 			view.EloAfterDoubles = snap.EloAfterDoubles
+			view.Placement = snap.Placement
+			view.PlacementBonus = snap.PlacementBonusElo
 		}
 		grouped[tid] = append(grouped[tid], view)
 	}

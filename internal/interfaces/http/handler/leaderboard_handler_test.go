@@ -117,6 +117,12 @@ func createTestLeaderboardApp(t *testing.T) *fiber.App {
 		}
 		return singles
 	})
+	engine.AddFunc("placementLabel", func(tmap map[string]string, placement *string) string {
+		if placement == nil {
+			return ""
+		}
+		return *placement
+	})
 
 	app := fiber.New(fiber.Config{
 		Views:             engine,

@@ -57,6 +57,8 @@ func TestGetPlayerTournamentStatsUseCase_Execute(t *testing.T) {
 		tid := "t1"
 		before := int16(1000)
 		after := int16(1020)
+		champion := eventDomain.PlacementChampion
+		bonus := 64.0
 		ev := &eventDomain.Event{
 			ID:           "e1",
 			Name:         "Men's Singles",
@@ -76,7 +78,7 @@ func TestGetPlayerTournamentStatsUseCase_Execute(t *testing.T) {
 		eventRepo := &fakeEventRepo{
 			events: []*eventDomain.Event{ev},
 			snapshots: map[string][]eventDomain.ParticipantSnapshot{
-				"e1": {{PlayerID: "p1", EloBeforeSingles: &before, EloAfterSingles: &after}},
+				"e1": {{PlayerID: "p1", EloBeforeSingles: &before, EloAfterSingles: &after, Placement: &champion, PlacementBonusElo: &bonus}},
 			},
 		}
 		tournamentRepo := &fakeTournamentRepo{byID: map[string]*tournament.Tournament{
@@ -117,6 +119,12 @@ func TestGetPlayerTournamentStatsUseCase_Execute(t *testing.T) {
 		}
 		if tv.Events[0].EloAfterSingles == nil || *tv.Events[0].EloAfterSingles != 1020 {
 			t.Errorf("expected elo after 1020, got %v", tv.Events[0].EloAfterSingles)
+		}
+		if tv.Events[0].Placement == nil || *tv.Events[0].Placement != eventDomain.PlacementChampion {
+			t.Errorf("expected placement champion, got %v", tv.Events[0].Placement)
+		}
+		if tv.Events[0].PlacementBonus == nil || *tv.Events[0].PlacementBonus != 64 {
+			t.Errorf("expected placement bonus 64, got %v", tv.Events[0].PlacementBonus)
 		}
 	})
 

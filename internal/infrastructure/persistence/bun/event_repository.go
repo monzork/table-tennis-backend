@@ -1877,72 +1877,6 @@ func (r *EventRepository) GetPlacementHistoryByPlayerID(ctx context.Context, pla
 	return out, nil
 }
 
-// latestFinishedEventScope identifies the single most recently finished
-// event (by start_date) and, if it belongs to one, its parent tournament --
-// the shared "latest tournament" cutoff used by
-// GetLatestTournamentPlacementBonuses.
-func (r *EventRepository) latestFinishedEventScope(ctx context.Context) (eventID uuid.UUID, tournamentID uuid.NullUUID, err error) {
-	var latest struct {
-		ID           uuid.UUID     `bun:"id"`
-		TournamentID uuid.NullUUID `bun:"tournament_id"`
-	}
-	err = ExtractDB(ctx, r.db).NewSelect().
-		TableExpr("events").
-		Column("id", "tournament_id").
-		Where("status = 'finished'").
-		OrderExpr("start_date DESC").
-		Limit(1).
-		Scan(ctx, &latest)
-	return latest.ID, latest.TournamentID, err
-}
-
-// GetLatestTournamentPlacementBonuses returns playerID -> podium Elo bonus
-// earned in the single most recently finished tournament, restricted to
-// child events matching rankType ("singles" | "doubles"). Reads the durable
-// record written by SavePlacementResults rather than recomputing anything,
-// so it always matches what was actually applied to each player's rating.
-func (r *EventRepository) GetLatestTournamentPlacementBonuses(ctx context.Context, rankType string) (map[string]float64, error) {
-	eventID, tournamentID, err := r.latestFinishedEventScope(ctx)
-	if err == sql.ErrNoRows {
-		return map[string]float64{}, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	types := []string{"singles"}
-	if rankType == "doubles" {
-		types = []string{"doubles", "mixed_doubles"}
-	}
-
-	q := ExtractDB(ctx, r.db).NewSelect().
-		TableExpr("event_participants AS ep").
-		Join("JOIN events AS e ON e.id = ep.event_id").
-		ColumnExpr("ep.player_id AS player_id").
-		ColumnExpr("ep.placement_bonus_elo AS bonus").
-		Where("ep.placement_bonus_elo IS NOT NULL").
-		Where("e.type IN (?)", bun.In(types))
-	if tournamentID.Valid {
-		q = q.Where("e.tournament_id = ?", tournamentID.UUID)
-	} else {
-		q = q.Where("e.id = ?", eventID)
-	}
-
-	type row struct {
-		PlayerID uuid.UUID `bun:"player_id"`
-		Bonus    float64   `bun:"bonus"`
-	}
-	var rows []row
-	if err := q.Scan(ctx, &rows); err != nil {
-		return nil, err
-	}
-	out := make(map[string]float64, len(rows))
-	for _, rw := range rows {
-		out[rw.PlayerID.String()] = rw.Bonus
-	}
-	return out, nil
-}
-
 // RemoveParticipant deletes a player from event_participants and any group they belong to.
 func (r *EventRepository) RemoveParticipant(ctx context.Context, tournamentID string, playerID string) error {
 	tID, err := uuid.Parse(tournamentID)
@@ -2020,12 +1954,14 @@ func (r *EventRepository) GetParticipantSnapshots(ctx context.Context, tournamen
 	domainSnaps := make([]event.ParticipantSnapshot, len(snapshots))
 	for i, s := range snapshots {
 		domainSnaps[i] = event.ParticipantSnapshot{
-			PlayerID:         s.PlayerID.String(),
-			Pin:              s.Pin,
-			EloBeforeSingles: s.EloBeforeSingles,
-			EloAfterSingles:  s.EloAfterSingles,
-			EloBeforeDoubles: s.EloBeforeDoubles,
-			EloAfterDoubles:  s.EloAfterDoubles,
+			PlayerID:          s.PlayerID.String(),
+			Pin:               s.Pin,
+			EloBeforeSingles:  s.EloBeforeSingles,
+			EloAfterSingles:   s.EloAfterSingles,
+			EloBeforeDoubles:  s.EloBeforeDoubles,
+			EloAfterDoubles:   s.EloAfterDoubles,
+			Placement:         s.Placement,
+			PlacementBonusElo: s.PlacementBonusElo,
 		}
 	}
 	return domainSnaps, nil

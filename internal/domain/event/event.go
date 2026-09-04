@@ -457,6 +457,10 @@ type ParticipantSnapshot struct {
 	EloAfterSingles  *int16
 	EloBeforeDoubles *int16
 	EloAfterDoubles  *int16
+	// Placement/PlacementBonusElo are this player's durable podium result
+	// for this specific event, if any -- see SavePlacementResults.
+	Placement         *string
+	PlacementBonusElo *float64
 }
 
 // PlacementRecord is one durable, permanent record of a player's final

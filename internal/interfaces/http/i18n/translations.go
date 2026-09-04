@@ -266,6 +266,10 @@ var Translations = map[string]map[string]string{
 		"player_stats.matches":             "Matches",
 		"player_stats.pending_proposal":    "Pending Score Proposal (Elo if confirmed)",
 		"player_stats.elo_estimated":       "est.",
+		"player_stats.placement_champion":  "Champion",
+		"player_stats.placement_runner_up": "Runner-up",
+		"player_stats.placement_third":     "3rd Place",
+		"player_stats.bonus":               "Bonus",
 
 		// Bracket
 		"bracket.participants":     "Participants",
@@ -1198,6 +1202,10 @@ var Translations = map[string]map[string]string{
 		"player_stats.matches":             "Partidos",
 		"player_stats.pending_proposal":    "Propuesta de Marcador Pendiente (Elo si se confirma)",
 		"player_stats.elo_estimated":       "est.",
+		"player_stats.placement_champion":  "Campeón",
+		"player_stats.placement_runner_up": "Subcampeón",
+		"player_stats.placement_third":     "3er Lugar",
+		"player_stats.bonus":               "Bono",
 
 		// Bracket
 		"bracket.participants":     "Participantes",

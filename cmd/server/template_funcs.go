@@ -141,5 +141,23 @@ func SetupTemplateEngine() *html.Engine {
 		}
 		return singles
 	})
+	// placementLabel renders a durable per-event placement (see
+	// event.PlacementDetail) as its localized label, or "" if the player
+	// didn't finish on the podium in that event.
+	engine.AddFunc("placementLabel", func(tmap map[string]string, placement *string) string {
+		if placement == nil {
+			return ""
+		}
+		switch *placement {
+		case "champion":
+			return tmap["player_stats.placement_champion"]
+		case "runner_up":
+			return tmap["player_stats.placement_runner_up"]
+		case "third":
+			return tmap["player_stats.placement_third"]
+		default:
+			return *placement
+		}
+	})
 	return engine
 }
