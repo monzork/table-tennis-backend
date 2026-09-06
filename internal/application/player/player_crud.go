@@ -78,6 +78,31 @@ func (uc *UpdatePlayerUseCase) Execute(ctx context.Context, idStr, firstName, se
 	return p, err
 }
 
+// SetPlayerInactiveUseCase lets an admin manually flip a player's Inactive
+// flag from the edit-player form -- the same flag the tournament-inactivity-
+// decay pass (application/tournament.ApplyInactivityDecayUseCase) sets
+// automatically, so a manual deactivation here is undone the moment the
+// player is next enrolled into any event, just like an automatic one.
+type SetPlayerInactiveUseCase struct {
+	repo player.Repository
+}
+
+func NewSetPlayerInactiveUseCase(repo player.Repository) *SetPlayerInactiveUseCase {
+	return &SetPlayerInactiveUseCase{repo: repo}
+}
+
+func (uc *SetPlayerInactiveUseCase) Execute(ctx context.Context, idStr string, inactive bool) (*player.Player, error) {
+	p, err := uc.repo.GetById(ctx, idStr)
+	if err != nil {
+		return nil, err
+	}
+	p.Inactive = inactive
+	if err := uc.repo.Save(ctx, p); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
 type DeletePlayerUseCase struct {
 	repo player.Repository
 }

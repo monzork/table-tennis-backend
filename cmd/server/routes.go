@@ -174,6 +174,8 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler, acc
 	api.Put("/players/:id", c.PlayerHandler.Update)
 	api.Post("/players/:id/link-account", c.PlayerHandler.LinkAccount)
 	api.Post("/players/:id/unlink-account", c.PlayerHandler.UnlinkAccount)
+	api.Post("/players/:id/deactivate", c.PlayerHandler.Deactivate)
+	api.Post("/players/:id/activate", c.PlayerHandler.Activate)
 	api.Post("/players/:id/approve-claim", c.AdminHandler.ApproveClaim)
 	api.Post("/players/:id/reject-claim", c.AdminHandler.RejectClaim)
 	api.Delete("/players/:id", c.PlayerHandler.Delete)

@@ -525,6 +525,11 @@ var Translations = map[string]map[string]string{
 		"admin.player_form.link_btn":           "Link",
 		"admin.player_form.unlink_btn":         "Unlink",
 		"admin.player_form.linked_badge":       "Linked to a guardian account",
+		"admin.player_form.status_active":      "Active",
+		"admin.player_form.status_inactive":    "Inactive",
+		"admin.player_form.activate_btn":       "Activate",
+		"admin.player_form.deactivate_btn":     "Deactivate",
+		"admin.player_form.confirm_deactivate": "Deactivate this player? They'll be hidden from rankings until reactivated.",
 
 		// Admin: player row
 		"admin.player_row.national_id":    "National ID:",
@@ -1461,6 +1466,11 @@ var Translations = map[string]map[string]string{
 		"admin.player_form.link_btn":           "Vincular",
 		"admin.player_form.unlink_btn":         "Desvincular",
 		"admin.player_form.linked_badge":       "Vinculado a una cuenta de tutor",
+		"admin.player_form.status_active":      "Activo",
+		"admin.player_form.status_inactive":    "Inactivo",
+		"admin.player_form.activate_btn":       "Activar",
+		"admin.player_form.deactivate_btn":     "Desactivar",
+		"admin.player_form.confirm_deactivate": "¿Desactivar este jugador? No aparecerá en las clasificaciones hasta ser reactivado.",
 
 		// Admin: player row
 		"admin.player_row.national_id":    "Cédula:",

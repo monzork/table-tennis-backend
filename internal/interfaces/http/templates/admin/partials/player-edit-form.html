@@ -126,6 +126,30 @@
         {{end}}
     </div>
 
+    <div class="pt-2 border-t border-white/5 mt-4 flex items-center justify-between gap-2">
+        <span class="text-[10px] font-bold uppercase tracking-widest {{if .Player.Inactive}}text-red-400{{else}}text-gray-500{{end}}">
+            {{if .Player.Inactive}}{{t .T "admin.player_form.status_inactive"}}{{else}}{{t .T "admin.player_form.status_active"}}{{end}}
+        </span>
+        {{if .Player.Inactive}}
+        <button type="button"
+            hx-post="/players/{{.Player.ID}}/activate"
+            hx-target="#player-{{.Player.ID}}"
+            hx-swap="outerHTML"
+            class="text-[10px] font-bold uppercase tracking-widest text-green-400 hover:text-green-300 border border-green-900/50 hover:border-green-500 px-3 py-2 rounded-lg transition-all">
+            {{t .T "admin.player_form.activate_btn"}}
+        </button>
+        {{else}}
+        <button type="button"
+            hx-post="/players/{{.Player.ID}}/deactivate"
+            hx-target="#player-{{.Player.ID}}"
+            hx-swap="outerHTML"
+            hx-confirm="{{t .T "admin.player_form.confirm_deactivate"}}"
+            class="text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 border border-red-900/50 hover:border-red-500 px-3 py-2 rounded-lg transition-all">
+            {{t .T "admin.player_form.deactivate_btn"}}
+        </button>
+        {{end}}
+    </div>
+
     <div class="pt-2 border-t border-white/5 mt-4">
         <label class="text-[10px] font-bold uppercase text-gray-500 mb-1 block">{{t .T "admin.player_form.enroll_label"}}</label>
         <select name="tournamentId" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white appearance-none cursor-pointer">

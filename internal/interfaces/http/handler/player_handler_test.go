@@ -192,6 +192,61 @@ func TestPlayerHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("Deactivate and Activate Player", func(t *testing.T) {
+		var pm bunRepo.PlayerModel
+		if err := db.NewSelect().Model(&pm).Where("first_name = ?", "John Updated").Scan(context.Background()); err != nil {
+			t.Fatalf("failed to find seeded player: %v", err)
+		}
+		id := pm.ID.String()
+		repo := bunRepo.NewPlayerRepository(db)
+
+		req := httptest.NewRequest("POST", "/players/"+id+"/deactivate", nil)
+		req.Header.Set("Cookie", sessionCookie)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+		got, err := repo.GetById(context.Background(), id)
+		if err != nil {
+			t.Fatalf("GetById: %v", err)
+		}
+		if !got.Inactive {
+			t.Errorf("expected player to be Inactive after deactivate")
+		}
+
+		req = httptest.NewRequest("POST", "/players/"+id+"/activate", nil)
+		req.Header.Set("Cookie", sessionCookie)
+		resp, err = app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+		got, err = repo.GetById(context.Background(), id)
+		if err != nil {
+			t.Fatalf("GetById: %v", err)
+		}
+		if got.Inactive {
+			t.Errorf("expected player to be active again after activate")
+		}
+	})
+
+	t.Run("Deactivate Player - Not Found", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/players/does-not-exist/deactivate", nil)
+		req.Header.Set("Cookie", sessionCookie)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		if resp.StatusCode != 400 {
+			t.Errorf("expected 400, got %v", resp.StatusCode)
+		}
+	})
+
 	t.Run("Delete Player", func(t *testing.T) {
 		var pm bunRepo.PlayerModel
 		err := db.NewSelect().Model(&pm).Where("first_name = ?", "John Updated").Scan(context.Background())

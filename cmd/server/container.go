@@ -232,6 +232,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	)
 	playerHandler.WithAssignPlayerToAccountUseCase(assignPlayerToAccountUC)
 	playerHandler.WithGetPlayerRankUseCase(player.NewGetPlayerRankUseCase(playerRepo))
+	playerHandler.WithSetPlayerInactiveUseCase(player.NewSetPlayerInactiveUseCase(playerRepo))
 	accountHandler.WithGetPlayerStatsUseCase(getPlayerStatsUC)
 	accountHandler.WithClaimUseCases(claimPlayerUC, searchClaimableUC)
 	adminHandler.WithClaimReviewUseCases(getPendingClaimsUC, approveClaimUC, rejectClaimUC)

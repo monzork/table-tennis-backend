@@ -556,6 +556,9 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	playerHandler.WithAssignPlayerToAccountUseCase(assignPlayerToAccountUC)
 	api.Post("/players/:id/link-account", playerHandler.LinkAccount)
 	api.Post("/players/:id/unlink-account", playerHandler.UnlinkAccount)
+	playerHandler.WithSetPlayerInactiveUseCase(player.NewSetPlayerInactiveUseCase(playerRepo))
+	api.Post("/players/:id/deactivate", playerHandler.Deactivate)
+	api.Post("/players/:id/activate", playerHandler.Activate)
 
 	getPendingClaimsUC := accountApp.NewGetPendingPlayerClaimsUseCase(playerRepo, accountRepo)
 	approveClaimUC := accountApp.NewApprovePlayerClaimUseCase(playerRepo)

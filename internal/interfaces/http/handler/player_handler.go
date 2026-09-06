@@ -51,6 +51,9 @@ type PlayerHandler struct {
 	// getPlayerRankUC is optional: nil in older callers/tests just leaves
 	// the rank/place field unset on the public stats page.
 	getPlayerRankUC *player.GetPlayerRankUseCase
+	// setPlayerInactiveUC is optional: nil in older callers/tests just
+	// leaves the admin activate/deactivate button unavailable.
+	setPlayerInactiveUC *player.SetPlayerInactiveUseCase
 	// uploader is optional: nil in older callers/tests just leaves the
 	// id_front/id_back file inputs silently ignored.
 	uploader Uploader
@@ -106,6 +109,14 @@ func (h *PlayerHandler) WithGetPlayerRankUseCase(uc *player.GetPlayerRankUseCase
 // player forms. Same rationale as the other With* setters above.
 func (h *PlayerHandler) WithUploader(u Uploader) *PlayerHandler {
 	h.uploader = u
+	return h
+}
+
+// WithSetPlayerInactiveUseCase wires the admin activate/deactivate action
+// into an already-constructed PlayerHandler, same rationale as the other
+// With* setters above.
+func (h *PlayerHandler) WithSetPlayerInactiveUseCase(uc *player.SetPlayerInactiveUseCase) *PlayerHandler {
+	h.setPlayerInactiveUC = uc
 	return h
 }
 
@@ -262,6 +273,32 @@ func (h *PlayerHandler) UnlinkAccount(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
 	}
 	p, err := h.getPlayerByIDUC.Execute(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
+	}
+	lang := getLang(c)
+	return c.Render("admin/partials/player-row", merge(tMap(lang), fiber.Map{"Player": p}))
+}
+
+// Deactivate flags a player Inactive from the edit-player form — see
+// application/player.SetPlayerInactiveUseCase for what that flag means and
+// how it interacts with the automatic inactivity-decay pass.
+func (h *PlayerHandler) Deactivate(c *fiber.Ctx) error {
+	return h.setInactive(c, true)
+}
+
+// Activate clears a player's Inactive flag, undoing Deactivate (or an
+// automatic decay flagging) early.
+func (h *PlayerHandler) Activate(c *fiber.Ctx) error {
+	return h.setInactive(c, false)
+}
+
+func (h *PlayerHandler) setInactive(c *fiber.Ctx, inactive bool) error {
+	id := c.Params("id")
+	if h.setPlayerInactiveUC == nil {
+		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", "not available")
+	}
+	p, err := h.setPlayerInactiveUC.Execute(c.Context(), id, inactive)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).Render("admin/partials/error-alert", err.Error())
 	}
