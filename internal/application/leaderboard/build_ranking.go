@@ -92,7 +92,20 @@ func previousRankFor(sortedElos []int16, prevElo int16, currentElo int16) int {
 // of gender, since Elo is a single shared pool), while BuildGenderRanking
 // pre-filters to one gender first so that gender gets its own enumeration.
 func rankAndFilter(players []*player.Player, divisions []*division.Division, params RankingParams) []RankedPlayer {
-	// 0. Pre-rank all players by absolute Elo.
+	// 0. Drop inactive players (unless explicitly asked to show them) before
+	// ranking, so Rank numbers are a contiguous 1..N over the visible pool
+	// instead of leaving gaps where an inactive player was skipped.
+	if !params.ShowInactive {
+		var active []*player.Player
+		for _, p := range players {
+			if !p.Inactive {
+				active = append(active, p)
+			}
+		}
+		players = active
+	}
+
+	// 1. Pre-rank all players by absolute Elo.
 	var preRanked []RankedPlayer
 	sorted := append([]*player.Player{}, players...)
 	sort.Slice(sorted, func(i, j int) bool { return eloOf(sorted[i], params.RankType) > eloOf(sorted[j], params.RankType) })
@@ -124,18 +137,7 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 		preRanked = append(preRanked, rp)
 	}
 
-	// 0.5 Filter out inactive players unless explicitly asked to show them.
-	if !params.ShowInactive {
-		var active []RankedPlayer
-		for _, rp := range preRanked {
-			if !rp.Inactive {
-				active = append(active, rp)
-			}
-		}
-		preRanked = active
-	}
-
-	// 1. Filter by search query (name, country, or department).
+	// 2. Filter by search query (name, country, or department).
 	filtered := preRanked
 	if params.Query != "" {
 		qUpper := strings.ToUpper(params.Query)
@@ -150,7 +152,7 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 		}
 	}
 
-	// 2. Filter by division.
+	// 3. Filter by division.
 	final := filtered
 	if params.DivisionFilter != "" && params.DivisionFilter != "all" {
 		var targetDiv *division.Division
@@ -170,7 +172,7 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 		}
 	}
 
-	// 3. Sort by the requested order.
+	// 4. Sort by the requested order.
 	sort.Slice(final, func(i, j int) bool {
 		a, b := final[i], final[j]
 		if params.SortOrder == "name_asc" {

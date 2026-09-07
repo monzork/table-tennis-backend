@@ -287,6 +287,28 @@ func TestBuildRanking_InactivePlayersHiddenByDefault(t *testing.T) {
 	}
 }
 
+func TestBuildRanking_InactivePlayerLeavesNoGapInRankNumbers(t *testing.T) {
+	players := []*player.Player{
+		{ID: "1", FirstName: "Top", SinglesElo: 2000},
+		{ID: "2", FirstName: "Benched", SinglesElo: 1800, Inactive: true},
+		{ID: "3", FirstName: "Third", SinglesElo: 1600},
+	}
+
+	result := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{
+		RankType: "singles", SortOrder: "points_desc",
+	})
+	got := result.Groups[0].Players
+	if len(got) != 2 {
+		t.Fatalf("expected 2 active players, got %+v", got)
+	}
+	if got[0].ID != "1" || got[0].Rank != 1 {
+		t.Errorf("expected player 1 at rank 1, got %+v", got[0])
+	}
+	if got[1].ID != "3" || got[1].Rank != 2 {
+		t.Errorf("expected player 3 at rank 2 (no gap left by the skipped inactive player), got %+v", got[1])
+	}
+}
+
 func genderDivisionFixture() []*division.Division {
 	return []*division.Division{
 		{ID: "none", Name: "No Division"},
