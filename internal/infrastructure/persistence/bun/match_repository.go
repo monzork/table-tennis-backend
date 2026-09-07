@@ -1080,21 +1080,30 @@ func (r *MatchRepository) FinishMatch(ctx context.Context, cmd event.FinishMatch
 	return tx.Commit()
 }
 
-// UpdateEloDelta persists the per-match Elo points gained/lost by each team,
-// computed once Elo is applied for the owning event (see
-// FinishTournamentUseCase/RecalculateTournamentEloUseCase).
-func (r *MatchRepository) UpdateEloDelta(ctx context.Context, matchID string, deltaA, deltaB *float64) error {
-	mUUID, err := uuid.Parse(matchID)
-	if err != nil {
-		return err
+// UpdateEloDeltas persists the per-match Elo points gained/lost by each
+// team, for every match in one statement, computed once Elo is applied for
+// the owning event (see FinishTournamentUseCase/RecalculateTournamentEloUseCase).
+// Done as a single bulk statement rather than one UPDATE per match to avoid
+// N round-trips when recalculating Elo for a whole event (see
+// PlayerRepository.UpdateElo for the same pattern).
+func (r *MatchRepository) UpdateEloDeltas(ctx context.Context, updates []event.EloDeltaUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+	models := make([]*MatchModel, len(updates))
+	for i, u := range updates {
+		mUUID, err := uuid.Parse(u.MatchID)
+		if err != nil {
+			return err
+		}
+		models[i] = &MatchModel{ID: mUUID, EloDeltaA: u.DeltaA, EloDeltaB: u.DeltaB}
 	}
 
-	_, err = ExtractDB(ctx, r.db).NewUpdate().Model((*MatchModel)(nil)).
-		Set("elo_delta_a = ?", deltaA).
-		Set("elo_delta_b = ?", deltaB).
-		Where("id = ?", mUUID).
+	_, err := ExtractDB(ctx, r.db).NewUpdate().
+		Model(&models).
+		Column("elo_delta_a", "elo_delta_b").
+		Bulk().
 		Exec(ctx)
-
 	return err
 }
 

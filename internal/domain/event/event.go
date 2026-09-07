@@ -581,9 +581,19 @@ type MatchRepository interface {
 	// Team match orchestration
 	CreateSubMatches(ctx context.Context, cmd CreateSubMatchesCommand) error
 	UpdateSubMatchSquads(ctx context.Context, cmd UpdateSubMatchSquadsCommand) error
-	// UpdateEloDelta persists the per-match Elo points gained/lost by each
-	// team, computed once Elo is applied for the event.
-	UpdateEloDelta(ctx context.Context, matchID string, deltaA, deltaB *float64) error
+	// UpdateEloDeltas persists the per-match Elo points gained/lost by each
+	// team, for every match in one statement, computed once Elo is applied
+	// for the event -- see EloDeltaUpdate.
+	UpdateEloDeltas(ctx context.Context, updates []EloDeltaUpdate) error
+}
+
+// EloDeltaUpdate pairs a match with the per-side Elo points gained/lost by
+// each team, computed once Elo is applied for the whole event -- see
+// MatchRepository.UpdateEloDeltas.
+type EloDeltaUpdate struct {
+	MatchID string
+	DeltaA  *float64
+	DeltaB  *float64
 }
 
 // FinishMatchCommand carries all data needed to finish a match including bracket advancement.

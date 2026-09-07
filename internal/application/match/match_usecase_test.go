@@ -145,7 +145,7 @@ func (m *mockMatchRepo) DeleteByEvent(ctx context.Context, tournamentID string) 
 func (m *mockMatchRepo) FinishMatch(ctx context.Context, cmd eventDomain.FinishMatchCommand) error {
 	return nil
 }
-func (m *mockMatchRepo) UpdateEloDelta(ctx context.Context, matchID string, deltaA, deltaB *float64) error {
+func (m *mockMatchRepo) UpdateEloDeltas(ctx context.Context, updates []eventDomain.EloDeltaUpdate) error {
 	return nil
 }
 func (m *mockMatchRepo) FindOrCreateMatch(ctx context.Context, tournamentID, p1ID, p2ID, stage, matchType string) (string, error) {

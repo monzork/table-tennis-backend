@@ -100,6 +100,62 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	// A failure loading/persisting players' final Elo must abort the
+	// recalculation entirely rather than silently dropping the computed Elo
+	// changes -- see recalculate_event_elo.go.
+	t.Run("loading players for final elo persistence propagates", func(t *testing.T) {
+		uc, repo, playerRepo := newUC()
+		p1 := &playerDomain.Player{ID: "p1", FirstName: "A", LastName: "A", SinglesElo: 1000}
+		p2 := &playerDomain.Player{ID: "p2", FirstName: "B", LastName: "B", SinglesElo: 1000}
+		playerRepo.players["p1"] = p1
+		playerRepo.players["p2"] = p2
+		now := time.Now()
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID:           "t1",
+			Participants: []*playerDomain.Player{p1, p2},
+			Matches: []tournamentDomain.Match{{
+				ID: "m1", MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2},
+				Status: "finished", Stage: "final", WinnerTeam: "A", UpdatedAt: &now,
+			}},
+		}
+		playerRepo.getByIDsErr = errors.New("db down")
+
+		if err := uc.Execute(context.Background(), "t1"); err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("persisting final elo propagates", func(t *testing.T) {
+		uc, repo, playerRepo := newUC()
+		p1 := &playerDomain.Player{ID: "p1", FirstName: "A", LastName: "A", SinglesElo: 1000}
+		p2 := &playerDomain.Player{ID: "p2", FirstName: "B", LastName: "B", SinglesElo: 1000}
+		playerRepo.players["p1"] = p1
+		playerRepo.players["p2"] = p2
+		now := time.Now()
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID:           "t1",
+			Participants: []*playerDomain.Player{p1, p2},
+			Matches: []tournamentDomain.Match{{
+				ID: "m1", MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2},
+				Status: "finished", Stage: "final", WinnerTeam: "A", UpdatedAt: &now,
+			}},
+		}
+		playerRepo.saveMultipleErr = errors.New("update failed")
+
+		if err := uc.Execute(context.Background(), "t1"); err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("persisting elo snapshots propagates", func(t *testing.T) {
+		uc, repo, _ := newUC()
+		repo.events["t1"] = &tournamentDomain.Event{ID: "t1"}
+		repo.updateParticipantsEloErr = errors.New("boom")
+		if err := uc.Execute(context.Background(), "t1"); err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
 	t.Run("doubles match type updates doubles elo", func(t *testing.T) {
 		uc, repo, playerRepo := newUC()
 		p1 := &playerDomain.Player{ID: "p1", FirstName: "Alice", LastName: "A", DoublesElo: 1000}

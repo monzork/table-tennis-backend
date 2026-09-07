@@ -1685,6 +1685,10 @@ func (r *EventRepository) UpdateParticipantEloBefore(ctx context.Context, tourna
 	return err
 }
 
+// UpdateParticipantsElo writes elo_after_singles/elo_after_doubles for every
+// given player's row in this event in a single bulk statement rather than
+// one UPDATE per player, to avoid N round-trips when finalizing Elo for a
+// whole event's roster (see PlayerRepository.UpdateElo for the same pattern).
 func (r *EventRepository) UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error {
 	if len(players) == 0 {
 		return nil
@@ -1694,25 +1698,22 @@ func (r *EventRepository) UpdateParticipantsElo(ctx context.Context, tournamentI
 		return err
 	}
 
-	return RunInTx(ctx, r.db, func(ctx context.Context, tx bun.Tx) error {
-
-		for _, p := range players {
-			pID, err := uuid.Parse(p.ID)
-			if err != nil {
-				return err
-			}
-			_, err = tx.NewUpdate().
-				TableExpr("event_participants").
-				Set("elo_after_singles = ?, elo_after_doubles = ?", p.SinglesElo, p.DoublesElo).
-				Where("event_id = ? AND player_id = ?", tID, pID).
-				Exec(ctx)
-			if err != nil {
-				return err
-			}
+	models := make([]*EventParticipantModel, len(players))
+	for i, p := range players {
+		pID, err := uuid.Parse(p.ID)
+		if err != nil {
+			return err
 		}
+		singles, doubles := p.SinglesElo, p.DoublesElo
+		models[i] = &EventParticipantModel{EventID: tID, PlayerID: pID, EloAfterSingles: &singles, EloAfterDoubles: &doubles}
+	}
 
-		return nil
-	})
+	_, err = ExtractDB(ctx, r.db).NewUpdate().
+		Model(&models).
+		Column("elo_after_singles", "elo_after_doubles").
+		Bulk().
+		Exec(ctx)
+	return err
 }
 
 // AddParticipant inserts a single player into event_participants, e.g. to
@@ -1808,7 +1809,10 @@ func (r *EventRepository) GetPreviousEloSnapshots(ctx context.Context, rankType 
 // and Elo bonus for this event onto its event_participants row -- written
 // once when the event finishes and never touched again by any later
 // tournament, so it's a durable record of exactly where those bonus points
-// came from (see event.PlacementRecord).
+// came from (see event.PlacementRecord). Done as a single bulk statement
+// rather than one UPDATE per player to avoid N round-trips (see
+// PlayerRepository.UpdateElo for the same pattern); an invalid player ID
+// within results is skipped rather than failing the whole batch.
 func (r *EventRepository) SavePlacementResults(ctx context.Context, eventID string, results map[string]event.PlacementDetail) error {
 	if len(results) == 0 {
 		return nil
@@ -1817,21 +1821,25 @@ func (r *EventRepository) SavePlacementResults(ctx context.Context, eventID stri
 	if err != nil {
 		return err
 	}
+	models := make([]*EventParticipantModel, 0, len(results))
 	for playerID, detail := range results {
 		pID, err := uuid.Parse(playerID)
 		if err != nil {
 			continue
 		}
 		placement, bonus := detail.Placement, detail.BonusElo
-		if _, err := ExtractDB(ctx, r.db).NewUpdate().
-			TableExpr("event_participants").
-			Set("placement = ?, placement_bonus_elo = ?", placement, bonus).
-			Where("event_id = ? AND player_id = ?", eID, pID).
-			Exec(ctx); err != nil {
-			return err
-		}
+		models = append(models, &EventParticipantModel{EventID: eID, PlayerID: pID, Placement: &placement, PlacementBonusElo: &bonus})
 	}
-	return nil
+	if len(models) == 0 {
+		return nil
+	}
+
+	_, err = ExtractDB(ctx, r.db).NewUpdate().
+		Model(&models).
+		Column("placement", "placement_bonus_elo").
+		Bulk().
+		Exec(ctx)
+	return err
 }
 
 // GetPlacementHistoryByPlayerID returns every placement bonus a player has

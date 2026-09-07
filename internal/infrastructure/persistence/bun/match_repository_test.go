@@ -639,6 +639,58 @@ func TestMatchRepository_UpdateMetadata(t *testing.T) {
 	}
 }
 
+// TestMatchRepository_UpdateEloDeltas_Bulk covers persisting Elo deltas for
+// several matches in one call, making sure the bulk UPDATE matches each row
+// to its own match rather than mixing values across matches.
+func TestMatchRepository_UpdateEloDeltas_Bulk(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	m1 := f.newMatch(t, "group")
+	if err := f.matchRepo.Save(ctx, m1); err != nil {
+		t.Fatalf("Save m1: %v", err)
+	}
+	m2 := f.newMatch(t, "group")
+	if err := f.matchRepo.Save(ctx, m2); err != nil {
+		t.Fatalf("Save m2: %v", err)
+	}
+
+	d1a, d1b := 12.5, -12.5
+	d2a, d2b := -8.0, 8.0
+	err := f.matchRepo.UpdateEloDeltas(ctx, []event.EloDeltaUpdate{
+		{MatchID: m1.ID, DeltaA: &d1a, DeltaB: &d1b},
+		{MatchID: m2.ID, DeltaA: &d2a, DeltaB: &d2b},
+	})
+	if err != nil {
+		t.Fatalf("UpdateEloDeltas: %v", err)
+	}
+
+	got1, err := f.matchRepo.GetByID(ctx, m1.ID)
+	if err != nil {
+		t.Fatalf("GetByID m1: %v", err)
+	}
+	if got1.EloDeltaA == nil || *got1.EloDeltaA != 12.5 || got1.EloDeltaB == nil || *got1.EloDeltaB != -12.5 {
+		t.Errorf("expected m1 deltas 12.5/-12.5, got %+v", got1)
+	}
+
+	got2, err := f.matchRepo.GetByID(ctx, m2.ID)
+	if err != nil {
+		t.Fatalf("GetByID m2: %v", err)
+	}
+	if got2.EloDeltaA == nil || *got2.EloDeltaA != -8.0 || got2.EloDeltaB == nil || *got2.EloDeltaB != 8.0 {
+		t.Errorf("expected m2 deltas -8.0/8.0, got %+v", got2)
+	}
+}
+
+func TestMatchRepository_UpdateEloDeltas_Empty(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	if err := f.matchRepo.UpdateEloDeltas(ctx, nil); err != nil {
+		t.Fatalf("expected no-op for empty updates, got %v", err)
+	}
+}
+
 func TestMatchRepository_UpdateMetadata_InvalidID(t *testing.T) {
 	f := newMatchTestFixture(t)
 	ctx := context.Background()

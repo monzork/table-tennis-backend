@@ -342,4 +342,77 @@ func TestFinishTournamentUseCase_Execute(t *testing.T) {
 			t.Fatal("expected error, got nil")
 		}
 	})
+
+	// A failure loading/persisting players' final Elo must abort the finish
+	// entirely (event stays not-finished, so it can be retried) rather than
+	// silently dropping the computed Elo changes -- see finish_event.go.
+	t.Run("loading players for final elo persistence propagates and does not finish the event", func(t *testing.T) {
+		uc, repo, matchRepo, playerRepo := newUC()
+		p1 := &playerDomain.Player{ID: "p1", FirstName: "A", LastName: "A", SinglesElo: 1000}
+		p2 := &playerDomain.Player{ID: "p2", FirstName: "B", LastName: "B", SinglesElo: 1000}
+		playerRepo.players["p1"] = p1
+		playerRepo.players["p2"] = p2
+		now := time.Now()
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID: "t1", Status: "in_progress", Format: "elimination",
+			Participants: []*playerDomain.Player{p1, p2},
+			Matches: []tournamentDomain.Match{{
+				ID: "m1", MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2},
+				Status: "finished", Stage: "final", WinnerTeam: "A", UpdatedAt: &now,
+			}},
+		}
+		matchRepo.finishedCount = 1
+		playerRepo.getByIDsErr = errors.New("db down")
+
+		if err := uc.Execute(context.Background(), "t1"); err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if repo.events["t1"].Status == "finished" {
+			t.Error("expected event to remain not finished when Elo persistence fails")
+		}
+	})
+
+	t.Run("persisting final elo propagates and does not finish the event", func(t *testing.T) {
+		uc, repo, matchRepo, playerRepo := newUC()
+		p1 := &playerDomain.Player{ID: "p1", FirstName: "A", LastName: "A", SinglesElo: 1000}
+		p2 := &playerDomain.Player{ID: "p2", FirstName: "B", LastName: "B", SinglesElo: 1000}
+		playerRepo.players["p1"] = p1
+		playerRepo.players["p2"] = p2
+		now := time.Now()
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID: "t1", Status: "in_progress", Format: "elimination",
+			Participants: []*playerDomain.Player{p1, p2},
+			Matches: []tournamentDomain.Match{{
+				ID: "m1", MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2},
+				Status: "finished", Stage: "final", WinnerTeam: "A", UpdatedAt: &now,
+			}},
+		}
+		matchRepo.finishedCount = 1
+		playerRepo.saveMultipleErr = errors.New("update failed")
+
+		if err := uc.Execute(context.Background(), "t1"); err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if repo.events["t1"].Status == "finished" {
+			t.Error("expected event to remain not finished when Elo persistence fails")
+		}
+	})
+
+	t.Run("persisting elo snapshots propagates and does not finish the event", func(t *testing.T) {
+		uc, repo, matchRepo, _ := newUC()
+		p1 := &playerDomain.Player{ID: "p1", FirstName: "A", LastName: "A"}
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID: "t1", Status: "in_progress", Format: "elimination", SkipElo: true,
+			Participants: []*playerDomain.Player{p1},
+		}
+		matchRepo.finishedCount = 0
+		repo.updateParticipantsEloErr = errors.New("boom")
+
+		if err := uc.Execute(context.Background(), "t1"); err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if repo.events["t1"].Status == "finished" {
+			t.Error("expected event to remain not finished when snapshot persistence fails")
+		}
+	})
 }

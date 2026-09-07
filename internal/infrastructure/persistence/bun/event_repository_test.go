@@ -628,6 +628,55 @@ func TestEventRepository_UpdateParticipantsElo_Empty(t *testing.T) {
 	}
 }
 
+// TestEventRepository_UpdateParticipantsElo_BulkMultipleParticipants covers
+// the bulk-write path (event_participants keyed by a composite
+// event_id+player_id primary key) with more than one row in a single call,
+// to make sure the bulk UPDATE matches each row to its own player rather
+// than e.g. applying the last row's values to every participant.
+func TestEventRepository_UpdateParticipantsElo_BulkMultipleParticipants(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+	playerRepo := bunRepo.NewPlayerRepository(db)
+	eventRepo := bunRepo.NewEventRepository(db)
+
+	p1 := savePlayer(t, playerRepo, "P", "One", "M")
+	p2 := savePlayer(t, playerRepo, "P", "Two", "M")
+	p3 := savePlayer(t, playerRepo, "P", "Three", "M")
+
+	ev := newBareEvent(t, "Event", []*player.Player{p1, p2, p3})
+	if err := eventRepo.Save(ctx, ev); err != nil {
+		t.Fatalf("save event: %v", err)
+	}
+
+	err := eventRepo.UpdateParticipantsElo(ctx, ev.ID, []*player.Player{
+		{ID: p1.ID, SinglesElo: 1100, DoublesElo: 1050},
+		{ID: p2.ID, SinglesElo: 1200, DoublesElo: 1150},
+		{ID: p3.ID, SinglesElo: 1300, DoublesElo: 1250},
+	})
+	if err != nil {
+		t.Fatalf("UpdateParticipantsElo: %v", err)
+	}
+
+	snapshots, err := eventRepo.GetParticipantSnapshots(ctx, ev.ID)
+	if err != nil {
+		t.Fatalf("GetParticipantSnapshots: %v", err)
+	}
+	byPlayer := make(map[string]event.ParticipantSnapshot, len(snapshots))
+	for _, s := range snapshots {
+		byPlayer[s.PlayerID] = s
+	}
+
+	if s := byPlayer[p1.ID]; s.EloAfterSingles == nil || *s.EloAfterSingles != 1100 || s.EloAfterDoubles == nil || *s.EloAfterDoubles != 1050 {
+		t.Errorf("expected p1 elo 1100/1050, got %+v", s)
+	}
+	if s := byPlayer[p2.ID]; s.EloAfterSingles == nil || *s.EloAfterSingles != 1200 || s.EloAfterDoubles == nil || *s.EloAfterDoubles != 1150 {
+		t.Errorf("expected p2 elo 1200/1150, got %+v", s)
+	}
+	if s := byPlayer[p3.ID]; s.EloAfterSingles == nil || *s.EloAfterSingles != 1300 || s.EloAfterDoubles == nil || *s.EloAfterDoubles != 1250 {
+		t.Errorf("expected p3 elo 1300/1250, got %+v", s)
+	}
+}
+
 func TestEventRepository_GetParticipantOrOfficialByPIN_EmptyPin(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)

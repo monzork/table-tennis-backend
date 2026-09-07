@@ -106,6 +106,7 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 	})
 
 	// 2. Process matches chronologically
+	var eloDeltaUpdates []tournamentDomain.EloDeltaUpdate
 	for _, m := range t.Matches {
 		if m.WinnerTeam == "" || m.MatchType == "teams" {
 			continue
@@ -212,9 +213,7 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 
 			deltaA := float64(afterA[0] - beforeA[0])
 			deltaB := float64(afterB[0] - beforeB[0])
-			if err := uc.matchRepo.UpdateEloDelta(ctx, m.ID, &deltaA, &deltaB); err != nil {
-				slog.Warn("failed to persist match Elo delta", "matchID", m.ID, "error", err)
-			}
+			eloDeltaUpdates = append(eloDeltaUpdates, tournamentDomain.EloDeltaUpdate{MatchID: m.ID, DeltaA: &deltaA, DeltaB: &deltaB})
 
 			for _, p := range resolvedA {
 				if m.MatchType == "doubles" {
@@ -231,6 +230,10 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 				}
 			}
 		}
+	}
+
+	if err := uc.matchRepo.UpdateEloDeltas(ctx, eloDeltaUpdates); err != nil {
+		slog.Warn("failed to persist match Elo deltas", "eventID", tournamentID, "error", err)
 	}
 
 	// 2b. Podium finishers earn a flat Elo bonus besides whatever they
@@ -264,14 +267,17 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 	}
 
 	dbPlayers, err := uc.playerRepo.GetByIDs(ctx, pids)
-	if err == nil && len(dbPlayers) > 0 {
-		for _, dbP := range dbPlayers {
-			if state, ok := playerElos[dbP.ID]; ok {
-				dbP.UpdateSinglesElo(int16(math.Round(float64(state.StartSingles) + state.DeltaSingles)))
-				dbP.UpdateDoublesElo(int16(math.Round(float64(state.StartDoubles) + state.DeltaDoubles)))
-			}
+	if err != nil {
+		return fmt.Errorf("loading players to persist final Elo: %w", err)
+	}
+	for _, dbP := range dbPlayers {
+		if state, ok := playerElos[dbP.ID]; ok {
+			dbP.UpdateSinglesElo(int16(math.Round(float64(state.StartSingles) + state.DeltaSingles)))
+			dbP.UpdateDoublesElo(int16(math.Round(float64(state.StartDoubles) + state.DeltaDoubles)))
 		}
-		_ = uc.playerRepo.UpdateElo(ctx, dbPlayers)
+	}
+	if err := uc.playerRepo.UpdateElo(ctx, dbPlayers); err != nil {
+		return fmt.Errorf("persisting final Elo: %w", err)
 	}
 
 	// 4. Update event_participants final Elo snapshots
@@ -279,8 +285,12 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 	for _, p := range t.Participants {
 		pids = append(pids, p.ID)
 	}
-	if updatedPlayers, err := uc.playerRepo.GetByIDs(ctx, pids); err == nil {
-		_ = uc.tournamentRepo.UpdateParticipantsElo(ctx, tournamentID, updatedPlayers)
+	updatedPlayers, err := uc.playerRepo.GetByIDs(ctx, pids)
+	if err != nil {
+		return fmt.Errorf("loading players to finalize Elo snapshots: %w", err)
+	}
+	if err := uc.tournamentRepo.UpdateParticipantsElo(ctx, tournamentID, updatedPlayers); err != nil {
+		return fmt.Errorf("persisting Elo snapshots: %w", err)
 	}
 
 	// 5. Recalculate metrics

@@ -301,11 +301,13 @@ func (m *mockMatchRepo) DeleteByEvent(ctx context.Context, tournamentID string) 
 func (m *mockMatchRepo) FinishMatch(ctx context.Context, cmd tournamentDomain.FinishMatchCommand) error {
 	return nil
 }
-func (m *mockMatchRepo) UpdateEloDelta(ctx context.Context, matchID string, deltaA, deltaB *float64) error {
+func (m *mockMatchRepo) UpdateEloDeltas(ctx context.Context, updates []tournamentDomain.EloDeltaUpdate) error {
 	if m.eloDeltas == nil {
 		m.eloDeltas = make(map[string][2]*float64)
 	}
-	m.eloDeltas[matchID] = [2]*float64{deltaA, deltaB}
+	for _, u := range updates {
+		m.eloDeltas[u.MatchID] = [2]*float64{u.DeltaA, u.DeltaB}
+	}
 	return nil
 }
 func (m *mockMatchRepo) FindOrCreateMatch(ctx context.Context, tournamentID, p1ID, p2ID, stage, matchType string) (string, error) {
