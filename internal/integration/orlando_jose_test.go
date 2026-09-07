@@ -215,7 +215,7 @@ func TestOrlandoJoseSecondDivisionReplay(t *testing.T) {
 	}
 
 	clone, err := tournamentDomain.NewEvent(
-		idgen.Generate(), "Men's Singles — 2nd Division", orig.Type, orig.Format, "men",
+		idgen.Generate(), "Men's Singles — 2nd Division", orig.Type, orig.Format, "men", "",
 		time.Now(), time.Now(), []tournamentDomain.Rule{}, cloneGroupPassCount, players, orig.HasThirdPlaceMatch,
 	)
 	require.NoError(t, err)

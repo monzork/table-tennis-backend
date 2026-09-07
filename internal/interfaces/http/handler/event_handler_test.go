@@ -188,7 +188,7 @@ func TestTournamentHandler(t *testing.T) {
 	})
 
 	t.Run("Delete Event", func(t *testing.T) {
-		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Temp", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, nil, false)
+		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Temp", "singles", "elimination", "open", "", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, nil, false)
 		tournamentRepo.Save(ctx, tourney)
 
 		req := httptest.NewRequest("DELETE", fmt.Sprintf("/events/%s", tourney.ID), nil)
@@ -307,7 +307,7 @@ func TestTournamentHandler(t *testing.T) {
 		p1.UpdateSinglesElo(1500)
 		playerRepo.Save(ctx, p1)
 
-		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Regen Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
+		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Regen Tourney", "singles", "groups_elimination", "open", "", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
 		tournamentRepo.Save(ctx, tourney)
 
 		req := httptest.NewRequest("POST", fmt.Sprintf("/admin/events/%s/regenerate-seeds", tourney.ID), nil)
@@ -331,7 +331,7 @@ func TestTournamentHandler(t *testing.T) {
 	})
 
 	t.Run("Add Group to Event", func(t *testing.T) {
-		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Add Group Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
+		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Add Group Tourney", "singles", "groups_elimination", "open", "", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
 		tourney.SkipElo = true
 		tournamentRepo.Save(ctx, tourney)
 
@@ -377,7 +377,7 @@ func TestTournamentHandler(t *testing.T) {
 	})
 
 	t.Run("Seeding Locked Operations Blocked", func(t *testing.T) {
-		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Locked Tourney", "singles", "groups_elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
+		tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Locked Tourney", "singles", "groups_elimination", "open", "", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1}, false)
 		tourney.ManualSeedingLocked = true
 		tournamentRepo.Save(ctx, tourney)
 

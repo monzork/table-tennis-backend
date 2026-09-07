@@ -7,7 +7,7 @@ import "context"
 // finished event, used as the baseline for the ranking page's rank-movement
 // indicator.
 type PreviousEloRepository interface {
-	GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error)
+	GetPreviousEloSnapshots(ctx context.Context, rankType string, ageCategory string) (map[string]int16, error)
 }
 
 type GetRankMovementUseCase struct {
@@ -20,7 +20,9 @@ func NewGetRankMovementUseCase(repo PreviousEloRepository) *GetRankMovementUseCa
 
 // Execute returns a map of playerID -> Elo held immediately before that
 // player's most recently finished event, for the given rank type
-// ("singles"|"doubles"). Players with no finished event are absent.
-func (uc *GetRankMovementUseCase) Execute(ctx context.Context, rankType string) (map[string]int16, error) {
-	return uc.repo.GetPreviousEloSnapshots(ctx, rankType)
+// ("singles"|"doubles") and age category ("open" or one of
+// event.OrderedAgeCategories' youth brackets). Players with no finished
+// event in that age category are absent.
+func (uc *GetRankMovementUseCase) Execute(ctx context.Context, rankType string, ageCategory string) (map[string]int16, error) {
+	return uc.repo.GetPreviousEloSnapshots(ctx, rankType, ageCategory)
 }

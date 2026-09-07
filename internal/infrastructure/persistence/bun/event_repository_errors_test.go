@@ -63,7 +63,7 @@ func TestEventRepository_InvalidIDErrorPaths(t *testing.T) {
 			return eventRepo.UpdateParticipantEloBefore(ctx, uuid.NewString(), "bad-id", 1, 1)
 		}},
 		{"UpdateParticipantsElo invalid player id", func() error {
-			return eventRepo.UpdateParticipantsElo(ctx, uuid.NewString(), []*player.Player{{ID: "bad-id"}})
+			return eventRepo.UpdateParticipantsElo(ctx, uuid.NewString(), "open", []*player.Player{{ID: "bad-id"}})
 		}},
 		{"AddParticipant invalid tournament id", func() error {
 			return eventRepo.AddParticipant(ctx, "bad-id", uuid.NewString(), 1, 1)

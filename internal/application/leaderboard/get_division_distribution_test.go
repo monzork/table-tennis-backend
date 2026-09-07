@@ -43,7 +43,7 @@ func TestGetDivisionDistributionUseCase_Execute(t *testing.T) {
 		gen := &fakeChartGen{}
 		uc := leaderboard.NewGetDivisionDistributionUseCase(gen)
 
-		svg, err := uc.Execute(players, divisions, "singles")
+		svg, err := uc.Execute(players, divisions, "singles", "open")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -65,7 +65,7 @@ func TestGetDivisionDistributionUseCase_Execute(t *testing.T) {
 		gen := &fakeChartGen{}
 		uc := leaderboard.NewGetDivisionDistributionUseCase(gen)
 
-		_, err := uc.Execute(nil, divisions, "singles")
+		_, err := uc.Execute(nil, divisions, "singles", "open")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -78,7 +78,7 @@ func TestGetDivisionDistributionUseCase_Execute(t *testing.T) {
 		gen := &fakeChartGen{}
 		uc := leaderboard.NewGetDivisionDistributionUseCase(gen)
 
-		svg, err := uc.Execute(nil, []*division.Division{{ID: "none", Name: "No Division"}}, "singles")
+		svg, err := uc.Execute(nil, []*division.Division{{ID: "none", Name: "No Division"}}, "singles", "open")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -95,7 +95,7 @@ func TestGetDivisionDistributionUseCase_Execute(t *testing.T) {
 		gen := &fakeChartGen{}
 		uc := leaderboard.NewGetDivisionDistributionUseCase(gen)
 
-		if _, err := uc.Execute(players, divisions, "doubles"); err != nil {
+		if _, err := uc.Execute(players, divisions, "doubles", "open"); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if gen.barItems[0].Value != 1 || gen.barItems[1].Value != 0 {
@@ -107,7 +107,7 @@ func TestGetDivisionDistributionUseCase_Execute(t *testing.T) {
 		gen := &fakeChartGen{barErr: errors.New("boom")}
 		uc := leaderboard.NewGetDivisionDistributionUseCase(gen)
 
-		if _, err := uc.Execute(nil, divisions, "singles"); err == nil {
+		if _, err := uc.Execute(nil, divisions, "singles", "open"); err == nil {
 			t.Fatal("expected error to propagate")
 		}
 	})

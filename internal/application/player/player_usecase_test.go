@@ -72,6 +72,18 @@ func (m *mockPlayerRepo) UpdateElo(ctx context.Context, players []*playerDomain.
 	return nil
 }
 
+func (m *mockPlayerRepo) UpdateEloForCategory(ctx context.Context, ageCategory string, players []*playerDomain.Player) error {
+	for _, p := range players {
+		if existing, ok := m.players[p.ID]; ok {
+			existing.UpdateEloFor(ageCategory, "singles", p.EloFor(ageCategory, "singles"))
+			existing.UpdateEloFor(ageCategory, "doubles", p.EloFor(ageCategory, "doubles"))
+		} else {
+			m.players[p.ID] = p
+		}
+	}
+	return nil
+}
+
 func (m *mockPlayerRepo) UpdateInactivity(ctx context.Context, players []*playerDomain.Player) error {
 	for _, p := range players {
 		if existing, ok := m.players[p.ID]; ok {

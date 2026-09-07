@@ -200,7 +200,7 @@ func (m *mockEventRepo) Delete(ctx context.Context, id string) error            
 func (m *mockEventRepo) UpdateParticipantElo(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
 	return nil
 }
-func (m *mockEventRepo) UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*playerDomain.Player) error {
+func (m *mockEventRepo) UpdateParticipantsElo(ctx context.Context, tournamentID string, ageCategory string, players []*playerDomain.Player) error {
 	return nil
 }
 func (m *mockEventRepo) UpdateParticipantEloBefore(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
@@ -223,7 +223,7 @@ func (m *mockEventRepo) RemovePlayerFromTeam(ctx context.Context, teamID string,
 func (m *mockEventRepo) GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]eventDomain.ParticipantSnapshot, error) {
 	return nil, nil
 }
-func (m *mockEventRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+func (m *mockEventRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string, ageCategory string) (map[string]int16, error) {
 	return nil, nil
 }
 
@@ -323,6 +323,9 @@ func (m *mockPlayerRepo) SaveMultiple(ctx context.Context, players []*playerDoma
 func (m *mockPlayerRepo) UpdateElo(ctx context.Context, players []*playerDomain.Player) error {
 	return nil
 }
+func (m *mockPlayerRepo) UpdateEloForCategory(ctx context.Context, ageCategory string, players []*playerDomain.Player) error {
+	return nil
+}
 func (m *mockPlayerRepo) UpdateInactivity(ctx context.Context, players []*playerDomain.Player) error {
 	return nil
 }
@@ -390,7 +393,7 @@ func TestCreateMatchUseCase(t *testing.T) {
 	divisionRepo := newMockDivisionRepo()
 
 	now := time.Now()
-	e, _ := eventDomain.NewEvent("e1", "Singles Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+	e, _ := eventDomain.NewEvent("e1", "Singles Event", "singles", "single_elimination", "men", "", now, now.Add(24*time.Hour), nil, 2, nil, false)
 	_ = eventRepo.Save(context.Background(), e)
 
 	p1, _ := playerDomain.NewPlayer("p1", "Player", "One", now, "M", "USA", "", "1")
@@ -436,7 +439,7 @@ func TestCreateMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("doubles with valid teams", func(t *testing.T) {
-		eTeams, _ := eventDomain.NewEvent("e_teams", "Teams Event", "doubles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+		eTeams, _ := eventDomain.NewEvent("e_teams", "Teams Event", "doubles", "single_elimination", "men", "", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		eTeams.Teams = []*eventDomain.Team{
 			{ID: "t1", Players: []*playerDomain.Player{p1}},
 			{ID: "t2", Players: []*playerDomain.Player{p2}},
@@ -464,7 +467,7 @@ func TestCreateMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("team B not found in event", func(t *testing.T) {
-		eTeams2, _ := eventDomain.NewEvent("e_teams2", "Teams Event", "doubles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+		eTeams2, _ := eventDomain.NewEvent("e_teams2", "Teams Event", "doubles", "single_elimination", "men", "", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		eTeams2.Teams = []*eventDomain.Team{
 			{ID: "t1", Players: []*playerDomain.Player{p1}},
 		}
@@ -486,7 +489,7 @@ func TestCreateMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("determinePlayerDivision GetAll error yields empty division", func(t *testing.T) {
-		eDivErr, _ := eventDomain.NewEvent("e_div_err", "Div Err Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+		eDivErr, _ := eventDomain.NewEvent("e_div_err", "Div Err Event", "singles", "single_elimination", "men", "", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		_ = eventRepo.Save(ctx, eDivErr)
 
 		errDivRepo := newMockDivisionRepo()
@@ -503,7 +506,7 @@ func TestCreateMatchUseCase(t *testing.T) {
 	})
 
 	t.Run("determinePlayerDivision no matching range yields empty division", func(t *testing.T) {
-		eNoMatch, _ := eventDomain.NewEvent("e_no_match", "No Match Event", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+		eNoMatch, _ := eventDomain.NewEvent("e_no_match", "No Match Event", "singles", "single_elimination", "men", "", now, now.Add(24*time.Hour), nil, 2, nil, false)
 		_ = eventRepo.Save(ctx, eNoMatch)
 
 		maxElo := int16(500)
@@ -569,7 +572,7 @@ func TestStartMatchUseCase(t *testing.T) {
 	divisionRepo := newMockDivisionRepo()
 
 	now := time.Now()
-	e, _ := eventDomain.NewEvent("e1", "Event 1", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+	e, _ := eventDomain.NewEvent("e1", "Event 1", "singles", "single_elimination", "men", "", now, now.Add(24*time.Hour), nil, 2, nil, false)
 	_ = eventRepo.Save(context.Background(), e)
 
 	p1, _ := playerDomain.NewPlayer("p1", "Alice", "Smith", now, "F", "USA", "", "1")
@@ -814,7 +817,7 @@ func TestUpdateMatchScoreUseCase(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now()
-	e, _ := eventDomain.NewEvent("e1", "Event 1", "singles", "single_elimination", "men", now, now.Add(24*time.Hour), nil, 2, nil, false)
+	e, _ := eventDomain.NewEvent("e1", "Event 1", "singles", "single_elimination", "men", "", now, now.Add(24*time.Hour), nil, 2, nil, false)
 	_ = eventRepo.Save(ctx, e)
 
 	m := &eventDomain.Match{ID: "m1", EventID: "e1"}

@@ -413,6 +413,103 @@ func TestPlayerRepository_UpdateElo_InvalidID(t *testing.T) {
 	}
 }
 
+func TestPlayerRepository_UpdateEloForCategory(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	if err := repo.UpdateEloForCategory(ctx, "u13", nil); err != nil {
+		t.Fatalf("UpdateEloForCategory (empty): %v", err)
+	}
+
+	p := newTestPlayer(t, "Bracket", "Player", "M")
+	if err := repo.Save(ctx, p); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	u13Only := &player.Player{ID: p.ID}
+	u13Only.UpdateEloFor("u13", "singles", 1234)
+	u13Only.UpdateEloFor("u13", "doubles", 1456)
+	if err := repo.UpdateEloForCategory(ctx, "u13", []*player.Player{u13Only}); err != nil {
+		t.Fatalf("UpdateEloForCategory: %v", err)
+	}
+
+	got, err := repo.GetById(ctx, p.ID)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.EloFor("u13", "singles") != 1234 || got.EloFor("u13", "doubles") != 1456 {
+		t.Fatalf("expected u13 Elo updated, got singles=%d doubles=%d", got.EloFor("u13", "singles"), got.EloFor("u13", "doubles"))
+	}
+	// Every other bracket, including Open, must be untouched by a u13 write.
+	if got.SinglesElo != 1000 || got.DoublesElo != 1000 {
+		t.Fatalf("expected Open Elo untouched, got singles=%d doubles=%d", got.SinglesElo, got.DoublesElo)
+	}
+	if got.EloFor("u11", "singles") != 1000 || got.EloFor("u15", "singles") != 1000 || got.EloFor("u19", "singles") != 1000 {
+		t.Fatalf("expected every other bracket untouched, got %+v", got)
+	}
+
+	// "open" (and unrecognized categories) route to the same singles_elo/
+	// doubles_elo columns as UpdateElo.
+	openOnly := &player.Player{ID: p.ID}
+	openOnly.UpdateEloFor("open", "singles", 1500)
+	openOnly.UpdateEloFor("open", "doubles", 1600)
+	if err := repo.UpdateEloForCategory(ctx, "open", []*player.Player{openOnly}); err != nil {
+		t.Fatalf("UpdateEloForCategory (open): %v", err)
+	}
+	got, err = repo.GetById(ctx, p.ID)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.SinglesElo != 1500 || got.DoublesElo != 1600 {
+		t.Fatalf("expected Open Elo updated via ageCategory=open, got singles=%d doubles=%d", got.SinglesElo, got.DoublesElo)
+	}
+}
+
+func TestPlayerRepository_UpdateEloForCategory_AllBrackets(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	for _, ageCategory := range []string{"u11", "u13", "u15", "u19"} {
+		t.Run(ageCategory, func(t *testing.T) {
+			p := newTestPlayer(t, "Bracket", ageCategory, "M")
+			if err := repo.Save(ctx, p); err != nil {
+				t.Fatalf("Save: %v", err)
+			}
+
+			update := &player.Player{ID: p.ID}
+			update.UpdateEloFor(ageCategory, "singles", 1111)
+			update.UpdateEloFor(ageCategory, "doubles", 1222)
+			if err := repo.UpdateEloForCategory(ctx, ageCategory, []*player.Player{update}); err != nil {
+				t.Fatalf("UpdateEloForCategory: %v", err)
+			}
+
+			got, err := repo.GetById(ctx, p.ID)
+			if err != nil {
+				t.Fatalf("GetById: %v", err)
+			}
+			if got.EloFor(ageCategory, "singles") != 1111 || got.EloFor(ageCategory, "doubles") != 1222 {
+				t.Fatalf("expected %s Elo updated, got singles=%d doubles=%d", ageCategory, got.EloFor(ageCategory, "singles"), got.EloFor(ageCategory, "doubles"))
+			}
+			if got.SinglesElo != 1000 || got.DoublesElo != 1000 {
+				t.Fatalf("expected Open Elo untouched, got singles=%d doubles=%d", got.SinglesElo, got.DoublesElo)
+			}
+		})
+	}
+}
+
+func TestPlayerRepository_UpdateEloForCategory_InvalidID(t *testing.T) {
+	db := setupTestDB(t)
+	repo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	bad := &player.Player{ID: "not-a-uuid"}
+	if err := repo.UpdateEloForCategory(ctx, "u13", []*player.Player{bad}); err == nil {
+		t.Fatal("expected error for invalid UUID, got nil")
+	}
+}
+
 func TestPlayerRepository_UpdateInactivity(t *testing.T) {
 	db := setupTestDB(t)
 	repo := bunRepo.NewPlayerRepository(db)

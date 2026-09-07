@@ -14,7 +14,7 @@ import (
 
 func newEventAt(t *testing.T, name string, start time.Time, participants []*player.Player) *event.Event {
 	t.Helper()
-	e, err := event.NewEvent(uuid.NewString(), name, "singles", "elimination", "open", start, start.Add(24*time.Hour), nil, 2, participants, false)
+	e, err := event.NewEvent(uuid.NewString(), name, "singles", "elimination", "open", "", start, start.Add(24*time.Hour), nil, 2, participants, false)
 	if err != nil {
 		t.Fatalf("NewEvent: %v", err)
 	}
@@ -40,7 +40,7 @@ func TestEventRepository_GetPreviousEloSnapshots(t *testing.T) {
 	}
 	p1.SinglesElo = 1200
 	p2.SinglesElo = 1050
-	if err := eventRepo.UpdateParticipantsElo(ctx, earlier.ID, []*player.Player{p1, p2}); err != nil {
+	if err := eventRepo.UpdateParticipantsElo(ctx, earlier.ID, "open", []*player.Player{p1, p2}); err != nil {
 		t.Fatalf("UpdateParticipantsElo earlier: %v", err)
 	}
 
@@ -52,7 +52,7 @@ func TestEventRepository_GetPreviousEloSnapshots(t *testing.T) {
 		t.Fatalf("Save later: %v", err)
 	}
 	p1.SinglesElo = 1300
-	if err := eventRepo.UpdateParticipantsElo(ctx, later.ID, []*player.Player{p1}); err != nil {
+	if err := eventRepo.UpdateParticipantsElo(ctx, later.ID, "open", []*player.Player{p1}); err != nil {
 		t.Fatalf("UpdateParticipantsElo later: %v", err)
 	}
 
@@ -64,7 +64,7 @@ func TestEventRepository_GetPreviousEloSnapshots(t *testing.T) {
 		t.Fatalf("Save unfinished: %v", err)
 	}
 
-	got, err := eventRepo.GetPreviousEloSnapshots(ctx, "singles")
+	got, err := eventRepo.GetPreviousEloSnapshots(ctx, "singles", "open")
 	if err != nil {
 		t.Fatalf("GetPreviousEloSnapshots: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestEventRepository_GetPreviousEloSnapshots_MultiEventTournament(t *testing
 		t.Fatalf("Save menSingles: %v", err)
 	}
 	p1.SinglesElo = 1100
-	if err := eventRepo.UpdateParticipantsElo(ctx, menSingles.ID, []*player.Player{p1}); err != nil {
+	if err := eventRepo.UpdateParticipantsElo(ctx, menSingles.ID, "open", []*player.Player{p1}); err != nil {
 		t.Fatalf("UpdateParticipantsElo menSingles: %v", err)
 	}
 
@@ -112,11 +112,11 @@ func TestEventRepository_GetPreviousEloSnapshots_MultiEventTournament(t *testing
 		t.Fatalf("Save womenSingles: %v", err)
 	}
 	p2.SinglesElo = 950
-	if err := eventRepo.UpdateParticipantsElo(ctx, womenSingles.ID, []*player.Player{p2}); err != nil {
+	if err := eventRepo.UpdateParticipantsElo(ctx, womenSingles.ID, "open", []*player.Player{p2}); err != nil {
 		t.Fatalf("UpdateParticipantsElo womenSingles: %v", err)
 	}
 
-	got, err := eventRepo.GetPreviousEloSnapshots(ctx, "singles")
+	got, err := eventRepo.GetPreviousEloSnapshots(ctx, "singles", "open")
 	if err != nil {
 		t.Fatalf("GetPreviousEloSnapshots: %v", err)
 	}
@@ -141,11 +141,11 @@ func TestEventRepository_GetPreviousEloSnapshots_Doubles(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 	p1.DoublesElo = 1450
-	if err := eventRepo.UpdateParticipantsElo(ctx, e.ID, []*player.Player{p1}); err != nil {
+	if err := eventRepo.UpdateParticipantsElo(ctx, e.ID, "open", []*player.Player{p1}); err != nil {
 		t.Fatalf("UpdateParticipantsElo: %v", err)
 	}
 
-	got, err := eventRepo.GetPreviousEloSnapshots(ctx, "doubles")
+	got, err := eventRepo.GetPreviousEloSnapshots(ctx, "doubles", "open")
 	if err != nil {
 		t.Fatalf("GetPreviousEloSnapshots: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestEventRepository_GetPreviousEloSnapshots_Doubles(t *testing.T) {
 	// Event creation/finish snapshots both rank types together regardless of
 	// event type, so p1 also shows up in the singles map -- at its unchanged
 	// default (1000), since only doubles Elo moved for this event.
-	singlesGot, err := eventRepo.GetPreviousEloSnapshots(ctx, "singles")
+	singlesGot, err := eventRepo.GetPreviousEloSnapshots(ctx, "singles", "open")
 	if err != nil {
 		t.Fatalf("GetPreviousEloSnapshots singles: %v", err)
 	}

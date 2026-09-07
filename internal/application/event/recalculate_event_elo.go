@@ -69,11 +69,11 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 		if !ok {
 			continue
 		}
-		singlesElo := p.SinglesElo
+		singlesElo := p.EloFor(t.AgeCategory, "singles")
 		if snap.EloBeforeSingles != nil {
 			singlesElo = *snap.EloBeforeSingles
 		}
-		doublesElo := p.DoublesElo
+		doublesElo := p.EloFor(t.AgeCategory, "doubles")
 		if snap.EloBeforeDoubles != nil {
 			doublesElo = *snap.EloBeforeDoubles
 		}
@@ -116,7 +116,7 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 		for _, p := range m.TeamA {
 			state, ok := playerElos[p.ID]
 			if !ok {
-				state = &eloState{StartSingles: p.SinglesElo, StartDoubles: p.DoublesElo, Player: p}
+				state = &eloState{StartSingles: p.EloFor(t.AgeCategory, "singles"), StartDoubles: p.EloFor(t.AgeCategory, "doubles"), Player: p}
 				playerElos[p.ID] = state
 			}
 			p.SinglesElo = state.StartSingles
@@ -126,7 +126,7 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 		for _, p := range m.TeamB {
 			state, ok := playerElos[p.ID]
 			if !ok {
-				state = &eloState{StartSingles: p.SinglesElo, StartDoubles: p.DoublesElo, Player: p}
+				state = &eloState{StartSingles: p.EloFor(t.AgeCategory, "singles"), StartDoubles: p.EloFor(t.AgeCategory, "doubles"), Player: p}
 				playerElos[p.ID] = state
 			}
 			p.SinglesElo = state.StartSingles
@@ -272,11 +272,11 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 	}
 	for _, dbP := range dbPlayers {
 		if state, ok := playerElos[dbP.ID]; ok {
-			dbP.UpdateSinglesElo(int16(math.Round(float64(state.StartSingles) + state.DeltaSingles)))
-			dbP.UpdateDoublesElo(int16(math.Round(float64(state.StartDoubles) + state.DeltaDoubles)))
+			dbP.UpdateEloFor(t.AgeCategory, "singles", int16(math.Round(float64(state.StartSingles)+state.DeltaSingles)))
+			dbP.UpdateEloFor(t.AgeCategory, "doubles", int16(math.Round(float64(state.StartDoubles)+state.DeltaDoubles)))
 		}
 	}
-	if err := uc.playerRepo.UpdateElo(ctx, dbPlayers); err != nil {
+	if err := uc.playerRepo.UpdateEloForCategory(ctx, t.AgeCategory, dbPlayers); err != nil {
 		return fmt.Errorf("persisting final Elo: %w", err)
 	}
 
@@ -289,7 +289,7 @@ func (uc *RecalculateTournamentEloUseCase) Execute(ctx context.Context, tourname
 	if err != nil {
 		return fmt.Errorf("loading players to finalize Elo snapshots: %w", err)
 	}
-	if err := uc.tournamentRepo.UpdateParticipantsElo(ctx, tournamentID, updatedPlayers); err != nil {
+	if err := uc.tournamentRepo.UpdateParticipantsElo(ctx, tournamentID, t.AgeCategory, updatedPlayers); err != nil {
 		return fmt.Errorf("persisting Elo snapshots: %w", err)
 	}
 

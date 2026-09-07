@@ -133,6 +133,10 @@ func (uc *SelfRegisterUseCase) Execute(
 		}
 	}
 
+	if !tournamentDomain.IsAgeEligible(matched, t.AgeCategory, t.StartDate.Year()) {
+		return nil, "", fmt.Errorf("restricted: %s does not meet the %s age requirement for this event", matched.FirstName+" "+matched.LastName, t.AgeCategory)
+	}
+
 	// Persist the new participant via updating the aggregate root
 	t.Participants = append(t.Participants, matched)
 	if err := uc.tournamentRepo.Update(ctx, t); err != nil {

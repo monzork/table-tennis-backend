@@ -133,7 +133,7 @@ func (m *mockRepo) UpdateParticipantElo(ctx context.Context, tournamentID string
 	return nil
 }
 
-func (m *mockRepo) UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*playerDomain.Player) error {
+func (m *mockRepo) UpdateParticipantsElo(ctx context.Context, tournamentID string, ageCategory string, players []*playerDomain.Player) error {
 	return m.updateParticipantsEloErr
 }
 
@@ -176,7 +176,7 @@ func (m *mockRepo) GetParticipantOrOfficialByPIN(ctx context.Context, tournament
 	return m.pinLookup, m.pinLookupErr
 }
 
-func (m *mockRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+func (m *mockRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string, ageCategory string) (map[string]int16, error) {
 	return nil, nil
 }
 
@@ -389,6 +389,21 @@ func (m *mockPlayerRepo) UpdateElo(ctx context.Context, players []*playerDomain.
 		if existing, ok := m.players[p.ID]; ok {
 			existing.SinglesElo = p.SinglesElo
 			existing.DoublesElo = p.DoublesElo
+		} else {
+			m.players[p.ID] = p
+		}
+	}
+	return nil
+}
+
+func (m *mockPlayerRepo) UpdateEloForCategory(ctx context.Context, ageCategory string, players []*playerDomain.Player) error {
+	if m.saveMultipleErr != nil {
+		return m.saveMultipleErr
+	}
+	for _, p := range players {
+		if existing, ok := m.players[p.ID]; ok {
+			existing.UpdateEloFor(ageCategory, "singles", p.EloFor(ageCategory, "singles"))
+			existing.UpdateEloFor(ageCategory, "doubles", p.EloFor(ageCategory, "doubles"))
 		} else {
 			m.players[p.ID] = p
 		}

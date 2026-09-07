@@ -13,7 +13,7 @@ type fakePreviousEloRepo struct {
 	err       error
 }
 
-func (f *fakePreviousEloRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+func (f *fakePreviousEloRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string, ageCategory string) (map[string]int16, error) {
 	return f.snapshots, f.err
 }
 
@@ -21,7 +21,7 @@ func TestGetRankMovementUseCase_Execute(t *testing.T) {
 	repo := &fakePreviousEloRepo{snapshots: map[string]int16{"p1": 1200}}
 	uc := leaderboard.NewGetRankMovementUseCase(repo)
 
-	got, err := uc.Execute(context.Background(), "singles")
+	got, err := uc.Execute(context.Background(), "singles", "open")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -34,7 +34,7 @@ func TestGetRankMovementUseCase_Execute_PropagatesError(t *testing.T) {
 	repo := &fakePreviousEloRepo{err: errors.New("boom")}
 	uc := leaderboard.NewGetRankMovementUseCase(repo)
 
-	if _, err := uc.Execute(context.Background(), "doubles"); err == nil {
+	if _, err := uc.Execute(context.Background(), "doubles", "u13"); err == nil {
 		t.Fatal("expected error to propagate from the repository")
 	}
 }

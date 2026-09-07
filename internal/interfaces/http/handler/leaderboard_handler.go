@@ -8,6 +8,7 @@ import (
 	"table-tennis-backend/internal/application/division"
 	"table-tennis-backend/internal/application/leaderboard"
 	divisionDomain "table-tennis-backend/internal/domain/division"
+	eventDomain "table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
 	"table-tennis-backend/internal/interfaces/http/i18n"
 
@@ -187,6 +188,17 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 	if genderFilter != "M" && genderFilter != "F" {
 		genderFilter = "M"
 	}
+	ageCategory := c.Query("age", "open")
+	validAgeCategory := false
+	for _, ac := range eventDomain.OrderedAgeCategories {
+		if ageCategory == ac {
+			validAgeCategory = true
+			break
+		}
+	}
+	if !validAgeCategory {
+		ageCategory = "open"
+	}
 
 	var players []*player.Player
 	var divisions []*divisionDomain.Division
@@ -207,7 +219,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		defer wg.Done()
 		// Rank movement is a nice-to-have indicator, not core ranking data --
 		// an error here is swallowed rather than failing the whole page.
-		previousElo, _ = h.rankMovementUC.Execute(c.Context(), rankType)
+		previousElo, _ = h.rankMovementUC.Execute(c.Context(), rankType, ageCategory)
 	}()
 	wg.Wait()
 
@@ -226,6 +238,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 		GenderFilter:   genderFilter,
 		PreviousElo:    previousElo,
 		ShowInactive:   showInactive,
+		AgeCategory:    ageCategory,
 	}
 
 	var result leaderboard.RankingResult
@@ -239,22 +252,24 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 	tMap := i18n.PrecomputedMaps[lang]
 
 	data := fiber.Map{
-		"Groups":       result.Groups,
-		"Type":         title,
-		"RankType":     rankType,
-		"ActiveTab":    rankType,
-		"Query":        query,
-		"Division":     divFilter,
-		"Sort":         sortOrder,
-		"View":         view,
-		"ShowInactive": showInactive,
-		"Gender":       genderFilter,
-		"IsDivisional": result.IsDivisional,
-		"Divisions":    divisions,
-		"CurrentPath":  c.Path(),
-		"T":            tMap,
-		"Lang":         lang,
-		"Title":        title,
+		"Groups":        result.Groups,
+		"Type":          title,
+		"RankType":      rankType,
+		"ActiveTab":     rankType,
+		"Query":         query,
+		"Division":      divFilter,
+		"Sort":          sortOrder,
+		"View":          view,
+		"ShowInactive":  showInactive,
+		"AgeCategory":   ageCategory,
+		"AgeCategories": eventDomain.OrderedAgeCategories,
+		"Gender":        genderFilter,
+		"IsDivisional":  result.IsDivisional,
+		"Divisions":     divisions,
+		"CurrentPath":   c.Path(),
+		"T":             tMap,
+		"Lang":          lang,
+		"Title":         title,
 	}
 
 	if c.Get("HX-Request") == "true" && c.Get("HX-Boosted") != "true" {
@@ -267,7 +282,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 	// The distribution chart only shows the gender-specific bands -- the
 	// legacy gender-agnostic bands stay in the DB for existing tournaments'
 	// bracket rendering, but are retired from every new-facing display.
-	distSVG, _ := h.getDistributionUC.Execute(filterActivePlayers(players, showInactive), divisionDomain.OnlyGendered(divisions), rankType)
+	distSVG, _ := h.getDistributionUC.Execute(filterActivePlayers(players, showInactive), divisionDomain.OnlyGendered(divisions), rankType, ageCategory)
 	data["DistributionSVG"] = template.HTML(distSVG)
 
 	return c.Render("rankings", data, "layouts/public")

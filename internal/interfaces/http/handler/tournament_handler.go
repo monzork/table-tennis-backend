@@ -99,11 +99,17 @@ func (h *TournamentHandler) Create(c *fiber.Ctx) error {
 			}
 		}
 
+		var ageCategories []string
+		for _, rawAC := range c.Request().PostArgs().PeekMulti("ageCategories" + catKey + "[]") {
+			ageCategories = append(ageCategories, string(rawAC))
+		}
+
 		return tournament.CategoryConfig{
 			Auto:           auto,
 			Format:         format,
 			GroupPassCount: passCount,
 			PlayerIDs:      ids,
+			AgeCategories:  ageCategories,
 		}
 	}
 

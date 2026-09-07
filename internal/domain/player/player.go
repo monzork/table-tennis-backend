@@ -17,6 +17,12 @@ type Repository interface {
 	// fully-hydrated Player or they'll blank out fields the caller didn't
 	// set.
 	UpdateElo(ctx context.Context, players []*Player) error
+	// UpdateEloForCategory writes only the two Elo columns for the given age
+	// category ("open" writes singles_elo/doubles_elo, same columns as
+	// UpdateElo; "u11".."u19" write that bracket's own pair) for each given
+	// player, leaving every other field -- including every other age
+	// category's Elo -- untouched.
+	UpdateEloForCategory(ctx context.Context, ageCategory string, players []*Player) error
 	// UpdateInactivity writes singles_elo/doubles_elo/missed_federated_tournaments/inactive
 	// for each given player -- the inactivity-decay pass mutates Elo and the
 	// tracking counters together in one pass.
@@ -81,6 +87,19 @@ type Player struct {
 	// the player enrolls in a tournament again.
 	LostToInactivitySingles int16
 	LostToInactivityDoubles int16
+	// SinglesEloU11/DoublesEloU11 .. SinglesEloU19/DoublesEloU19 are this
+	// player's ratings within each youth age bracket, entirely separate
+	// pools from SinglesElo/DoublesElo (which remain the Open/adult rating).
+	// See EloFor/UpdateEloFor for the age-category-aware accessors, and
+	// event.IsAgeEligible for who may play in which bracket.
+	SinglesEloU11 int16
+	DoublesEloU11 int16
+	SinglesEloU13 int16
+	DoublesEloU13 int16
+	SinglesEloU15 int16
+	DoublesEloU15 int16
+	SinglesEloU19 int16
+	DoublesEloU19 int16
 }
 
 func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, country, department, nationalID string) (*Player, error) {
@@ -98,6 +117,14 @@ func NewPlayer(id, firstName, lastName string, birthdate time.Time, gender, coun
 		Gender:         gender,
 		SinglesElo:     1000,
 		DoublesElo:     1000,
+		SinglesEloU11:  1000,
+		DoublesEloU11:  1000,
+		SinglesEloU13:  1000,
+		DoublesEloU13:  1000,
+		SinglesEloU15:  1000,
+		DoublesEloU15:  1000,
+		SinglesEloU19:  1000,
+		DoublesEloU19:  1000,
 		Country:        country,
 		Department:     department,
 		WhatsAppNumber: "",
@@ -126,6 +153,14 @@ func NewGuardianChildPlayer(id, guardianAccountID, firstName, lastName string, b
 		Gender:            gender,
 		SinglesElo:        1000,
 		DoublesElo:        1000,
+		SinglesEloU11:     1000,
+		DoublesEloU11:     1000,
+		SinglesEloU13:     1000,
+		DoublesEloU13:     1000,
+		SinglesEloU15:     1000,
+		DoublesEloU15:     1000,
+		SinglesEloU19:     1000,
+		DoublesEloU19:     1000,
 		Country:           country,
 		Department:        department,
 		WhatsAppNumber:    "",
@@ -142,6 +177,86 @@ func (p *Player) UpdateSinglesElo(newElo int16) {
 func (p *Player) UpdateDoublesElo(newElo int16) {
 	if newElo >= 0 {
 		p.DoublesElo = newElo
+	}
+}
+
+// EloFor returns this player's rating for the given age category ("",
+// "open", "u11", "u13", "u15", or "u19") and rank type ("singles" or
+// anything else, which is treated as "doubles" -- matching the convention
+// already used by e.g. Match.MatchType throughout this codebase). An
+// unrecognized or empty age category falls back to the Open rating
+// (SinglesElo/DoublesElo), so every existing caller that never deals with
+// age categories keeps working unchanged.
+func (p *Player) EloFor(ageCategory, rankType string) int16 {
+	singles := rankType != "doubles"
+	switch ageCategory {
+	case "u11":
+		if singles {
+			return p.SinglesEloU11
+		}
+		return p.DoublesEloU11
+	case "u13":
+		if singles {
+			return p.SinglesEloU13
+		}
+		return p.DoublesEloU13
+	case "u15":
+		if singles {
+			return p.SinglesEloU15
+		}
+		return p.DoublesEloU15
+	case "u19":
+		if singles {
+			return p.SinglesEloU19
+		}
+		return p.DoublesEloU19
+	default: // "", "open", or anything unrecognized
+		if singles {
+			return p.SinglesElo
+		}
+		return p.DoublesElo
+	}
+}
+
+// UpdateEloFor sets this player's rating for the given age category and
+// rank type, mirroring UpdateSinglesElo/UpdateDoublesElo's non-negative
+// guard. See EloFor for the age-category/rank-type conventions.
+func (p *Player) UpdateEloFor(ageCategory, rankType string, newElo int16) {
+	if newElo < 0 {
+		return
+	}
+	singles := rankType != "doubles"
+	switch ageCategory {
+	case "u11":
+		if singles {
+			p.SinglesEloU11 = newElo
+		} else {
+			p.DoublesEloU11 = newElo
+		}
+	case "u13":
+		if singles {
+			p.SinglesEloU13 = newElo
+		} else {
+			p.DoublesEloU13 = newElo
+		}
+	case "u15":
+		if singles {
+			p.SinglesEloU15 = newElo
+		} else {
+			p.DoublesEloU15 = newElo
+		}
+	case "u19":
+		if singles {
+			p.SinglesEloU19 = newElo
+		} else {
+			p.DoublesEloU19 = newElo
+		}
+	default:
+		if singles {
+			p.SinglesElo = newElo
+		} else {
+			p.DoublesElo = newElo
+		}
 	}
 }
 

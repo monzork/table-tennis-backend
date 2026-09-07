@@ -51,6 +51,9 @@
                 <option value="women" {{if eq .Event.EventCategory "women"}}selected{{end}}>{{t .T "admin.event_edit_form.cat_women_full"}}</option>
                 <option value="mixed" {{if eq .Event.EventCategory "mixed"}}selected{{end}}>{{t .T "admin.event_edit_form.cat_mixed_full"}}</option>
             </select>
+            <!-- Age category (U11/U13/U15/U19) is set once at tournament creation and
+                 has no edit UI here yet -- preserve it as-is on every save. -->
+            <input type="hidden" name="ageCategory" value="{{.Event.AgeCategory}}">
         </div>
         <div class="space-y-2">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_edit_form.available_tables_label"}}</label>

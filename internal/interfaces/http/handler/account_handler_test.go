@@ -58,7 +58,7 @@ func seedScheduledMatch(t *testing.T, db *bun.DB, p1, p2 *player.Player) string 
 
 	eventRepo := bunRepo.NewEventRepository(db)
 	start := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
-	ev, err := event.NewEvent(uuid.NewString(), "Guardian Flow Event", "singles", "elimination", "open", start, start.Add(24*time.Hour), nil, 2, nil, false)
+	ev, err := event.NewEvent(uuid.NewString(), "Guardian Flow Event", "singles", "elimination", "open", "", start, start.Add(24*time.Hour), nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("NewEvent: %v", err)
 	}

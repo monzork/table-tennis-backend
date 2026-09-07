@@ -180,7 +180,7 @@ func (h *PlayerHandler) Register(c *fiber.Ctx) error {
 	}
 
 	if body.EventID != "" {
-		if err := h.enrollPlayerUC.Execute(c.Context(), body.EventID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
+		if err := h.enrollPlayerUC.Execute(c.Context(), body.EventID, player.ID); err != nil {
 			slog.Warn("failed to enroll newly created player into event", "playerID", player.ID, "eventID", body.EventID, "err", err)
 		}
 	}
@@ -228,7 +228,7 @@ func (h *PlayerHandler) Update(c *fiber.Ctx) error {
 	}
 
 	if body.EventID != "" {
-		if err := h.enrollPlayerUC.Execute(c.Context(), body.EventID, player.ID, player.SinglesElo, player.DoublesElo); err != nil {
+		if err := h.enrollPlayerUC.Execute(c.Context(), body.EventID, player.ID); err != nil {
 			slog.Warn("failed to enroll updated player into event", "playerID", player.ID, "eventID", body.EventID, "err", err)
 		}
 	}

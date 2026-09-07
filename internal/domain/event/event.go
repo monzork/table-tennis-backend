@@ -200,16 +200,22 @@ type Event struct {
 	Name          string
 	Type          string // "singles", "doubles", "teams"
 	EventCategory string // "men", "women", "mixed", "open"
-	Format        string // "elimination", "groups_elimination", "round_robin"
-	Status        string // "in_progress", "finished"
-	WinnerName    string // Name of the winner (player or team)
-	Participants  []*player.Player
-	StartDate     time.Time
-	EndDate       time.Time
-	Rules         []Rule
-	StageRules    []StageRule
-	Matches       []Match
-	Groups        []Group
+	// AgeCategory is the youth bracket this event belongs to -- "open"
+	// (the default, adult/no age limit) or one of the youth brackets in
+	// OrderedAgeCategories ("u11", "u13", "u15", "u19"). It selects which
+	// of a participant's Elo pools (Player.EloFor) this event's matches
+	// read and write, and gates who may be enrolled (see IsAgeEligible).
+	AgeCategory  string
+	Format       string // "elimination", "groups_elimination", "round_robin"
+	Status       string // "in_progress", "finished"
+	WinnerName   string // Name of the winner (player or team)
+	Participants []*player.Player
+	StartDate    time.Time
+	EndDate      time.Time
+	Rules        []Rule
+	StageRules   []StageRule
+	Matches      []Match
+	Groups       []Group
 	// GroupCount is the admin-desired number of round-robin groups to build.
 	// 0 means auto (groups of ~4, the historical default).
 	GroupCount            int
@@ -241,7 +247,7 @@ type Event struct {
 	ParticipantSnapshots []ParticipantSnapshot
 }
 
-func NewEvent(id string, name string, tournamentType string, format string, category string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Event, error) {
+func NewEvent(id string, name string, tournamentType string, format string, category string, ageCategory string, start, end time.Time, rules []Rule, groupPassCount int, participants []*player.Player, hasThirdPlaceMatch bool) (*Event, error) {
 	if end.Before(start) {
 		return nil, ErrInvalidDates
 	}
@@ -254,6 +260,9 @@ func NewEvent(id string, name string, tournamentType string, format string, cate
 	if category == "" {
 		category = "open"
 	}
+	if ageCategory == "" {
+		ageCategory = "open"
+	}
 
 	// Validation mapping mapping depending on event category
 	for _, p := range participants {
@@ -265,11 +274,20 @@ func NewEvent(id string, name string, tournamentType string, format string, cate
 		}
 	}
 
+	// Age-eligibility validation: play-up is allowed (see IsAgeEligible), so
+	// this only rejects participants too old for the selected bracket.
+	for _, p := range participants {
+		if !IsAgeEligible(p, ageCategory, start.Year()) {
+			return nil, fmt.Errorf("restricted: %s %s does not meet the %s age requirement", p.FirstName, p.LastName, ageCategory)
+		}
+	}
+
 	t := &Event{
 		ID:                    id,
 		Name:                  name,
 		Type:                  tournamentType,
 		EventCategory:         category,
+		AgeCategory:           ageCategory,
 		Format:                format,
 		Participants:          participants,
 		StartDate:             start,
@@ -499,7 +517,7 @@ type EventRepository interface {
 // ParticipantRepository manages player participation and Elo snapshots within an event.
 type ParticipantRepository interface {
 	UpdateParticipantElo(ctx context.Context, eventID string, playerID string, singlesElo, doublesElo int16) error
-	UpdateParticipantsElo(ctx context.Context, eventID string, players []*player.Player) error
+	UpdateParticipantsElo(ctx context.Context, eventID string, ageCategory string, players []*player.Player) error
 	UpdateParticipantEloBefore(ctx context.Context, eventID string, playerID string, singlesElo, doublesElo int16) error
 	AddParticipant(ctx context.Context, eventID string, playerID string, singlesElo, doublesElo int16) error
 	RemoveParticipant(ctx context.Context, eventID string, playerID string) error
@@ -510,7 +528,7 @@ type ParticipantRepository interface {
 	// before their most recently finished event -- the elo_before_* value on
 	// that event_participants row. Used as the baseline for showing rank
 	// movement on the public leaderboard.
-	GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error)
+	GetPreviousEloSnapshots(ctx context.Context, rankType string, ageCategory string) (map[string]int16, error)
 	// SavePlacementResults persists each player's final tournament placement
 	// and Elo bonus for this event as a durable record -- see
 	// PlacementRecord and GetPlacementHistoryByPlayerID.

@@ -91,6 +91,47 @@ func TestRecalculateTournamentEloUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("age-category event routes Elo to the bracket's own pool, leaving Open untouched", func(t *testing.T) {
+		uc, repo, playerRepo := newUC()
+
+		// Separate *Player objects for t.Participants vs playerRepo's
+		// records, matching production (two independent queries) -- see the
+		// identical comment in finish_event_test.go for why this matters.
+		newFixture := func(id, first, last string) *playerDomain.Player {
+			p := &playerDomain.Player{ID: id, FirstName: first, LastName: last, SinglesElo: 1000}
+			p.UpdateEloFor("u13", "singles", 900)
+			return p
+		}
+		p1Participant, p2Participant := newFixture("p1", "Alice", "A"), newFixture("p2", "Bob", "B")
+		playerRepo.players["p1"] = newFixture("p1", "Alice", "A")
+		playerRepo.players["p2"] = newFixture("p2", "Bob", "B")
+
+		now := time.Now()
+		m := tournamentDomain.Match{
+			ID: "m1", MatchType: "singles", TeamA: []*playerDomain.Player{p1Participant}, TeamB: []*playerDomain.Player{p2Participant},
+			Status: "finished", Stage: "final", WinnerTeam: "A", UpdatedAt: &now,
+		}
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID: "t1", Format: "elimination", AgeCategory: "u13", Participants: []*playerDomain.Player{p1Participant, p2Participant},
+			Matches: []tournamentDomain.Match{m},
+		}
+
+		if err := uc.Execute(context.Background(), "t1"); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		p1, p2 := playerRepo.players["p1"], playerRepo.players["p2"]
+		if p1.EloFor("u13", "singles") != 980 {
+			t.Errorf("expected champion u13 elo 900+16+64=980, got %d", p1.EloFor("u13", "singles"))
+		}
+		if p2.EloFor("u13", "singles") != 916 {
+			t.Errorf("expected runner-up u13 elo 900-16+32=916, got %d", p2.EloFor("u13", "singles"))
+		}
+		if p1.SinglesElo != 1000 || p2.SinglesElo != 1000 {
+			t.Errorf("expected Open SinglesElo untouched at 1000, got p1=%d p2=%d", p1.SinglesElo, p2.SinglesElo)
+		}
+	})
+
 	t.Run("final update error propagates", func(t *testing.T) {
 		uc, repo, _ := newUC()
 		repo.events["t1"] = &tournamentDomain.Event{ID: "t1"}

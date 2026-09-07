@@ -134,7 +134,7 @@ func (m *mockSubTourneyRepo) Delete(ctx context.Context, id string) error { retu
 func (m *mockSubTourneyRepo) UpdateParticipantElo(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
 	return nil
 }
-func (m *mockSubTourneyRepo) UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*playerDomain.Player) error {
+func (m *mockSubTourneyRepo) UpdateParticipantsElo(ctx context.Context, tournamentID string, ageCategory string, players []*playerDomain.Player) error {
 	return nil
 }
 func (m *mockSubTourneyRepo) UpdateParticipantEloBefore(ctx context.Context, tournamentID string, playerID string, singlesElo, doublesElo int16) error {
@@ -159,7 +159,7 @@ func (m *mockSubTourneyRepo) RemovePlayerFromTeam(ctx context.Context, teamID st
 func (m *mockSubTourneyRepo) GetParticipantSnapshots(ctx context.Context, tournamentID string) ([]subTourneyDomain.ParticipantSnapshot, error) {
 	return nil, nil
 }
-func (m *mockSubTourneyRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+func (m *mockSubTourneyRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string, ageCategory string) (map[string]int16, error) {
 	return nil, nil
 }
 
@@ -224,6 +224,9 @@ func (m *mockPlayerRepo) SaveMultiple(ctx context.Context, players []*playerDoma
 	return nil
 }
 func (m *mockPlayerRepo) UpdateElo(ctx context.Context, players []*playerDomain.Player) error {
+	return nil
+}
+func (m *mockPlayerRepo) UpdateEloForCategory(ctx context.Context, ageCategory string, players []*playerDomain.Player) error {
 	return nil
 }
 func (m *mockPlayerRepo) UpdateInactivity(ctx context.Context, players []*playerDomain.Player) error {

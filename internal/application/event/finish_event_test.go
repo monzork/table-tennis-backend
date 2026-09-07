@@ -132,6 +132,66 @@ func TestFinishTournamentUseCase_Execute(t *testing.T) {
 		}
 	})
 
+	t.Run("age-category event routes Elo to the bracket's own pool, leaving Open untouched", func(t *testing.T) {
+		uc, repo, matchRepo, playerRepo := newUC()
+
+		// t.Participants and playerRepo's records are deliberately separate
+		// *Player objects with the same starting values -- mirroring
+		// production, where the event's deep-hydrated participants and the
+		// later playerRepo.GetByIDs fetch are two independent queries, never
+		// the same in-memory object. match.CalculateAndApplyElo mutates
+		// SinglesElo/DoublesElo directly as scratch space during the match
+		// loop (see the comment at that call site); aliasing the two here
+		// would let that scratch write leak into the assertion below.
+		newFixture := func(id, first, last string) *playerDomain.Player {
+			p := &playerDomain.Player{ID: id, FirstName: first, LastName: last, SinglesElo: 1000}
+			p.UpdateEloFor("u13", "singles", 900)
+			return p
+		}
+		p1Participant, p2Participant := newFixture("p1", "Alice", "A"), newFixture("p2", "Bob", "B")
+		playerRepo.players["p1"] = newFixture("p1", "Alice", "A")
+		playerRepo.players["p2"] = newFixture("p2", "Bob", "B")
+
+		now := time.Now()
+		finalMatch := tournamentDomain.Match{
+			ID:         "m1",
+			MatchType:  "singles",
+			TeamA:      []*playerDomain.Player{p1Participant},
+			TeamB:      []*playerDomain.Player{p2Participant},
+			Status:     "finished",
+			Stage:      "final",
+			WinnerTeam: "A",
+			UpdatedAt:  &now,
+		}
+		repo.events["t1"] = &tournamentDomain.Event{
+			ID:           "t1",
+			Status:       "in_progress",
+			Format:       "elimination",
+			AgeCategory:  "u13",
+			Participants: []*playerDomain.Player{p1Participant, p2Participant},
+			Matches:      []tournamentDomain.Match{finalMatch},
+		}
+		matchRepo.finishedCount = 1
+
+		if err := uc.Execute(context.Background(), "t1"); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		p1, p2 := playerRepo.players["p1"], playerRepo.players["p2"]
+		// Same math as the Open happy-path test above (900-vs-900 win at
+		// K=32, +64/+32 placement bonus), but landing in the u13 pool.
+		if p1.EloFor("u13", "singles") != 980 {
+			t.Errorf("expected champion u13 elo 900+16+64=980, got %d", p1.EloFor("u13", "singles"))
+		}
+		if p2.EloFor("u13", "singles") != 916 {
+			t.Errorf("expected runner-up u13 elo 900-16+32=916, got %d", p2.EloFor("u13", "singles"))
+		}
+		// The Open (adult) rating must be completely untouched by a u13 event.
+		if p1.SinglesElo != 1000 || p2.SinglesElo != 1000 {
+			t.Errorf("expected Open SinglesElo untouched at 1000, got p1=%d p2=%d", p1.SinglesElo, p2.SinglesElo)
+		}
+	})
+
 	t.Run("forfeit match: forfeiting side loses elo, winner-by-walkover gains nothing", func(t *testing.T) {
 		uc, repo, matchRepo, playerRepo := newUC()
 		p1 := &playerDomain.Player{ID: "p1", FirstName: "Alice", LastName: "A", SinglesElo: 1000}

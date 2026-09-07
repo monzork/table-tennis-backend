@@ -24,10 +24,16 @@ type NewPlayerData struct {
 }
 
 type CreateEventCommand struct {
-	Name                 string
-	Type                 string
-	Format               string
-	Category             string
+	Name     string
+	Type     string
+	Format   string
+	Category string
+	// AgeCategory is "open" (default) or one of event.OrderedAgeCategories'
+	// youth brackets ("u11", "u13", "u15", "u19"). This secondary
+	// single-event creation flow has no dedicated UI for it yet -- it's
+	// threaded through purely for consistency with the primary tournament
+	// wizard (internal/application/tournament.CreateEventUseCase).
+	AgeCategory          string
 	StartDate            string
 	EndDate              string
 	ParticipantIDs       []string
@@ -99,7 +105,7 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 		}
 	}
 
-	t, err := tournamentDomain.NewEvent(idgen.Generate(), cmd.Name, cmd.Type, cmd.Format, cmd.Category, start, end, []tournamentDomain.Rule{}, cmd.GroupPassCount, filteredParticipants, cmd.HasThirdPlaceMatch)
+	t, err := tournamentDomain.NewEvent(idgen.Generate(), cmd.Name, cmd.Type, cmd.Format, cmd.Category, cmd.AgeCategory, start, end, []tournamentDomain.Rule{}, cmd.GroupPassCount, filteredParticipants, cmd.HasThirdPlaceMatch)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +156,7 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 		}
 
 		pairName := pairSuffix + " " + cmd.Name
-		pairT, err := tournamentDomain.NewEvent(idgen.Generate(), pairName, cmd.Type, cmd.Format, pairCategory, start, end, []tournamentDomain.Rule{}, cmd.GroupPassCount, pairParticipants, cmd.HasThirdPlaceMatch)
+		pairT, err := tournamentDomain.NewEvent(idgen.Generate(), pairName, cmd.Type, cmd.Format, pairCategory, cmd.AgeCategory, start, end, []tournamentDomain.Rule{}, cmd.GroupPassCount, pairParticipants, cmd.HasThirdPlaceMatch)
 		if err == nil {
 			pairT.SkipElo = cmd.SkipElo
 			pairT.TournamentID = cmd.TournamentID

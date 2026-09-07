@@ -17,6 +17,43 @@ type CategoryConfig struct {
 	Format         string
 	GroupPassCount int
 	PlayerIDs      []string
+	// AgeCategories lists which age tiers this category should generate
+	// child events for -- "open" (the default, adult/no age limit) plus
+	// any of "u11"/"u13"/"u15"/"u19". A nil/empty slice is normalized to
+	// ["open"] by processCategory, so every existing caller keeps today's
+	// exact behavior unless it opts into age tiers explicitly. "open" is
+	// always included even if the caller only lists youth tiers, since
+	// dropping the adult event entirely is never implied by picking one or
+	// more youth brackets.
+	AgeCategories []string
+}
+
+// normalizedAgeCategories returns cfg.AgeCategories with "open" guaranteed
+// present (defaulting to just ["open"] when empty), deduplicated, in a
+// stable order (event.OrderedAgeCategories) so generated child events are
+// always created youngest-to-oldest.
+func normalizedAgeCategories(cfg CategoryConfig) []string {
+	requested := make(map[string]bool, len(cfg.AgeCategories)+1)
+	requested["open"] = true
+	for _, ac := range cfg.AgeCategories {
+		if ac != "" {
+			requested[ac] = true
+		}
+	}
+	var out []string
+	for _, ac := range eventDomain.OrderedAgeCategories {
+		if requested[ac] {
+			out = append(out, ac)
+		}
+	}
+	return out
+}
+
+// ageCategoryLabel returns the human-readable suffix for a non-"open" age
+// category, e.g. "u13" -> "U13". "open" callers should skip suffixing
+// entirely rather than call this, to keep today's event names unchanged.
+func ageCategoryLabel(ageCategory string) string {
+	return strings.ToUpper(ageCategory)
 }
 
 // CustomEventConfig defines one manually-named child event with a hand-picked
@@ -120,8 +157,8 @@ func (uc *CreateEventUseCase) Execute(
 	}
 
 	// Helper to create a event under this tournament
-	createSubTourney := func(tName string, tType string, tFormat string, category string, groupPassCount int, players []*playerDomain.Player, skipDivisionSplit bool, useGenderDivisions bool) error {
-		t, err := eventDomain.NewEvent(idgen.Generate(), tName, tType, tFormat, category, start, end, []eventDomain.Rule{}, groupPassCount, players, false)
+	createSubTourney := func(tName string, tType string, tFormat string, category string, ageCategory string, groupPassCount int, players []*playerDomain.Player, skipDivisionSplit bool, useGenderDivisions bool) error {
+		t, err := eventDomain.NewEvent(idgen.Generate(), tName, tType, tFormat, category, ageCategory, start, end, []eventDomain.Rule{}, groupPassCount, players, false)
 		if err != nil {
 			return err
 		}
@@ -135,7 +172,7 @@ func (uc *CreateEventUseCase) Execute(
 	}
 
 	// Helper to get qualified players for a category (from cache)
-	getPlayers := func(ids []string, gender string, isDoubles bool) []*playerDomain.Player {
+	getPlayers := func(ids []string, gender string, isDoubles bool, ageCategory string) []*playerDomain.Player {
 		var players []*playerDomain.Player
 		for _, idStr := range ids {
 			p, ok := playerCache[idStr]
@@ -143,6 +180,9 @@ func (uc *CreateEventUseCase) Execute(
 				continue
 			}
 			if gender != "" && p.Gender != gender {
+				continue
+			}
+			if ageCategory != "" && ageCategory != "open" && !eventDomain.IsAgeEligible(p, ageCategory, start.Year()) {
 				continue
 			}
 			if !skipElo && len(divs) > 0 {
@@ -171,73 +211,73 @@ func (uc *CreateEventUseCase) Execute(
 			return
 		}
 
-		allCatPlayers := getPlayers(cfg.PlayerIDs, categoryGender, isDoubles)
-
-		if skipElo || len(divs) == 0 || len(allCatPlayers) == 0 {
-			// A category with no players selected yet still gets its event
-			// created (empty) rather than being skipped entirely -- an admin
-			// needs an existing event to add players to later via the event
-			// edit form; there was previously nothing to add players to.
-			tName := fmt.Sprintf("%s - %s", e.Name, suffix)
-			catArg := categoryGender
-			if categoryGender == "M" {
-				catArg = "men"
-			} else if categoryGender == "F" {
-				catArg = "women"
-			} else {
-				catArg = "open"
-			}
-			// If this category has no players yet but the tournament has
-			// gender-specific divisions selected for its gender, mark it so
-			// that once players are added, the bracket view auto-classifies
-			// them into those bands (see bracket.BuildBracket) instead of
-			// silently falling back to the gender-agnostic ones.
-			useGenderDivisions := false
-			if len(allCatPlayers) == 0 {
-				for _, div := range divs {
-					if div.Gender != "" && !strings.EqualFold(div.Gender, "both") && div.MatchesGender(categoryGender) {
-						useGenderDivisions = true
-						break
-					}
-				}
-			}
-			_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, allCatPlayers, len(divs) == 0, useGenderDivisions)
+		catArg := categoryGender
+		if categoryGender == "M" {
+			catArg = "men"
+		} else if categoryGender == "F" {
+			catArg = "women"
 		} else {
-			// Group by division
-			for _, div := range divs {
-				// A division only applies to categories of its own gender --
-				// Gender=="both" divisions apply to every category, but a
-				// gender-specific division (e.g. a new "1st Division (Men)"
-				// band) must not also pull players into a differently-
-				// gendered category just because their Elo happens to fall
-				// in that band's numeric range too.
-				if !div.MatchesGender(categoryGender) {
-					continue
-				}
+			catArg = "open"
+		}
 
-				var divPlayers []*playerDomain.Player
-				for _, p := range allCatPlayers {
-					eloVal := p.SinglesElo
-					if isDoubles {
-						eloVal = p.DoublesElo
-					}
-					if div.ContainsElo(int16(eloVal)) {
-						divPlayers = append(divPlayers, p)
+		for _, ageCategory := range normalizedAgeCategories(cfg) {
+			ageSuffix := suffix
+			if ageCategory != "open" {
+				ageSuffix = fmt.Sprintf("%s (%s)", suffix, ageCategoryLabel(ageCategory))
+			}
+
+			allCatPlayers := getPlayers(cfg.PlayerIDs, categoryGender, isDoubles, ageCategory)
+
+			if skipElo || len(divs) == 0 || len(allCatPlayers) == 0 {
+				// A category with no players selected yet still gets its event
+				// created (empty) rather than being skipped entirely -- an admin
+				// needs an existing event to add players to later via the event
+				// edit form; there was previously nothing to add players to.
+				tName := fmt.Sprintf("%s - %s", e.Name, ageSuffix)
+				// If this category has no players yet but the tournament has
+				// gender-specific divisions selected for its gender, mark it so
+				// that once players are added, the bracket view auto-classifies
+				// them into those bands (see bracket.BuildBracket) instead of
+				// silently falling back to the gender-agnostic ones.
+				useGenderDivisions := false
+				if len(allCatPlayers) == 0 {
+					for _, div := range divs {
+						if div.Gender != "" && !strings.EqualFold(div.Gender, "both") && div.MatchesGender(categoryGender) {
+							useGenderDivisions = true
+							break
+						}
 					}
 				}
-
-				if len(divPlayers) > 0 {
-					tName := fmt.Sprintf("%s - %s (%s)", e.Name, suffix, div.Name)
-					catArg := categoryGender
-					if categoryGender == "M" {
-						catArg = "men"
-					} else if categoryGender == "F" {
-						catArg = "women"
-					} else {
-						catArg = "open"
+				_ = createSubTourney(tName, tType, cfg.Format, catArg, ageCategory, cfg.GroupPassCount, allCatPlayers, len(divs) == 0, useGenderDivisions)
+			} else {
+				// Group by division
+				for _, div := range divs {
+					// A division only applies to categories of its own gender --
+					// Gender=="both" divisions apply to every category, but a
+					// gender-specific division (e.g. a new "1st Division (Men)"
+					// band) must not also pull players into a differently-
+					// gendered category just because their Elo happens to fall
+					// in that band's numeric range too.
+					if !div.MatchesGender(categoryGender) {
+						continue
 					}
-					useGenderDivisions := div.Gender != "" && !strings.EqualFold(div.Gender, "both")
-					_ = createSubTourney(tName, tType, cfg.Format, catArg, cfg.GroupPassCount, divPlayers, false, useGenderDivisions)
+
+					var divPlayers []*playerDomain.Player
+					for _, p := range allCatPlayers {
+						eloVal := p.SinglesElo
+						if isDoubles {
+							eloVal = p.DoublesElo
+						}
+						if div.ContainsElo(int16(eloVal)) {
+							divPlayers = append(divPlayers, p)
+						}
+					}
+
+					if len(divPlayers) > 0 {
+						tName := fmt.Sprintf("%s - %s (%s)", e.Name, ageSuffix, div.Name)
+						useGenderDivisions := div.Gender != "" && !strings.EqualFold(div.Gender, "both")
+						_ = createSubTourney(tName, tType, cfg.Format, catArg, ageCategory, cfg.GroupPassCount, divPlayers, false, useGenderDivisions)
+					}
 				}
 			}
 		}
@@ -263,7 +303,7 @@ func (uc *CreateEventUseCase) Execute(
 			continue
 		}
 		tName := fmt.Sprintf("%s - %s", e.Name, cfg.Name)
-		_ = createSubTourney(tName, "singles", cfg.Format, "open", cfg.GroupPassCount, players, true, false)
+		_ = createSubTourney(tName, "singles", cfg.Format, "open", "open", cfg.GroupPassCount, players, true, false)
 	}
 
 	if err := uc.tournamentRepo.Save(ctx, e); err != nil {

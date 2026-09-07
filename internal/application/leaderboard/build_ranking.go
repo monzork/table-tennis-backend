@@ -3,8 +3,10 @@ package leaderboard
 import (
 	"sort"
 	"strings"
+	"time"
 
 	"table-tennis-backend/internal/domain/division"
+	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
 )
 
@@ -39,6 +41,13 @@ type RankingParams struct {
 	// player.Player.Inactive) in the ranking. Defaults to false so the
 	// public ranking only shows active players unless explicitly asked.
 	ShowInactive bool
+	// AgeCategory selects which Elo pool is ranked -- "" or "open" (the
+	// default, adult/no age limit) or one of event.OrderedAgeCategories'
+	// youth brackets ("u11", "u13", "u15", "u19"). For a youth bracket, the
+	// pool is also filtered to players currently eligible for it (see
+	// event.IsAgeEligible), so the board doesn't show adults who simply
+	// never played in that bracket sitting at the untouched default rating.
+	AgeCategory string
 }
 
 type RankingResult struct {
@@ -46,12 +55,10 @@ type RankingResult struct {
 	Groups       []DivisionGroupView
 }
 
-// eloOf returns the relevant Elo rating for a player given the ranking type.
-func eloOf(p *player.Player, rankType string) int16 {
-	if rankType == "doubles" {
-		return p.DoublesElo
-	}
-	return p.SinglesElo
+// eloOf returns the relevant Elo rating for a player given the ranking type
+// and age category (see RankingParams.AgeCategory / player.Player.EloFor).
+func eloOf(p *player.Player, rankType, ageCategory string) int16 {
+	return p.EloFor(ageCategory, rankType)
 }
 
 // filterRankableDivisions drops the placeholder "no division" bucket, which
@@ -105,10 +112,26 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 		players = active
 	}
 
+	// 0.5 For a youth bracket, also drop players not currently eligible for
+	// it -- otherwise the board would show every adult sitting at that
+	// bracket's untouched default Elo, never having actually played in it.
+	if params.AgeCategory != "" && params.AgeCategory != "open" {
+		seasonYear := time.Now().Year()
+		var eligible []*player.Player
+		for _, p := range players {
+			if event.IsAgeEligible(p, params.AgeCategory, seasonYear) {
+				eligible = append(eligible, p)
+			}
+		}
+		players = eligible
+	}
+
 	// 1. Pre-rank all players by absolute Elo.
 	var preRanked []RankedPlayer
 	sorted := append([]*player.Player{}, players...)
-	sort.Slice(sorted, func(i, j int) bool { return eloOf(sorted[i], params.RankType) > eloOf(sorted[j], params.RankType) })
+	sort.Slice(sorted, func(i, j int) bool {
+		return eloOf(sorted[i], params.RankType, params.AgeCategory) > eloOf(sorted[j], params.RankType, params.AgeCategory)
+	})
 
 	// Rank movement is always computed within a player's own gender pool,
 	// even when the overall rank number (i above) is a combined M+F
@@ -119,7 +142,7 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 	elosByGender := map[string][]int16{"M": nil, "F": nil}
 	for _, p := range sorted {
 		g := strings.ToUpper(p.Gender)
-		elosByGender[g] = append(elosByGender[g], eloOf(p, params.RankType))
+		elosByGender[g] = append(elosByGender[g], eloOf(p, params.RankType, params.AgeCategory))
 	}
 	for g := range elosByGender {
 		sort.Slice(elosByGender[g], func(i, j int) bool { return elosByGender[g][i] > elosByGender[g][j] })
@@ -129,8 +152,9 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 		rp := RankedPlayer{Player: p, Rank: i + 1}
 		if prevElo, ok := params.PreviousElo[p.ID]; ok {
 			genderElos := elosByGender[strings.ToUpper(p.Gender)]
-			prevRank := previousRankFor(genderElos, prevElo, eloOf(p, params.RankType))
-			currentGenderRank := previousRankFor(genderElos, eloOf(p, params.RankType), eloOf(p, params.RankType))
+			currentElo := eloOf(p, params.RankType, params.AgeCategory)
+			prevRank := previousRankFor(genderElos, prevElo, currentElo)
+			currentGenderRank := previousRankFor(genderElos, currentElo, currentElo)
 			delta := prevRank - currentGenderRank
 			rp.RankDelta = &delta
 		}
@@ -165,7 +189,7 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 		if targetDiv != nil {
 			final = nil
 			for _, rp := range filtered {
-				if targetDiv.ContainsElo(eloOf(rp.Player, params.RankType)) {
+				if targetDiv.ContainsElo(eloOf(rp.Player, params.RankType, params.AgeCategory)) {
 					final = append(final, rp)
 				}
 			}
@@ -178,7 +202,7 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 		if params.SortOrder == "name_asc" {
 			return (a.FirstName + a.LastName) < (b.FirstName + b.LastName)
 		}
-		ptsA, ptsB := eloOf(a.Player, params.RankType), eloOf(b.Player, params.RankType)
+		ptsA, ptsB := eloOf(a.Player, params.RankType, params.AgeCategory), eloOf(b.Player, params.RankType, params.AgeCategory)
 		if ptsA == ptsB {
 			if params.SortOrder == "points_asc" {
 				return a.Rank > b.Rank
@@ -241,7 +265,7 @@ func BuildGenderRanking(players []*player.Player, divisions []*division.Division
 	for _, d := range genderDivs {
 		var divPlayers []RankedPlayer
 		for _, rp := range final {
-			if d.ContainsElo(eloOf(rp.Player, params.RankType)) {
+			if d.ContainsElo(eloOf(rp.Player, params.RankType, params.AgeCategory)) {
 				divPlayers = append(divPlayers, rp)
 			}
 		}

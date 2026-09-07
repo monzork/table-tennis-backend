@@ -177,6 +177,28 @@ func TestLeaderboardHandler_GetSingles(t *testing.T) {
 			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
+
+	t.Run("GetSingles with a valid age category filter", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/rankings/singles?age=u13", nil)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("GetSingles with an unrecognized age category falls back to open", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/rankings/singles?age=not-a-real-category", nil)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+	})
 }
 
 func TestLeaderboardHandler_Categories(t *testing.T) {

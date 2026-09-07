@@ -77,6 +77,7 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 
 		Status:                t.Status,
 		EventCategory:         t.EventCategory,
+		AgeCategory:           t.AgeCategory,
 		StartDate:             t.StartDate,
 		EndDate:               t.EndDate,
 		GroupCount:            t.GroupCount,
@@ -99,7 +100,11 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 		return err
 	}
 
-	// Save participants in bulk with unique PINs per event
+	// Save participants in bulk with unique PINs per event. EloBefore is
+	// seeded from whichever Elo pool this event's age category dictates
+	// (see player.Player.EloFor) -- not always the Open rating -- since
+	// FinishTournamentUseCase falls back to this snapshot as the frozen
+	// start-of-event rating when computing match deltas.
 	if len(t.Participants) > 0 {
 		usedPINs := make(map[string]bool)
 		partModels := make([]EventParticipantModel, len(t.Participants))
@@ -108,12 +113,14 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 			if err != nil {
 				return err
 			}
+			eloBeforeSingles := p.EloFor(t.AgeCategory, "singles")
+			eloBeforeDoubles := p.EloFor(t.AgeCategory, "doubles")
 			partModels[i] = EventParticipantModel{
 				EventID:          tID,
 				PlayerID:         pID,
 				Pin:              generateUniqueTournamentPIN(usedPINs),
-				EloBeforeSingles: &p.SinglesElo,
-				EloBeforeDoubles: &p.DoublesElo,
+				EloBeforeSingles: &eloBeforeSingles,
+				EloBeforeDoubles: &eloBeforeDoubles,
 			}
 		}
 		if _, err := tx.NewInsert().Model(&partModels).Exec(ctx); err != nil {
@@ -245,6 +252,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 
 			Status:                m.Status,
 			EventCategory:         m.EventCategory,
+			AgeCategory:           m.AgeCategory,
 			StartDate:             m.StartDate,
 			EndDate:               m.EndDate,
 			GroupCount:            m.GroupCount,
@@ -363,6 +371,7 @@ func (r *EventRepository) GetByIDLite(ctx context.Context, idStr string) (*event
 		Format: model.Format,
 
 		EventCategory:         model.EventCategory,
+		AgeCategory:           model.AgeCategory,
 		StartDate:             model.StartDate,
 		EndDate:               model.EndDate,
 		GroupCount:            model.GroupCount,
@@ -731,6 +740,7 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 		Format: model.Format,
 
 		EventCategory:         model.EventCategory,
+		AgeCategory:           model.AgeCategory,
 		StartDate:             model.StartDate,
 		EndDate:               model.EndDate,
 		GroupCount:            model.GroupCount,
@@ -782,6 +792,7 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 
 			Status:                t.Status,
 			EventCategory:         t.EventCategory,
+			AgeCategory:           t.AgeCategory,
 			StartDate:             t.StartDate,
 			EndDate:               t.EndDate,
 			GroupCount:            t.GroupCount,
@@ -801,7 +812,7 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			UseGenderDivisions:    t.UseGenderDivisions,
 		}
 
-		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "status", "start_date", "end_date", "group_count", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked", "skip_division_split").Exec(ctx)
+		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "age_category", "status", "start_date", "end_date", "group_count", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked", "skip_division_split").Exec(ctx)
 		if err != nil {
 			return err
 		}
@@ -857,12 +868,17 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 					pin = generateUniqueTournamentPIN(usedPINs)
 				}
 
-				// Preserve existing Elo Before/After if present in DB; fallback to player current Elo
-				eloBeforeS := &p.SinglesElo
+				// Preserve existing Elo Before/After if present in DB; fallback
+				// to the player's current Elo in whichever pool this event's
+				// age category dictates (see player.Player.EloFor) -- a newly
+				// added participant has no prior snapshot to preserve.
+				fallbackSingles := p.EloFor(t.AgeCategory, "singles")
+				fallbackDoubles := p.EloFor(t.AgeCategory, "doubles")
+				eloBeforeS := &fallbackSingles
 				if existingS, ok := existingEloBeforeSingles[p.ID]; ok && existingS != nil {
 					eloBeforeS = existingS
 				}
-				eloBeforeD := &p.DoublesElo
+				eloBeforeD := &fallbackDoubles
 				if existingD, ok := existingEloBeforeDoubles[p.ID]; ok && existingD != nil {
 					eloBeforeD = existingD
 				}
@@ -1513,6 +1529,7 @@ func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel
 
 			Status:               m.Status,
 			EventCategory:        m.EventCategory,
+			AgeCategory:          m.AgeCategory,
 			StartDate:            m.StartDate,
 			EndDate:              m.EndDate,
 			GroupCount:           m.GroupCount,
@@ -1689,7 +1706,12 @@ func (r *EventRepository) UpdateParticipantEloBefore(ctx context.Context, tourna
 // given player's row in this event in a single bulk statement rather than
 // one UPDATE per player, to avoid N round-trips when finalizing Elo for a
 // whole event's roster (see PlayerRepository.UpdateElo for the same pattern).
-func (r *EventRepository) UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error {
+// ageCategory selects which of the player's Elo pools (see
+// player.Player.EloFor) is written -- since each event_participants row
+// belongs to exactly one event, which has exactly one age category, these
+// columns always mean "the Elo pool that event's age category dictates",
+// not necessarily the Open rating.
+func (r *EventRepository) UpdateParticipantsElo(ctx context.Context, tournamentID string, ageCategory string, players []*player.Player) error {
 	if len(players) == 0 {
 		return nil
 	}
@@ -1704,7 +1726,7 @@ func (r *EventRepository) UpdateParticipantsElo(ctx context.Context, tournamentI
 		if err != nil {
 			return err
 		}
-		singles, doubles := p.SinglesElo, p.DoublesElo
+		singles, doubles := p.EloFor(ageCategory, "singles"), p.EloFor(ageCategory, "doubles")
 		models[i] = &EventParticipantModel{EventID: tID, PlayerID: pID, EloAfterSingles: &singles, EloAfterDoubles: &doubles}
 	}
 
@@ -1739,16 +1761,24 @@ func (r *EventRepository) AddParticipant(ctx context.Context, tournamentID strin
 }
 
 // GetPreviousEloSnapshots returns each player's elo_before_<rankType> value
-// from the single most recently finished tournament -- every child event
-// sharing that tournament's tournament_id (or, for a standalone event with
-// no parent tournament, just that one event). This is a global cutoff
-// shared by every player, not each player's own latest event, so the
-// rank-movement arrow always reflects "how did the last tournament change
-// your rank" -- a player absent from that tournament simply has no arrow,
-// rather than falling back to an older one. Players with no finished event
-// in scope are absent from the map. Dedupes in Go rather than SQL DISTINCT
-// ON, which SQLite (used in tests) doesn't support.
-func (r *EventRepository) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+// from the single most recently finished tournament in the given age
+// category ("open" or one of event.OrderedAgeCategories' youth brackets) --
+// every child event sharing that tournament's tournament_id (or, for a
+// standalone event with no parent tournament, just that one event). This is
+// a global cutoff shared by every player, not each player's own latest
+// event, so the rank-movement arrow always reflects "how did the last
+// tournament change your rank" -- a player absent from that tournament
+// simply has no arrow, rather than falling back to an older one. Players
+// with no finished event in scope are absent from the map. Dedupes in Go
+// rather than SQL DISTINCT ON, which SQLite (used in tests) doesn't
+// support. The elo_before/after_singles/doubles columns themselves are not
+// age-category-specific -- each event_participants row already belongs to
+// exactly one event with exactly one age category, so scoping by
+// e.age_category is what selects the right pool, not the column names.
+func (r *EventRepository) GetPreviousEloSnapshots(ctx context.Context, rankType string, ageCategory string) (map[string]int16, error) {
+	if ageCategory == "" {
+		ageCategory = "open"
+	}
 	beforeCol, afterCol := "elo_before_singles", "elo_after_singles"
 	if rankType == "doubles" {
 		beforeCol, afterCol = "elo_before_doubles", "elo_after_doubles"
@@ -1766,6 +1796,7 @@ func (r *EventRepository) GetPreviousEloSnapshots(ctx context.Context, rankType 
 		ColumnExpr("e.tournament_id AS tournament_id").
 		Where(fmt.Sprintf("ep.%s IS NOT NULL", beforeCol)).
 		Where(fmt.Sprintf("ep.%s IS NOT NULL", afterCol)).
+		Where("e.age_category = ?", ageCategory).
 		OrderExpr("e.start_date DESC").
 		Limit(1).
 		Scan(ctx, &latest)
@@ -1788,7 +1819,8 @@ func (r *EventRepository) GetPreviousEloSnapshots(ctx context.Context, rankType 
 		ColumnExpr("ep.player_id AS player_id").
 		ColumnExpr(fmt.Sprintf("ep.%s AS elo", beforeCol)).
 		Where(fmt.Sprintf("ep.%s IS NOT NULL", beforeCol)).
-		Where(fmt.Sprintf("ep.%s IS NOT NULL", afterCol))
+		Where(fmt.Sprintf("ep.%s IS NOT NULL", afterCol)).
+		Where("e.age_category = ?", ageCategory)
 	if latest.TournamentID.Valid {
 		q = q.Where("e.tournament_id = ?", latest.TournamentID.UUID)
 	} else {

@@ -56,7 +56,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	tournamentRepo := bun.NewTournamentRepository(bun.DB, eventRepo)
 
 	dispatcher := tournaments.NewInMemoryDispatcher()
-	enrollPlayerUC := event.NewEnrollPlayerUseCase(eventRepo, dispatcher)
+	enrollPlayerUC := event.NewEnrollPlayerUseCase(eventRepo, playerRepo, dispatcher)
 	getTournamentsUC := event.NewGetTournamentsUseCase(eventRepo)
 
 	leaderboardUC := leaderboard.NewGetLeaderboardUseCase(playerRepo)

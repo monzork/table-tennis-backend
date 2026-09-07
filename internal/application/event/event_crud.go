@@ -103,6 +103,7 @@ type UpdateEventCommand struct {
 	Type                 string
 	Format               string
 	Category             string
+	AgeCategory          string
 	StartDate            string
 	EndDate              string
 	RegistrationOpen     bool
@@ -158,7 +159,7 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 		participants = append(participants, p)
 	}
 
-	t, err := tournamentDomain.NewEvent(cmd.ID, cmd.Name, cmd.Type, cmd.Format, cmd.Category, start, end, []tournamentDomain.Rule{}, cmd.GroupPassCount, participants, cmd.HasThirdPlaceMatch)
+	t, err := tournamentDomain.NewEvent(cmd.ID, cmd.Name, cmd.Type, cmd.Format, cmd.Category, cmd.AgeCategory, start, end, []tournamentDomain.Rule{}, cmd.GroupPassCount, participants, cmd.HasThirdPlaceMatch)
 	if err != nil {
 		return nil, err
 	}

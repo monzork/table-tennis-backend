@@ -28,7 +28,7 @@ func newTestEvent(t *testing.T, name string) *event.Event {
 	t.Helper()
 	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)
-	e, err := event.NewEvent(uuid.NewString(), name, "singles", "elimination", "open", start, end, nil, 2, nil, false)
+	e, err := event.NewEvent(uuid.NewString(), name, "singles", "elimination", "open", "", start, end, nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}

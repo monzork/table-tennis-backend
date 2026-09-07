@@ -128,6 +128,14 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 		Gender:                     p.Gender,
 		SinglesElo:                 p.SinglesElo,
 		DoublesElo:                 p.DoublesElo,
+		SinglesEloU11:              p.SinglesEloU11,
+		DoublesEloU11:              p.DoublesEloU11,
+		SinglesEloU13:              p.SinglesEloU13,
+		DoublesEloU13:              p.DoublesEloU13,
+		SinglesEloU15:              p.SinglesEloU15,
+		DoublesEloU15:              p.DoublesEloU15,
+		SinglesEloU19:              p.SinglesEloU19,
+		DoublesEloU19:              p.DoublesEloU19,
 		Country:                    p.Country,
 		Department:                 p.Department,
 		WhatsAppNumber:             p.WhatsAppNumber,
@@ -146,7 +154,7 @@ func (r *PlayerRepository) Save(ctx context.Context, p *player.Player) error {
 
 	_, err = ExtractDB(ctx, r.db).NewInsert().Model(model).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id, claimed_by_account_id = EXCLUDED.claimed_by_account_id, missed_federated_tournaments = EXCLUDED.missed_federated_tournaments, inactive = EXCLUDED.inactive, inactivity_floor_singles = EXCLUDED.inactivity_floor_singles, inactivity_floor_doubles = EXCLUDED.inactivity_floor_doubles, lost_to_inactivity_singles = EXCLUDED.lost_to_inactivity_singles, lost_to_inactivity_doubles = EXCLUDED.lost_to_inactivity_doubles").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, singles_elo_u11 = EXCLUDED.singles_elo_u11, doubles_elo_u11 = EXCLUDED.doubles_elo_u11, singles_elo_u13 = EXCLUDED.singles_elo_u13, doubles_elo_u13 = EXCLUDED.doubles_elo_u13, singles_elo_u15 = EXCLUDED.singles_elo_u15, doubles_elo_u15 = EXCLUDED.doubles_elo_u15, singles_elo_u19 = EXCLUDED.singles_elo_u19, doubles_elo_u19 = EXCLUDED.doubles_elo_u19, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id, claimed_by_account_id = EXCLUDED.claimed_by_account_id, missed_federated_tournaments = EXCLUDED.missed_federated_tournaments, inactive = EXCLUDED.inactive, inactivity_floor_singles = EXCLUDED.inactivity_floor_singles, inactivity_floor_doubles = EXCLUDED.inactivity_floor_doubles, lost_to_inactivity_singles = EXCLUDED.lost_to_inactivity_singles, lost_to_inactivity_doubles = EXCLUDED.lost_to_inactivity_doubles").
 		Exec(ctx)
 
 	return err
@@ -229,6 +237,14 @@ func modelToPlayer(m *PlayerModel) *player.Player {
 		Gender:                     m.Gender,
 		SinglesElo:                 m.SinglesElo,
 		DoublesElo:                 m.DoublesElo,
+		SinglesEloU11:              m.SinglesEloU11,
+		DoublesEloU11:              m.DoublesEloU11,
+		SinglesEloU13:              m.SinglesEloU13,
+		DoublesEloU13:              m.DoublesEloU13,
+		SinglesEloU15:              m.SinglesEloU15,
+		DoublesEloU15:              m.DoublesEloU15,
+		SinglesEloU19:              m.SinglesEloU19,
+		DoublesEloU19:              m.DoublesEloU19,
 		Country:                    m.Country,
 		Department:                 m.Department,
 		WhatsAppNumber:             m.WhatsAppNumber,
@@ -357,6 +373,14 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 			Gender:                     p.Gender,
 			SinglesElo:                 p.SinglesElo,
 			DoublesElo:                 p.DoublesElo,
+			SinglesEloU11:              p.SinglesEloU11,
+			DoublesEloU11:              p.DoublesEloU11,
+			SinglesEloU13:              p.SinglesEloU13,
+			DoublesEloU13:              p.DoublesEloU13,
+			SinglesEloU15:              p.SinglesEloU15,
+			DoublesEloU15:              p.DoublesEloU15,
+			SinglesEloU19:              p.SinglesEloU19,
+			DoublesEloU19:              p.DoublesEloU19,
 			Country:                    p.Country,
 			Department:                 p.Department,
 			WhatsAppNumber:             p.WhatsAppNumber,
@@ -376,7 +400,7 @@ func (r *PlayerRepository) SaveMultiple(ctx context.Context, players []*player.P
 
 	_, err := ExtractDB(ctx, r.db).NewInsert().Model(&models).
 		On("CONFLICT (id) DO UPDATE").
-		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id, claimed_by_account_id = EXCLUDED.claimed_by_account_id, missed_federated_tournaments = EXCLUDED.missed_federated_tournaments, inactive = EXCLUDED.inactive, inactivity_floor_singles = EXCLUDED.inactivity_floor_singles, inactivity_floor_doubles = EXCLUDED.inactivity_floor_doubles, lost_to_inactivity_singles = EXCLUDED.lost_to_inactivity_singles, lost_to_inactivity_doubles = EXCLUDED.lost_to_inactivity_doubles").
+		Set("first_name = EXCLUDED.first_name, second_name = EXCLUDED.second_name, last_name = EXCLUDED.last_name, second_last_name = EXCLUDED.second_last_name, birthdate = EXCLUDED.birthdate, gender = EXCLUDED.gender, singles_elo = EXCLUDED.singles_elo, doubles_elo = EXCLUDED.doubles_elo, singles_elo_u11 = EXCLUDED.singles_elo_u11, doubles_elo_u11 = EXCLUDED.doubles_elo_u11, singles_elo_u13 = EXCLUDED.singles_elo_u13, doubles_elo_u13 = EXCLUDED.doubles_elo_u13, singles_elo_u15 = EXCLUDED.singles_elo_u15, doubles_elo_u15 = EXCLUDED.doubles_elo_u15, singles_elo_u19 = EXCLUDED.singles_elo_u19, doubles_elo_u19 = EXCLUDED.doubles_elo_u19, country = EXCLUDED.country, whatsapp_number = EXCLUDED.whatsapp_number, department = EXCLUDED.department, national_id = EXCLUDED.national_id, id_front_path = EXCLUDED.id_front_path, id_back_path = EXCLUDED.id_back_path, guardian_account_id = EXCLUDED.guardian_account_id, claimed_by_account_id = EXCLUDED.claimed_by_account_id, missed_federated_tournaments = EXCLUDED.missed_federated_tournaments, inactive = EXCLUDED.inactive, inactivity_floor_singles = EXCLUDED.inactivity_floor_singles, inactivity_floor_doubles = EXCLUDED.inactivity_floor_doubles, lost_to_inactivity_singles = EXCLUDED.lost_to_inactivity_singles, lost_to_inactivity_doubles = EXCLUDED.lost_to_inactivity_doubles").
 		Exec(ctx)
 	return err
 }
@@ -402,6 +426,65 @@ func (r *PlayerRepository) UpdateElo(ctx context.Context, players []*player.Play
 	_, err := ExtractDB(ctx, r.db).NewUpdate().
 		Model(&models).
 		Column("singles_elo", "doubles_elo").
+		Bulk().
+		Exec(ctx)
+	return err
+}
+
+// eloColumnsForCategory returns the (singles, doubles) DB column names
+// holding Elo for the given age category, defaulting unknown/empty/"open"
+// to the existing Open columns -- mirrors player.Player.EloFor/UpdateEloFor.
+func eloColumnsForCategory(ageCategory string) (singlesCol, doublesCol string) {
+	switch ageCategory {
+	case "u11":
+		return "singles_elo_u11", "doubles_elo_u11"
+	case "u13":
+		return "singles_elo_u13", "doubles_elo_u13"
+	case "u15":
+		return "singles_elo_u15", "doubles_elo_u15"
+	case "u19":
+		return "singles_elo_u19", "doubles_elo_u19"
+	default:
+		return "singles_elo", "doubles_elo"
+	}
+}
+
+// UpdateEloForCategory writes only the Elo column pair for the given age
+// category (see eloColumnsForCategory) for each player, in a single bulk
+// statement -- same rationale and .Column(...)-restricted-Bulk() pattern as
+// UpdateElo, generalized across age brackets so it never touches any other
+// category's (or Open's) Elo columns.
+func (r *PlayerRepository) UpdateEloForCategory(ctx context.Context, ageCategory string, players []*player.Player) error {
+	if len(players) == 0 {
+		return nil
+	}
+	singlesCol, doublesCol := eloColumnsForCategory(ageCategory)
+
+	models := make([]*PlayerModel, len(players))
+	for i, p := range players {
+		id, err := uuid.Parse(p.ID)
+		if err != nil {
+			return err
+		}
+		singles, doubles := p.EloFor(ageCategory, "singles"), p.EloFor(ageCategory, "doubles")
+		m := &PlayerModel{ID: id}
+		switch ageCategory {
+		case "u11":
+			m.SinglesEloU11, m.DoublesEloU11 = singles, doubles
+		case "u13":
+			m.SinglesEloU13, m.DoublesEloU13 = singles, doubles
+		case "u15":
+			m.SinglesEloU15, m.DoublesEloU15 = singles, doubles
+		case "u19":
+			m.SinglesEloU19, m.DoublesEloU19 = singles, doubles
+		default:
+			m.SinglesElo, m.DoublesElo = singles, doubles
+		}
+		models[i] = m
+	}
+	_, err := ExtractDB(ctx, r.db).NewUpdate().
+		Model(&models).
+		Column(singlesCol, doublesCol).
 		Bulk().
 		Exec(ctx)
 	return err

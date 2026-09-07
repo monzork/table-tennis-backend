@@ -63,7 +63,7 @@ func TestEventHandler_PublicRedirectToTournament(t *testing.T) {
 			t.Fatalf("failed to save parent tournament: %v", err)
 		}
 
-		ev, _ := tournamentDomain.NewEvent(uuid.New().String(), "Men's Singles", "singles", "elimination", "open", now, now.Add(24*time.Hour), nil, 1, nil, false)
+		ev, _ := tournamentDomain.NewEvent(uuid.New().String(), "Men's Singles", "singles", "elimination", "open", "", now, now.Add(24*time.Hour), nil, 1, nil, false)
 		ev.TournamentID = &parentID
 		if err := eventRepo.Save(ctx, ev); err != nil {
 			t.Fatalf("failed to save event: %v", err)
@@ -96,7 +96,7 @@ func TestEventHandler_PublicRedirectToTournament(t *testing.T) {
 	})
 
 	t.Run("falls back to rendering the event when it has no parent tournament", func(t *testing.T) {
-		ev, _ := tournamentDomain.NewEvent(uuid.New().String(), "Standalone Event", "singles", "elimination", "open", now, now.Add(24*time.Hour), nil, 1, nil, false)
+		ev, _ := tournamentDomain.NewEvent(uuid.New().String(), "Standalone Event", "singles", "elimination", "open", "", now, now.Add(24*time.Hour), nil, 1, nil, false)
 		if err := eventRepo.Save(ctx, ev); err != nil {
 			t.Fatalf("failed to save event: %v", err)
 		}

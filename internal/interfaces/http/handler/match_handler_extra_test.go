@@ -48,13 +48,13 @@ func TestMatchHandlerExtra(t *testing.T) {
 	playerRepo.Save(ctx, p3)
 	playerRepo.Save(ctx, p4)
 
-	tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Test Tourney", "singles", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2}, false)
+	tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Test Tourney", "singles", "elimination", "open", "", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2}, false)
 	tourney.TournamentID = new(string)
 	*tourney.TournamentID = uuid.New().String()
 	tournamentRepo.Save(ctx, tourney)
 
 	// Another tourney for teams
-	tourneyTeams, _ := tournamentDomain.NewEvent(uuid.New().String(), "Teams Tourney", "teams", "elimination", "open", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2, p3, p4}, false)
+	tourneyTeams, _ := tournamentDomain.NewEvent(uuid.New().String(), "Teams Tourney", "teams", "elimination", "open", "", time.Now(), time.Now().Add(24*time.Hour), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2, p3, p4}, false)
 	tournamentRepo.Save(ctx, tourneyTeams)
 
 	m := &tournamentDomain.Match{ID: uuid.New().String(), EventID: tourney.ID, MatchType: "singles", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}, Status: "scheduled"}

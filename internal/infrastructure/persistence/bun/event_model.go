@@ -18,6 +18,7 @@ type EventModel struct {
 	Format               string     `bun:"format,notnull,default:'elimination'"`
 	Status               string     `bun:"status,notnull,default:'in_progress'"`
 	EventCategory        string     `bun:"event_category,notnull,default:'open'"`
+	AgeCategory          string     `bun:"age_category,notnull,default:'open'"`
 	StartDate            time.Time  `bun:"start_date,notnull"`
 	EndDate              time.Time  `bun:"end_date,notnull"`
 	GroupCount           int        `bun:"group_count,notnull,default:0"`

@@ -16,7 +16,7 @@ func newBareEvent(t *testing.T, name string, participants []*player.Player) *eve
 	t.Helper()
 	start := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)
-	e, err := event.NewEvent(uuid.NewString(), name, "singles", "elimination", "open", start, end, nil, 2, participants, false)
+	e, err := event.NewEvent(uuid.NewString(), name, "singles", "elimination", "open", "", start, end, nil, 2, participants, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
@@ -178,6 +178,93 @@ func TestEventRepository_GetAll(t *testing.T) {
 	}
 }
 
+func TestEventRepository_Save_And_Update_PreservesAgeCategory(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	playerRepo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	p1, err := player.NewPlayer(uuid.NewString(), "Age", "One", time.Date(2015, 1, 1, 0, 0, 0, 0, time.UTC), "M", "NIC", "Managua", "")
+	if err != nil {
+		t.Fatalf("NewPlayer: %v", err)
+	}
+	if err := playerRepo.Save(ctx, p1); err != nil {
+		t.Fatalf("Save player: %v", err)
+	}
+	start := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+	e, err := event.NewEvent(uuid.NewString(), "U13 Event", "singles", "elimination", "open", "u13", start, end, nil, 2, []*player.Player{p1}, false)
+	if err != nil {
+		t.Fatalf("NewEvent: %v", err)
+	}
+	if err := eventRepo.Save(ctx, e); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	got, err := eventRepo.GetByID(ctx, e.ID)
+	if err != nil {
+		t.Fatalf("GetByID after Save: %v", err)
+	}
+	if got.AgeCategory != "u13" {
+		t.Fatalf("expected AgeCategory u13 after Save, got %q", got.AgeCategory)
+	}
+
+	// Update's column whitelist must also carry age_category, or a later
+	// rename etc. would silently reset it back to the column default.
+	got.Name = "U13 Event Renamed"
+	if err := eventRepo.Update(ctx, got); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	got2, err := eventRepo.GetByID(ctx, e.ID)
+	if err != nil {
+		t.Fatalf("GetByID after Update: %v", err)
+	}
+	if got2.AgeCategory != "u13" {
+		t.Fatalf("expected AgeCategory u13 to survive Update, got %q", got2.AgeCategory)
+	}
+}
+
+func TestEventRepository_Save_SeedsParticipantSnapshotFromAgeCategoryPool(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	playerRepo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	p1, err := player.NewPlayer(uuid.NewString(), "Divergent", "Ratings", time.Date(2015, 1, 1, 0, 0, 0, 0, time.UTC), "M", "NIC", "Managua", "")
+	if err != nil {
+		t.Fatalf("NewPlayer: %v", err)
+	}
+	// Open and U13 ratings deliberately differ, so a snapshot accidentally
+	// seeded from the wrong pool is caught.
+	p1.SinglesElo = 1500
+	p1.UpdateEloFor("u13", "singles", 900)
+	if err := playerRepo.Save(ctx, p1); err != nil {
+		t.Fatalf("Save player: %v", err)
+	}
+
+	start := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+	e, err := event.NewEvent(uuid.NewString(), "U13 Event", "singles", "elimination", "open", "u13", start, end, nil, 2, []*player.Player{p1}, false)
+	if err != nil {
+		t.Fatalf("NewEvent: %v", err)
+	}
+	if err := eventRepo.Save(ctx, e); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	snapshots, err := eventRepo.GetParticipantSnapshots(ctx, e.ID)
+	if err != nil {
+		t.Fatalf("GetParticipantSnapshots: %v", err)
+	}
+	if len(snapshots) != 1 {
+		t.Fatalf("expected 1 snapshot, got %d", len(snapshots))
+	}
+	if snapshots[0].EloBeforeSingles == nil || *snapshots[0].EloBeforeSingles != 900 {
+		t.Fatalf("expected elo_before_singles seeded from the u13 pool (900), got %v -- a U13 event must never snapshot the player's Open rating", snapshots[0].EloBeforeSingles)
+	}
+}
+
 func TestEventRepository_Update(t *testing.T) {
 	db := setupTestDB(t)
 	eventRepo := bunRepo.NewEventRepository(db)
@@ -208,6 +295,65 @@ func TestEventRepository_Update(t *testing.T) {
 	}
 	if len(got.Participants) != 2 {
 		t.Fatalf("expected 2 participants after update, got %d", len(got.Participants))
+	}
+}
+
+func TestEventRepository_Update_NewParticipantSnapshotSeededFromAgeCategoryPool(t *testing.T) {
+	db := setupTestDB(t)
+	eventRepo := bunRepo.NewEventRepository(db)
+	playerRepo := bunRepo.NewPlayerRepository(db)
+	ctx := context.Background()
+
+	p1, err := player.NewPlayer(uuid.NewString(), "Age", "One", time.Date(2015, 1, 1, 0, 0, 0, 0, time.UTC), "M", "NIC", "Managua", "")
+	if err != nil {
+		t.Fatalf("NewPlayer p1: %v", err)
+	}
+	if err := playerRepo.Save(ctx, p1); err != nil {
+		t.Fatalf("Save p1: %v", err)
+	}
+
+	start := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+	e, err := event.NewEvent(uuid.NewString(), "U13 Event", "singles", "elimination", "open", "u13", start, end, nil, 2, []*player.Player{p1}, false)
+	if err != nil {
+		t.Fatalf("NewEvent: %v", err)
+	}
+	if err := eventRepo.Save(ctx, e); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	// Add a second participant via Update, with divergent Open/U13 ratings
+	// so a snapshot accidentally seeded from the wrong pool is caught.
+	p2, err := player.NewPlayer(uuid.NewString(), "Newly", "Added", time.Date(2014, 1, 1, 0, 0, 0, 0, time.UTC), "M", "NIC", "Managua", "")
+	if err != nil {
+		t.Fatalf("NewPlayer p2: %v", err)
+	}
+	p2.SinglesElo = 1600
+	p2.UpdateEloFor("u13", "singles", 950)
+	if err := playerRepo.Save(ctx, p2); err != nil {
+		t.Fatalf("Save p2: %v", err)
+	}
+
+	e.Participants = []*player.Player{p1, p2}
+	if err := eventRepo.Update(ctx, e); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	snapshots, err := eventRepo.GetParticipantSnapshots(ctx, e.ID)
+	if err != nil {
+		t.Fatalf("GetParticipantSnapshots: %v", err)
+	}
+	var p2Snap *event.ParticipantSnapshot
+	for i := range snapshots {
+		if snapshots[i].PlayerID == p2.ID {
+			p2Snap = &snapshots[i]
+		}
+	}
+	if p2Snap == nil {
+		t.Fatalf("expected a snapshot for the newly added participant, got %+v", snapshots)
+	}
+	if p2Snap.EloBeforeSingles == nil || *p2Snap.EloBeforeSingles != 950 {
+		t.Fatalf("expected the new participant's elo_before_singles seeded from the u13 pool (950), got %v", p2Snap.EloBeforeSingles)
 	}
 }
 
@@ -443,7 +589,7 @@ func TestEventRepository_TeamLifecycle(t *testing.T) {
 	playerRepo := bunRepo.NewPlayerRepository(db)
 	ctx := context.Background()
 
-	e, err := event.NewEvent(uuid.NewString(), "Doubles Cup", "doubles", "elimination", "open", time.Now(), time.Now().Add(time.Hour), nil, 2, nil, false)
+	e, err := event.NewEvent(uuid.NewString(), "Doubles Cup", "doubles", "elimination", "open", "", time.Now(), time.Now().Add(time.Hour), nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
@@ -511,7 +657,7 @@ func TestEventRepository_AddPlayerToTeam_GenderRestrictions(t *testing.T) {
 	playerRepo := bunRepo.NewPlayerRepository(db)
 	ctx := context.Background()
 
-	e, err := event.NewEvent(uuid.NewString(), "Women's Doubles", "doubles", "elimination", "women", time.Now(), time.Now().Add(time.Hour), nil, 2, nil, false)
+	e, err := event.NewEvent(uuid.NewString(), "Women's Doubles", "doubles", "elimination", "women", "", time.Now(), time.Now().Add(time.Hour), nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
@@ -595,7 +741,7 @@ func TestEventRepository_ParticipantLifecycle(t *testing.T) {
 		t.Fatalf("unexpected snapshot after elo updates: %+v", snapshots[0])
 	}
 
-	if err := eventRepo.UpdateParticipantsElo(ctx, e.ID, []*player.Player{{ID: p1.ID, SinglesElo: 1100, DoublesElo: 1080}}); err != nil {
+	if err := eventRepo.UpdateParticipantsElo(ctx, e.ID, "open", []*player.Player{{ID: p1.ID, SinglesElo: 1100, DoublesElo: 1080}}); err != nil {
 		t.Fatalf("UpdateParticipantsElo: %v", err)
 	}
 	snapshots, err = eventRepo.GetParticipantSnapshots(ctx, e.ID)
@@ -623,7 +769,7 @@ func TestEventRepository_UpdateParticipantsElo_Empty(t *testing.T) {
 	eventRepo := bunRepo.NewEventRepository(db)
 	ctx := context.Background()
 
-	if err := eventRepo.UpdateParticipantsElo(ctx, uuid.NewString(), nil); err != nil {
+	if err := eventRepo.UpdateParticipantsElo(ctx, uuid.NewString(), "open", nil); err != nil {
 		t.Fatalf("expected no-op for empty players, got %v", err)
 	}
 }
@@ -648,7 +794,7 @@ func TestEventRepository_UpdateParticipantsElo_BulkMultipleParticipants(t *testi
 		t.Fatalf("save event: %v", err)
 	}
 
-	err := eventRepo.UpdateParticipantsElo(ctx, ev.ID, []*player.Player{
+	err := eventRepo.UpdateParticipantsElo(ctx, ev.ID, "open", []*player.Player{
 		{ID: p1.ID, SinglesElo: 1100, DoublesElo: 1050},
 		{ID: p2.ID, SinglesElo: 1200, DoublesElo: 1150},
 		{ID: p3.ID, SinglesElo: 1300, DoublesElo: 1250},

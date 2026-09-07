@@ -198,3 +198,93 @@ func TestNewGuardianChildPlayer(t *testing.T) {
 		}
 	})
 }
+
+func TestPlayer_EloFor_And_UpdateEloFor(t *testing.T) {
+	newTestPlayer := func() *player.Player {
+		p, err := player.NewPlayer("p-elo", "Age", "Category", time.Now(), "M", "USA", "", "")
+		if err != nil {
+			t.Fatalf("NewPlayer: %v", err)
+		}
+		return p
+	}
+
+	t.Run("every bracket defaults to 1000 for both rank types", func(t *testing.T) {
+		p := newTestPlayer()
+		for _, ageCategory := range []string{"", "open", "u11", "u13", "u15", "u19", "unknown"} {
+			for _, rankType := range []string{"singles", "doubles"} {
+				if got := p.EloFor(ageCategory, rankType); got != 1000 {
+					t.Errorf("EloFor(%q, %q) = %d, want 1000", ageCategory, rankType, got)
+				}
+			}
+		}
+	})
+
+	t.Run("UpdateEloFor targets only the given bracket and rank type", func(t *testing.T) {
+		p := newTestPlayer()
+		p.UpdateEloFor("u13", "singles", 1200)
+
+		if got := p.EloFor("u13", "singles"); got != 1200 {
+			t.Errorf("expected u13 singles 1200, got %d", got)
+		}
+		if p.SinglesEloU13 != 1200 {
+			t.Errorf("expected SinglesEloU13 field to be 1200, got %d", p.SinglesEloU13)
+		}
+		// Every other bracket/rank-type combo, including Open, is untouched.
+		if got := p.EloFor("u13", "doubles"); got != 1000 {
+			t.Errorf("expected u13 doubles untouched at 1000, got %d", got)
+		}
+		if got := p.EloFor("open", "singles"); got != 1000 {
+			t.Errorf("expected Open singles untouched at 1000, got %d", got)
+		}
+		if got := p.EloFor("u11", "singles"); got != 1000 {
+			t.Errorf("expected u11 singles untouched at 1000, got %d", got)
+		}
+	})
+
+	t.Run("unknown or empty age category routes to Open SinglesElo/DoublesElo", func(t *testing.T) {
+		p := newTestPlayer()
+		p.UpdateEloFor("", "singles", 1111)
+		p.UpdateEloFor("open", "doubles", 2222)
+		if p.SinglesElo != 1111 {
+			t.Errorf("expected SinglesElo 1111, got %d", p.SinglesElo)
+		}
+		if p.DoublesElo != 2222 {
+			t.Errorf("expected DoublesElo 2222, got %d", p.DoublesElo)
+		}
+	})
+
+	t.Run("all four brackets are independently addressable", func(t *testing.T) {
+		p := newTestPlayer()
+		p.UpdateEloFor("u11", "singles", 900)
+		p.UpdateEloFor("u13", "singles", 1000)
+		p.UpdateEloFor("u15", "singles", 1100)
+		p.UpdateEloFor("u19", "singles", 1200)
+
+		if p.EloFor("u11", "singles") != 900 || p.EloFor("u13", "singles") != 1000 ||
+			p.EloFor("u15", "singles") != 1100 || p.EloFor("u19", "singles") != 1200 {
+			t.Errorf("expected each bracket to hold its own value, got u11=%d u13=%d u15=%d u19=%d",
+				p.EloFor("u11", "singles"), p.EloFor("u13", "singles"), p.EloFor("u15", "singles"), p.EloFor("u19", "singles"))
+		}
+	})
+
+	t.Run("doubles is independently addressable for every bracket", func(t *testing.T) {
+		for _, ac := range []string{"u11", "u13", "u15", "u19"} {
+			p := newTestPlayer()
+			p.UpdateEloFor(ac, "doubles", 1234)
+			if got := p.EloFor(ac, "doubles"); got != 1234 {
+				t.Errorf("EloFor(%q, doubles) = %d, want 1234", ac, got)
+			}
+			if got := p.EloFor(ac, "singles"); got != 1000 {
+				t.Errorf("expected %s singles untouched by a doubles update, got %d", ac, got)
+			}
+		}
+	})
+
+	t.Run("negative Elo is rejected, mirroring UpdateSinglesElo/UpdateDoublesElo", func(t *testing.T) {
+		p := newTestPlayer()
+		p.UpdateEloFor("u13", "singles", -5)
+		if p.EloFor("u13", "singles") != 1000 {
+			t.Errorf("expected negative update to be ignored, got %d", p.EloFor("u13", "singles"))
+		}
+	})
+}

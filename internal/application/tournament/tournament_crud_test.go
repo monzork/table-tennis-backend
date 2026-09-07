@@ -3,11 +3,13 @@ package tournament_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
 	"table-tennis-backend/internal/application/tournament"
 	divisionDomain "table-tennis-backend/internal/domain/division"
+	"table-tennis-backend/internal/domain/event"
 	playerDomain "table-tennis-backend/internal/domain/player"
 	eventDomain "table-tennis-backend/internal/domain/tournament"
 )
@@ -255,6 +257,78 @@ func TestCreateEventUseCase_Execute_ZeroPlayerCategoryStillCreatesEvent(t *testi
 		if len(ev.Participants) != 0 {
 			t.Errorf("expected event %q to start with 0 participants, got %d", ev.Name, len(ev.Participants))
 		}
+	}
+}
+
+func TestCreateEventUseCase_Execute_AgeCategories(t *testing.T) {
+	eventRepo := newMockEventRepo()
+	subTourneyRepo := newMockSubTourneyRepo()
+	playerRepo := newMockPlayerRepo()
+	divRepo := newMockDivisionRepo()
+
+	uc := tournament.NewCreateEventUseCase(eventRepo, subTourneyRepo, playerRepo, divRepo)
+	ctx := context.Background()
+
+	adult := &playerDomain.Player{ID: "p1", Gender: "M", SinglesElo: 1000, Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}
+	young := &playerDomain.Player{ID: "p2", Gender: "M", SinglesElo: 900, Birthdate: time.Date(2015, 1, 1, 0, 0, 0, 0, time.UTC)}
+	playerRepo.players["p1"] = adult
+	playerRepo.players["p2"] = young
+
+	// skipElo=true keeps this to the "flat" (no division-split) branch, so
+	// each age tier produces exactly one child event.
+	res, err := uc.Execute(
+		ctx,
+		"Youth Tournament",
+		nil,
+		true,
+		"2026-06-01",
+		"2026-06-02",
+		tournament.CategoryConfig{Auto: true, Format: "elimination", PlayerIDs: []string{"p1", "p2"}, AgeCategories: []string{"u13"}},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		nil,
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(res.Events) != 2 {
+		t.Fatalf("expected 2 events (Open Men's Singles + U13 Men's Singles), got %d: %+v", len(res.Events), res.Events)
+	}
+
+	var openEvent, u13Event *event.Event
+	for _, ev := range res.Events {
+		switch ev.AgeCategory {
+		case "open":
+			openEvent = ev
+		case "u13":
+			u13Event = ev
+		}
+	}
+	if openEvent == nil || u13Event == nil {
+		t.Fatalf("expected one open and one u13 event, got %+v", res.Events)
+	}
+
+	if !strings.Contains(u13Event.Name, "(U13)") {
+		t.Errorf("expected u13 event name to carry a (U13) suffix, got %q", u13Event.Name)
+	}
+	if strings.Contains(openEvent.Name, "(U13)") || strings.Contains(openEvent.Name, "(OPEN)") {
+		t.Errorf("expected open event name to carry no age suffix, got %q", openEvent.Name)
+	}
+
+	// Play-up: the adult is eligible only for Open; the young player,
+	// being U13-eligible, is eligible for both Open (play up) and U13.
+	if len(openEvent.Participants) != 2 {
+		t.Errorf("expected both players in the Open event, got %d", len(openEvent.Participants))
+	}
+	if len(u13Event.Participants) != 1 || u13Event.Participants[0].ID != "p2" {
+		t.Errorf("expected only the young player in the U13 event, got %+v", u13Event.Participants)
 	}
 }
 

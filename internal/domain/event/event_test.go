@@ -21,7 +21,7 @@ func TestNewTournament_Valid(t *testing.T) {
 		{ID: "p2", Gender: "M"},
 	}
 
-	tourn, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "men", start, end, nil, 2, participants, false)
+	tourn, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "men", "", start, end, nil, 2, participants, false)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -38,7 +38,7 @@ func TestNewTournament_InvalidDates(t *testing.T) {
 	start := time.Now()
 	end := start.Add(-24 * time.Hour) // Ends before starts
 
-	_, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "open", start, end, nil, 2, nil, false)
+	_, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "open", "", start, end, nil, 2, nil, false)
 	if err != event.ErrInvalidDates {
 		t.Fatalf("expected ErrInvalidDates, got %v", err)
 	}
@@ -51,7 +51,7 @@ func TestNewTournament_CategoryValidation(t *testing.T) {
 		{ID: "p1", Gender: "F"}, // Female in a men's event
 	}
 
-	_, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "men", start, end, nil, 2, participants, false)
+	_, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "men", "", start, end, nil, 2, participants, false)
 	if err == nil {
 		t.Fatalf("expected error for gender mismatch, got nil")
 	}
@@ -64,7 +64,7 @@ func TestNewTournament_WomenCategoryValidation(t *testing.T) {
 		{ID: "p1", Gender: "M"}, // Male in a women's event
 	}
 
-	_, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "women", start, end, nil, 2, participants, false)
+	_, err := event.NewEvent("t1", "Test Tourn", "singles", "elimination", "women", "", start, end, nil, 2, participants, false)
 	if err == nil {
 		t.Fatalf("expected error for gender mismatch, got nil")
 	}
@@ -74,7 +74,7 @@ func TestNewTournament_DefaultsApplied(t *testing.T) {
 	start := time.Now()
 	end := start.Add(24 * time.Hour)
 
-	tourn, err := event.NewEvent("t1", "Test Tourn", "", "", "", start, end, nil, 2, nil, false)
+	tourn, err := event.NewEvent("t1", "Test Tourn", "", "", "", "", start, end, nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -87,6 +87,49 @@ func TestNewTournament_DefaultsApplied(t *testing.T) {
 	if tourn.EventCategory != "open" {
 		t.Errorf("expected default category open, got %s", tourn.EventCategory)
 	}
+	if tourn.AgeCategory != "open" {
+		t.Errorf("expected default age category open, got %s", tourn.AgeCategory)
+	}
+}
+
+func TestNewTournament_AgeCategoryValidation(t *testing.T) {
+	start := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+
+	t.Run("rejects a participant too old for the bracket", func(t *testing.T) {
+		adult := &player.Player{ID: "p1", Gender: "M", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}
+		_, err := event.NewEvent("t1", "U13 Event", "singles", "elimination", "open", "u13", start, end, nil, 2, []*player.Player{adult}, false)
+		if err == nil {
+			t.Fatal("expected error for age-ineligible participant, got nil")
+		}
+	})
+
+	t.Run("accepts an age-eligible participant", func(t *testing.T) {
+		child := &player.Player{ID: "p1", Gender: "M", Birthdate: time.Date(2014, 1, 1, 0, 0, 0, 0, time.UTC)}
+		tourn, err := event.NewEvent("t1", "U13 Event", "singles", "elimination", "open", "u13", start, end, nil, 2, []*player.Player{child}, false)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if tourn.AgeCategory != "u13" {
+			t.Errorf("expected AgeCategory u13, got %s", tourn.AgeCategory)
+		}
+	})
+
+	t.Run("play-up: a younger player may enter an older bracket", func(t *testing.T) {
+		child := &player.Player{ID: "p1", Gender: "M", Birthdate: time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)} // 8 in 2026, U11-eligible
+		_, err := event.NewEvent("t1", "U19 Event", "singles", "elimination", "open", "u19", start, end, nil, 2, []*player.Player{child}, false)
+		if err != nil {
+			t.Fatalf("expected play-up into an older bracket to succeed, got %v", err)
+		}
+	})
+
+	t.Run("open has no age ceiling", func(t *testing.T) {
+		adult := &player.Player{ID: "p1", Gender: "M", Birthdate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)}
+		_, err := event.NewEvent("t1", "Open Event", "singles", "elimination", "open", "open", start, end, nil, 2, []*player.Player{adult}, false)
+		if err != nil {
+			t.Fatalf("expected no error for open category, got %v", err)
+		}
+	})
 }
 
 func TestNewTournament_GroupsElimination_AssignsGroups(t *testing.T) {
@@ -99,7 +142,7 @@ func TestNewTournament_GroupsElimination_AssignsGroups(t *testing.T) {
 		{ID: "p3", SinglesElo: 1300},
 	}
 
-	tourn, err := event.NewEvent("t1", "Test Tourn", "singles", "groups_elimination", "open", start, end, nil, 2, participants, false)
+	tourn, err := event.NewEvent("t1", "Test Tourn", "singles", "groups_elimination", "open", "", start, end, nil, 2, participants, false)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -117,7 +160,7 @@ func TestNewTournament_RoundRobin_AssignsGroups(t *testing.T) {
 		{ID: "p2", SinglesElo: 1400},
 	}
 
-	tourn, err := event.NewEvent("t1", "Test Tourn", "singles", "round_robin", "open", start, end, nil, 2, participants, false)
+	tourn, err := event.NewEvent("t1", "Test Tourn", "singles", "round_robin", "open", "", start, end, nil, 2, participants, false)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

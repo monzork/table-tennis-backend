@@ -36,6 +36,15 @@ type PlayerModel struct {
 	FloorDoubles               *int16 `bun:"inactivity_floor_doubles"`
 	LostToInactivitySingles    int16  `bun:"lost_to_inactivity_singles,notnull,default:0"`
 	LostToInactivityDoubles    int16  `bun:"lost_to_inactivity_doubles,notnull,default:0"`
+
+	SinglesEloU11 int16 `bun:"singles_elo_u11,notnull,default:1000"`
+	DoublesEloU11 int16 `bun:"doubles_elo_u11,notnull,default:1000"`
+	SinglesEloU13 int16 `bun:"singles_elo_u13,notnull,default:1000"`
+	DoublesEloU13 int16 `bun:"doubles_elo_u13,notnull,default:1000"`
+	SinglesEloU15 int16 `bun:"singles_elo_u15,notnull,default:1000"`
+	DoublesEloU15 int16 `bun:"doubles_elo_u15,notnull,default:1000"`
+	SinglesEloU19 int16 `bun:"singles_elo_u19,notnull,default:1000"`
+	DoublesEloU19 int16 `bun:"doubles_elo_u19,notnull,default:1000"`
 }
 
 func (m *PlayerModel) FullName() string {

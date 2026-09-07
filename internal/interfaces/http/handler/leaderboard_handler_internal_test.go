@@ -23,7 +23,7 @@ type mockRankMovementRepo struct {
 	snapshots map[string]int16
 }
 
-func (m *mockRankMovementRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+func (m *mockRankMovementRepo) GetPreviousEloSnapshots(ctx context.Context, rankType string, ageCategory string) (map[string]int16, error) {
 	return m.snapshots, nil
 }
 

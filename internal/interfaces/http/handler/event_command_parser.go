@@ -108,6 +108,7 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		Type                  string `form:"type"`
 		Format                string `form:"format"`
 		EventCategory         string `form:"eventCategory"`
+		AgeCategory           string `form:"ageCategory"`
 		StartDate             string `form:"startDate"`
 		EndDate               string `form:"endDate"`
 		GroupCount            int    `form:"groupCount"`
@@ -180,6 +181,7 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		Type:                 body.Type,
 		Format:               body.Format,
 		Category:             body.EventCategory,
+		AgeCategory:          body.AgeCategory,
 		StartDate:            body.StartDate,
 		EndDate:              body.EndDate,
 		RegistrationOpen:     body.RegistrationOpen,

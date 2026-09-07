@@ -109,7 +109,7 @@ func TestDashboardRepository_GetEventsByFormat(t *testing.T) {
 
 	singles1 := newBareEvent(t, "S1", nil)
 	singles2 := newBareEvent(t, "S2", nil)
-	doubles1, err := event.NewEvent(uuid.NewString(), "D1", "doubles", "elimination", "open", time.Now(), time.Now().Add(time.Hour), nil, 2, nil, false)
+	doubles1, err := event.NewEvent(uuid.NewString(), "D1", "doubles", "elimination", "open", "", time.Now(), time.Now().Add(time.Hour), nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("NewEvent: %v", err)
 	}

@@ -32,7 +32,7 @@ func TestEventHandlerCoverage(t *testing.T) {
 	playerRepo.Save(ctx, p1)
 	playerRepo.Save(ctx, p2)
 
-	tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Coverage Event", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2}, false)
+	tourney, _ := tournamentDomain.NewEvent(uuid.New().String(), "Coverage Event", "singles", "elimination", "open", "", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{p1, p2}, false)
 	tournamentRepo.Save(ctx, tourney)
 	tournamentID := tourney.ID
 
@@ -183,7 +183,7 @@ func TestEventHandlerCoverage(t *testing.T) {
 
 	t.Run("Delete Event with HX-Request", func(t *testing.T) {
 		delID := uuid.New().String()
-		tourneyDel, _ := tournamentDomain.NewEvent(delID, "Delete Event", "singles", "elimination", "open", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{}, false)
+		tourneyDel, _ := tournamentDomain.NewEvent(delID, "Delete Event", "singles", "elimination", "open", "", time.Now(), time.Now(), []tournamentDomain.Rule{}, 2, []*playerDomain.Player{}, false)
 		tournamentRepo.Save(ctx, tourneyDel)
 
 		req := httptest.NewRequest("DELETE", fmt.Sprintf("/events/%s", delID), nil)

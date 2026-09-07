@@ -57,7 +57,7 @@ func (m *mockMovePlayerRepository) UpdateParticipantElo(ctx context.Context, tou
 	return nil
 }
 
-func (m *mockMovePlayerRepository) UpdateParticipantsElo(ctx context.Context, tournamentID string, players []*player.Player) error {
+func (m *mockMovePlayerRepository) UpdateParticipantsElo(ctx context.Context, tournamentID string, ageCategory string, players []*player.Player) error {
 	return nil
 }
 
@@ -89,7 +89,7 @@ func (m *mockMovePlayerRepository) GetParticipantSnapshots(ctx context.Context, 
 	return nil, nil
 }
 
-func (m *mockMovePlayerRepository) GetPreviousEloSnapshots(ctx context.Context, rankType string) (map[string]int16, error) {
+func (m *mockMovePlayerRepository) GetPreviousEloSnapshots(ctx context.Context, rankType string, ageCategory string) (map[string]int16, error) {
 	return nil, nil
 }
 

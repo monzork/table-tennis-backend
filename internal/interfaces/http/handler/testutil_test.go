@@ -114,7 +114,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	importPlayerUC := player.NewImportPlayersUseCase(playerRepo)
 	tournamentRepoForEnroll := bunRepo.NewEventRepository(db)
 	dispatcher := tournaments.NewInMemoryDispatcher()
-	enrollPlayerUC := event.NewEnrollPlayerUseCase(tournamentRepoForEnroll, dispatcher)
+	enrollPlayerUC := event.NewEnrollPlayerUseCase(tournamentRepoForEnroll, playerRepo, dispatcher)
 	getTournamentsUC := event.NewGetTournamentsUseCase(tournamentRepoForEnroll)
 	parentTournamentRepoForStats := bunRepo.NewTournamentRepository(db, tournamentRepoForEnroll)
 	getPlayerStatsUC := player.NewGetPlayerTournamentStatsUseCase(playerRepo, tournamentRepoForEnroll, parentTournamentRepoForStats)

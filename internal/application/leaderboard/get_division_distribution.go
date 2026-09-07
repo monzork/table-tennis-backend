@@ -20,7 +20,7 @@ func NewGetDivisionDistributionUseCase(chartGen chart.Generator) *GetDivisionDis
 // ranking table). Unlike groupPlayers (used for the ranking table itself),
 // zero-count divisions are kept as empty bars -- meaningful signal for a
 // distribution view.
-func (uc *GetDivisionDistributionUseCase) Execute(players []*player.Player, divisions []*division.Division, rankType string) (string, error) {
+func (uc *GetDivisionDistributionUseCase) Execute(players []*player.Player, divisions []*division.Division, rankType string, ageCategory string) (string, error) {
 	rankable := filterRankableDivisions(divisions)
 	if len(rankable) == 0 {
 		return "", nil
@@ -30,7 +30,7 @@ func (uc *GetDivisionDistributionUseCase) Execute(players []*player.Player, divi
 	for i, d := range rankable {
 		count := 0
 		for _, p := range players {
-			if d.MatchesGender(p.Gender) && d.ContainsElo(eloOf(p, rankType)) {
+			if d.MatchesGender(p.Gender) && d.ContainsElo(eloOf(p, rankType, ageCategory)) {
 				count++
 			}
 		}

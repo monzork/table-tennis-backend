@@ -114,7 +114,7 @@ func (f *viewFixture) saveEvent(t *testing.T, name, typ, format string, particip
 	t.Helper()
 	start := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)
-	e, err := eventDomain.NewEvent(uuid.NewString(), name, typ, format, "open", start, end, nil, 4, participants, false)
+	e, err := eventDomain.NewEvent(uuid.NewString(), name, typ, format, "open", "", start, end, nil, 4, participants, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
@@ -364,7 +364,7 @@ func TestGetTeamMatchFormViewUseCase_CorbillonFormat(t *testing.T) {
 	p2 := f.savePlayer(t, "C2", "R2", "F")
 	p3 := f.savePlayer(t, "C3", "R3", "F")
 	p4 := f.savePlayer(t, "C4", "R4", "F")
-	e, err := eventDomain.NewEvent(uuid.NewString(), "Corbillon Cup", "teams", "elimination", "open",
+	e, err := eventDomain.NewEvent(uuid.NewString(), "Corbillon Cup", "teams", "elimination", "open", "",
 		time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 3, 2, 0, 0, 0, 0, time.UTC),
 		nil, 4, []*playerDomain.Player{p1, p2, p3, p4}, false)
 	if err != nil {

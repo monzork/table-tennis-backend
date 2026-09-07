@@ -4,10 +4,15 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	playerDomain "table-tennis-backend/internal/domain/player"
 )
+
+func selfRegisterBirthdateFor(year int) time.Time {
+	return time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+}
 
 func TestSelfRegisterUseCase_GetOpenTournaments(t *testing.T) {
 	repo := newMockRepo()
@@ -165,6 +170,48 @@ func TestSelfRegisterUseCase_Execute(t *testing.T) {
 		_, _, err := uc.Execute(context.Background(), "t1", "New", "", "Player", "", "", "", "", "", "", "")
 		if err == nil {
 			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("age-ineligible existing player is rejected", func(t *testing.T) {
+		uc, repo, playerRepo := newUC()
+		existing := &playerDomain.Player{ID: "p1", FirstName: "alice", LastName: "smith", Birthdate: selfRegisterBirthdateFor(1990)}
+		playerRepo.players["p1"] = existing
+		repo.events["t1"] = &tournamentDomain.Event{ID: "t1", RegistrationOpen: true, AgeCategory: "u13", StartDate: selfRegisterBirthdateFor(2026)}
+
+		_, _, err := uc.Execute(context.Background(), "t1", "Alice", "", "Smith", "", "", "", "", "", "", "")
+		if err == nil {
+			t.Fatal("expected error for age-ineligible existing player, got nil")
+		}
+	})
+
+	t.Run("age-ineligible new player is rejected before being saved", func(t *testing.T) {
+		uc, repo, playerRepo := newUC()
+		repo.events["t1"] = &tournamentDomain.Event{ID: "t1", RegistrationOpen: true, AgeCategory: "u13", StartDate: selfRegisterBirthdateFor(2026)}
+
+		// New-player birthdate parsed from birthdateStr -- 1990 is well
+		// outside a U13 bracket in season 2026.
+		_, _, err := uc.Execute(context.Background(), "t1", "New", "", "Adult", "", "", "", "", "1990-01-01", "", "")
+		if err == nil {
+			t.Fatal("expected error for age-ineligible new player, got nil")
+		}
+		if len(playerRepo.savedPlayers) != 1 {
+			t.Fatalf("expected the new player to still be saved before the eligibility check (matching NewEvent's own player-load-then-validate order), got %d", len(playerRepo.savedPlayers))
+		}
+	})
+
+	t.Run("age-eligible player is registered into an age-category event", func(t *testing.T) {
+		uc, repo, playerRepo := newUC()
+		existing := &playerDomain.Player{ID: "p1", FirstName: "young", LastName: "player", Birthdate: selfRegisterBirthdateFor(2015)}
+		playerRepo.players["p1"] = existing
+		repo.events["t1"] = &tournamentDomain.Event{ID: "t1", RegistrationOpen: true, AgeCategory: "u13", StartDate: selfRegisterBirthdateFor(2026)}
+
+		got, _, err := uc.Execute(context.Background(), "t1", "young", "", "player", "", "", "", "", "", "", "")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if len(got.Participants) != 1 || got.Participants[0].ID != "p1" {
+			t.Errorf("expected p1 registered, got %+v", got.Participants)
 		}
 	})
 }

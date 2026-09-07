@@ -29,7 +29,7 @@ func TestEventRepository_GetByID_And_GetByEventID_Deep_TeamsWithGroupsAndMatches
 
 	// A doubles event so isTeamType branches are exercised.
 	start := time.Now()
-	e, err := event.NewEvent(uuid.NewString(), "Deep Doubles", "doubles", "elimination", "open", start, start.Add(time.Hour), nil, 2, nil, false)
+	e, err := event.NewEvent(uuid.NewString(), "Deep Doubles", "doubles", "elimination", "open", "", start, start.Add(time.Hour), nil, 2, nil, false)
 	if err != nil {
 		t.Fatalf("NewTournament: %v", err)
 	}
