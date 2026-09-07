@@ -124,6 +124,7 @@ func (r *DashboardRepository) GetTopEloGainers(ctx context.Context, limit int) (
 	err := ExtractDB(ctx, r.db).NewSelect().
 		TableExpr("event_participants AS ep").
 		Join("JOIN players AS p ON p.id = ep.player_id").
+		Where("p.inactive = ?", false).
 		ColumnExpr("p.first_name AS first_name").
 		ColumnExpr("p.last_name AS last_name").
 		ColumnExpr("SUM(COALESCE(ep.elo_after_singles - ep.elo_before_singles, 0) + COALESCE(ep.elo_after_doubles - ep.elo_before_doubles, 0)) AS gain").

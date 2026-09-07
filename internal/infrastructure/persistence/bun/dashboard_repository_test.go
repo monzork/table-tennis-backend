@@ -174,8 +174,13 @@ func TestDashboardRepository_GetTopEloGainers(t *testing.T) {
 
 	gainer := savePlayer(t, playerRepo, "Gainer", "Player", "M")
 	loser := savePlayer(t, playerRepo, "Loser", "Player", "M")
+	inactiveGainer := savePlayer(t, playerRepo, "Inactive", "Gainer", "M")
+	inactiveGainer.Inactive = true
+	if err := playerRepo.Save(ctx, inactiveGainer); err != nil {
+		t.Fatalf("save inactiveGainer: %v", err)
+	}
 
-	ev := newBareEvent(t, "Event", []*player.Player{gainer, loser})
+	ev := newBareEvent(t, "Event", []*player.Player{gainer, loser, inactiveGainer})
 	if err := eventRepo.Save(ctx, ev); err != nil {
 		t.Fatalf("save event: %v", err)
 	}
@@ -192,6 +197,12 @@ func TestDashboardRepository_GetTopEloGainers(t *testing.T) {
 	if err := eventRepo.UpdateParticipantElo(ctx, ev.ID, loser.ID, 950, 1000); err != nil {
 		t.Fatalf("UpdateParticipantElo loser: %v", err)
 	}
+	if err := eventRepo.AddParticipant(ctx, ev.ID, inactiveGainer.ID, 1000, 1000); err != nil {
+		t.Fatalf("AddParticipant inactiveGainer: %v", err)
+	}
+	if err := eventRepo.UpdateParticipantElo(ctx, ev.ID, inactiveGainer.ID, 1200, 1000); err != nil {
+		t.Fatalf("UpdateParticipantElo inactiveGainer: %v", err)
+	}
 
 	dashRepo := bunRepo.NewDashboardRepository(db)
 	items, err := dashRepo.GetTopEloGainers(ctx, 10)
@@ -199,7 +210,7 @@ func TestDashboardRepository_GetTopEloGainers(t *testing.T) {
 		t.Fatalf("GetTopEloGainers: %v", err)
 	}
 	if len(items) != 1 {
-		t.Fatalf("expected only the positive gainer, got %d: %+v", len(items), items)
+		t.Fatalf("expected only the active positive gainer (inactive gainer excluded), got %d: %+v", len(items), items)
 	}
 	if items[0].Label != "Gainer Player" || items[0].Value != 100 {
 		t.Errorf("expected Gainer Player +100, got %+v", items[0])
