@@ -15,9 +15,11 @@ func NewGetDivisionDistributionUseCase(chartGen chart.Generator) *GetDivisionDis
 }
 
 // Execute renders a bar chart of player counts per division for the given
-// rank type, built from the full unfiltered roster. Unlike groupPlayers
-// (used for the ranking table itself), zero-count divisions are kept as
-// empty bars -- meaningful signal for a distribution view.
+// rank type, built from whatever roster the caller passes in (the handler
+// excludes inactive players unless "show inactive" is on, mirroring the
+// ranking table). Unlike groupPlayers (used for the ranking table itself),
+// zero-count divisions are kept as empty bars -- meaningful signal for a
+// distribution view.
 func (uc *GetDivisionDistributionUseCase) Execute(players []*player.Player, divisions []*division.Division, rankType string) (string, error) {
 	rankable := filterRankableDivisions(divisions)
 	if len(rankable) == 0 {

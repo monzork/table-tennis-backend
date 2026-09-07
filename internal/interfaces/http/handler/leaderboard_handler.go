@@ -44,6 +44,23 @@ func NewLeaderboardHandler(uc *leaderboard.GetLeaderboardUseCase, divUC *divisio
 	return &LeaderboardHandler{getUC: uc, divisionUC: divUC, getDistributionUC: distUC, rankMovementUC: rankMovementUC}
 }
 
+// filterActivePlayers drops inactive players unless showInactive is set,
+// mirroring the default (non "show inactive") view of the ranking table
+// itself -- used to keep the division-distribution chart's counts
+// consistent with the ranking list shown alongside it.
+func filterActivePlayers(players []*player.Player, showInactive bool) []*player.Player {
+	if showInactive {
+		return players
+	}
+	active := make([]*player.Player, 0, len(players))
+	for _, p := range players {
+		if !p.Inactive {
+			active = append(active, p)
+		}
+	}
+	return active
+}
+
 type DivisionGroup struct {
 	Division *divisionDomain.Division
 	Players  []*player.Player
@@ -250,7 +267,7 @@ func (h *LeaderboardHandler) renderRanking(c *fiber.Ctx, rankType string, title 
 	// The distribution chart only shows the gender-specific bands -- the
 	// legacy gender-agnostic bands stay in the DB for existing tournaments'
 	// bracket rendering, but are retired from every new-facing display.
-	distSVG, _ := h.getDistributionUC.Execute(players, divisionDomain.OnlyGendered(divisions), rankType)
+	distSVG, _ := h.getDistributionUC.Execute(filterActivePlayers(players, showInactive), divisionDomain.OnlyGendered(divisions), rankType)
 	data["DistributionSVG"] = template.HTML(distSVG)
 
 	return c.Render("rankings", data, "layouts/public")

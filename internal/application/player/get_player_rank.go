@@ -15,8 +15,11 @@ func NewGetPlayerRankUseCase(repo player.Repository) *GetPlayerRankUseCase {
 	return &GetPlayerRankUseCase{repo: repo}
 }
 
-// Execute returns rank (1-based position, 0 if the player isn't found) and
-// the total number of ranked players for rankType ("singles" or "doubles").
+// Execute returns rank (1-based position, 0 if the player isn't found or is
+// inactive) and the total number of ranked players for rankType ("singles"
+// or "doubles"). Inactive players are excluded from both the position and
+// the total, mirroring the default (non "show inactive") view of the main
+// ranking table.
 func (uc *GetPlayerRankUseCase) Execute(ctx context.Context, playerID, rankType string) (rank int, total int, err error) {
 	var players []*player.Player
 	if rankType == "doubles" {
@@ -28,8 +31,15 @@ func (uc *GetPlayerRankUseCase) Execute(ctx context.Context, playerID, rankType 
 		return 0, 0, err
 	}
 
-	total = len(players)
-	for i, p := range players {
+	var active []*player.Player
+	for _, p := range players {
+		if !p.Inactive {
+			active = append(active, p)
+		}
+	}
+
+	total = len(active)
+	for i, p := range active {
 		if p.ID == playerID {
 			return i + 1, total, nil
 		}

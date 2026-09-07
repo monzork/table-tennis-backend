@@ -192,6 +192,28 @@ func TestLeaderboardHandler_RenderRanking_Errors(t *testing.T) {
 	})
 }
 
+func TestFilterActivePlayers(t *testing.T) {
+	p1, _ := player.NewPlayer("1", "Alice", "Smith", time.Now(), "F", "USA", "Dept 1", "ID001")
+	p2, _ := player.NewPlayer("2", "Bob", "Jones", time.Now(), "M", "MEX", "Dept 2", "ID002")
+	p2.Inactive = true
+
+	players := []*player.Player{p1, p2}
+
+	t.Run("excludes inactive players by default", func(t *testing.T) {
+		got := filterActivePlayers(players, false)
+		if len(got) != 1 || got[0].ID != "1" {
+			t.Errorf("expected only active player 1, got %+v", got)
+		}
+	})
+
+	t.Run("keeps everyone when showInactive is true", func(t *testing.T) {
+		got := filterActivePlayers(players, true)
+		if len(got) != 2 {
+			t.Errorf("expected both players, got %d", len(got))
+		}
+	})
+}
+
 func TestLeaderboardHandler_GetGroupedPlayers(t *testing.T) {
 	p1, _ := player.NewPlayer("1", "Alice", "Smith", time.Now(), "F", "USA", "Dept 1", "ID001")
 	p1.SinglesElo = 1500
