@@ -133,7 +133,11 @@ func (uc *GetScoreFormViewUseCase) Execute(
 					}
 				}
 				if teamAExists && teamBExists {
-					if newMatch, err := uc.createMatchUC.Execute(ctx, tID, "teams", []string{p1Id}, []string{p2Id}, stage); err == nil && newMatch != nil {
+					newMatch, err := uc.createMatchUC.Execute(ctx, tID, "teams", []string{p1Id}, []string{p2Id}, stage)
+					if err != nil {
+						return nil, err
+					}
+					if newMatch != nil {
 						matchID = newMatch.ID
 					}
 				}

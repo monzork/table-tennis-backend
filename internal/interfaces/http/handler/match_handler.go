@@ -1189,6 +1189,36 @@ func (h *MatchHandler) Start(c *fiber.Ctx) error {
 		}
 	}
 
+	// Starting a team match also creates its individual sub-matches (M1..M5).
+	if t != nil && t.Type == "teams" {
+		teamAID, teamBID := p1Id, p2Id
+		if teamAID == "" || teamBID == "" {
+			for i := range t.Matches {
+				if t.Matches[i].ID == matchID && len(t.Matches[i].TeamA) > 0 && len(t.Matches[i].TeamB) > 0 {
+					teamAID, teamBID = t.Matches[i].TeamA[0].ID, t.Matches[i].TeamB[0].ID
+				}
+			}
+		}
+		var teamA, teamB *event.Team
+		for _, tm := range t.Teams {
+			if tm.ID == teamAID {
+				teamA = tm
+			}
+			if tm.ID == teamBID {
+				teamB = tm
+			}
+		}
+		if teamA != nil && teamB != nil {
+			format := t.TeamFormat
+			if format == "" {
+				format = "olympic"
+			}
+			if err := h.teamMatchUC.EnsureTeamSubMatches(c.Context(), matchID, teamA, teamB, format, stage); err != nil {
+				return ErrorHandler(err)
+			}
+		}
+	}
+
 	var tableNumber *int
 	manualTableStr := c.FormValue("tableNumber")
 	if manualTableStr != "" {

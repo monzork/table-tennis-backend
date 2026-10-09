@@ -49,4 +49,18 @@ type BoardCard struct {
 	EloDeltaA         *float64
 	EloDeltaB         *float64
 	EloDeltaIsPreview bool
+
+	// SubMatches lists the individual rubbers (Match 1, Match 2, ...) of a
+	// team match card. Empty for non-team matches.
+	SubMatches []SubMatchCard
+}
+
+// SubMatchCard is one rubber inside a team match card.
+type SubMatchCard struct {
+	Number      int
+	Status      string
+	PlayerAName string
+	PlayerBName string
+	ScoreA      int
+	ScoreB      int
 }

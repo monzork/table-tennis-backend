@@ -356,3 +356,17 @@ func TestSortBoardCards(t *testing.T) {
 }
 
 func strPtr(s string) *string { return &s }
+
+func TestSubMatchCards_OrderedAndScoped(t *testing.T) {
+	parent, other := "p1", "p2"
+	ms := []tournamentDomain.Match{
+		{ID: "b", TeamMatchID: &parent, RoundNumber: 2, Status: "scheduled"},
+		{ID: "a", TeamMatchID: &parent, RoundNumber: 1, Status: "finished"},
+		{ID: "x", TeamMatchID: &other, RoundNumber: 1},
+		{ID: "top"},
+	}
+	got := subMatchCards(ms, parent, func([]*playerDomain.Player) string { return "n" })
+	if len(got) != 2 || got[0].Number != 1 || got[0].Status != "finished" || got[1].Number != 2 {
+		t.Fatalf("unexpected sub-match cards: %+v", got)
+	}
+}

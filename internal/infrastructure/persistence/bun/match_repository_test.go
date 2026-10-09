@@ -1081,3 +1081,13 @@ func TestMatchRepository_ClearScoreProposal_InvalidID(t *testing.T) {
 		t.Fatal("expected error for invalid match ID")
 	}
 }
+
+// IDs that aren't team IDs must fall through the team->player resolution unchanged.
+func TestMatchRepository_FindOrCreateMatch_TeamsFallsBackToGivenIDs(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+	id, err := f.matchRepo.FindOrCreateMatch(ctx, f.tournament.ID, f.players[0].ID, f.players[1].ID, "group", "teams")
+	if err != nil || id == "" {
+		t.Fatalf("FindOrCreateMatch teams: id=%q err=%v", id, err)
+	}
+}

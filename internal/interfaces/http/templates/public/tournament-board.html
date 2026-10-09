@@ -126,6 +126,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="-mt-2 mb-2 px-4">{{template "admin/partials/board-submatches" .}}</div>
                             {{else}}
                                 <div class="h-full flex items-center justify-center text-gray-500 text-lg uppercase tracking-widest font-bold">
                                     {{t .T "tv.no_active"}}
@@ -213,6 +214,7 @@
                                             {{.PlayerBName}}
                                         </div>
                                     </div>
+                                    {{template "admin/partials/board-submatches" .}}
                                 </div>
                             {{else}}
                                 <div class="h-full flex items-center justify-center text-gray-600 text-lg uppercase tracking-widest font-bold">

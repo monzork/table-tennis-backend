@@ -1170,6 +1170,17 @@ func (r *MatchRepository) FindOrCreateMatch(ctx context.Context, eventID, p1ID, 
 		return "", err
 	}
 
+	// Team matches are keyed by a member player's ID (matches.team_*_player_1_id
+	// references players), so resolve the incoming team IDs to one.
+	if matchType == "teams" {
+		for _, id := range []*uuid.UUID{&p1UUID, &p2UUID} {
+			var tp TeamPlayerModel
+			if r.db.NewSelect().Model(&tp).Where("team_id = ?", *id).OrderExpr("player_id").Limit(1).Scan(ctx) == nil {
+				*id = tp.PlayerID
+			}
+		}
+	}
+
 	var existing MatchModel
 	err = r.db.NewSelect().Model(&existing).
 		Where("event_id = ?", tUUID).

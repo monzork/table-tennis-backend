@@ -139,6 +139,9 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 				return ""
 			}(),
 		}
+		if m.MatchType == "teams" {
+			card.SubMatches = subMatchCards(t.Matches, m.ID, nameOf)
+		}
 		switch m.Status {
 		case "in_progress":
 			inProgress = append(inProgress, card)
@@ -460,6 +463,22 @@ func BuildTableVMs(t *tournamentDomain.Event, excludeMatchID string, globalOccup
 type TableVM struct {
 	Number int
 	IsUsed bool
+}
+
+// subMatchCards returns the rubbers of a team match ordered by round, numbered from 1.
+func subMatchCards(matches []tournamentDomain.Match, parentID string, nameOf func([]*playerDomain.Player) string) []SubMatchCard {
+	var subs []tournamentDomain.Match
+	for _, m := range matches {
+		if m.TeamMatchID != nil && *m.TeamMatchID == parentID {
+			subs = append(subs, m)
+		}
+	}
+	sort.SliceStable(subs, func(i, j int) bool { return subs[i].RoundNumber < subs[j].RoundNumber })
+	cards := make([]SubMatchCard, len(subs))
+	for i, s := range subs {
+		cards[i] = SubMatchCard{Number: i + 1, Status: s.Status, PlayerAName: nameOf(s.TeamA), PlayerBName: nameOf(s.TeamB), ScoreA: s.ScoreA(), ScoreB: s.ScoreB()}
+	}
+	return cards
 }
 
 // matchExists reports whether a match between two players already exists in the given stage.
