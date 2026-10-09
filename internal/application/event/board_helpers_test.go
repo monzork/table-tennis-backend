@@ -392,3 +392,16 @@ func TestPlaceholderSubMatches_DoublesSlotByFormat(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildBoardCards_SkipEloHidesEloEstimates(t *testing.T) {
+	a := &playerDomain.Player{ID: "a", FirstName: "A", LastName: "A", SinglesElo: 1200}
+	b := &playerDomain.Player{ID: "b", FirstName: "B", LastName: "B", SinglesElo: 1100}
+	ev := &tournamentDomain.Event{Type: "singles", SkipElo: true, Matches: []tournamentDomain.Match{
+		{ID: "m", MatchType: "singles", Status: "finished", WinnerTeam: "A", Stage: "group", TeamA: []*playerDomain.Player{a}, TeamB: []*playerDomain.Player{b}},
+	}}
+	_, _, finished := BuildBoardCards(ev, nil)
+	c := finished[0]
+	if c.ProjectedEloWinA != nil || c.ProjectedEloLossB != nil || c.EloDeltaA != nil || c.EloDeltaIsPreview {
+		t.Fatalf("skip-elo event must not show Elo estimates: %+v", c)
+	}
+}

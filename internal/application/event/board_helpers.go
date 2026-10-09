@@ -84,6 +84,9 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 		}
 		projWinA, projLossA := tournamentDomain.ProjectedEloDelta(m.MatchType, m.TeamA, m.TeamB)
 		projWinB, projLossB := tournamentDomain.ProjectedEloDelta(m.MatchType, m.TeamB, m.TeamA)
+		if t.SkipElo { // no Elo is applied, so don't show projections or previews
+			projWinA, projLossA, projWinB, projLossB = nil, nil, nil, nil
+		}
 
 		// While the owning event hasn't been finished/recalculated yet (no
 		// real EloDeltaA/B), preview a finished match's actual result from
@@ -94,7 +97,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 		// wrong number; leave it blank instead.
 		eloDeltaA, eloDeltaB := m.EloDeltaA, m.EloDeltaB
 		eloDeltaIsPreview := false
-		if eloDeltaA == nil && t.Status != "finished" && m.Status == "finished" && m.WinnerTeam != "" && !m.IsForfeit {
+		if !t.SkipElo && eloDeltaA == nil && t.Status != "finished" && m.Status == "finished" && m.WinnerTeam != "" && !m.IsForfeit {
 			if m.WinnerTeam == "A" {
 				eloDeltaA, eloDeltaB = projWinA, projLossB
 			} else {
