@@ -18,15 +18,17 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler, acc
 		return ctx.JSON(fiber.Map{"status": "ok"})
 	})
 
-	// Pinged on a schedule (e.g. from a Raspberry Pi) so the free Supabase project isn't paused.
+	// Called on a schedule (e.g. daily by a Raspberry Pi) so the free Supabase project isn't paused;
+	// the keep-alive decides when a ping is actually due.
 	app.Get("/health/storage", limiter.New(limiter.Config{Max: 6, Expiration: time.Minute}), func(ctx *fiber.Ctx) error {
-		if c.StoragePing == nil {
+		if c.StorageKeepAlive == nil {
 			return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "storage not configured"})
 		}
-		if err := c.StoragePing(ctx.Context()); err != nil {
+		pinged, err := c.StorageKeepAlive.Run(ctx.Context())
+		if err != nil {
 			return ctx.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"status": "error"})
 		}
-		return ctx.JSON(fiber.Map{"status": "ok"})
+		return ctx.JSON(fiber.Map{"status": "ok", "pinged": pinged})
 	})
 
 	// ==========================================

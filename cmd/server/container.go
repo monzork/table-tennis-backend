@@ -42,12 +42,12 @@ type Container struct {
 	DashboardHandler    *handler.DashboardHandler
 	AccountHandler      *handler.AccountHandler
 
-	// StoragePing checks Supabase Storage is reachable; nil when it isn't configured.
-	StoragePing func(context.Context) error
+	// StorageKeepAlive pings Supabase Storage on a randomised schedule; nil when it isn't configured.
+	StorageKeepAlive *storageinfra.KeepAlive
 }
 
 func NewContainer(store *session.Store, cfg Config) *Container {
-	var storagePing func(context.Context) error
+	var storageKeepAlive *storageinfra.KeepAlive
 	playerRepo := bun.NewPlayerRepository(bun.DB)
 	playerUC := player.NewRegisterPlayerUseCase(playerRepo)
 	updatePlayerUC := player.NewUpdatePlayerUseCase(playerRepo)
@@ -100,7 +100,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	if cfg.SupabaseURL != "" && cfg.SupabaseKey != "" {
 		supabaseStorage := storageinfra.NewSupabaseStorage(cfg.SupabaseURL, cfg.SupabaseKey, cfg.SupabaseBucket)
 		playerHandler = playerHandler.WithUploader(supabaseStorage)
-		storagePing = supabaseStorage.Ping
+		storageKeepAlive = storageinfra.NewKeepAlive(supabaseStorage.Ping)
 		pdfGenerator.WithPhotoDownloader(supabaseStorage)
 	}
 
@@ -243,7 +243,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	adminHandler.WithClaimReviewUseCases(getPendingClaimsUC, approveClaimUC, rejectClaimUC)
 
 	return &Container{
-		StoragePing:         storagePing,
+		StorageKeepAlive:    storageKeepAlive,
 		PlayerHandler:       playerHandler,
 		EventHandler:        tournamentHandler,
 		TournamentHandler:   eventHandler,
