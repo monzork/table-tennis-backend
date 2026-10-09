@@ -425,21 +425,6 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 			matchID = c.FormValue("matchId")
 		}
 
-		squadA := []string{c.FormValue("squad_a_p1"), c.FormValue("squad_a_p2"), c.FormValue("squad_a_p3")}
-		squadB := []string{c.FormValue("squad_b_p1"), c.FormValue("squad_b_p2"), c.FormValue("squad_b_p3")}
-
-		// Validate that all required players are selected
-		for _, p := range squadA {
-			if p == "" || p == uuid.Nil.String() {
-				return fiber.NewError(fiber.StatusBadRequest, "All 3 players must be selected for each team")
-			}
-		}
-		for _, p := range squadB {
-			if p == "" || p == uuid.Nil.String() {
-				return fiber.NewError(fiber.StatusBadRequest, "All 3 players must be selected for each team")
-			}
-		}
-
 		parent, err := h.matchRepo.GetByID(c.Context(), matchID)
 		if err != nil {
 			return fiber.NewError(fiber.StatusNotFound, "parent match not found: "+err.Error())
@@ -453,6 +438,12 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		teamFormat := t.TeamFormat
 		if teamFormat == "" {
 			teamFormat = "olympic"
+		}
+
+		squadA, okA := squadFromForm(c, "a", teamFormat)
+		squadB, okB := squadFromForm(c, "b", teamFormat)
+		if !okA || !okB {
+			return fiber.NewError(fiber.StatusBadRequest, "All required players must be selected for each team")
 		}
 
 		err = h.teamMatchUC.UpdateTeamSquads(c.Context(), matchID, squadA, squadB, teamFormat, parent.Stage)
@@ -725,21 +716,6 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 			updaterPlayerID, _ = h.tournamentRepo.GetParticipantOrOfficialByPIN(c.Context(), parent.EventID.String(), submittedPin)
 		}
 
-		squadA := []string{c.FormValue("squad_a_p1"), c.FormValue("squad_a_p2"), c.FormValue("squad_a_p3")}
-		squadB := []string{c.FormValue("squad_b_p1"), c.FormValue("squad_b_p2"), c.FormValue("squad_b_p3")}
-
-		// Validate that all required players are selected
-		for _, p := range squadA {
-			if p == "" || p == uuid.Nil.String() {
-				return c.SendString("<div class='text-red-400 font-mono text-sm'>All 3 players must be selected for each team</div>")
-			}
-		}
-		for _, p := range squadB {
-			if p == "" || p == uuid.Nil.String() {
-				return c.SendString("<div class='text-red-400 font-mono text-sm'>All 3 players must be selected for each team</div>")
-			}
-		}
-
 		t, err := h.tournamentRepo.GetByID(c.Context(), parent.EventID.String())
 		if err != nil {
 			return c.SendString("<div class='text-red-400 font-mono text-sm'>Event not found: " + err.Error() + "</div>")
@@ -748,6 +724,12 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 		teamFormat := t.TeamFormat
 		if teamFormat == "" {
 			teamFormat = "olympic"
+		}
+
+		squadA, okA := squadFromForm(c, "a", teamFormat)
+		squadB, okB := squadFromForm(c, "b", teamFormat)
+		if !okA || !okB {
+			return c.SendString("<div class='text-red-400 font-mono text-sm'>All required players must be selected for each team</div>")
 		}
 
 		err = h.teamMatchUC.UpdateTeamSquads(c.Context(), matchID, squadA, squadB, teamFormat, parent.Stage)
@@ -1109,6 +1091,8 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, eventI
 		"SquadAP1":     view.SquadAP1,
 		"SquadAP2":     view.SquadAP2,
 		"SquadAP3":     view.SquadAP3,
+		"SquadAP4":     view.SquadAP4,
+		"SquadBP4":     view.SquadBP4,
 		"SquadBP1":     view.SquadBP1,
 		"SquadBP2":     view.SquadBP2,
 		"SquadBP3":     view.SquadBP3,
@@ -1653,4 +1637,24 @@ func (h *MatchHandler) ValidateMatchPIN(c *fiber.Ctx) error {
 		"T":            i18n.PrecomputedMaps[lang],
 		"Lang":         lang,
 	})
+}
+
+// squadFromForm reads one team's squad selects (side "a" or "b"). Every format
+// needs players 1 and 2; olympic/swaythling also need 3. Corbillon instead takes
+// an optional doubles pair in slots 3 and 4. ok is false when a required one is missing.
+func squadFromForm(c *fiber.Ctx, side, teamFormat string) (squad []string, ok bool) {
+	get := func(n int) string { return c.FormValue(fmt.Sprintf("squad_%s_p%d", side, n)) }
+	squad = []string{get(1), get(2)}
+	if teamFormat == "corbillon" {
+		squad = append(squad, get(3), get(4))
+	} else {
+		squad = append(squad, get(3))
+	}
+	for i, p := range squad {
+		required := i < 2 || teamFormat != "corbillon"
+		if required && (p == "" || p == uuid.Nil.String()) {
+			return squad, false
+		}
+	}
+	return squad, true
 }

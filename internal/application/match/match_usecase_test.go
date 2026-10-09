@@ -28,6 +28,7 @@ type mockMatchRepo struct {
 	scoresUpdated    bool
 	subCreated       bool
 	squadsUpdated    bool
+	lastAssignments  []eventDomain.SubMatchSquadAssignment
 	saveErr          error
 	getAllErr        error
 	getSubMatchesErr error
@@ -160,6 +161,7 @@ func (m *mockMatchRepo) CreateSubMatches(ctx context.Context, cmd eventDomain.Cr
 }
 func (m *mockMatchRepo) UpdateSubMatchSquads(ctx context.Context, cmd eventDomain.UpdateSubMatchSquadsCommand) error {
 	m.squadsUpdated = true
+	m.lastAssignments = cmd.Assignments
 	return nil
 }
 
@@ -1009,6 +1011,34 @@ func TestTeamMatchOrchestratorUseCase(t *testing.T) {
 		}
 		if !matchRepo.squadsUpdated {
 			t.Error("expected squadsUpdated to be true")
+		}
+	})
+
+	t.Run("UpdateTeamSquads corbillon: 2 players, doubles default to A and B", func(t *testing.T) {
+		matchRepo.subMatches["mParent"] = []*eventDomain.Match{{ID: "d", RoundNumber: 3}}
+		if err := uc.UpdateTeamSquads(ctx, "mParent", []string{"p1", "p2"}, []string{"p4", "p5"}, "corbillon", "group"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		a := matchRepo.lastAssignments[0]
+		if a.TeamAPlayer1ID != "p1" || a.TeamAPlayer2ID != "p2" || a.TeamBPlayer1ID != "p4" || a.TeamBPlayer2ID != "p5" {
+			t.Fatalf("unexpected default doubles pair: %+v", a)
+		}
+	})
+
+	t.Run("UpdateTeamSquads corbillon: chosen doubles pair, not the singles players", func(t *testing.T) {
+		matchRepo.subMatches["mParent"] = []*eventDomain.Match{{ID: "d", RoundNumber: 3}}
+		if err := uc.UpdateTeamSquads(ctx, "mParent", []string{"p1", "p2", "p3", "p1"}, []string{"p4", "p5", "p6", "p5"}, "corbillon", "group"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		a := matchRepo.lastAssignments[0]
+		if a.TeamAPlayer1ID != "p3" || a.TeamAPlayer2ID != "p1" || a.TeamBPlayer1ID != "p6" || a.TeamBPlayer2ID != "p5" {
+			t.Fatalf("unexpected chosen doubles pair: %+v", a)
+		}
+	})
+
+	t.Run("UpdateTeamSquads corbillon: doubles pair must be two players", func(t *testing.T) {
+		if err := uc.UpdateTeamSquads(ctx, "mParent", []string{"p1", "p2", "p3", "p3"}, []string{"p4", "p5"}, "corbillon", "group"); err == nil {
+			t.Fatal("expected error for same player twice")
 		}
 	})
 

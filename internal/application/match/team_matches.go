@@ -3,6 +3,7 @@ package match
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"table-tennis-backend/internal/domain/event"
 )
@@ -61,12 +62,35 @@ func (uc *TeamMatchOrchestratorUseCase) UpdateTeamSquads(ctx context.Context, pa
 		return errors.New("sub-matches do not exist, please initialize them first")
 	}
 
-	if len(squadA) < 3 || len(squadB) < 3 {
-		return errors.New("both squads must have at least 3 players selected")
+	// Corbillon needs only the two singles players (A, B); the optional 3rd/4th
+	// entries name the doubles pair, who may be any squad players (ITTF TM1 sheet).
+	minSquad := 3
+	if teamFormat == "corbillon" {
+		minSquad = 2
+	}
+	if len(squadA) < minSquad || len(squadB) < minSquad {
+		return fmt.Errorf("both squads must have at least %d players selected", minSquad)
 	}
 
-	p1A, p2A, p3A := squadA[0], squadA[1], squadA[2]
-	p1B, p2B, p3B := squadB[0], squadB[1], squadB[2]
+	at := func(squad []string, i int) string {
+		if i < len(squad) {
+			return squad[i]
+		}
+		return ""
+	}
+	p1A, p2A, p3A := at(squadA, 0), at(squadA, 1), at(squadA, 2)
+	p1B, p2B, p3B := at(squadB, 0), at(squadB, 1), at(squadB, 2)
+	// doubles pair (corbillon): defaults to the singles players
+	d1A, d2A, d1B, d2B := p1A, p2A, p1B, p2B
+	if at(squadA, 2) != "" && at(squadA, 3) != "" {
+		d1A, d2A = squadA[2], squadA[3]
+	}
+	if at(squadB, 2) != "" && at(squadB, 3) != "" {
+		d1B, d2B = squadB[2], squadB[3]
+	}
+	if teamFormat == "corbillon" && (d1A == d2A || d1B == d2B) {
+		return errors.New("doubles pair must be two different players")
+	}
 
 	if teamFormat == "" {
 		teamFormat = "olympic"
@@ -96,8 +120,8 @@ func (uc *TeamMatchOrchestratorUseCase) UpdateTeamSquads(ctx context.Context, pa
 			case 2:
 				teamAP1, teamBP1 = p2A, p2B
 			case 3:
-				teamAP1, teamAP2 = p1A, p2A
-				teamBP1, teamBP2 = p1B, p2B
+				teamAP1, teamAP2 = d1A, d2A
+				teamBP1, teamBP2 = d1B, d2B
 			case 4:
 				teamAP1, teamBP1 = p1A, p2B
 			case 5:

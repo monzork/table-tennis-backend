@@ -40,6 +40,8 @@ type TeamMatchFormView struct {
 	SquadBP1     string
 	SquadBP2     string
 	SquadBP3     string
+	SquadAP4     string // corbillon: doubles player 2 (SquadAP3 is doubles player 1)
+	SquadBP4     string
 	Participants []*player.Player
 	Pin          string
 	RefereeID    string
@@ -113,6 +115,7 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eve
 
 	var squadAP1, squadAP2, squadAP3 string
 	var squadBP1, squadBP2, squadBP3 string
+	var squadAP4, squadBP4 string
 	for _, sm := range subMatches {
 		a1, b1 := teamPlayerID(sm.TeamA, 0), teamPlayerID(sm.TeamB, 0)
 		if teamFormat == "olympic" {
@@ -130,6 +133,9 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eve
 				squadAP1, squadBP1 = a1, b1
 			case 2:
 				squadAP2, squadBP2 = a1, b1
+			case 3:
+				squadAP3, squadBP3 = a1, b1
+				squadAP4, squadBP4 = teamPlayerID(sm.TeamA, 1), teamPlayerID(sm.TeamB, 1)
 			}
 		} else {
 			switch sm.RoundNumber {
@@ -172,6 +178,16 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eve
 		}
 		if len(teamB.Players) > 2 {
 			squadBP3 = teamB.Players[2].ID
+		}
+	}
+
+	// Corbillon: no named doubles pair yet means the singles players (A, B) play it.
+	if teamFormat == "corbillon" {
+		if squadAP4 == "" {
+			squadAP3 = ""
+		}
+		if squadBP4 == "" {
+			squadBP3 = ""
 		}
 	}
 
@@ -236,6 +252,8 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eve
 		SquadBP1:     squadBP1,
 		SquadBP2:     squadBP2,
 		SquadBP3:     squadBP3,
+		SquadAP4:     squadAP4,
+		SquadBP4:     squadBP4,
 		Participants: t.Participants,
 		Pin:          parent.Pin,
 		RefereeID:    refereeIDStr,

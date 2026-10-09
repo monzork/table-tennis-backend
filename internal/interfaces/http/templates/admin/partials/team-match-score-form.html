@@ -31,12 +31,27 @@
                     <option value="{{.ID}}" {{if eq .ID $.SquadAP2}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
                     {{end}}{{end}}
                 </select>
+{{if eq .TeamFormat "corbillon"}}
+                <select name="squad_a_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    <option value="">{{t .T "team_form.sel_doubles1"}}</option>
+                    {{if .TeamA}}{{range .TeamA.Players}}
+                    <option value="{{.ID}}" {{if eq .ID $.SquadAP3}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
+                    {{end}}{{end}}
+                </select>
+                <select name="squad_a_p4" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    <option value="">{{t .T "team_form.sel_doubles2"}}</option>
+                    {{if .TeamA}}{{range .TeamA.Players}}
+                    <option value="{{.ID}}" {{if eq .ID $.SquadAP4}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
+                    {{end}}{{end}}
+                </select>
+{{else}}
                 <select name="squad_a_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadAP3}}selected{{end}}>{{t .T "team_form.sel_a3"}}</option>
                     {{if .TeamA}}{{range .TeamA.Players}}
                     <option value="{{.ID}}" {{if eq .ID $.SquadAP3}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
                     {{end}}{{end}}
                 </select>
+{{end}}
             </div>
         </div>
 
@@ -58,12 +73,27 @@
                     <option value="{{.ID}}" {{if eq .ID $.SquadBP2}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
                     {{end}}{{end}}
                 </select>
+{{if eq .TeamFormat "corbillon"}}
+                <select name="squad_b_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    <option value="">{{t .T "team_form.sel_doubles1"}}</option>
+                    {{if .TeamB}}{{range .TeamB.Players}}
+                    <option value="{{.ID}}" {{if eq .ID $.SquadBP3}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
+                    {{end}}{{end}}
+                </select>
+                <select name="squad_b_p4" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
+                    <option value="">{{t .T "team_form.sel_doubles2"}}</option>
+                    {{if .TeamB}}{{range .TeamB.Players}}
+                    <option value="{{.ID}}" {{if eq .ID $.SquadBP4}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
+                    {{end}}{{end}}
+                </select>
+{{else}}
                 <select name="squad_b_p3" class="w-full bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white">
                     <option value="" disabled {{if not .SquadBP3}}selected{{end}}>{{t .T "team_form.sel_b3"}}</option>
                     {{if .TeamB}}{{range .TeamB.Players}}
                     <option value="{{.ID}}" {{if eq .ID $.SquadBP3}}selected{{end}}>{{.FirstNameWithSecond}} {{.LastNameWithSecond}}</option>
                     {{end}}{{end}}
                 </select>
+{{end}}
             </div>
         </div>
     </div>
