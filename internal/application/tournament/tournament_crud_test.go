@@ -48,6 +48,7 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 		tournament.CategoryConfig{Auto: true, Format: "doubles", PlayerIDs: []string{"p1", "p2"}}, // mixed
 		tournament.CategoryConfig{Auto: true, Format: "teams", PlayerIDs: []string{"p1"}},
 		tournament.CategoryConfig{Auto: true, Format: "teams", PlayerIDs: []string{"p2"}},
+		tournament.CategoryConfig{},
 		tournament.CategoryConfig{Auto: true, Format: "single", PlayerIDs: []string{"p1", "p2"}}, // open singles
 		[]tournament.CustomEventConfig{
 			{Name: "Group A", Format: "elimination", PlayerIDs: []string{"p1", "p2"}},
@@ -62,23 +63,23 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 	}
 
 	// Test errors
-	_, err = uc.Execute(ctx, "Test", []string{"invalid_div"}, false, "2026-10-01", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil, nil)
+	_, err = uc.Execute(ctx, "Test", []string{"invalid_div"}, false, "2026-10-01", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil, nil)
 	if err == nil {
 		t.Errorf("expected error for invalid div")
 	}
 
-	_, err = uc.Execute(ctx, "Test", nil, true, "bad-date", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil, nil)
+	_, err = uc.Execute(ctx, "Test", nil, true, "bad-date", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil, nil)
 	if err == nil {
 		t.Errorf("expected error for bad start date")
 	}
 
-	_, err = uc.Execute(ctx, "Test", nil, true, "2026-10-01", "bad-date", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil, nil)
+	_, err = uc.Execute(ctx, "Test", nil, true, "2026-10-01", "bad-date", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil, nil)
 	if err == nil {
 		t.Errorf("expected error for bad end date")
 	}
 
 	// NewEvent validation error (empty name) with a non-skip-elo division set.
-	_, err = uc.Execute(ctx, "", []string{"d1"}, false, "2026-10-01", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil, nil)
+	_, err = uc.Execute(ctx, "", []string{"d1"}, false, "2026-10-01", "2026-10-02", tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, tournament.CategoryConfig{}, nil, nil)
 	if err == nil {
 		t.Errorf("expected error for empty event name")
 	}
@@ -94,6 +95,7 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 		"2026-10-01",
 		"2026-10-02",
 		tournament.CategoryConfig{Auto: true, Format: "single", PlayerIDs: []string{"p1", "p_unknown"}},
+		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
@@ -128,6 +130,7 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
 		nil,
 		nil,
 	)
@@ -141,6 +144,54 @@ func TestCreateEventUseCase_Execute(t *testing.T) {
 		if !ev.SkipDivisionSplit {
 			t.Errorf("expected event %q created via the flat (no-division) branch to have SkipDivisionSplit=true", ev.Name)
 		}
+	}
+}
+
+func TestCreateEventUseCase_Execute_TeamsMixed(t *testing.T) {
+	eventRepo := newMockEventRepo()
+	subTourneyRepo := newMockSubTourneyRepo()
+	playerRepo := newMockPlayerRepo()
+	divRepo := newMockDivisionRepo()
+
+	uc := tournament.NewCreateEventUseCase(eventRepo, subTourneyRepo, playerRepo, divRepo)
+	ctx := context.Background()
+
+	pMale := &playerDomain.Player{ID: "pm", Gender: "M", SinglesElo: 1000}
+	pFemale := &playerDomain.Player{ID: "pf", Gender: "F", SinglesElo: 1000}
+	playerRepo.players["pm"] = pMale
+	playerRepo.players["pf"] = pFemale
+
+	res, err := uc.Execute(
+		ctx,
+		"Mixed Teams Tournament",
+		nil,
+		true,
+		"2026-10-01",
+		"2026-10-02",
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
+		tournament.CategoryConfig{Auto: true, Format: "round_robin", PlayerIDs: []string{"pm", "pf"}}, // teamsMixed
+		tournament.CategoryConfig{},
+		nil,
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(res.Events) != 1 {
+		t.Fatalf("expected exactly 1 sub-event for mixed teams, got %d: %+v", len(res.Events), res.Events)
+	}
+	ev := res.Events[0]
+	if ev.EventCategory != "open" {
+		t.Errorf("expected mixed teams event category 'open' (no gender restriction), got %q", ev.EventCategory)
+	}
+	if len(ev.Participants) != 2 {
+		t.Errorf("expected both genders admitted into the mixed teams event, got %d participants", len(ev.Participants))
 	}
 }
 
@@ -177,6 +228,7 @@ func TestCreateEventUseCase_Execute_GenderDivisions(t *testing.T) {
 		"2026-10-02",
 		tournament.CategoryConfig{Auto: true, Format: "single", PlayerIDs: []string{"pm"}},
 		tournament.CategoryConfig{Auto: true, Format: "single", PlayerIDs: []string{"pf"}},
+		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
@@ -241,6 +293,7 @@ func TestCreateEventUseCase_Execute_ZeroPlayerCategoryStillCreatesEvent(t *testi
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
 		[]tournament.CustomEventConfig{
 			{Name: "Wildcard Bracket", Format: "elimination", PlayerIDs: nil},
 		},
@@ -284,6 +337,7 @@ func TestCreateEventUseCase_Execute_AgeCategories(t *testing.T) {
 		"2026-06-01",
 		"2026-06-02",
 		tournament.CategoryConfig{Auto: true, Format: "elimination", PlayerIDs: []string{"p1", "p2"}, AgeCategories: []string{"u13"}},
+		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},

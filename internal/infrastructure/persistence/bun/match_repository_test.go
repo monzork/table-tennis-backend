@@ -808,6 +808,53 @@ func TestMatchRepository_GetSubMatches_And_CreateSubMatches(t *testing.T) {
 	}
 }
 
+func TestMatchRepository_CreateSubMatches_CorbillonPlacesDoublesAtRoundThree(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	parent := &event.Match{
+		ID:        uuid.NewString(),
+		EventID:   f.tournament.ID,
+		MatchType: "teams",
+		TeamA:     []*player.Player{f.players[0]},
+		TeamB:     []*player.Player{f.players[1]},
+		Status:    "scheduled",
+		Stage:     "final",
+	}
+	if err := f.matchRepo.Save(ctx, parent); err != nil {
+		t.Fatalf("Save parent: %v", err)
+	}
+
+	cmd := event.CreateSubMatchesCommand{
+		ParentMatchID: parent.ID,
+		EventID:       f.tournament.ID,
+		Stage:         "final",
+		TeamFormat:    "corbillon",
+		TeamAPlayers:  []string{f.players[0].ID, f.players[1].ID},
+		TeamBPlayers:  []string{f.players[2].ID, f.players[3].ID},
+	}
+	if err := f.matchRepo.CreateSubMatches(ctx, cmd); err != nil {
+		t.Fatalf("CreateSubMatches: %v", err)
+	}
+
+	subs, err := f.matchRepo.GetSubMatches(ctx, parent.ID)
+	if err != nil {
+		t.Fatalf("GetSubMatches: %v", err)
+	}
+	if len(subs) != 5 {
+		t.Fatalf("expected 5 sub-matches, got %d", len(subs))
+	}
+	for _, sub := range subs {
+		wantType := "singles"
+		if sub.RoundNumber == 3 {
+			wantType = "doubles"
+		}
+		if sub.MatchType != wantType {
+			t.Errorf("round %d: MatchType = %q, want %q", sub.RoundNumber, sub.MatchType, wantType)
+		}
+	}
+}
+
 func TestMatchRepository_CreateSubMatches_MissingPlayers(t *testing.T) {
 	f := newMatchTestFixture(t)
 	ctx := context.Background()

@@ -834,8 +834,20 @@ func getSubMatchAlignments(roundNumber int, teamFormat string) (string, string) 
 		case 5:
 			return "C", "X"
 		}
+	} else if teamFormat == "corbillon" {
+		switch roundNumber {
+		case 1:
+			return "A", "X"
+		case 2:
+			return "B", "Y"
+		case 3:
+			return "A & B", "X & Y"
+		case 4:
+			return "A", "Y"
+		case 5:
+			return "B", "X"
+		}
 	} else {
-		// Corbillon or other format
 		switch roundNumber {
 		case 1:
 			return "A", "X"

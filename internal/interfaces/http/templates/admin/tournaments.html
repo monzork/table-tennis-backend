@@ -433,6 +433,50 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Teams Mixed -->
+                    <div class="p-4 rounded-xl border border-white/5 bg-black/20 space-y-3 transition-all hover:border-white/10 flex flex-col justify-between" id="cardTeamsMixed">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white">👥 {{t $.T "admin.tournaments.teams"}}</span>
+                                <span class="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">{{t $.T "admin.tournaments.mixed"}}</span>
+                            </div>
+                            <input type="checkbox" name="autoTeamsMixed" checked onchange="toggleCategory(this, 'TeamsMixed')" class="accent-white h-4 w-4 bg-black/40 border border-white/10 rounded cursor-pointer">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.format_label"}}</label>
+                                <select name="formatTeamsMixed" onchange="document.getElementById('passCountTeamsMixedContainer').style.display = this.value === 'groups_elimination' ? 'block' : 'none'" class="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all appearance-none cursor-pointer">
+                                    <option value="round_robin" selected>{{t $.T "admin.tournaments.fmt_round_robin"}}</option>
+                                    <option value="groups_elimination">{{t $.T "admin.tournaments.fmt_group_ko"}}</option>
+                                    <option value="elimination">{{t $.T "admin.tournaments.fmt_elimination"}}</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1" id="passCountTeamsMixedContainer" style="display: none;">
+                                <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.pass_count_label"}}</label>
+                                <input type="number" name="groupPassCountTeamsMixed" value="2" min="1" class="w-full bg-black/40 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.player_pool_label"}}</label>
+                            <select name="participantIdsTeamsMixed[]" multiple class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-semibold focus:outline-none focus:ring-1 focus:ring-white transition-all h-28 custom-scrollbar">
+                                {{range $.Players}}
+                                <option value="{{.ID}}" selected class="py-1 px-2 hover:bg-white/10 rounded cursor-pointer">{{.FirstNameWithSecond}} {{.LastNameWithSecond}} (Elo: {{.SinglesElo}})</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[8px] uppercase tracking-wider text-gray-500 font-bold">{{t $.T "admin.tournaments.age_categories_label"}}</label>
+                            <div class="flex flex-wrap gap-2">
+                                <label class="flex items-center gap-1 text-[9px] text-gray-400 cursor-pointer"><input type="checkbox" name="ageCategoriesTeamsMixed[]" value="u11" class="age-tier-checkbox accent-white h-3 w-3 bg-black/40 border border-white/10 rounded cursor-pointer"> U11</label>
+                                <label class="flex items-center gap-1 text-[9px] text-gray-400 cursor-pointer"><input type="checkbox" name="ageCategoriesTeamsMixed[]" value="u13" class="age-tier-checkbox accent-white h-3 w-3 bg-black/40 border border-white/10 rounded cursor-pointer"> U13</label>
+                                <label class="flex items-center gap-1 text-[9px] text-gray-400 cursor-pointer"><input type="checkbox" name="ageCategoriesTeamsMixed[]" value="u15" class="age-tier-checkbox accent-white h-3 w-3 bg-black/40 border border-white/10 rounded cursor-pointer"> U15</label>
+                                <label class="flex items-center gap-1 text-[9px] text-gray-400 cursor-pointer"><input type="checkbox" name="ageCategoriesTeamsMixed[]" value="u19" class="age-tier-checkbox accent-white h-3 w-3 bg-black/40 border border-white/10 rounded cursor-pointer"> U19</label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             <div class="space-y-2 pt-4 border-t border-white/5">

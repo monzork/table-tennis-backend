@@ -84,6 +84,7 @@ func TestCreateEventUseCase_RealDB_GenderedDivisionsDoNotCrossOver(t *testing.T)
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
 		tournament.CategoryConfig{},
+		tournament.CategoryConfig{},
 		nil,
 		nil,
 	)

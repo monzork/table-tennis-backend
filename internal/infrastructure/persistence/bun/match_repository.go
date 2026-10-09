@@ -1237,7 +1237,7 @@ func (r *MatchRepository) CreateSubMatches(ctx context.Context, cmd event.Create
 	models := make([]MatchModel, 5)
 	for order := 1; order <= 5; order++ {
 		matchType := "singles"
-		if teamFormat == "olympic" && order == 1 {
+		if (teamFormat == "olympic" && order == 1) || (teamFormat == "corbillon" && order == 3) {
 			matchType = "doubles"
 		}
 		pin := r.GenerateUniquePin(ctx)

@@ -225,7 +225,7 @@ type Event struct {
 	TournamentID          *string
 	SkipElo               bool
 	Teams                 []*Team
-	TeamFormat            string // "olympic", "swaythling", or ""
+	TeamFormat            string // "olympic", "swaythling", "corbillon", or ""
 	NumTables             int
 	HasThirdPlaceMatch    bool
 	Metrics               *TournamentMetrics
@@ -642,7 +642,7 @@ type CreateSubMatchesCommand struct {
 	ParentMatchID string
 	EventID       string
 	Stage         string
-	TeamFormat    string   // "olympic" or "corbillon"
+	TeamFormat    string   // "olympic", "swaythling", or "corbillon"
 	TeamAPlayers  []string // player IDs
 	TeamBPlayers  []string
 }

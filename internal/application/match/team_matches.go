@@ -89,6 +89,20 @@ func (uc *TeamMatchOrchestratorUseCase) UpdateTeamSquads(ctx context.Context, pa
 			case 5:
 				teamAP1, teamBP1 = p3A, p1B
 			}
+		} else if teamFormat == "corbillon" {
+			switch sub.RoundNumber {
+			case 1:
+				teamAP1, teamBP1 = p1A, p1B
+			case 2:
+				teamAP1, teamBP1 = p2A, p2B
+			case 3:
+				teamAP1, teamAP2 = p1A, p2A
+				teamBP1, teamBP2 = p1B, p2B
+			case 4:
+				teamAP1, teamBP1 = p1A, p2B
+			case 5:
+				teamAP1, teamBP1 = p2A, p1B
+			}
 		} else {
 			switch sub.RoundNumber {
 			case 1:

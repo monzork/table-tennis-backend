@@ -124,6 +124,13 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eve
 			case 2:
 				squadAP3, squadBP3 = a1, b1
 			}
+		} else if teamFormat == "corbillon" {
+			switch sm.RoundNumber {
+			case 1:
+				squadAP1, squadBP1 = a1, b1
+			case 2:
+				squadAP2, squadBP2 = a1, b1
+			}
 		} else {
 			switch sm.RoundNumber {
 			case 1:
@@ -267,8 +274,20 @@ func getSubMatchAlignments(roundNumber int, teamFormat string) (string, string) 
 		case 5:
 			return "C", "X"
 		}
+	} else if teamFormat == "corbillon" {
+		switch roundNumber {
+		case 1:
+			return "A", "X"
+		case 2:
+			return "B", "Y"
+		case 3:
+			return "A & B", "X & Y"
+		case 4:
+			return "A", "Y"
+		case 5:
+			return "B", "X"
+		}
 	} else {
-		// Corbillon or other format
 		switch roundNumber {
 		case 1:
 			return "A", "X"

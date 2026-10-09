@@ -92,7 +92,7 @@ func (uc *CreateEventUseCase) Execute(
 	divisionIDs []string,
 	skipElo bool,
 	startDateStr, endDateStr string,
-	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen, singlesOpen CategoryConfig,
+	singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen, teamsMixed, singlesOpen CategoryConfig,
 	customSinglesEvents []CustomEventConfig,
 	existingTournamentIDs []string,
 ) (*tournamentDomain.Tournament, error) {
@@ -125,7 +125,7 @@ func (uc *CreateEventUseCase) Execute(
 
 	// Collect all unique player IDs across all categories and batch-load them
 	allIDSet := make(map[string]bool)
-	for _, cfg := range []CategoryConfig{singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen, singlesOpen} {
+	for _, cfg := range []CategoryConfig{singlesMen, singlesWomen, doublesMen, doublesWomen, doublesMixed, teamsMen, teamsWomen, teamsMixed, singlesOpen} {
 		if !cfg.Auto {
 			continue
 		}
@@ -290,6 +290,7 @@ func (uc *CreateEventUseCase) Execute(
 	processCategory(doublesMixed, "Mixed Doubles", "doubles", "", true)
 	processCategory(teamsMen, "Men's Teams", "teams", "M", false)
 	processCategory(teamsWomen, "Women's Teams", "teams", "F", false)
+	processCategory(teamsMixed, "Mixed Teams", "teams", "", false)
 	processCategory(singlesOpen, "Open Singles", "singles", "", false)
 
 	for _, cfg := range customSinglesEvents {
