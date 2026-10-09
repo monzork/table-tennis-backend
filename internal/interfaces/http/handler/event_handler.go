@@ -631,23 +631,6 @@ func FilterBoardCards(cards []event.BoardCard, q string, divs []string) []event.
 // BuildBoardCards delegates to the application layer so every board shares one implementation.
 var BuildBoardCards = event.BuildBoardCards
 
-func matchExists(matches []tournamentDomain.Match, p1ID, p2ID string, stage string) bool {
-	for _, m := range matches {
-		if m.TeamMatchID != nil {
-			continue
-		}
-		if m.Stage != stage {
-			continue
-		}
-		if len(m.TeamA) > 0 && len(m.TeamB) > 0 {
-			if (m.TeamA[0].ID == p1ID && m.TeamB[0].ID == p2ID) || (m.TeamA[0].ID == p2ID && m.TeamB[0].ID == p1ID) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func (h *EventHandler) Board(c *fiber.Ctx) error {
 	id := c.Params("id")
 	q := c.Query("q", "")

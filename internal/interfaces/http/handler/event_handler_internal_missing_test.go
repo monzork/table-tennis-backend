@@ -12,30 +12,6 @@ func intPtr(i int) *int {
 	return &i
 }
 
-func TestMatchExists_Additional(t *testing.T) {
-	p1 := &playerDomain.Player{ID: "p1"}
-	p2 := &playerDomain.Player{ID: "p2"}
-	m := tournamentDomain.Match{
-		TeamA: []*playerDomain.Player{p1},
-		TeamB: []*playerDomain.Player{p2},
-		Stage: "group",
-	}
-	matches := []tournamentDomain.Match{m}
-
-	if !matchExists(matches, "p1", "p2", "group") {
-		t.Errorf("expected matchExists to be true")
-	}
-	if matchExists(matches, "p3", "p4", "group") {
-		t.Errorf("expected matchExists to be false for non-existent players")
-	}
-	if !matchExists(matches, "p2", "p1", "group") {
-		t.Errorf("expected matchExists to be true regardless of order")
-	}
-	if matchExists(matches, "p1", "p2", "knockout") {
-		t.Errorf("expected matchExists to be false for different stage")
-	}
-}
-
 func TestBuildBoardCards_Additional(t *testing.T) {
 	p1 := &playerDomain.Player{ID: "p1", FirstName: "A", LastName: "A"}
 	p2 := &playerDomain.Player{ID: "p2", FirstName: "B", LastName: "B"}
