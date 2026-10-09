@@ -266,3 +266,47 @@ func TestMatchRepository_GetOccupiedTablesByTournament(t *testing.T) {
 		t.Fatalf("expected 0 occupied tables for unrelated tournament, got %+v", none)
 	}
 }
+
+// A doubles rubber of a team match must load with both partners per side so the
+// board can show who actually plays.
+func TestEventRepository_GetByID_DoublesRubberHasBothPartners(t *testing.T) {
+	f := newMatchTestFixture(t)
+	ctx := context.Background()
+
+	parent := &event.Match{
+		ID: uuid.NewString(), EventID: f.tournament.ID, MatchType: "teams",
+		TeamA: []*player.Player{f.players[0]}, TeamB: []*player.Player{f.players[2]},
+		Status: "in_progress", Stage: "group",
+	}
+	if err := f.matchRepo.Save(ctx, parent); err != nil {
+		t.Fatalf("Save parent: %v", err)
+	}
+	err := f.matchRepo.CreateSubMatches(ctx, event.CreateSubMatchesCommand{
+		ParentMatchID: parent.ID, EventID: f.tournament.ID, Stage: "group", TeamFormat: "olympic",
+		TeamAPlayers: []string{f.players[0].ID, f.players[1].ID}, TeamBPlayers: []string{f.players[2].ID, f.players[3].ID},
+	})
+	if err != nil {
+		t.Fatalf("CreateSubMatches: %v", err)
+	}
+	subs, _ := f.matchRepo.GetSubMatches(ctx, parent.ID)
+	err = f.matchRepo.UpdateSubMatchSquads(ctx, event.UpdateSubMatchSquadsCommand{
+		ParentMatchID: parent.ID,
+		Assignments: []event.SubMatchSquadAssignment{{
+			SubMatchID: subs[0].ID, TeamAPlayer1ID: f.players[0].ID, TeamAPlayer2ID: f.players[1].ID,
+			TeamBPlayer1ID: f.players[2].ID, TeamBPlayer2ID: f.players[3].ID,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("UpdateSubMatchSquads: %v", err)
+	}
+
+	ev, err := f.eventRepo.GetByID(ctx, f.tournament.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	for _, m := range ev.Matches {
+		if m.ID == subs[0].ID && (len(m.TeamA) != 2 || len(m.TeamB) != 2) {
+			t.Fatalf("expected 2 partners per side, got %d vs %d", len(m.TeamA), len(m.TeamB))
+		}
+	}
+}

@@ -451,6 +451,13 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		}
 
+		// Line-up changed who plays whom: refresh boards
+		h.broadcastToTournamentOrEvent(c, c.FormValue("tournamentId"), map[string]string{
+			"tournament":   "score_updated",
+			"tournamentId": c.FormValue("tournamentId"),
+			"matchId":      matchID,
+		})
+
 		// Re-render the team matchup form in-place
 		return h.renderTeamMatchForm(c, matchID, c.FormValue("tournamentId"), parent.Stage)
 	}
@@ -736,6 +743,13 @@ func (h *MatchHandler) UpdatePublicScore(c *fiber.Ctx) error {
 		if err != nil {
 			return c.SendString("<div class='text-red-400 font-mono text-sm'>Failed to update sub-match: " + err.Error() + "</div>")
 		}
+
+		// Line-up changed who plays whom: refresh boards
+		h.broadcastToTournamentOrEvent(c, c.FormValue("tournamentId"), map[string]string{
+			"tournament":   "score_updated",
+			"tournamentId": c.FormValue("tournamentId"),
+			"matchId":      matchID,
+		})
 
 		// Update table number if provided in squad update form
 		tableNumberStr := c.FormValue("tableNumber")

@@ -58,6 +58,7 @@ type BoardCard struct {
 // SubMatchCard is one rubber inside a team match card.
 type SubMatchCard struct {
 	Number      int
+	IsDoubles   bool
 	Status      string
 	PlayerAName string
 	PlayerBName string

@@ -374,11 +374,21 @@ func TestSubMatchCards_OrderedAndScoped(t *testing.T) {
 func TestBuildBoardCards_TeamsPlaceholderSubMatches(t *testing.T) {
 	a := &playerDomain.Player{ID: "ta", FirstName: "UNAN"}
 	b := &playerDomain.Player{ID: "tb", FirstName: "UAM"}
-	ev := &tournamentDomain.Event{Type: "teams", Matches: []tournamentDomain.Match{
+	ev := &tournamentDomain.Event{Type: "teams", TeamFormat: "corbillon", Matches: []tournamentDomain.Match{
 		{ID: "m1", MatchType: "teams", Status: "scheduled", Stage: "group", TeamA: []*playerDomain.Player{a}, TeamB: []*playerDomain.Player{b}},
 	}}
 	scheduled, _, _ := BuildBoardCards(ev, nil)
-	if len(scheduled) != 1 || len(scheduled[0].SubMatches) != 5 || scheduled[0].SubMatches[4].Number != 5 {
+	if len(scheduled) != 1 || len(scheduled[0].SubMatches) != 5 || scheduled[0].SubMatches[4].Number != 5 || !scheduled[0].SubMatches[2].IsDoubles || scheduled[0].SubMatches[0].IsDoubles {
 		t.Fatalf("expected 5 placeholder rubbers, got %+v", scheduled)
+	}
+}
+
+func TestPlaceholderSubMatches_DoublesSlotByFormat(t *testing.T) {
+	for format, want := range map[string]int{"": 1, "olympic": 1, "corbillon": 3, "swaythling": 0} {
+		for _, s := range placeholderSubMatches(format) {
+			if s.IsDoubles != (s.Number == want) {
+				t.Errorf("%q: rubber %d IsDoubles=%v", format, s.Number, s.IsDoubles)
+			}
+		}
 	}
 }

@@ -699,6 +699,16 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 			EloDeltaB:   mm.EloDeltaB,
 		}
 
+		// Doubles rubbers of a team match carry both partners per side.
+		if mm.TeamMatchID != nil {
+			if p := partnerFromModel(mm.TeamAPlayer2); p != nil {
+				m.TeamA = append(m.TeamA, p)
+			}
+			if p := partnerFromModel(mm.TeamBPlayer2); p != nil {
+				m.TeamB = append(m.TeamB, p)
+			}
+		}
+
 		// For parent team matches (MatchType=teams, no TeamMatchID), compute sub-match wins
 		// and store them as a single virtual set so ScoreA()/ScoreB() reflect team scores correctly.
 		if mm.MatchType == "teams" && mm.TeamMatchID == nil {
@@ -1331,6 +1341,20 @@ func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel
 				RoundNumber: mm.RoundNumber,
 				EloDeltaA:   mm.EloDeltaA,
 				EloDeltaB:   mm.EloDeltaB,
+			}
+
+			// Doubles rubbers of a team match carry both partners per side.
+			if mm.TeamMatchID != nil {
+				if mm.TeamAPlayer2ID != nil {
+					if p := partnerFromModel(playerCache[*mm.TeamAPlayer2ID]); p != nil {
+						m.TeamA = append(m.TeamA, p)
+					}
+				}
+				if mm.TeamBPlayer2ID != nil {
+					if p := partnerFromModel(playerCache[*mm.TeamBPlayer2ID]); p != nil {
+						m.TeamB = append(m.TeamB, p)
+					}
+				}
 			}
 
 			// Virtual set for parent team matches
@@ -2171,4 +2195,12 @@ func (r *EventRepository) UpdateEventIDBulk(ctx context.Context, eventIDs []stri
 		Exec(ctx)
 
 	return err
+}
+
+// partnerFromModel converts a doubles partner row to a domain player; nil when absent.
+func partnerFromModel(pm *PlayerModel) *player.Player {
+	if pm == nil {
+		return nil
+	}
+	return &player.Player{ID: pm.ID.String(), FirstName: pm.FirstName, LastName: pm.LastName, SinglesElo: pm.SinglesElo, DoublesElo: pm.DoublesElo}
 }

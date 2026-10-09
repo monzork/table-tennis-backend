@@ -413,7 +413,7 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 		for _, cards := range [][]BoardCard{scheduled, inProgress} {
 			for i := range cards {
 				if len(cards[i].SubMatches) == 0 {
-					cards[i].SubMatches = placeholderSubMatches()
+					cards[i].SubMatches = placeholderSubMatches(t.TeamFormat)
 				}
 			}
 		}
@@ -422,11 +422,18 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 	return
 }
 
-// placeholderSubMatches returns the five unplayed rubbers of a team match.
-func placeholderSubMatches() []SubMatchCard {
+// placeholderSubMatches returns the five unplayed rubbers of a team match,
+// flagging the doubles rubber of the event's team format.
+func placeholderSubMatches(teamFormat string) []SubMatchCard {
+	doubles := 1 // olympic (default): doubles first
+	if teamFormat == "corbillon" {
+		doubles = 3
+	} else if teamFormat == "swaythling" {
+		doubles = 0 // five singles
+	}
 	subs := make([]SubMatchCard, teamRubbers)
 	for i := range subs {
-		subs[i] = SubMatchCard{Number: i + 1, Status: "scheduled", PlayerAName: "TBD", PlayerBName: "TBD"}
+		subs[i] = SubMatchCard{Number: i + 1, IsDoubles: i+1 == doubles, Status: "scheduled", PlayerAName: "TBD", PlayerBName: "TBD"}
 	}
 	return subs
 }
@@ -499,7 +506,7 @@ func subMatchCards(matches []tournamentDomain.Match, parentID string, nameOf fun
 	sort.SliceStable(subs, func(i, j int) bool { return subs[i].RoundNumber < subs[j].RoundNumber })
 	cards := make([]SubMatchCard, len(subs))
 	for i, s := range subs {
-		cards[i] = SubMatchCard{Number: i + 1, Status: s.Status, PlayerAName: nameOf(s.TeamA), PlayerBName: nameOf(s.TeamB), ScoreA: s.ScoreA(), ScoreB: s.ScoreB()}
+		cards[i] = SubMatchCard{Number: i + 1, IsDoubles: s.MatchType == "doubles", Status: s.Status, PlayerAName: nameOf(s.TeamA), PlayerBName: nameOf(s.TeamB), ScoreA: s.ScoreA(), ScoreB: s.ScoreB()}
 	}
 	return cards
 }
