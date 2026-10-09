@@ -3,6 +3,7 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -109,4 +110,27 @@ func (s *SupabaseStorage) SignedURL(ctx context.Context, path string, expiresInS
 		return "", err
 	}
 	return s.baseURL + "/storage/v1" + out.SignedURL, nil
+}
+
+// Ping lists at most one object in the bucket. It is a cheap authenticated
+// call used to keep a free-tier project from being paused for inactivity.
+func (s *SupabaseStorage) Ping(ctx context.Context) error {
+	url := fmt.Sprintf("%s/storage/v1/object/list/%s", s.baseURL, s.bucket)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader([]byte(`{"prefix":"","limit":1}`)))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("apikey", s.apiKey)
+	req.Header.Set("Authorization", "Bearer "+s.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("supabase storage ping failed: %s", resp.Status)
+	}
+	return nil
 }

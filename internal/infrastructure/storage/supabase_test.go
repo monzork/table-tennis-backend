@@ -113,3 +113,26 @@ func TestSupabaseStorageUploadError(t *testing.T) {
 		t.Fatal("expected error on non-2xx response")
 	}
 }
+
+func TestSupabaseStoragePing(t *testing.T) {
+	status := http.StatusOK
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/storage/v1/object/list/player-ids" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer test-key" {
+			t.Errorf("missing/wrong auth header: %s", r.Header.Get("Authorization"))
+		}
+		w.WriteHeader(status)
+	}))
+	defer srv.Close()
+
+	s := NewSupabaseStorage(srv.URL, "test-key", "player-ids")
+	if err := s.Ping(context.Background()); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	status = http.StatusUnauthorized
+	if err := s.Ping(context.Background()); err == nil {
+		t.Fatal("expected error on non-200")
+	}
+}
