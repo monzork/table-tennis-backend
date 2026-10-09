@@ -407,8 +407,31 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 		scheduled[i].QueuePosition = i + 1
 	}
 
+	// Team cards whose rubbers aren't created yet (created when the match is
+	// started) still show M1..M5 as placeholders.
+	if t.Type == "teams" {
+		for _, cards := range [][]BoardCard{scheduled, inProgress} {
+			for i := range cards {
+				if len(cards[i].SubMatches) == 0 {
+					cards[i].SubMatches = placeholderSubMatches()
+				}
+			}
+		}
+	}
+
 	return
 }
+
+// placeholderSubMatches returns the five unplayed rubbers of a team match.
+func placeholderSubMatches() []SubMatchCard {
+	subs := make([]SubMatchCard, teamRubbers)
+	for i := range subs {
+		subs[i] = SubMatchCard{Number: i + 1, Status: "scheduled", PlayerAName: "TBD", PlayerBName: "TBD"}
+	}
+	return subs
+}
+
+const teamRubbers = 5
 
 // FilterBoardCards filters a slice of BoardCards by search query and division filters.
 func FilterBoardCards(cards []BoardCard, q string, divs []string) []BoardCard {

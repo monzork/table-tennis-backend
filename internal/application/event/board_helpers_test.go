@@ -370,3 +370,15 @@ func TestSubMatchCards_OrderedAndScoped(t *testing.T) {
 		t.Fatalf("unexpected sub-match cards: %+v", got)
 	}
 }
+
+func TestBuildBoardCards_TeamsPlaceholderSubMatches(t *testing.T) {
+	a := &playerDomain.Player{ID: "ta", FirstName: "UNAN"}
+	b := &playerDomain.Player{ID: "tb", FirstName: "UAM"}
+	ev := &tournamentDomain.Event{Type: "teams", Matches: []tournamentDomain.Match{
+		{ID: "m1", MatchType: "teams", Status: "scheduled", Stage: "group", TeamA: []*playerDomain.Player{a}, TeamB: []*playerDomain.Player{b}},
+	}}
+	scheduled, _, _ := BuildBoardCards(ev, nil)
+	if len(scheduled) != 1 || len(scheduled[0].SubMatches) != 5 || scheduled[0].SubMatches[4].Number != 5 {
+		t.Fatalf("expected 5 placeholder rubbers, got %+v", scheduled)
+	}
+}
