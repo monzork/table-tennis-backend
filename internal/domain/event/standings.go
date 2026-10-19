@@ -47,6 +47,23 @@ func BuildStandings(players []*player.Player, matches []Match) []PlayerStanding 
 		}
 	}
 
+	// Before any group match is finished there is nothing to rank on, so keep
+	// the group's stored (seeding) order — otherwise the Elo fallback in
+	// ResolveITTFTies would undo every manual reorder within the group.
+	anyPlayed := false
+	for _, s := range stats {
+		if s.Played > 0 {
+			anyPlayed = true
+			break
+		}
+	}
+	if !anyPlayed {
+		for i := range stats {
+			stats[i].Rank = i + 1
+		}
+		return stats
+	}
+
 	// Group players by overall Wins count
 	groups := make(map[int][]*PlayerStanding)
 	var uniqueWins []int

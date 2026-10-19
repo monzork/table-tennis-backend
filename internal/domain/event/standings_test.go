@@ -227,3 +227,17 @@ func TestResolveITTFTies_CompletelyTiedFallsBackToElo(t *testing.T) {
 		t.Errorf("Expected Elo-descending fallback order p2,p3,p1, got %s,%s,%s", result[0].Player.ID, result[1].Player.ID, result[2].Player.ID)
 	}
 }
+
+func TestBuildStandings_NoMatchesPlayedKeepsGroupOrder(t *testing.T) {
+	// Lower-rated player placed first in the group (manual reorder) must stay
+	// first while no group match has been played, not be re-sorted by Elo.
+	low := &player.Player{ID: "low", SinglesElo: 1000}
+	high := &player.Player{ID: "high", SinglesElo: 1500}
+	standings := BuildStandings([]*player.Player{low, high}, nil)
+	if standings[0].Player.ID != "low" || standings[1].Player.ID != "high" {
+		t.Errorf("Expected stored order [low high], got [%s %s]", standings[0].Player.ID, standings[1].Player.ID)
+	}
+	if standings[0].Rank != 1 || standings[1].Rank != 2 {
+		t.Errorf("Expected ranks 1,2, got %d,%d", standings[0].Rank, standings[1].Rank)
+	}
+}
