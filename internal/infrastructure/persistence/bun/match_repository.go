@@ -931,13 +931,7 @@ func (r *MatchRepository) GetMatchByParticipants(ctx context.Context, eventID, p
 	}
 
 	var model MatchModel
-	err = ExtractDB(ctx, r.db).NewSelect().Model(&model).
-		Where("event_id = ?", tUUID).
-		Where("team_match_id IS NULL").
-		Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
-			p1UUID, p2UUID, p2UUID, p1UUID).
-		Where("stage = ?", stage).
-		Scan(ctx)
+	err = r.selectByParticipants(ctx, ExtractDB(ctx, r.db), &model, tUUID, p1UUID, p2UUID, stage)
 
 	if err != nil {
 		return nil, err
@@ -1156,6 +1150,38 @@ func (r *MatchRepository) ResetMatch(ctx context.Context, matchID string) error 
 
 // FindOrCreateMatch looks for an existing match between p1 and p2 in a tournament/stage,
 // and creates one if it doesn't exist. Returns the match ID.
+// participantIDs expands a participant ID into every ID a stored match may
+// carry for it. Board cards and score forms for doubles/teams events identify
+// a side by its team ID, but matches.team_*_player_1_id references one of the
+// team's players -- so a lookup by the raw team ID never found the existing
+// match, and every save (e.g. each Forfeit click) inserted a duplicate.
+func participantIDs(ctx context.Context, db bun.IDB, id uuid.UUID) []uuid.UUID {
+	ids := []uuid.UUID{id}
+	var members []TeamPlayerModel
+	if db.NewSelect().Model(&members).Where("team_id = ?", id).Scan(ctx) == nil {
+		for _, m := range members {
+			ids = append(ids, m.PlayerID)
+		}
+	}
+	return ids
+}
+
+// selectByParticipants loads the oldest top-level match between p1 and p2
+// (either side, either order) in the given event stage. p1/p2 may be player
+// IDs or team IDs.
+func (r *MatchRepository) selectByParticipants(ctx context.Context, db bun.IDB, dest *MatchModel, eventID, p1, p2 uuid.UUID, stage string) error {
+	ids1, ids2 := participantIDs(ctx, db, p1), participantIDs(ctx, db, p2)
+	return db.NewSelect().Model(dest).
+		Where("event_id = ?", eventID).
+		Where("team_match_id IS NULL").
+		Where("((team_a_player_1_id IN (?) AND team_b_player_1_id IN (?)) OR (team_a_player_1_id IN (?) AND team_b_player_1_id IN (?)))",
+			bun.In(ids1), bun.In(ids2), bun.In(ids2), bun.In(ids1)).
+		Where("stage = ?", stage).
+		OrderExpr("created_at ASC").
+		Limit(1).
+		Scan(ctx)
+}
+
 func (r *MatchRepository) FindOrCreateMatch(ctx context.Context, eventID, p1ID, p2ID, stage, matchType string) (string, error) {
 	tUUID, err := uuid.Parse(eventID)
 	if err != nil {
@@ -1170,7 +1196,13 @@ func (r *MatchRepository) FindOrCreateMatch(ctx context.Context, eventID, p1ID, 
 		return "", err
 	}
 
-	// Team matches are keyed by a member player's ID (matches.team_*_player_1_id
+	var existing MatchModel
+	err = r.selectByParticipants(ctx, r.db, &existing, tUUID, p1UUID, p2UUID, stage)
+	if err == nil {
+		return existing.ID.String(), nil
+	}
+
+	// Not found. Team matches are keyed by a member player's ID (matches.team_*_player_1_id
 	// references players), so resolve the incoming team IDs to one.
 	if matchType == "teams" {
 		for _, id := range []*uuid.UUID{&p1UUID, &p2UUID} {
@@ -1179,18 +1211,6 @@ func (r *MatchRepository) FindOrCreateMatch(ctx context.Context, eventID, p1ID, 
 				*id = tp.PlayerID
 			}
 		}
-	}
-
-	var existing MatchModel
-	err = r.db.NewSelect().Model(&existing).
-		Where("event_id = ?", tUUID).
-		Where("team_match_id IS NULL").
-		Where("((team_a_player_1_id = ? AND team_b_player_1_id = ?) OR (team_a_player_1_id = ? AND team_b_player_1_id = ?))",
-			p1UUID, p2UUID, p2UUID, p1UUID).
-		Where("stage = ?", stage).
-		Scan(ctx)
-	if err == nil {
-		return existing.ID.String(), nil
 	}
 
 	// Not found — create it
