@@ -1221,14 +1221,22 @@ func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel
 		tpByTeam[tp.TeamID] = append(tpByTeam[tp.TeamID], tp)
 	}
 
-	// For doubles/teams, build a reverse map: player ID → team ID
-	playerToTeam := make(map[uuid.UUID]uuid.UUID)
+	// For doubles/teams, build a reverse map per event: player ID → team ID.
+	// It must be keyed by event: the same player is often on a team in
+	// several events of one tournament (e.g. Women's Doubles and Mixed
+	// Teams), and a single tournament-wide map let the last event loaded
+	// win -- tagging the player's matches with another event's team, so the
+	// board couldn't match them and kept showing played pairings as pending.
+	playerToTeam := make(map[uuid.UUID]map[uuid.UUID]uuid.UUID)
 	teamMap := make(map[uuid.UUID]*TeamModel)
 	for _, tm := range allTeamModels {
 		tmCopy := tm
 		teamMap[tm.ID] = &tmCopy
+		if playerToTeam[tm.EventID] == nil {
+			playerToTeam[tm.EventID] = make(map[uuid.UUID]uuid.UUID)
+		}
 		for _, tp := range tpByTeam[tm.ID] {
-			playerToTeam[tp.PlayerID] = tm.ID
+			playerToTeam[tm.EventID][tp.PlayerID] = tm.ID
 		}
 	}
 
@@ -1267,10 +1275,10 @@ func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel
 			isTeamType := tType == "doubles" || tType == "mixed_doubles" || tType == "teams"
 
 			if isTeamType && mm.TeamMatchID == nil {
-				if tid, ok := playerToTeam[mm.TeamAPlayer1ID]; ok {
+				if tid, ok := playerToTeam[mm.EventID][mm.TeamAPlayer1ID]; ok {
 					teamAID = tid
 				}
-				if tid, ok := playerToTeam[mm.TeamBPlayer1ID]; ok {
+				if tid, ok := playerToTeam[mm.EventID][mm.TeamBPlayer1ID]; ok {
 					teamBID = tid
 				}
 			}
