@@ -35,7 +35,9 @@ func ErrorHandler(err error) error {
 		return fiber.NewError(fiber.StatusNotFound, "Resource not found")
 	}
 
-	if strings.Contains(errMsg, "restricted:") || strings.Contains(errMsg, "already") || strings.Contains(errMsg, "cannot") {
+	if strings.Contains(errMsg, "restricted:") || strings.Contains(errMsg, "already") || strings.Contains(errMsg, "cannot") ||
+		strings.Contains(errMsg, "Only female athletes") || strings.Contains(errMsg, "Only male athletes") ||
+		strings.Contains(errMsg, "doubles teams") {
 		return fiber.NewError(fiber.StatusBadRequest, errMsg)
 	}
 

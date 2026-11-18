@@ -105,6 +105,55 @@ func TestMatchHandler(t *testing.T) {
 		}
 	})
 
+	walkover := func(side, tournamentID string) int {
+		data := url.Values{}
+		data.Set("tournamentId", tournamentID)
+		data.Set("stage", "final")
+		data.Set("walkover", side)
+		req := httptest.NewRequest("PUT", fmt.Sprintf("/matches/%s/score", m.ID), strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Cookie", sessionCookie)
+		req.Header.Set("HX-Request", "true")
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("test request failed: %v", err)
+		}
+		return resp.StatusCode
+	}
+
+	for _, tc := range []struct{ side, winner string }{{"A", "B"}, {"B", "A"}} {
+		t.Run("Walkover forfeiting "+tc.side, func(t *testing.T) {
+			if code := walkover(tc.side, tourney.ID); code != 200 {
+				t.Fatalf("expected 200 OK, got %v", code)
+			}
+			got, err := matchRepo.GetByID(ctx, m.ID)
+			if err != nil {
+				t.Fatalf("GetByID: %v", err)
+			}
+			if got.Status != "finished" || got.WinnerTeam != tc.winner || !got.IsForfeit {
+				t.Fatalf("expected finished forfeit won by %s, got status=%q winner=%q forfeit=%v", tc.winner, got.Status, got.WinnerTeam, got.IsForfeit)
+			}
+			if len(got.Sets) != 0 {
+				t.Fatalf("forfeit must not persist sets, got %d", len(got.Sets))
+			}
+			if err := matchRepo.ResetMatch(ctx, m.ID); err != nil {
+				t.Fatalf("ResetMatch: %v", err)
+			}
+		})
+	}
+
+	t.Run("Walkover invalid side", func(t *testing.T) {
+		if code := walkover("C", tourney.ID); code != 400 {
+			t.Fatalf("expected 400, got %v", code)
+		}
+	})
+
+	t.Run("Walkover nonexistent tournament", func(t *testing.T) {
+		if code := walkover("A", uuid.New().String()); code == 200 {
+			t.Fatal("expected error status for nonexistent tournament")
+		}
+	})
+
 	t.Run("Double Forfeit nonexistent tournament", func(t *testing.T) {
 		data := url.Values{}
 		data.Set("tournamentId", uuid.New().String())

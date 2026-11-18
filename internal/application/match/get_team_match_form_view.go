@@ -46,6 +46,13 @@ type TeamMatchFormView struct {
 	Pin          string
 	RefereeID    string
 	TableNumber  *int
+	// Status is the parent team match's status (scheduled, in_progress,
+	// finished, double_forfeit).
+	Status string
+	// Swapped is true when the displayed TeamA is the parent match's side
+	// B (the line-up put team B's players in the A slots), so a
+	// walkover for the displayed TeamA must be recorded against side B.
+	Swapped bool
 }
 
 type GetTeamMatchFormViewUseCase struct {
@@ -149,8 +156,8 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eve
 		}
 	}
 
+	isSwapped := false
 	if squadAP1 != "" && teamB != nil {
-		isSwapped := false
 		for _, p := range teamB.Players {
 			if p.ID == squadAP1 {
 				isSwapped = true
@@ -258,6 +265,8 @@ func (uc *GetTeamMatchFormViewUseCase) Execute(ctx context.Context, matchID, eve
 		Pin:          parent.Pin,
 		RefereeID:    refereeIDStr,
 		TableNumber:  parent.TableNumber,
+		Status:       parent.Status,
+		Swapped:      isSwapped,
 	}, nil
 }
 

@@ -390,6 +390,8 @@ var Translations = map[string]map[string]string{
 		"team_form.match":          "Match",
 		"team_form.unplayed":       "Unplayed",
 		"team_form.close_matchup":  "Close Matchup",
+		"team_form.walkover":       "Team Walkover",
+		"team_form.walkover_hint":  "Use when a whole team defaults. No line-up needed.",
 
 		// Score confirmation modal
 		"confirm.title":       "Confirm Score",
@@ -1341,6 +1343,8 @@ var Translations = map[string]map[string]string{
 		"team_form.match":          "Partido",
 		"team_form.unplayed":       "Sin Jugar",
 		"team_form.close_matchup":  "Cerrar Enfrentamiento",
+		"team_form.walkover":       "Abandono por Equipo",
+		"team_form.walkover_hint":  "Úsalo cuando todo un equipo no se presenta. No requiere alineación.",
 
 		// Score confirmation modal
 		"confirm.title":       "Confirmar Resultado",

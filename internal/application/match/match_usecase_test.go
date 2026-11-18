@@ -911,6 +911,37 @@ func TestUpdateMatchScoreUseCase(t *testing.T) {
 		}
 	})
 
+	t.Run("execute walkover builds sets from the stage rule", func(t *testing.T) {
+		rule := e.GetEffectiveStageRule("group")
+		for _, side := range []string{"A", "B"} {
+			if err := uc.ExecuteWalkover(ctx, "m1", "e1", "group", side); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !m.IsForfeit {
+				t.Error("expected IsForfeit")
+			}
+			if len(m.Sets) != rule.BestOf/2+1 {
+				t.Fatalf("expected %d sets, got %d", rule.BestOf/2+1, len(m.Sets))
+			}
+			s := m.Sets[0]
+			if (side == "A") != (s.ScoreB > s.ScoreA) {
+				t.Errorf("forfeit by %s should make the other side win sets, got %+v", side, s)
+			}
+		}
+	})
+
+	t.Run("execute walkover rejects invalid side", func(t *testing.T) {
+		if err := uc.ExecuteWalkover(ctx, "m1", "e1", "group", "X"); err == nil {
+			t.Fatal("expected error for invalid side")
+		}
+	})
+
+	t.Run("execute walkover on nonexistent tournament", func(t *testing.T) {
+		if err := uc.ExecuteWalkover(ctx, "m1", "nonexistent", "group", "A"); err == nil {
+			t.Fatal("expected error for nonexistent tournament")
+		}
+	})
+
 	t.Run("execute double forfeit on nonexistent tournament", func(t *testing.T) {
 		err := uc.ExecuteDoubleForfeit(ctx, "m1", "nonexistent")
 		if err == nil {
@@ -922,6 +953,12 @@ func TestUpdateMatchScoreUseCase(t *testing.T) {
 		e.Status = "finished"
 		err := uc.Execute(ctx, "m1", []string{"11-9"}, "e1", "group", false)
 		if err == nil {
+			t.Fatal("expected error on finished tournament")
+		}
+	})
+
+	t.Run("execute walkover on finished tournament error", func(t *testing.T) {
+		if err := uc.ExecuteWalkover(ctx, "m1", "e1", "group", "A"); err == nil {
 			t.Fatal("expected error on finished tournament")
 		}
 	})

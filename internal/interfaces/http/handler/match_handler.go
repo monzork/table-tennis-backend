@@ -462,6 +462,34 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		return h.renderTeamMatchForm(c, matchID, c.FormValue("tournamentId"), parent.Stage)
 	}
 
+	if side := c.FormValue("walkover"); side != "" {
+		matchID := c.Params("id")
+		if matchID == "" {
+			matchID = c.FormValue("matchId")
+		}
+		eventID := c.FormValue("tournamentId")
+		stage := c.FormValue("stage")
+		if stage == "" {
+			stage = "group"
+		}
+
+		if err := h.updateScoreUC.ExecuteWalkover(c.Context(), matchID, eventID, stage, side); err != nil {
+			return ErrorHandler(err)
+		}
+
+		h.broadcastToTournamentOrEvent(c, eventID, map[string]string{
+			"tournament":   "score_updated",
+			"tournamentId": eventID,
+			"matchId":      matchID,
+			"matchStatus":  "finished",
+		})
+
+		if c.Get("HX-Request") != "" {
+			c.Set("HX-Refresh", "true")
+		}
+		return c.SendStatus(fiber.StatusOK)
+	}
+
 	if c.FormValue("doubleForfeit") == "true" {
 		matchID := c.Params("id")
 		if matchID == "" {
@@ -1114,6 +1142,8 @@ func (h *MatchHandler) renderTeamMatchFormInternal(c *fiber.Ctx, matchID, eventI
 		"Pin":          view.Pin,
 		"RefereeID":    view.RefereeID,
 		"TableNumber":  view.TableNumber,
+		"Status":       view.Status,
+		"Swapped":      view.Swapped,
 	})
 }
 

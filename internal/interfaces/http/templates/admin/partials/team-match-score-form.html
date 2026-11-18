@@ -162,6 +162,34 @@
     {{end}}
 </div>
 
+{{if and (ne .Status "finished") (ne .Status "double_forfeit")}}
+<!-- Team-level walkover: works even when no line-up/rubbers exist yet -->
+<div class="space-y-2 mb-6 border-b border-white/10 pb-6">
+    <h3 class="text-[10px] font-bold uppercase text-gray-400 tracking-wider">{{t .T "team_form.walkover"}}</h3>
+    <p class="text-[10px] text-gray-500">{{t .T "team_form.walkover_hint"}}</p>
+    <div class="flex gap-2">
+        <button type="button"
+            hx-put="/matches/{{.MatchID}}/score"
+            hx-vals='{"tournamentId": "{{.EventID}}", "matchId": "{{.MatchID}}", "stage": "{{.Stage}}", "walkover": "{{if .Swapped}}B{{else}}A{{end}}"}'
+            class="flex-1 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 font-extrabold py-2 rounded-xl transition-all uppercase tracking-widest text-[9px]">
+            {{t .T "score_form.forfeit"}} {{if .TeamA}}{{.TeamA.Name}}{{else}}A{{end}}
+        </button>
+        <button type="button"
+            hx-put="/matches/{{.MatchID}}/score"
+            hx-vals='{"tournamentId": "{{.EventID}}", "matchId": "{{.MatchID}}", "stage": "{{.Stage}}", "walkover": "{{if .Swapped}}A{{else}}B{{end}}"}'
+            class="flex-1 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 font-extrabold py-2 rounded-xl transition-all uppercase tracking-widest text-[9px]">
+            {{t .T "score_form.forfeit"}} {{if .TeamB}}{{.TeamB.Name}}{{else}}B{{end}}
+        </button>
+    </div>
+    <button type="button"
+        hx-put="/matches/{{.MatchID}}/score"
+        hx-vals='{"tournamentId": "{{.EventID}}", "matchId": "{{.MatchID}}", "doubleForfeit": "true"}'
+        class="w-full bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 text-red-400 font-extrabold py-2 rounded-xl transition-all uppercase tracking-widest text-[9px]">
+        {{t .T "score_form.forfeit_both"}}
+    </button>
+</div>
+{{end}}
+
 <div class="flex gap-3">
     <button type="button"
         onclick="document.getElementById('score-modal').classList.add('hidden')"

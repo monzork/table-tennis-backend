@@ -79,6 +79,53 @@ func (uc *UpdateMatchScoreUseCase) Execute(
 	return uc.matchRepo.UpdateScore(ctx, matchIDStr, sets, stageRule, isForfeit)
 }
 
+// ExecuteWalkover records a match as won by walkover: forfeitingSide ("A"
+// or "B") defaulted, so the other side wins. The winning sets are built
+// here from the stage rule (PointsToWin-0 for just enough sets to clinch
+// the best-of), so it works for any match -- including a team matchup
+// whose rubbers were never created because a team has no players yet.
+// Like any forfeit, no sets are persisted and no Elo changes.
+func (uc *UpdateMatchScoreUseCase) ExecuteWalkover(
+	ctx context.Context,
+	matchIDStr string,
+	tournamentIDStr string,
+	stage string,
+	forfeitingSide string,
+) error {
+	if forfeitingSide != "A" && forfeitingSide != "B" {
+		return fmt.Errorf("invalid forfeiting side %q: cannot record walkover", forfeitingSide)
+	}
+
+	t, err := uc.tournamentRepo.GetByID(ctx, tournamentIDStr)
+	if err != nil {
+		return fmt.Errorf("event not found: %w", err)
+	}
+
+	if t.Status == "finished" {
+		return fmt.Errorf("cannot update score of a finished event")
+	}
+
+	stageRule := t.GetEffectiveStageRule(stage)
+	points := stageRule.PointsToWin
+	if points <= 0 {
+		points = 11
+	}
+	if stageRule.PointsMargin > points {
+		points = stageRule.PointsMargin
+	}
+	setsToWin := stageRule.BestOf/2 + 1
+
+	sets := make([]event.MatchSet, setsToWin)
+	for i := range sets {
+		sets[i] = event.MatchSet{Number: i + 1, ScoreA: points}
+		if forfeitingSide == "A" {
+			sets[i] = event.MatchSet{Number: i + 1, ScoreB: points}
+		}
+	}
+
+	return uc.matchRepo.UpdateScore(ctx, matchIDStr, sets, stageRule, true)
+}
+
 // ExecuteDoubleForfeit records a match as a no-contest: both sides
 // defaulted, so it finishes with no winner, no Elo, and no bracket
 // advancement.
