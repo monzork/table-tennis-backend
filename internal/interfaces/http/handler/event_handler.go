@@ -283,8 +283,9 @@ func (h *EventHandler) Delete(c *fiber.Ctx) error {
 		return ErrorHandler(err)
 	}
 	if c.Get("HX-Request") != "" {
-		if c.Get("HX-Current-URL") != "" && fmt.Sprintf("/admin/events/%s", id) == c.Get("HX-Current-URL") {
-			c.Set("HX-Redirect", "/admin/events")
+		// HX-Current-URL is the full URL, so match on the path suffix.
+		if strings.HasSuffix(c.Get("HX-Current-URL"), "/admin/events/"+id) {
+			c.Set("HX-Redirect", "/admin/tournaments")
 		}
 		return c.SendString("")
 	}
