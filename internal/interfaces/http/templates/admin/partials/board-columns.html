@@ -135,6 +135,27 @@
           </button>
           {{end}}
         </div>
+        {{/* Walkovers straight from the card; the match row is created on demand when MatchID is empty. */}}
+        <div class="flex gap-1.5 w-full">
+          <button type="button" hx-swap="none" hx-confirm="{{t $.T "score_form.forfeit"}} {{.PlayerAName}}?"
+            hx-put="/matches/{{if .MatchID}}{{.MatchID}}{{else}}nil{{end}}/score"
+            hx-vals='{"tournamentId": "{{$t.ID}}", "stage": "{{.Stage}}", "p1Id": "{{.P1Id}}", "p2Id": "{{.P2Id}}", "walkover": "A"}'
+            class="flex-1 truncate text-[9px] font-bold uppercase tracking-widest text-orange-400 border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 rounded-lg py-1.5 transition-all">
+            {{t $.T "score_form.forfeit"}} A
+          </button>
+          <button type="button" hx-swap="none" hx-confirm="{{t $.T "score_form.forfeit"}} {{.PlayerBName}}?"
+            hx-put="/matches/{{if .MatchID}}{{.MatchID}}{{else}}nil{{end}}/score"
+            hx-vals='{"tournamentId": "{{$t.ID}}", "stage": "{{.Stage}}", "p1Id": "{{.P1Id}}", "p2Id": "{{.P2Id}}", "walkover": "B"}'
+            class="flex-1 truncate text-[9px] font-bold uppercase tracking-widest text-orange-400 border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 rounded-lg py-1.5 transition-all">
+            {{t $.T "score_form.forfeit"}} B
+          </button>
+          <button type="button" hx-swap="none" hx-confirm="{{t $.T "score_form.forfeit_both"}}?"
+            hx-put="/matches/{{if .MatchID}}{{.MatchID}}{{else}}nil{{end}}/score"
+            hx-vals='{"tournamentId": "{{$t.ID}}", "stage": "{{.Stage}}", "p1Id": "{{.P1Id}}", "p2Id": "{{.P2Id}}", "doubleForfeit": "true"}'
+            class="flex-1 truncate text-[9px] font-bold uppercase tracking-widest text-red-400 border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 rounded-lg py-1.5 transition-all">
+            {{t $.T "score_form.forfeit_both"}}
+          </button>
+        </div>
       </div>
     </div>
     {{else}}

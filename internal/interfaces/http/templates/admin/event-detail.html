@@ -203,6 +203,14 @@
                   class="text-gray-700 hover:text-red-400 transition-colors p-1 opacity-0 group-hover/row:opacity-100">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
+                <button type="button"
+                  title="{{t $.T "admin.event_detail.unenroll_redistribute_title"}}"
+                  hx-delete="/events/{{$.Event.ID}}/participants/{{.Player.ID}}?redistribute=true"
+                  hx-confirm="{{t $.T "admin.event_detail.unenroll_redistribute_confirm_prefix"}} {{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}} {{t $.T "admin.event_detail.unenroll_redistribute_confirm_suffix"}}"
+                  hx-swap="none"
+                  class="text-gray-700 hover:text-red-400 transition-colors p-1 opacity-0 group-hover/row:opacity-100">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M5 15a8 8 0 0013 3M19 9a8 8 0 00-13-3"/></svg>
+                </button>
                 {{end}}
               </div>
             </td>

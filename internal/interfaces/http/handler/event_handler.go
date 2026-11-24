@@ -48,6 +48,13 @@ type EventHandler struct {
 	boardViewUC            *event.GetBoardViewUseCase
 	editFormViewUC         *event.GetEditFormViewUseCase
 	inactivityDecayUC      *tournamentApp.ApplyInactivityDecayUseCase
+	forfeitParticipantUC   *event.ForfeitParticipantUseCase
+}
+
+// WithForfeitParticipant wires the "forfeit all matches" action.
+func (h *EventHandler) WithForfeitParticipant(uc *event.ForfeitParticipantUseCase) *EventHandler {
+	h.forfeitParticipantUC = uc
+	return h
 }
 
 // WithInactivityDecay wires the optional inactivity-decay pass, run after an
@@ -220,6 +227,13 @@ func (h *EventHandler) RemoveParticipant(c *fiber.Ctx) error {
 		fmt.Println(err)
 		return ErrorHandler(err)
 	}
+	// ?redistribute=true re-deals every group without the removed player;
+	// by default the other groups stay exactly as they are.
+	if c.QueryBool("redistribute") {
+		if err := h.regenerateSeedsUC.Execute(c.Context(), tournamentID); err != nil {
+			return ErrorHandler(fmt.Errorf("player removed, but groups were not redistributed: %w", err))
+		}
+	}
 	if c.Get("HX-Request") != "" {
 		c.Set("HX-Refresh", "true")
 		return c.SendStatus(fiber.StatusOK)
@@ -390,6 +404,24 @@ func (h *EventHandler) MovePlayer(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
 	}
 	return c.SendString("OK")
+}
+
+// UnassignPlayer removes one player from their group (back to the unassigned tray).
+func (h *EventHandler) UnassignPlayer(c *fiber.Ctx) error {
+	if err := h.movePlayerUC.Unassign(c.Context(), c.Params("id"), c.Params("playerId")); err != nil {
+		return ErrorHandler(err)
+	}
+	c.Set("HX-Refresh", "true")
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// ForfeitParticipant records a walkover loss for every undecided match of a player/team.
+func (h *EventHandler) ForfeitParticipant(c *fiber.Ctx) error {
+	if err := h.forfeitParticipantUC.Execute(c.Context(), c.Params("id"), c.Params("playerId")); err != nil {
+		return ErrorHandler(err)
+	}
+	c.Set("HX-Refresh", "true")
+	return c.SendStatus(fiber.StatusOK)
 }
 
 func (h *EventHandler) SaveKnockoutSeeds(c *fiber.Ctx) error {

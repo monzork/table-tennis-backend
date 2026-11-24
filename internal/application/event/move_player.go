@@ -25,3 +25,15 @@ func (uc *MovePlayerUseCase) Execute(ctx context.Context, tournamentIDStr, playe
 
 	return uc.repo.UpdateGroups(ctx, t)
 }
+
+// Unassign removes one player from their group without touching the others.
+func (uc *MovePlayerUseCase) Unassign(ctx context.Context, eventID, playerID string) error {
+	t, err := uc.repo.GetByID(ctx, eventID)
+	if err != nil {
+		return err
+	}
+	if err := t.UnassignPlayer(playerID); err != nil {
+		return err
+	}
+	return uc.repo.UpdateGroups(ctx, t)
+}

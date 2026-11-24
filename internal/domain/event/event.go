@@ -357,6 +357,21 @@ func (t *Event) RemoveMatch(matchID string) error {
 	return errors.New("match not found")
 }
 
+// UnassignPlayer takes a player/team out of whichever group holds them,
+// leaving every other group untouched; they fall back to the unassigned tray.
+func (t *Event) UnassignPlayer(playerID string) error {
+	for i := range t.Groups {
+		g := &t.Groups[i]
+		for j, p := range g.Players {
+			if p.ID == playerID {
+				g.Players = append(g.Players[:j:j], g.Players[j+1:]...)
+				return nil
+			}
+		}
+	}
+	return errors.New("player is not in any group")
+}
+
 func (t *Event) MovePlayer(playerID string, targetGroupID string, targetIndex int) error {
 	var movingPlayer *player.Player
 	if t.Type == "teams" || t.Type == "doubles" || t.Type == "mixed_doubles" {

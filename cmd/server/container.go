@@ -157,6 +157,7 @@ func NewContainer(store *session.Store, cfg Config) *Container {
 	notificationRepo := bun.NewPushSubscriptionRepository(bun.DB)
 	broadcastNotificationUC := notification.NewBroadcastPushNotificationUseCase(notificationRepo, cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey)
 
+	tournamentHandler = tournamentHandler.WithForfeitParticipant(event.NewForfeitParticipantUseCase(eventRepo, matchRepo, updateScoreUC))
 	matchHandler := handler.NewMatchHandler(createMatchUC, finishMatchUC, updateScoreUC, playerRepo, matchRepo, eventRepo, tournamentRepo, finishTournamentUC, broadcastNotificationUC, teamMatchUC, startMatchUC, divisionRepo)
 
 	distUC := leaderboard.NewGetDivisionDistributionUseCase(chartGenerator)

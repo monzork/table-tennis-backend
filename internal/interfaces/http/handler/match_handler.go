@@ -417,6 +417,29 @@ func (h *MatchHandler) renderScoreFormInternal(c *fiber.Ctx, templateName string
 	})
 }
 
+// resolveOrCreateMatch returns matchID, or -- for a scheduled board card whose
+// match row doesn't exist yet ("" / "nil") -- finds/creates it from the
+// p1Id/p2Id form values (side A = p1Id).
+func (h *MatchHandler) resolveOrCreateMatch(c *fiber.Ctx, matchID, eventID, stage string) (string, error) {
+	if matchID != "" && matchID != "nil" {
+		return matchID, nil
+	}
+	p1, p2 := c.FormValue("p1Id"), c.FormValue("p2Id")
+	if eventID == "" || p1 == "" || p2 == "" {
+		return "", fiber.NewError(fiber.StatusBadRequest, "matchId or p1Id/p2Id required")
+	}
+	matchType := "singles"
+	if t, err := h.tournamentRepo.GetByID(c.Context(), eventID); err == nil {
+		switch t.Type {
+		case "doubles", "mixed_doubles":
+			matchType = "doubles"
+		case "teams":
+			matchType = "teams"
+		}
+	}
+	return h.matchRepo.FindOrCreateMatch(c.Context(), eventID, p1, p2, stage, matchType)
+}
+
 // UpdateScore accepts set scores via JSON/form and persists them, auto-resolving winner.
 func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 	if c.FormValue("action") == "update_squads" {
@@ -472,6 +495,10 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 		if stage == "" {
 			stage = "group"
 		}
+		matchID, err := h.resolveOrCreateMatch(c, matchID, eventID, stage)
+		if err != nil {
+			return ErrorHandler(err)
+		}
 
 		if err := h.updateScoreUC.ExecuteWalkover(c.Context(), matchID, eventID, stage, side); err != nil {
 			return ErrorHandler(err)
@@ -496,6 +523,10 @@ func (h *MatchHandler) UpdateScore(c *fiber.Ctx) error {
 			matchID = c.FormValue("matchId")
 		}
 		eventID := c.FormValue("tournamentId")
+		matchID, err := h.resolveOrCreateMatch(c, matchID, eventID, "group")
+		if err != nil {
+			return ErrorHandler(err)
+		}
 
 		if err := h.updateScoreUC.ExecuteDoubleForfeit(c.Context(), matchID, eventID); err != nil {
 			return ErrorHandler(err)
