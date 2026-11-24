@@ -244,10 +244,10 @@
                           <button type="button" title="{{t $.T "bracket.forfeit_all"}}"
                             hx-post="/admin/events/{{$t.ID}}/players/{{.Player.ID}}/forfeit" hx-swap="none"
                             hx-confirm="{{t $.T "bracket.forfeit_all_confirm"}} {{.Player.FirstNameWithSecond}} {{.Player.LastNameWithSecond}}?"
-                            class="text-[9px] font-black uppercase text-orange-400 hover:text-orange-300 border border-orange-500/30 rounded px-1.5 py-0.5">W.O.</button>
+                            aria-label="{{t $.T "bracket.forfeit_all"}}" class="text-[9px] font-black uppercase text-orange-400 hover:text-orange-300 border border-orange-500/30 rounded px-2 py-1 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-orange-400">W.O.</button>
                           <button type="button" title="{{t $.T "bracket.remove_from_group"}}"
                             hx-post="/admin/events/{{$t.ID}}/players/{{.Player.ID}}/unassign" hx-swap="none"
-                            class="text-gray-500 hover:text-red-400 px-1">✕</button>
+                            aria-label="{{t $.T "bracket.remove_from_group"}}" class="text-gray-500 hover:text-red-400 px-2 py-1 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-red-400">✕</button>
                         </div>
                         {{end}}
                       </td>

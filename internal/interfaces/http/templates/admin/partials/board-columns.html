@@ -60,7 +60,7 @@
       </div>
       <div class="space-y-1.5">
         <div class="flex items-center gap-2 bg-white/5 border border-white/5 rounded-xl px-3 py-2">
-          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerAName}}</span>
+          <span class="text-xs font-bold text-white break-words leading-tight min-w-0 flex-1">{{.PlayerAName}}</span>
           {{if .P1InMatch}}
             <span class="text-[9px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded animate-pulse">{{t $.T "board.in_match"}}</span>
           {{end}}
@@ -71,7 +71,7 @@
           {{end}}
         </div>
         <div class="flex items-center gap-2 bg-white/5 border border-white/5 rounded-xl px-3 py-2">
-          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerBName}}</span>
+          <span class="text-xs font-bold text-white break-words leading-tight min-w-0 flex-1">{{.PlayerBName}}</span>
           {{if .P2InMatch}}
             <span class="text-[9px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded animate-pulse">{{t $.T "board.in_match"}}</span>
           {{end}}
@@ -137,13 +137,13 @@
         </div>
         {{/* Walkovers straight from the card; the match row is created on demand when MatchID is empty. */}}
         <div class="flex gap-1.5 w-full">
-          <button type="button" hx-swap="none" hx-confirm="{{t $.T "score_form.forfeit"}} {{.PlayerAName}}?"
+          <button type="button" hx-swap="none" title="{{t $.T "score_form.forfeit"}} {{.PlayerAName}}" hx-confirm="{{t $.T "score_form.forfeit"}} {{.PlayerAName}}?"
             hx-put="/matches/{{if .MatchID}}{{.MatchID}}{{else}}nil{{end}}/score"
             hx-vals='{"tournamentId": "{{$t.ID}}", "stage": "{{.Stage}}", "p1Id": "{{.P1Id}}", "p2Id": "{{.P2Id}}", "walkover": "A"}'
             class="flex-1 truncate text-[9px] font-bold uppercase tracking-widest text-orange-400 border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 rounded-lg py-1.5 transition-all">
             {{t $.T "score_form.forfeit"}} A
           </button>
-          <button type="button" hx-swap="none" hx-confirm="{{t $.T "score_form.forfeit"}} {{.PlayerBName}}?"
+          <button type="button" hx-swap="none" title="{{t $.T "score_form.forfeit"}} {{.PlayerBName}}" hx-confirm="{{t $.T "score_form.forfeit"}} {{.PlayerBName}}?"
             hx-put="/matches/{{if .MatchID}}{{.MatchID}}{{else}}nil{{end}}/score"
             hx-vals='{"tournamentId": "{{$t.ID}}", "stage": "{{.Stage}}", "p1Id": "{{.P1Id}}", "p2Id": "{{.P2Id}}", "walkover": "B"}'
             class="flex-1 truncate text-[9px] font-bold uppercase tracking-widest text-orange-400 border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 rounded-lg py-1.5 transition-all">
@@ -189,11 +189,11 @@
       </div>
       <div class="space-y-1.5">
         <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerAName}}</span>
+          <span class="text-xs font-bold text-white break-words leading-tight min-w-0 flex-1">{{.PlayerAName}}</span>
           <span class="text-lg font-black text-white tabular-nums italic">{{.ScoreA}}</span>
         </div>
         <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerBName}}</span>
+          <span class="text-xs font-bold text-white break-words leading-tight min-w-0 flex-1">{{.PlayerBName}}</span>
           <span class="text-lg font-black text-white tabular-nums italic">{{.ScoreB}}</span>
         </div>
       </div>
@@ -249,12 +249,12 @@
       </div>
       <div class="space-y-1.5">
         <div class="flex items-center gap-2 px-3 py-2 rounded-xl border {{if gt .ScoreA .ScoreB}}bg-green-400/10 border-green-400/20{{else}}bg-white/5 border-white/5{{end}}">
-          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerAName}}</span>
+          <span class="text-xs font-bold text-white break-words leading-tight min-w-0 flex-1">{{.PlayerAName}}</span>
           {{if .EloDeltaA}}<span class="text-[9px] font-bold tabular-nums {{if gt .ScoreA .ScoreB}}text-green-400{{else}}text-red-400{{end}}">{{eloDelta .EloDeltaA}}{{if .EloDeltaIsPreview}}<span class="text-gray-500 italic font-normal ml-0.5">({{t $.T "player_stats.elo_estimated"}})</span>{{end}}</span>{{end}}
           <span class="text-lg font-black {{if gt .ScoreA .ScoreB}}text-green-400{{else}}text-gray-500{{end}} tabular-nums italic">{{.ScoreA}}</span>
         </div>
         <div class="flex items-center gap-2 px-3 py-2 rounded-xl border {{if gt .ScoreB .ScoreA}}bg-green-400/10 border-green-400/20{{else}}bg-white/5 border-white/5{{end}}">
-          <span class="text-xs font-bold text-white truncate flex-1">{{.PlayerBName}}</span>
+          <span class="text-xs font-bold text-white break-words leading-tight min-w-0 flex-1">{{.PlayerBName}}</span>
           {{if .EloDeltaB}}<span class="text-[9px] font-bold tabular-nums {{if gt .ScoreB .ScoreA}}text-green-400{{else}}text-red-400{{end}}">{{eloDelta .EloDeltaB}}{{if .EloDeltaIsPreview}}<span class="text-gray-500 italic font-normal ml-0.5">({{t $.T "player_stats.elo_estimated"}})</span>{{end}}</span>{{end}}
           <span class="text-lg font-black {{if gt .ScoreB .ScoreA}}text-green-400{{else}}text-gray-500{{end}} tabular-nums italic">{{.ScoreB}}</span>
         </div>

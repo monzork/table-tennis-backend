@@ -11,6 +11,9 @@ import (
 	playerDomain "table-tennis-backend/internal/domain/player"
 )
 
+// restBetweenMatches is how long a player is kept off the table after a match.
+const restBetweenMatches = 15 * time.Minute
+
 // BuildBoardCards builds scheduled, in-progress, and finished BoardCard slices from a
 // single tournament event and its division definitions. The greedy rest-interleaving
 // scheduler ensures players have adequate rest between matches.
@@ -272,24 +275,24 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 
 	now := time.Now()
 
+	// lastActivity holds the moment each player is next free to play: when
+	// their last match ended plus the rest period. An in-progress match ends
+	// "now" at the earliest (its UpdatedAt is the start time, not the end).
+	// Walkovers aren't played, so they neither tire a player nor count as a
+	// game played.
 	for _, m := range t.Matches {
-		if m.Status == "in_progress" || m.Status == "finished" {
-			tAct := now
-			if m.UpdatedAt != nil {
-				tAct = *m.UpdatedAt
+		if (m.Status != "in_progress" && m.Status != "finished") || m.IsForfeit {
+			continue
+		}
+		free := now.Add(restBetweenMatches)
+		if m.Status == "finished" && m.UpdatedAt != nil {
+			free = m.UpdatedAt.Add(restBetweenMatches)
+		}
+		for _, p := range append(append([]*playerDomain.Player{}, m.TeamA...), m.TeamB...) {
+			if lastActivity[p.ID].Before(free) {
+				lastActivity[p.ID] = free
 			}
-			for _, p := range m.TeamA {
-				if lastActivity[p.ID].Before(tAct) {
-					lastActivity[p.ID] = tAct
-				}
-				matchesPlayed[p.ID]++
-			}
-			for _, p := range m.TeamB {
-				if lastActivity[p.ID].Before(tAct) {
-					lastActivity[p.ID] = tAct
-				}
-				matchesPlayed[p.ID]++
-			}
+			matchesPlayed[p.ID]++
 		}
 	}
 
@@ -367,8 +370,8 @@ func BuildBoardCards(t *tournamentDomain.Event, divs []*divisionDomain.Division)
 				estStart = bestPenalty
 			}
 
-			// Give them 15 mins of rest for the next match they might play
-			nextAvail := estStart.Add(15 * time.Minute)
+			// Give them the rest period before the next match they might play
+			nextAvail := estStart.Add(restBetweenMatches)
 
 			estStartCopy := estStart // Copy for pointer
 			picked.EstimatedStartTime = &estStartCopy

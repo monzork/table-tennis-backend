@@ -2,6 +2,7 @@ package event
 
 import (
 	"testing"
+	"time"
 
 	tournamentDomain "table-tennis-backend/internal/domain/event"
 	playerDomain "table-tennis-backend/internal/domain/player"
@@ -403,5 +404,42 @@ func TestBuildBoardCards_SkipEloHidesEloEstimates(t *testing.T) {
 	c := finished[0]
 	if c.ProjectedEloWinA != nil || c.ProjectedEloLossB != nil || c.EloDeltaA != nil || c.EloDeltaIsPreview {
 		t.Fatalf("skip-elo event must not show Elo estimates: %+v", c)
+	}
+}
+
+func TestBuildBoardCards_RestPeriod(t *testing.T) {
+	p1 := &playerDomain.Player{ID: "p1", FirstName: "A", LastName: "A"}
+	p2 := &playerDomain.Player{ID: "p2", FirstName: "B", LastName: "B"}
+	p3 := &playerDomain.Player{ID: "p3", FirstName: "C", LastName: "C"}
+	p4 := &playerDomain.Player{ID: "p4", FirstName: "D", LastName: "D"}
+	p5 := &playerDomain.Player{ID: "p5", FirstName: "E", LastName: "E"}
+	ago := time.Now().Add(-5 * time.Minute)
+
+	est := func(finished tournamentDomain.Match) map[string]*time.Time {
+		ev := &tournamentDomain.Event{Type: "singles", Matches: []tournamentDomain.Match{
+			finished,
+			{ID: "next", Status: "scheduled", Stage: "group", TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p3}},
+			{ID: "fresh", Status: "scheduled", Stage: "group", TeamA: []*playerDomain.Player{p4}, TeamB: []*playerDomain.Player{p5}},
+		}}
+		sched, _, _ := BuildBoardCards(ev, nil)
+		out := map[string]*time.Time{}
+		for _, c := range sched {
+			out[c.MatchID] = c.EstimatedStartTime
+		}
+		return out
+	}
+
+	// Played match ended 5 min ago -> p1 rests until 10 min from now.
+	got := est(tournamentDomain.Match{ID: "done", Status: "finished", Stage: "group", UpdatedAt: &ago,
+		TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}})
+	if d := time.Until(*got["next"]); d < 9*time.Minute || d > 11*time.Minute {
+		t.Errorf("expected ~10m rest left for p1, got %v", d)
+	}
+
+	// A walkover is not played: no rest, so the match can start right away.
+	got = est(tournamentDomain.Match{ID: "done", Status: "finished", IsForfeit: true, Stage: "group", UpdatedAt: &ago,
+		TeamA: []*playerDomain.Player{p1}, TeamB: []*playerDomain.Player{p2}})
+	if d := time.Until(*got["next"]); d > time.Minute {
+		t.Errorf("walkover must not impose rest, got %v", d)
 	}
 }
