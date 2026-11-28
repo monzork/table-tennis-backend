@@ -348,8 +348,8 @@ func TestBracketGenerator_GenderDivisionsOptedInButMixedCategory(t *testing.T) {
 	}
 
 	br := bracket.BuildBracket(mixedEvent, divs, map[string]string{})
-	if len(br.Divisions) != 1 || !br.Divisions[0].IsUnclassified {
-		t.Fatalf("expected mixed-category event to ignore gender-specific bands even when opted in, got %+v", br.Divisions)
+	if len(br.Divisions) != 1 || br.Divisions[0].ID != "open" || br.Divisions[0].IsUnclassified || len(br.Divisions[0].Players) != 2 {
+		t.Fatalf("expected one open bracket with both players, ignoring gender-specific bands, got %+v", br.Divisions)
 	}
 }
 

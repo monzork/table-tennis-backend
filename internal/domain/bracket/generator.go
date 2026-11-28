@@ -262,7 +262,12 @@ func BuildBracket(t *event.Event, divs []*division.Division, tmap map[string]str
 		return ei > ej
 	})
 
-	if t.SkipElo || t.SkipDivisionSplit || t.Format == "single_division_multiple_brackets" {
+	// Gender-specific bands only apply to "men"/"women" events. An event using
+	// them but opened to both genders matches no band at all, so play it as a
+	// single bracket rather than listing everyone as unclassified.
+	genderBandsUnusable := t.UseGenderDivisions && t.EventCategory != "men" && t.EventCategory != "women"
+
+	if t.SkipElo || t.SkipDivisionSplit || genderBandsUnusable || t.Format == "single_division_multiple_brackets" {
 		openPlayers := participants
 		var openGroupID string
 		if t.Format == "elimination" {
