@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"table-tennis-backend/internal/domain/bracket"
 	"time"
 
 	"table-tennis-backend/internal/domain/division"
@@ -1995,11 +1996,6 @@ func BuildTournamentPdfContent(pdf *fpdf.Fpdf, t *event.Event, divs []*division.
 	}
 }
 
-type GroupStanding struct {
-	Players   []*player.Player
-	Standings []event.PlayerStanding
-}
-
 func isGroupFinished(t *event.Event, g *event.Group) bool {
 	expectedMatches := len(g.Players) * (len(g.Players) - 1) / 2
 	finished := 0
@@ -2037,7 +2033,7 @@ func getITTFKnockoutSeeds(t *event.Event, divID, divName string, players []*play
 		passCount = 2
 	}
 
-	var groupsStandings []GroupStanding
+	var groupsStandings []bracket.Group
 	for _, g := range divRRGroups {
 		var rgMatches []event.Match
 		for _, m := range t.Matches {
@@ -2064,129 +2060,13 @@ func getITTFKnockoutSeeds(t *event.Event, divID, divName string, players []*play
 			}
 		}
 		st := event.BuildStandings(g.Players, rgMatches)
-		groupsStandings = append(groupsStandings, GroupStanding{
+		groupsStandings = append(groupsStandings, bracket.Group{
 			Players:   g.Players,
 			Standings: st,
 		})
 	}
 
-	return buildITTFKnockoutSeeds(groupsStandings, int(passCount))
-}
-
-// buildITTFKnockoutSeeds places each round-robin group's advancing players
-// into knockout seed slots 1..totalAdvancing, keeping players from the same
-// group as far apart in the bracket as possible (ITTF-style separation) --
-// ported from domain/bracket.buildITTFKnockoutSeeds, which the live
-// event/admin bracket pages use; this used to be a simpler top-half/
-// bottom-half-only split that could disagree with the domain version's
-// seed assignment for the 2nd/3rd-place layers once more than 2 groups or a
-// passCount above 2 was involved, putting a player in a visibly different
-// bracket position in the PDF than on the actual event page.
-func buildITTFKnockoutSeeds(groups []GroupStanding, passCount int) []*player.Player {
-	numGroups := len(groups)
-	if numGroups == 0 || passCount == 0 {
-		return nil
-	}
-
-	totalAdvancing := 0
-	for _, g := range groups {
-		take := passCount
-		if take > len(g.Standings) {
-			take = len(g.Standings)
-		}
-		totalAdvancing += take
-	}
-	if totalAdvancing == 0 {
-		return nil
-	}
-
-	bracketSize := nextPow2(totalAdvancing)
-	arrangement := getSeedingArrangement(bracketSize)
-
-	numRegions := nextPow2(passCount)
-	if numRegions < 2 {
-		numRegions = 2
-	}
-	if numRegions > bracketSize {
-		numRegions = bracketSize
-	}
-	seedRegion := regionsBySeed(arrangement, numRegions)
-
-	// Result slice: index i -> player with seed (i+1).
-	result := make([]*player.Player, totalAdvancing)
-
-	// Layer 0: place group winners at seeds 1..numGroups.
-	winnerRegion := make([]int, numGroups)
-	// usedRegions[gi][r] counts how many of group gi's players have already
-	// landed in region r, so later layers can prefer whichever region that
-	// group hasn't used yet instead of only ever alternating between two.
-	usedRegions := make([][]int, numGroups)
-	for gi := range usedRegions {
-		usedRegions[gi] = make([]int, numRegions)
-	}
-	for gi, g := range groups {
-		if len(g.Standings) == 0 {
-			continue
-		}
-		result[gi] = g.Standings[0].Player
-		winnerRegion[gi] = seedRegion[gi+1]
-		usedRegions[gi][winnerRegion[gi]]++
-	}
-
-	// Layers 1+: runners-up, 3rd-place, etc.
-	nextSlot := numGroups // first available seed index after layer 0
-
-	for layer := 1; layer < passCount; layer++ {
-		layerSize := numGroups
-		// Collect this layer's open slots, bucketed by region.
-		regionSlots := make([][]int, numRegions)
-		for i := nextSlot; i < nextSlot+layerSize && i < totalAdvancing; i++ {
-			seedNum := i + 1
-			r, ok := seedRegion[seedNum]
-			if !ok {
-				r = numRegions - 1
-			}
-			regionSlots[r] = append(regionSlots[r], i)
-		}
-		regionCursor := make([]int, numRegions)
-
-		for gi, g := range groups {
-			if layer >= len(g.Standings) {
-				continue
-			}
-			p := g.Standings[layer].Player
-
-			// Prefer whichever region this group has used the fewest times
-			// so far (ties broken by region order, for determinism), among
-			// regions that still have an open slot this layer.
-			pref := -1
-			for r := 0; r < numRegions; r++ {
-				if regionCursor[r] >= len(regionSlots[r]) {
-					continue
-				}
-				if pref == -1 || usedRegions[gi][r] < usedRegions[gi][pref] {
-					pref = r
-				}
-			}
-			if pref == -1 {
-				continue // no open slot anywhere this layer (shouldn't happen)
-			}
-			slotIdx := regionSlots[pref][regionCursor[pref]]
-			regionCursor[pref]++
-			result[slotIdx] = p
-			usedRegions[gi][pref]++
-		}
-
-		nextSlot += layerSize
-	}
-
-	var out []*player.Player
-	for _, p := range result {
-		if p != nil {
-			out = append(out, p)
-		}
-	}
-	return out
+	return bracket.KnockoutSeeds(groupsStandings, passCount, t.BestExtraQualifiers, t.KnockoutFillSize)
 }
 
 // regionsBySeed maps each seed value in arrangement to a 0-based region

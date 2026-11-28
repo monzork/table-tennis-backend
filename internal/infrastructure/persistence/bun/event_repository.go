@@ -83,6 +83,8 @@ func (r *EventRepository) saveTx(ctx context.Context, tx bun.IDB, t *event.Event
 		GroupCount:            t.GroupCount,
 		GroupPassCount:        t.GroupPassCount,
 		LosersGroupPassCount:  t.LosersGroupPassCount,
+		BestExtraQualifiers:   t.BestExtraQualifiers,
+		KnockoutFillSize:      t.KnockoutFillSize,
 		RegistrationOpen:      t.RegistrationOpen,
 		TournamentID:          tournamentIDPtr,
 		SkipElo:               t.SkipElo,
@@ -258,6 +260,8 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]*event.Event, error) {
 			GroupCount:            m.GroupCount,
 			GroupPassCount:        m.GroupPassCount,
 			LosersGroupPassCount:  m.LosersGroupPassCount,
+			BestExtraQualifiers:   m.BestExtraQualifiers,
+			KnockoutFillSize:      m.KnockoutFillSize,
 			RegistrationOpen:      m.RegistrationOpen,
 			TournamentID:          tournamentIDPtr,
 			SkipElo:               m.SkipElo,
@@ -377,6 +381,8 @@ func (r *EventRepository) GetByIDLite(ctx context.Context, idStr string) (*event
 		GroupCount:            model.GroupCount,
 		GroupPassCount:        model.GroupPassCount,
 		LosersGroupPassCount:  model.LosersGroupPassCount,
+		BestExtraQualifiers:   model.BestExtraQualifiers,
+		KnockoutFillSize:      model.KnockoutFillSize,
 		RegistrationOpen:      model.RegistrationOpen,
 		TournamentID:          tournamentIDPtr,
 		SkipElo:               model.SkipElo,
@@ -756,6 +762,8 @@ func (r *EventRepository) GetByID(ctx context.Context, idStr string) (*event.Eve
 		GroupCount:            model.GroupCount,
 		GroupPassCount:        model.GroupPassCount,
 		LosersGroupPassCount:  model.LosersGroupPassCount,
+		BestExtraQualifiers:   model.BestExtraQualifiers,
+		KnockoutFillSize:      model.KnockoutFillSize,
 		RegistrationOpen:      model.RegistrationOpen,
 		TournamentID:          tournamentIDPtr,
 		SkipElo:               model.SkipElo,
@@ -808,6 +816,8 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			GroupCount:            t.GroupCount,
 			GroupPassCount:        t.GroupPassCount,
 			LosersGroupPassCount:  t.LosersGroupPassCount,
+			BestExtraQualifiers:   t.BestExtraQualifiers,
+			KnockoutFillSize:      t.KnockoutFillSize,
 			RegistrationOpen:      t.RegistrationOpen,
 			TournamentID:          tournamentIDPtr,
 			SkipElo:               t.SkipElo,
@@ -822,7 +832,7 @@ func (r *EventRepository) Update(ctx context.Context, t *event.Event) error {
 			UseGenderDivisions:    t.UseGenderDivisions,
 		}
 
-		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "age_category", "status", "start_date", "end_date", "group_count", "group_pass_count", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked", "skip_division_split").Exec(ctx)
+		_, err = tx.NewUpdate().Model(model).WherePK().Column("name", "type", "format", "event_category", "age_category", "status", "start_date", "end_date", "group_count", "group_pass_count", "losers_group_pass_count", "best_extra_qualifiers", "knockout_fill_size", "registration_open", "tournament_id", "skip_elo", "team_format", "winner_name", "num_tables", "has_third_place_match", "knockout_brackets_count", "metrics", "manual_seeding_locked", "skip_division_split").Exec(ctx)
 		if err != nil {
 			return err
 		}
@@ -1567,6 +1577,8 @@ func (r *EventRepository) hydrateEvents(ctx context.Context, models []EventModel
 			GroupCount:           m.GroupCount,
 			GroupPassCount:       m.GroupPassCount,
 			LosersGroupPassCount: m.LosersGroupPassCount,
+			BestExtraQualifiers:  m.BestExtraQualifiers,
+			KnockoutFillSize:     m.KnockoutFillSize,
 			RegistrationOpen:     m.RegistrationOpen,
 			TournamentID:         tournamentIDPtr,
 			SkipElo:              m.SkipElo,

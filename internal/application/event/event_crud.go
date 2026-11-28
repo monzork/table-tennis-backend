@@ -112,6 +112,8 @@ type UpdateEventCommand struct {
 	GroupCount           int
 	GroupPassCount       int
 	LosersGroupPassCount int
+	BestExtraQualifiers  int
+	KnockoutFillSize     int
 	StageRuleOverrides   []StageRuleOverride
 	SkipElo              bool
 	TournamentID         *string
@@ -167,6 +169,8 @@ func (uc *UpdateTournamentUseCase) Execute(ctx context.Context, cmd UpdateEventC
 	t.SkipElo = cmd.SkipElo
 
 	t.LosersGroupPassCount = cmd.LosersGroupPassCount
+	t.BestExtraQualifiers = cmd.BestExtraQualifiers
+	t.KnockoutFillSize = cmd.KnockoutFillSize
 	t.TournamentID = cmd.TournamentID
 	t.TeamFormat = cmd.TeamFormat
 	t.NumTables = cmd.NumTables

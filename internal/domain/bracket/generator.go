@@ -1,9 +1,12 @@
 package bracket
 
 import (
+	"cmp"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
+	"strconv"
 	"table-tennis-backend/internal/domain/division"
 	"table-tennis-backend/internal/domain/event"
 	"table-tennis-backend/internal/domain/player"
@@ -528,7 +531,9 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 					return maxInferred
 				}
 
-				if infMain := inferPassCount(0); infMain > 0 {
+				// With extra qualifiers some groups legitimately send one more
+				// player than the rest, so the count can't be inferred.
+				if infMain := inferPassCount(0); infMain > 0 && t.BestExtraQualifiers <= 0 && t.KnockoutFillSize <= 0 {
 					mainPassCount = infMain
 				}
 				if bracketsCount > 1 {
@@ -563,6 +568,9 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 					}
 				}
 
+				autoCount, extraCount := QualifierPlaces(dv.Groups, mainPassCount, t.BestExtraQualifiers, t.KnockoutFillSize)
+				extraGroups := bestExtraGroups(dv.Groups, autoCount, extraCount)
+
 				if kg != nil {
 					tierAdvancing = kg.Players
 					tierGroupID = kg.ID
@@ -578,21 +586,25 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 						var startIdx, endIdx int
 						if tier == 0 {
 							startIdx = 0
-							endIdx = mainPassCount
+							endIdx = autoCount
 						} else {
-							startIdx = mainPassCount + (tier-1)*losersPassCount
+							startIdx = autoCount + (tier-1)*losersPassCount
 							endIdx = startIdx + losersPassCount
 						}
 
 						for idx := startIdx; idx < endIdx && idx < len(g.Standings); idx++ {
+							// Already through to the main bracket as an extra qualifier.
+							if tier > 0 && idx == autoCount && slices.Contains(extraGroups, gi) {
+								continue
+							}
 							tierGroups[gi].Standings = append(tierGroups[gi].Standings, g.Standings[idx])
 						}
 					}
-					currentPassCount := mainPassCount
-					if tier > 0 {
-						currentPassCount = losersPassCount
+					if tier == 0 {
+						tierAdvancing = KnockoutSeeds(dv.Groups, mainPassCount, t.BestExtraQualifiers, t.KnockoutFillSize)
+					} else {
+						tierAdvancing = buildITTFKnockoutSeeds(tierGroups, losersPassCount, nil)
 					}
-					tierAdvancing = buildITTFKnockoutSeeds(tierGroups, currentPassCount)
 					tierGroupID = fmt.Sprintf("virtual-knockout-%s-tier%d", divID, tier)
 				}
 
@@ -947,6 +959,151 @@ func nextPow2(n int) int {
 	return p
 }
 
+// bestExtraGroups returns the indices of the groups whose next-placed player
+// (the one right after the passCount automatic qualifiers, e.g. 3rd place when
+// two pass) is among the `extra` best across all groups, best first. Groups can
+// differ in size, so players are compared by ratios rather than totals: win
+// ratio, then sets, then points. Remaining ties keep group order.
+func bestExtraGroups(groups []Group, passCount, extra int) []int {
+	if extra <= 0 || passCount <= 0 {
+		return nil
+	}
+	var candidates []int
+	for gi, g := range groups {
+		if len(g.Standings) > passCount {
+			candidates = append(candidates, gi)
+		}
+	}
+	ratio := func(won, lost int) float64 {
+		if won+lost == 0 {
+			return 0
+		}
+		return float64(won) / float64(won+lost)
+	}
+	slices.SortStableFunc(candidates, func(a, b int) int {
+		x, y := groups[a].Standings[passCount], groups[b].Standings[passCount]
+		return cmp.Or(
+			cmp.Compare(ratio(y.Wins, y.Losses), ratio(x.Wins, x.Losses)),
+			cmp.Compare(ratio(y.SetsWon, y.SetsLost), ratio(x.SetsWon, x.SetsLost)),
+			cmp.Compare(ratio(y.PointsWon, y.PointsLost), ratio(x.PointsWon, x.PointsLost)),
+		)
+	})
+	return candidates[:min(extra, len(candidates))]
+}
+
+// QualifierPlaces returns how many places of every group advance automatically
+// and how many best next-placed players join them. With no fillSize that is
+// just the configured passCount and extra. A fillSize (16 for a round of 16)
+// instead fills the bracket up to that many players: further whole places while
+// they fit, then the best of the following place. It never removes automatic
+// qualifiers, and spots nobody is left to take stay byes.
+func QualifierPlaces(groups []Group, passCount, extra, fillSize int) (int, int) {
+	if fillSize <= 0 {
+		return passCount, extra
+	}
+	taking := func(places int) (total int) {
+		for _, g := range groups {
+			total += min(places, len(g.Standings))
+		}
+		return total
+	}
+	for taking(passCount+1) > taking(passCount) && taking(passCount+1) <= fillSize {
+		passCount++
+	}
+	return passCount, max(0, fillSize-taking(passCount))
+}
+
+// KnockoutSeeds returns the main knockout bracket's players in seed order: the
+// top passCount of every group plus the best next-placed players, as counted by
+// QualifierPlaces.
+func KnockoutSeeds(groups []Group, passCount, extra, fillSize int) []*player.Player {
+	passCount, extra = QualifierPlaces(groups, passCount, extra, fillSize)
+	extraGroups := bestExtraGroups(groups, passCount, extra)
+
+	qualified := make([]Group, len(groups))
+	for gi, g := range groups {
+		take := passCount
+		if slices.Contains(extraGroups, gi) {
+			take++
+		}
+		qualified[gi] = g
+		qualified[gi].Standings = g.Standings[:min(take, len(g.Standings))]
+	}
+
+	layers := passCount
+	if len(extraGroups) > 0 {
+		layers++
+	}
+	seeds := buildITTFKnockoutSeeds(qualified, layers, extraGroups)
+	// Left alone without the options above, so brackets of events that don't
+	// use them keep the seed order they have always had.
+	if len(extraGroups) > 0 || fillSize > 0 {
+		separateSameGroupPlayers(qualified, seeds)
+	}
+	return seeds
+}
+
+// separateSameGroupPlayers swaps players until no two of a group share a
+// bracket region, as ValidateSameGroupSeparation requires. The greedy placement
+// alone often can't manage that when only some groups send an extra player.
+// Winners only ever trade seeds with other winners, and only if moving the
+// other qualifiers isn't enough.
+func separateSameGroupPlayers(groups []Group, seeds []*player.Player) {
+	if len(seeds) < 2 {
+		return
+	}
+	playerGroup := make(map[string]string, len(seeds))
+	for gi, g := range groups {
+		for _, s := range g.Standings {
+			playerGroup[s.Player.ID] = strconv.Itoa(gi)
+		}
+	}
+	bracketSize := nextPow2(len(seeds))
+	numRegions := bracketRegionCount(playerGroup, seeds, bracketSize)
+	seedRegion := regionsBySeed(getSeedingArrangement(bracketSize), numRegions)
+
+	conflicts := func() int {
+		type slot struct {
+			group  string
+			region int
+		}
+		seen := make(map[slot]int, len(seeds))
+		total := 0
+		for i, p := range seeds {
+			key := slot{playerGroup[p.ID], seedRegion[i+1]}
+			total += seen[key]
+			seen[key]++
+		}
+		return total
+	}
+
+	winners := min(len(groups), len(seeds))
+	current := conflicts()
+	swapWithin := func(from, to int) {
+		// A swap that only keeps the count level is sometimes allowed, to get
+		// off plateaus; the pass limit keeps that from cycling forever.
+		for pass := 0; current > 0 && pass < 50; pass++ {
+			for i := from; i < to && current > 0; i++ {
+				for j := from; j < to && current > 0; j++ {
+					if i == j || seedRegion[i+1] == seedRegion[j+1] {
+						continue
+					}
+					seeds[i], seeds[j] = seeds[j], seeds[i]
+					if next := conflicts(); next < current || (next == current && (pass+i+j)%7 == 0) {
+						current = next
+					} else {
+						seeds[i], seeds[j] = seeds[j], seeds[i]
+					}
+				}
+			}
+		}
+	}
+	for round := 0; current > 0 && round < 5; round++ {
+		swapWithin(winners, len(seeds))
+		swapWithin(0, winners)
+	}
+}
+
 // buildITTFKnockoutSeeds arranges advancing players per ITTF rules:
 //   - Group winners occupy seeds 1..numGroups (in group order).
 //   - Each subsequent layer (runners-up, 3rd-place, etc.) is placed into
@@ -957,7 +1114,10 @@ func nextPow2(n int) int {
 //     when passCount<=2 and there are only 2 regions/halves, no earlier
 //     than the semifinal when passCount is 3 or 4 and there are 4
 //     regions/quarters, and so on).
-func buildITTFKnockoutSeeds(groups []Group, passCount int) []*player.Player {
+//
+// lastLayerOrder, when set, is the order groups are placed in for the final
+// layer, so the best extra qualifier gets the best open seed.
+func buildITTFKnockoutSeeds(groups []Group, passCount int, lastLayerOrder []int) []*player.Player {
 	numGroups := len(groups)
 	if numGroups == 0 || passCount == 0 {
 		return nil
@@ -1012,7 +1172,17 @@ func buildITTFKnockoutSeeds(groups []Group, passCount int) []*player.Player {
 	nextSlot := numGroups // first available seed index after layer 0
 
 	for layer := 1; layer < passCount; layer++ {
-		layerSize := numGroups
+		order := make([]int, 0, numGroups)
+		if layer == passCount-1 && len(lastLayerOrder) > 0 {
+			order = append(order, lastLayerOrder...)
+		} else {
+			for gi, g := range groups {
+				if layer < len(g.Standings) {
+					order = append(order, gi)
+				}
+			}
+		}
+		layerSize := len(order)
 		// Collect this layer's open slots, bucketed by region.
 		regionSlots := make([][]int, numRegions)
 		for i := nextSlot; i < nextSlot+layerSize && i < totalAdvancing; i++ {
@@ -1025,11 +1195,8 @@ func buildITTFKnockoutSeeds(groups []Group, passCount int) []*player.Player {
 		}
 		regionCursor := make([]int, numRegions)
 
-		for gi, g := range groups {
-			if layer >= len(g.Standings) {
-				continue
-			}
-			p := g.Standings[layer].Player
+		for _, gi := range order {
+			p := groups[gi].Standings[layer].Player
 
 			// Prefer whichever region this group has used the fewest times
 			// so far (ties broken by region order, for determinism), among

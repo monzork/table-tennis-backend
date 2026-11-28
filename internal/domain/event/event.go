@@ -218,9 +218,16 @@ type Event struct {
 	Groups       []Group
 	// GroupCount is the admin-desired number of round-robin groups to build.
 	// 0 means auto (groups of ~4, the historical default).
-	GroupCount            int
-	GroupPassCount        int
-	LosersGroupPassCount  int
+	GroupCount           int
+	GroupPassCount       int
+	LosersGroupPassCount int
+	// BestExtraQualifiers is how many next-placed players (e.g. best 3rds when
+	// GroupPassCount is 2) also advance from the groups to the main bracket.
+	BestExtraQualifiers int
+	// KnockoutFillSize, when set (e.g. 16 for a round of 16), fills the main
+	// bracket up to that many players with the best next-placed ones, in place
+	// of BestExtraQualifiers. 0 leaves empty spots as byes.
+	KnockoutFillSize      int
 	RegistrationOpen      bool
 	TournamentID          *string
 	SkipElo               bool

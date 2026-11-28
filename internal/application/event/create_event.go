@@ -41,6 +41,8 @@ type CreateEventCommand struct {
 	GroupCount           int
 	GroupPassCount       int
 	LosersGroupPassCount int
+	BestExtraQualifiers  int
+	KnockoutFillSize     int
 	StageRuleOverrides   []StageRuleOverride
 	SkipElo              bool
 	TournamentID         *string
@@ -114,6 +116,8 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 	t.TournamentID = cmd.TournamentID
 
 	t.LosersGroupPassCount = cmd.LosersGroupPassCount
+	t.BestExtraQualifiers = cmd.BestExtraQualifiers
+	t.KnockoutFillSize = cmd.KnockoutFillSize
 
 	t.TeamFormat = cmd.TeamFormat
 	t.NumTables = cmd.NumTables
@@ -162,6 +166,8 @@ func (uc *CreateTournamentUseCase) Execute(ctx context.Context, cmd CreateEventC
 			pairT.TournamentID = cmd.TournamentID
 
 			pairT.LosersGroupPassCount = cmd.LosersGroupPassCount
+			pairT.BestExtraQualifiers = cmd.BestExtraQualifiers
+			pairT.KnockoutFillSize = cmd.KnockoutFillSize
 			pairT.KnockoutBracketsCount = cmd.KnockoutBracketsCount
 			pairT.GroupCount = cmd.GroupCount
 			if pairT.Format == "groups_elimination" || pairT.Format == "round_robin" || pairT.Format == "elimination" {

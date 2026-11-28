@@ -254,3 +254,6 @@ ALTER TABLE event_participants ADD COLUMN IF NOT EXISTS placement_bonus_elo DOUB
 -- Cumulative Elo lost to inactivity decay this streak (migration 076)
 ALTER TABLE players ADD COLUMN IF NOT EXISTS lost_to_inactivity_singles SMALLINT NOT NULL DEFAULT 0;
 ALTER TABLE players ADD COLUMN IF NOT EXISTS lost_to_inactivity_doubles SMALLINT NOT NULL DEFAULT 0;
+-- Best next-placed knockout qualifiers (migration 078)
+ALTER TABLE events ADD COLUMN IF NOT EXISTS best_extra_qualifiers INT NOT NULL DEFAULT 0;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS knockout_fill_size INT NOT NULL DEFAULT 0;

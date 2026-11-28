@@ -18,6 +18,8 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 		GroupCount            int    `form:"groupCount"`
 		GroupPassCount        int    `form:"groupPassCount"`
 		LosersGroupPassCount  int    `form:"losersGroupPassCount"`
+		BestExtraQualifiers   int    `form:"bestExtraQualifiers"`
+		KnockoutFillSize      int    `form:"knockoutFillSize"`
 		TeamFormat            string `form:"teamFormat"`
 		NumTables             int    `form:"numTables" json:"numTables"`
 		KnockoutBracketsCount int    `form:"knockoutBracketsCount"`
@@ -90,6 +92,8 @@ func parseCreateEventCommand(c *fiber.Ctx) (event.CreateEventCommand, error) {
 		GroupCount:           body.GroupCount,
 		GroupPassCount:       body.GroupPassCount,
 		LosersGroupPassCount: body.LosersGroupPassCount,
+		BestExtraQualifiers:  body.BestExtraQualifiers,
+		KnockoutFillSize:     body.KnockoutFillSize,
 		StageRuleOverrides:   stageRules,
 		SkipElo:              skipElo,
 		TournamentID:         tournamentID,
@@ -114,6 +118,8 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		GroupCount            int    `form:"groupCount"`
 		GroupPassCount        int    `form:"groupPassCount"`
 		LosersGroupPassCount  int    `form:"losersGroupPassCount"`
+		BestExtraQualifiers   int    `form:"bestExtraQualifiers"`
+		KnockoutFillSize      int    `form:"knockoutFillSize"`
 		RegistrationOpen      bool   `form:"registrationOpen"`
 		TeamFormat            string `form:"teamFormat"`
 		NumTables             int    `form:"numTables" json:"numTables"`
@@ -190,6 +196,8 @@ func parseUpdateEventCommand(c *fiber.Ctx) (event.UpdateEventCommand, error) {
 		GroupCount:           body.GroupCount,
 		GroupPassCount:       body.GroupPassCount,
 		LosersGroupPassCount: body.LosersGroupPassCount,
+		BestExtraQualifiers:  body.BestExtraQualifiers,
+		KnockoutFillSize:     body.KnockoutFillSize,
 		StageRuleOverrides:   stageRules,
 		SkipElo:              skipElo,
 		TournamentID:         tournamentID,

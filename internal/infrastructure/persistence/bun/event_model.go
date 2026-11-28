@@ -24,6 +24,8 @@ type EventModel struct {
 	GroupCount           int        `bun:"group_count,notnull,default:0"`
 	GroupPassCount       int        `bun:"group_pass_count,notnull,default:2"`
 	LosersGroupPassCount int        `bun:"losers_group_pass_count,notnull,default:0"`
+	BestExtraQualifiers  int        `bun:"best_extra_qualifiers,notnull,default:0"`
+	KnockoutFillSize     int        `bun:"knockout_fill_size,notnull,default:0"`
 	RegistrationOpen     bool       `bun:"registration_open,notnull,default:false"`
 	TournamentID         *uuid.UUID `bun:"tournament_id,type:uuid"`
 	SkipElo              bool       `bun:"skip_elo,notnull,default:false"`
