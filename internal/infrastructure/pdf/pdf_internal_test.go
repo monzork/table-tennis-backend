@@ -614,9 +614,7 @@ func TestGetITTFKnockoutSeeds_PassCountExceedsGroupSize(t *testing.T) {
 // passCount above 2 was involved -- e.g. a group's runner-up seed ending up
 // at the very front of the bracket in the PDF while the live event page put
 // it at the back. With 3 groups and passCount 3, the two algorithms diverge
-// specifically at the runner-up layer (seeds 4-6): the simple split lands
-// them as [B2, C2, A2], the domain algorithm's region-based placement lands
-// them as [A2, B2, C2].
+// specifically at the runner-up layer (seeds 4-6).
 func TestGetITTFKnockoutSeeds_ThreeGroupsPassThreeMatchesDomainAlgorithm(t *testing.T) {
 	pA1 := &player.Player{ID: "pA1", FirstName: "A1", SinglesElo: 1900}
 	pA2 := &player.Player{ID: "pA2", FirstName: "A2", SinglesElo: 1800}
@@ -651,7 +649,9 @@ func TestGetITTFKnockoutSeeds_ThreeGroupsPassThreeMatchesDomainAlgorithm(t *test
 	ev := &event.Event{GroupPassCount: 3, Matches: matches}
 
 	out := getITTFKnockoutSeeds(ev, "div1", "Division 1", nil, []*event.Group{groupA, groupB, groupC})
-	wantIDs := []string{"pA1", "pB1", "pC1", "pA2", "pB2", "pC2", "pA3", "pB3", "pC3"}
+	// A2 and C2 trade places compared with the plain layer order, which put
+	// C2 in the same quarter as C1.
+	wantIDs := []string{"pA1", "pB1", "pC1", "pC2", "pB2", "pA2", "pA3", "pB3", "pC3"}
 	if len(out) != len(wantIDs) {
 		t.Fatalf("expected %d advancing players, got %d: %v", len(wantIDs), len(out), out)
 	}

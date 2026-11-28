@@ -1077,17 +1077,15 @@ func KnockoutSeeds(groups []Group, passCount, extra, fillSize int) []*player.Pla
 		layers++
 	}
 	seeds := buildITTFKnockoutSeeds(qualified, layers, extraGroups)
-	// Left alone without the options above, so brackets of events that don't
-	// use them keep the seed order they have always had.
-	if len(extraGroups) > 0 || fillSize > 0 {
-		separateSameGroupPlayers(qualified, seeds)
-	}
+	// Changes nothing unless the draw has a same-group clash.
+	separateSameGroupPlayers(qualified, seeds)
 	return seeds
 }
 
 // separateSameGroupPlayers swaps players until no two of a group share a
 // bracket region, as ValidateSameGroupSeparation requires. The greedy placement
-// alone often can't manage that when only some groups send an extra player.
+// alone often can't manage that with 3 or more qualifying per group, or when
+// only some groups send an extra player.
 // Winners only ever trade seeds with other winners, and only if moving the
 // other qualifiers isn't enough.
 func separateSameGroupPlayers(groups []Group, seeds []*player.Player) {

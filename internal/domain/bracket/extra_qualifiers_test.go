@@ -93,3 +93,35 @@ func TestKnockoutSeeds_FilledBracketsStaySeparated(t *testing.T) {
 		}
 	}
 }
+
+// Regression: with 3 or more passing per group the default draw put group mates
+// in the same region, so "Start Knockout" refused it.
+func TestKnockoutSeeds_DefaultDrawsStaySeparated(t *testing.T) {
+	for passCount := 1; passCount <= 6; passCount++ {
+		for n := 2; n <= 24; n++ {
+			// even groups, then every other group one player short, then
+			// groups too small to fill the pass count
+			for _, shrink := range []func(int) int{
+				func(int) int { return passCount + 1 },
+				func(gi int) int { return passCount + 1 - gi%2 },
+				func(gi int) int { return passCount + 1 - gi%3 },
+			} {
+				groups := extraTestGroups(n, passCount+1, passCount)
+				want := 0
+				for gi := range groups {
+					size := max(1, shrink(gi))
+					groups[gi].Standings = groups[gi].Standings[:size]
+					groups[gi].Players = groups[gi].Players[:size]
+					want += min(size, passCount)
+				}
+				seeds := KnockoutSeeds(groups, passCount, 0, 0)
+				if len(seeds) != want {
+					t.Fatalf("pass=%d groups=%d: got %d qualifiers, want %d", passCount, n, len(seeds), want)
+				}
+				if err := ValidateSameGroupSeparation(groups, seeds); err != nil {
+					t.Errorf("pass=%d groups=%d: %v", passCount, n, err)
+				}
+			}
+		}
+	}
+}
