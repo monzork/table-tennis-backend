@@ -175,7 +175,7 @@ func TestEventHandler(t *testing.T) {
 	})
 
 	t.Run("Search Selection Cards", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/players/search/cards?gender=M&selectAll=true", nil)
+		req := httptest.NewRequest("POST", "/players/search/cards?gender=M&selectAll=true", nil)
 		req.Header.Set("Cookie", sessionCookie)
 
 		resp, err := app.Test(req)

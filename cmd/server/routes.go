@@ -182,7 +182,7 @@ func SetupRoutes(app *fiber.App, c *Container, authMiddleware fiber.Handler, acc
 	// Players API
 	api.Post("/players", c.PlayerHandler.Register)
 	api.Get("/players/search", c.PlayerHandler.Search)
-	api.Get("/players/search/cards", c.PlayerHandler.SearchSelectionCards)
+	api.Post("/players/search/cards", c.PlayerHandler.SearchSelectionCards)
 	api.Get("/players/:id/edit", c.PlayerHandler.ShowEditForm)
 	api.Put("/players/:id", c.PlayerHandler.Update)
 	api.Post("/players/:id/link-account", c.PlayerHandler.LinkAccount)

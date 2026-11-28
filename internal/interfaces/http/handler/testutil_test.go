@@ -494,7 +494,7 @@ func SetupTestApp() (*fiber.App, *bun.DB, *session.Store, error) {
 	api.Use(authMiddleware)
 	api.Post("/players", playerHandler.Register)
 	api.Get("/players/search", playerHandler.Search)
-	api.Get("/players/search/cards", playerHandler.SearchSelectionCards)
+	api.Post("/players/search/cards", playerHandler.SearchSelectionCards)
 	api.Put("/players/:id", playerHandler.Update)
 	api.Delete("/players/:id", playerHandler.Delete)
 	api.Post("/players/import", playerHandler.Import)

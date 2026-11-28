@@ -398,16 +398,19 @@ func (h *PlayerHandler) Search(c *fiber.Ctx) error {
 	}))
 }
 
+// SearchSelectionCards is a POST although it only reads: the caller sends every
+// already-selected participant ID, which overflows the server's header limit
+// when put in a query string.
 func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
-	query := c.Query("q")
-	gender := c.Query("gender") // optional: "M" or "F"
-	category := c.Query("eventCategory")
+	query := c.FormValue("q")
+	gender := c.FormValue("gender") // optional: "M" or "F"
+	category := c.FormValue("eventCategory")
 	if category == "men" {
 		gender = "M"
 	} else if category == "women" {
 		gender = "F"
 	}
-	selectAll := c.Query("selectAll") == "true" // if true, mark all returned players as checked
+	selectAll := c.FormValue("selectAll") == "true" // if true, mark all returned players as checked
 
 	players, err := h.searchPlayerSelectionUC.Execute(c.Context(), query, gender)
 	if err != nil {
@@ -421,7 +424,7 @@ func (h *PlayerHandler) SearchSelectionCards(c *fiber.Ctx) error {
 			selectedMap[p.ID] = true
 		}
 	} else {
-		for _, id := range c.Request().URI().QueryArgs().PeekMulti("participant_ids[]") {
+		for _, id := range c.Request().PostArgs().PeekMulti("participant_ids[]") {
 			selectedMap[string(id)] = true
 		}
 	}

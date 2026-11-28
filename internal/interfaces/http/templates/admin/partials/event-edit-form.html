@@ -42,7 +42,8 @@
         <div class="space-y-2">
             <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">{{t .T "admin.event_edit_form.category_label"}}</label>
             <select name="eventCategory" id="edit-category-select"
-                    hx-get="/players/search/cards"
+                    hx-post="/players/search/cards"
+                    hx-params="q,eventCategory,participant_ids[]"
                     hx-target="#edit-player-selection-grid"
                     hx-include="#edit-player-search, #edit-category-select, #edit-selected-participants-hidden input"
                     hx-trigger="change"
@@ -93,7 +94,8 @@
         <div class="relative">
             <input type="text" id="edit-player-search"
                 name="q"
-                hx-get="/players/search/cards"
+                hx-post="/players/search/cards"
+                hx-params="q,eventCategory,participant_ids[]"
                 hx-trigger="keyup changed delay:300ms"
                 hx-target="#edit-player-selection-grid"
                 hx-include="#edit-player-search, #edit-category-select, #edit-selected-participants-hidden input"

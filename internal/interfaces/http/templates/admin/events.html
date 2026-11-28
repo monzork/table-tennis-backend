@@ -81,7 +81,8 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <label class="cursor-pointer group">
                         <input type="radio" id="category-open" name="eventCategory" value="open" checked
-                               hx-get="/players/search/cards"
+                               hx-post="/players/search/cards"
+                               hx-params="q,eventCategory,participant_ids[]"
                                hx-target="#player-selection-grid"
                                hx-include="#player-search, input[name='eventCategory']:checked, #selected-participants-hidden input"
                                hx-trigger="change"
@@ -93,7 +94,8 @@
                     </label>
                     <label class="cursor-pointer group">
                         <input type="radio" id="category-men" name="eventCategory" value="men"
-                               hx-get="/players/search/cards"
+                               hx-post="/players/search/cards"
+                               hx-params="q,eventCategory,participant_ids[]"
                                hx-target="#player-selection-grid"
                                hx-include="#player-search, input[name='eventCategory']:checked, #selected-participants-hidden input"
                                hx-trigger="change"
@@ -105,7 +107,8 @@
                     </label>
                     <label class="cursor-pointer group">
                         <input type="radio" id="category-women" name="eventCategory" value="women"
-                               hx-get="/players/search/cards"
+                               hx-post="/players/search/cards"
+                               hx-params="q,eventCategory,participant_ids[]"
                                hx-target="#player-selection-grid"
                                hx-include="#player-search, input[name='eventCategory']:checked, #selected-participants-hidden input"
                                hx-trigger="change"
@@ -117,7 +120,8 @@
                     </label>
                     <label class="cursor-pointer group">
                         <input type="radio" id="category-mixed" name="eventCategory" value="mixed"
-                               hx-get="/players/search/cards"
+                               hx-post="/players/search/cards"
+                               hx-params="q,eventCategory,participant_ids[]"
                                hx-target="#player-selection-grid"
                                hx-include="#player-search, input[name='eventCategory']:checked, #selected-participants-hidden input"
                                hx-trigger="change"
@@ -357,17 +361,20 @@
                             <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">{{t .T "admin.events.select_registered"}}</p>
                             <div class="flex gap-2">
                                 <button type="button"
-                                    hx-get="/players/search/cards?gender=M&selectAll=true"
+                                    hx-post="/players/search/cards?gender=M&selectAll=true"
+                                    hx-params="q,eventCategory,participant_ids[]"
                                     hx-target="#player-selection-grid"
                                     hx-include="#player-search, input[name='eventCategory']:checked, #selected-participants-hidden input"
                                     class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 transition-all">{{t .T "admin.events.all_male"}}</button>
                                 <button type="button"
-                                    hx-get="/players/search/cards?gender=F&selectAll=true"
+                                    hx-post="/players/search/cards?gender=F&selectAll=true"
+                                    hx-params="q,eventCategory,participant_ids[]"
                                     hx-target="#player-selection-grid"
                                     hx-include="#player-search, input[name='eventCategory']:checked, #selected-participants-hidden input"
                                     class="text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 text-pink-400 transition-all">{{t .T "admin.events.all_female"}}</button>
                                 <button type="button"
-                                    hx-get="/players/search/cards"
+                                    hx-post="/players/search/cards"
+                                    hx-params="q,eventCategory,participant_ids[]"
                                     hx-target="#player-selection-grid"
                                     hx-include="#player-search, input[name='eventCategory']:checked, #selected-participants-hidden input"
                                     onclick="document.getElementById('selected-participants-hidden').innerHTML = ''"
@@ -378,7 +385,8 @@
                         <div class="relative">
                             <input type="text" id="player-search"
                                 name="q"
-                                hx-get="/players/search/cards"
+                                hx-post="/players/search/cards"
+                                hx-params="q,eventCategory,participant_ids[]"
                                 hx-trigger="keyup changed delay:300ms"
                                 hx-target="#player-selection-grid"
                                 hx-include="#player-search, input[name='eventCategory']:checked, #selected-participants-hidden input"

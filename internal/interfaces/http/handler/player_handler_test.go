@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -430,7 +432,7 @@ func TestPlayerHandler(t *testing.T) {
 	})
 
 	t.Run("Search Selection Cards - eventCategory men/women", func(t *testing.T) {
-		reqMen := httptest.NewRequest("GET", "/players/search/cards?eventCategory=men", nil)
+		reqMen := httptest.NewRequest("POST", "/players/search/cards?eventCategory=men", nil)
 		reqMen.Header.Set("Cookie", sessionCookie)
 		respMen, err := app.Test(reqMen)
 		if err != nil {
@@ -440,7 +442,7 @@ func TestPlayerHandler(t *testing.T) {
 			t.Errorf("expected 200 OK, got %v", respMen.StatusCode)
 		}
 
-		reqWomen := httptest.NewRequest("GET", "/players/search/cards?eventCategory=women", nil)
+		reqWomen := httptest.NewRequest("POST", "/players/search/cards?eventCategory=women", nil)
 		reqWomen.Header.Set("Cookie", sessionCookie)
 		respWomen, err := app.Test(reqWomen)
 		if err != nil {
@@ -458,7 +460,13 @@ func TestPlayerHandler(t *testing.T) {
 			t.Fatalf("failed to find seeded player: %v", err)
 		}
 
-		req := httptest.NewRequest("GET", fmt.Sprintf("/players/search/cards?participant_ids[]=%s", pm.ID.String()), nil)
+		// Enough IDs to overflow the header limit if they were in the URL.
+		form := url.Values{"participant_ids[]": {pm.ID.String()}}
+		for range 200 {
+			form.Add("participant_ids[]", uuid.New().String())
+		}
+		req := httptest.NewRequest("POST", "/players/search/cards", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Cookie", sessionCookie)
 		resp, err := app.Test(req)
 		if err != nil {
@@ -466,6 +474,13 @@ func TestPlayerHandler(t *testing.T) {
 		}
 		if resp.StatusCode != 200 {
 			t.Errorf("expected 200 OK, got %v", resp.StatusCode)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("failed to read body: %v", err)
+		}
+		if !regexp.MustCompile(`value="` + pm.ID.String() + `"[^>]*\bchecked\b`).Match(body) {
+			t.Errorf("expected the selected player to stay checked, got %s", body)
 		}
 	})
 
