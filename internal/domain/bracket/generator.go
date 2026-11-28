@@ -533,7 +533,10 @@ func buildDivisionView(t *event.Event, divID, name, color string, minElo int16, 
 
 				// With extra qualifiers some groups legitimately send one more
 				// player than the rest, so the count can't be inferred.
-				if infMain := inferPassCount(0); infMain > 0 && t.BestExtraQualifiers <= 0 && t.KnockoutFillSize <= 0 {
+				// Nor when the matches so far fit the configured draw: right after
+				// the start, bye holders have no match and would look unqualified.
+				if infMain := inferPassCount(0); infMain > 0 && t.BestExtraQualifiers <= 0 && t.KnockoutFillSize <= 0 &&
+					!matchesFollowDraw(t, divID, KnockoutSeeds(dv.Groups, mainPassCount, 0, 0)) {
 					mainPassCount = infMain
 				}
 				if bracketsCount > 1 {
@@ -957,6 +960,45 @@ func nextPow2(n int) int {
 		p *= 2
 	}
 	return p
+}
+
+// matchesFollowDraw reports whether the main bracket's opening matches are
+// pairs of the draw seeded from players: at least one exists, every one of them
+// is such a pair, and none belongs to a round bigger than that draw has.
+func matchesFollowDraw(t *event.Event, divID string, players []*player.Player) bool {
+	size := nextPow2(len(players))
+	if size < 2 {
+		return false
+	}
+	pairKey := func(a, b string) string { return min(a, b) + "|" + max(a, b) }
+	drawn := make(map[string]bool, size/2)
+	arrangement := getSeedingArrangement(size)
+	for i := 0; i+1 < len(arrangement); i += 2 {
+		a, b := arrangement[i]-1, arrangement[i+1]-1
+		if a < len(players) && b < len(players) {
+			drawn[pairKey(players[a].ID, players[b].ID)] = true
+		}
+	}
+
+	opening := stageNameForCount(size/2, 0)
+	stages := eliminationStageOrder(0)
+	found := false
+	for _, m := range t.Matches {
+		at := slices.Index(stages, m.Stage)
+		if m.DivisionID != divID || m.TeamMatchID != nil || at < 0 || len(m.TeamA) == 0 || len(m.TeamB) == 0 {
+			continue
+		}
+		if at < slices.Index(stages, opening) {
+			return false
+		}
+		if m.Stage == opening {
+			if !drawn[pairKey(m.TeamA[0].ID, m.TeamB[0].ID)] {
+				return false
+			}
+			found = true
+		}
+	}
+	return found
 }
 
 // bestExtraGroups returns the indices of the groups whose next-placed player
@@ -1764,6 +1806,30 @@ func firstRoundPairsFromRealMatches(t *event.Event, divID string, tier int, play
 				if _, ok := idxByPlayer[side.ID]; !ok {
 					idxByPlayer[side.ID] = len(providers)
 					providers = append(providers, bracketPair{P1: &MatchSlot{Seed: seedOf[side.ID], Player: side, BracketPos: bracketPosFor(side.ID, len(providers))}})
+				}
+			}
+		}
+	}
+
+	// A bye leaves no match behind until its holder plays round 2, so give
+	// every other player who skipped round 1 a slot of their own -- otherwise
+	// they vanish as soon as round 1 is created and the whole bracket shrinks.
+	// Only when the matches found really are round 1 of a bracket this size.
+	if stages[firstIdx] == stageNameForCount(arrangementSize/2, tier) {
+		for _, p := range players {
+			if len(providers) >= arrangementSize/2 {
+				break
+			}
+			if p == nil {
+				continue
+			}
+			if _, ok := idxByPlayer[p.ID]; !ok {
+				idxByPlayer[p.ID] = len(providers)
+				bye := &MatchSlot{Seed: seedOf[p.ID], Player: p, BracketPos: bracketPosFor(p.ID, len(providers))}
+				if bye.BracketPos%2 == 0 {
+					providers = append(providers, bracketPair{P1: bye})
+				} else {
+					providers = append(providers, bracketPair{P2: bye})
 				}
 			}
 		}

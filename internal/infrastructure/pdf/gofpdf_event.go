@@ -553,6 +553,30 @@ func firstRoundPdfPairsFromRealMatches(t *event.Event, divID string, players []*
 		}
 	}
 
+	// A bye leaves no match behind until its holder plays round 2, so give
+	// every other player who skipped round 1 a slot of their own -- otherwise
+	// they vanish as soon as round 1 is created and the whole bracket shrinks.
+	// Only when the matches found really are round 1 of a bracket this size.
+	if stages[firstIdx] == pdfStageNameForCount(arrangementSize/2) {
+		for _, p := range players {
+			if len(providers) >= arrangementSize/2 {
+				break
+			}
+			if p == nil {
+				continue
+			}
+			if _, ok := idxByPlayer[p.ID]; !ok {
+				idxByPlayer[p.ID] = len(providers)
+				bye := &pdfMatchSlot{Seed: seedOf[p.ID], Player: p, BracketPos: bracketPosFor(p.ID, len(providers))}
+				if bye.BracketPos%2 == 0 {
+					providers = append(providers, pdfBracketPair{P1: bye})
+				} else {
+					providers = append(providers, pdfBracketPair{P2: bye})
+				}
+			}
+		}
+	}
+
 	// Group providers two-at-a-time by round 2's real matches -- whichever
 	// two providers actually played each other next, per the recorded
 	// data, rather than by position -- since a bye's actual round-2
