@@ -413,3 +413,23 @@ func TestBuildGenderRanking_SearchAndSortStillApply(t *testing.T) {
 		t.Fatalf("expected search to narrow to only Bob (country CUB), got %+v", result.Groups)
 	}
 }
+
+func TestBuildRanking_SearchMatchesEveryNamePart(t *testing.T) {
+	players := []*player.Player{
+		{ID: "1", FirstName: "Juan", SecondName: "Carlos", LastName: "Perez", SecondLastName: "Lopez", SinglesElo: 1200},
+		{ID: "2", FirstName: "Maria", LastName: "Gomez", SinglesElo: 1100},
+	}
+	for query, want := range map[string]int{
+		"carlos": 1, "lopez": 1, "juan perez": 1, "carlos lopez": 1, "perez juan": 1,
+		"juan gomez": 0,
+	} {
+		got := leaderboard.BuildRanking(players, nil, leaderboard.RankingParams{RankType: "singles", Query: query})
+		count := 0
+		for _, g := range got.Groups {
+			count += len(g.Players)
+		}
+		if count != want {
+			t.Errorf("query %q: got %d players, want %d", query, count, want)
+		}
+	}
+}

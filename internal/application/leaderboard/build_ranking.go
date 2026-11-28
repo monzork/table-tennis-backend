@@ -1,6 +1,7 @@
 package leaderboard
 
 import (
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -161,16 +162,19 @@ func rankAndFilter(players []*player.Player, divisions []*division.Division, par
 		preRanked = append(preRanked, rp)
 	}
 
-	// 2. Filter by search query (name, country, or department).
+	// 2. Filter by search query: every word must appear in one of the player's
+	// names, or the whole query in their country or department.
 	filtered := preRanked
 	if params.Query != "" {
 		qUpper := strings.ToUpper(params.Query)
+		terms := strings.Fields(qUpper)
 		filtered = nil
 		for _, rp := range preRanked {
-			fullName := strings.ToUpper(rp.FirstName + " " + rp.LastName)
+			names := strings.ToUpper(strings.Join([]string{rp.FirstName, rp.SecondName, rp.LastName, rp.SecondLastName}, " "))
+			matchesNames := !slices.ContainsFunc(terms, func(term string) bool { return !strings.Contains(names, term) })
 			country := strings.ToUpper(rp.Country)
 			dept := strings.ToUpper(rp.Department)
-			if strings.Contains(fullName, qUpper) || strings.Contains(country, qUpper) || strings.Contains(dept, qUpper) {
+			if matchesNames || strings.Contains(country, qUpper) || strings.Contains(dept, qUpper) {
 				filtered = append(filtered, rp)
 			}
 		}
